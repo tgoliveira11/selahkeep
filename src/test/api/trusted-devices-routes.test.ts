@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET, POST } from "@/app/api/trusted-devices/route";
-import { DELETE } from "@/app/api/trusted-devices/[id]/route";
+import { PATCH, DELETE } from "@/app/api/trusted-devices/[id]/route";
+import { POST as touchPost } from "@/app/api/trusted-devices/touch/route";
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
   requireSessionUser: vi.fn(),
   list: vi.fn(),
   create: vi.fn(),
+  rename: vi.fn(),
+  touchLastUsed: vi.fn(),
   revoke: vi.fn(),
 }));
 
@@ -18,6 +21,8 @@ vi.mock("@/server/services/trusted-device-service", () => ({
   trustedDeviceService: {
     list: mocks.list,
     create: mocks.create,
+    rename: mocks.rename,
+    touchLastUsed: mocks.touchLastUsed,
     revoke: mocks.revoke,
   },
   NotFoundError: class NotFoundError extends Error {
@@ -49,6 +54,29 @@ describe("trusted devices API routes", () => {
       })
     );
     expect(res.status).toBe(201);
+  });
+
+  it("PATCH renames device", async () => {
+    mocks.rename.mockResolvedValue({ id: "device-1", deviceName: "Home MacBook" });
+    const res = await PATCH(
+      new Request("http://localhost", {
+        method: "PATCH",
+        body: JSON.stringify({ deviceName: "Home MacBook" }),
+      }),
+      { params: Promise.resolve({ id: "device-1" }) }
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it("POST touch updates last used", async () => {
+    mocks.touchLastUsed.mockResolvedValue({ updated: true });
+    const res = await touchPost(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({ deviceId: "550e8400-e29b-41d4-a716-446655440000" }),
+      })
+    );
+    expect(res.status).toBe(200);
   });
 
   it("DELETE revokes device", async () => {

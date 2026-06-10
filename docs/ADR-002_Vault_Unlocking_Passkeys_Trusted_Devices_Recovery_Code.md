@@ -95,11 +95,22 @@ Initial default:
 The UI must allow the user to:
 
 - list trusted devices;
-- identify current device;
-- see approximate browser/platform;
+- identify current device (match client `deviceId` in `devicePublicKey`, show **This device** badge);
+- register the current browser only when it is not already registered (server rejects duplicate `deviceId`);
+- optionally set a friendly name on registration, or rename later;
+- see browser, OS platform, and form factor (`desktop` / `mobile` / `tablet`) from `getDeviceDisplayInfo()`;
 - see creation date;
-- see last used date;
+- see last used date (updated on each successful vault unlock when the browser is registered);
 - revoke device.
+
+Stored server metadata per trusted device:
+
+```text
+device_name (user-visible label; default from browser/OS/form factor)
+device_public_key.deviceId (client UUID for “this device” matching)
+browser, platform, device_type
+created_at, last_used_at, revoked_at
+```
 
 When a device is revoked:
 

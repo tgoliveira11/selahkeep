@@ -33,6 +33,7 @@ export const vaultService = {
           devicePublicKey: envelope.trustedDevice.devicePublicKey ?? null,
           browser: envelope.trustedDevice.browser ?? null,
           platform: envelope.trustedDevice.platform ?? null,
+          deviceType: envelope.trustedDevice.deviceType ?? null,
         });
       }
     }

@@ -16,6 +16,20 @@ export const trustedDeviceService = {
       throw new RateLimitError("Too many trusted device registrations");
     }
 
+    const clientDeviceId =
+      typeof input.devicePublicKey?.deviceId === "string"
+        ? input.devicePublicKey.deviceId
+        : null;
+    if (clientDeviceId) {
+      const existing = await trustedDeviceRepository.findActiveByClientDeviceId(
+        userId,
+        clientDeviceId
+      );
+      if (existing) {
+        throw new ConflictError("This device is already registered");
+      }
+    }
+
     const activeCount = await trustedDeviceRepository.countActiveByUserId(userId);
     if (activeCount >= trustedDeviceRepository.maxDevices) {
       throw new Error("Trusted device limit reached");
@@ -27,6 +41,7 @@ export const trustedDeviceService = {
       devicePublicKey: input.devicePublicKey ?? null,
       browser: input.browser ?? null,
       platform: input.platform ?? null,
+      deviceType: input.deviceType ?? null,
     });
 
     await vaultRepository.createEnvelope({
@@ -38,6 +53,29 @@ export const trustedDeviceService = {
 
     await auditRepository.record("trusted_device_added", userId, { deviceId: device.id });
     return device;
+  },
+
+  async rename(id: string, userId: string, deviceName: string) {
+    const device = await trustedDeviceRepository.findByIdForUser(id, userId);
+    if (!device) throw new NotFoundError("Device not found");
+    if (device.revokedAt) throw new ConflictError("Device is revoked");
+
+    const updated = await trustedDeviceRepository.updateDeviceName(id, userId, deviceName);
+    if (!updated) throw new NotFoundError("Device not found");
+
+    await auditRepository.record("trusted_device_renamed", userId, { deviceId: id });
+    return updated;
+  },
+
+  async touchLastUsed(userId: string, clientDeviceId: string) {
+    const device = await trustedDeviceRepository.findActiveByClientDeviceId(
+      userId,
+      clientDeviceId
+    );
+    if (!device) return { updated: false };
+
+    await trustedDeviceRepository.updateLastUsed(device.id, userId);
+    return { updated: true };
   },
 
   async revoke(id: string, userId: string) {

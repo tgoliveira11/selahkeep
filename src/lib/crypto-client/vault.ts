@@ -80,6 +80,8 @@ export async function unwrapVaultKeyFromDevice(
     );
     const vaultKey = await importAesKey(keyBytes);
     sessionVaultKey = vaultKey;
+    const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
+    void recordTrustedDeviceUnlock(userId);
     return vaultKey;
   }
   return unlockVaultFromDeviceEnvelopes(userId);
@@ -111,6 +113,8 @@ export async function unwrapVaultKeyFromRecovery(
   );
   const vaultKey = await importAesKey(keyBytes);
   sessionVaultKey = vaultKey;
+  const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
+  void recordTrustedDeviceUnlock(encryptedVaultKey.aad.userId);
   return vaultKey;
 }
 

@@ -11,8 +11,11 @@ import { resetRateLimit } from "@/server/policies/rate-limit";
 const mocks = vi.hoisted(() => ({
   findByUserId: vi.fn(),
   countActiveByUserId: vi.fn(),
+  findActiveByClientDeviceId: vi.fn(),
   create: vi.fn(),
   findByIdForUser: vi.fn(),
+  updateDeviceName: vi.fn(),
+  updateLastUsed: vi.fn(),
   revoke: vi.fn(),
   createEnvelope: vi.fn(),
   findActiveEnvelopesByUserId: vi.fn(),
@@ -24,8 +27,11 @@ vi.mock("@/server/repositories/trusted-device-repository", () => ({
   trustedDeviceRepository: {
     findByUserId: mocks.findByUserId,
     countActiveByUserId: mocks.countActiveByUserId,
+    findActiveByClientDeviceId: mocks.findActiveByClientDeviceId,
     create: mocks.create,
     findByIdForUser: mocks.findByIdForUser,
+    updateDeviceName: mocks.updateDeviceName,
+    updateLastUsed: mocks.updateLastUsed,
     revoke: mocks.revoke,
     maxDevices: 1,
   },
@@ -47,6 +53,7 @@ describe("trusted device service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetRateLimit(`trusted-device-create:${USER_ID}`);
+    mocks.findActiveByClientDeviceId.mockResolvedValue(null);
   });
 
   it("lists trusted devices", async () => {
@@ -63,6 +70,40 @@ describe("trusted device service", () => {
     });
     expect(device.id).toBe("device-1");
     expect(mocks.createEnvelope).toHaveBeenCalled();
+  });
+
+  it("rejects duplicate client device registration", async () => {
+    mocks.findActiveByClientDeviceId.mockResolvedValue({ id: "device-existing" });
+    await expect(
+      trustedDeviceService.create(USER_ID, {
+        deviceName: "Chrome",
+        devicePublicKey: { deviceId: "same-id" },
+        encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+      })
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("renames active device", async () => {
+    mocks.findByIdForUser.mockResolvedValue({ id: "device-1", revokedAt: null });
+    mocks.updateDeviceName.mockResolvedValue({ id: "device-1", deviceName: "Home MacBook" });
+    await expect(
+      trustedDeviceService.rename("device-1", USER_ID, "Home MacBook")
+    ).resolves.toEqual({ id: "device-1", deviceName: "Home MacBook" });
+  });
+
+  it("touchLastUsed updates matching device", async () => {
+    mocks.findActiveByClientDeviceId.mockResolvedValue({ id: "device-1" });
+    mocks.updateLastUsed.mockResolvedValue({ id: "device-1" });
+    await expect(trustedDeviceService.touchLastUsed(USER_ID, "client-id")).resolves.toEqual({
+      updated: true,
+    });
+  });
+
+  it("touchLastUsed no-ops when device is not registered", async () => {
+    mocks.findActiveByClientDeviceId.mockResolvedValue(null);
+    await expect(trustedDeviceService.touchLastUsed(USER_ID, "missing")).resolves.toEqual({
+      updated: false,
+    });
   });
 
   it("rejects when device limit reached", async () => {

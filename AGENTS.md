@@ -38,6 +38,7 @@ React components must NOT import database clients, repositories, or ORM code.
 - Frontend direct database access
 - localStorage/sessionStorage/cookies for plaintext keys or letter content
 - Exportable/raw device secrets in IndexedDB (use non-extractable `CryptoKey` only)
+- Duplicate trusted-device registration for the same client `deviceId`
 - Mock encryption, fake passkey flows, fake recovery flows
 - AI APIs processing private letter content
 - Admin access to private letter content

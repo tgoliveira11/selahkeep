@@ -16,6 +16,7 @@ export const vaultInitSchema = z.object({
             devicePublicKey: z.record(z.unknown()).optional(),
             browser: z.string().optional(),
             platform: z.string().optional(),
+            deviceType: z.enum(["desktop", "mobile", "tablet", "unknown"]).optional(),
           })
           .optional(),
       })

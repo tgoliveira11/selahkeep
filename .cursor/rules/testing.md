@@ -42,6 +42,7 @@ Use unit/service/API tests for most coverage. Reserve E2E for end-to-end smoke o
 - Device secret must be a **non-extractable** `CryptoKey`, never base64/raw bytes in IndexedDB.
 - Only **encrypted** vault envelopes may be persisted locally.
 - Sign out must call `clearVaultClientState()`.
+- Trusted device labels use `getDeviceDisplayInfo()`; store `devicePublicKey.deviceId` for “This device” matching.
 - See `src/test/security/indexeddb-storage.test.ts` and `SECURITY.md` browser storage section.
 
 ### Passkey & recovery (when touching those areas)

@@ -864,10 +864,13 @@ device_name text
 device_public_key text or jsonb
 browser text
 platform text
+device_type text
 created_at timestamptz
 last_used_at timestamptz
 revoked_at timestamptz nullable
 ```
+
+Users may rename devices and register with an optional friendly name. The **This device** badge matches `device_public_key.deviceId` to the browser’s local device id. `last_used_at` is refreshed on successful vault unlock for registered devices.
 
 ### 22.5 letters
 

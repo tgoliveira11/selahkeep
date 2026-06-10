@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { trustedDevices } from "@/lib/db/schema";
 
@@ -39,12 +39,28 @@ export const trustedDeviceRepository = {
     return rows.length;
   },
 
+  async findActiveByClientDeviceId(userId: string, clientDeviceId: string) {
+    const [device] = await db
+      .select()
+      .from(trustedDevices)
+      .where(
+        and(
+          eq(trustedDevices.userId, userId),
+          isNull(trustedDevices.revokedAt),
+          sql`${trustedDevices.devicePublicKey}->>'deviceId' = ${clientDeviceId}`
+        )
+      )
+      .limit(1);
+    return device ?? null;
+  },
+
   async create(data: {
     userId: string;
     deviceName: string;
     devicePublicKey?: Record<string, unknown> | null;
     browser?: string | null;
     platform?: string | null;
+    deviceType?: string | null;
   }) {
     const [device] = await db
       .insert(trustedDevices)
@@ -54,10 +70,26 @@ export const trustedDeviceRepository = {
         devicePublicKey: data.devicePublicKey ?? null,
         browser: data.browser ?? null,
         platform: data.platform ?? null,
+        deviceType: data.deviceType ?? null,
         lastUsedAt: new Date(),
       })
       .returning();
     return device;
+  },
+
+  async updateDeviceName(id: string, userId: string, deviceName: string) {
+    const [device] = await db
+      .update(trustedDevices)
+      .set({ deviceName })
+      .where(
+        and(
+          eq(trustedDevices.id, id),
+          eq(trustedDevices.userId, userId),
+          isNull(trustedDevices.revokedAt)
+        )
+      )
+      .returning();
+    return device ?? null;
   },
 
   async updateLastUsed(id: string, userId: string) {

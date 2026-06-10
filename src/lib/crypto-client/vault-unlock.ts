@@ -139,6 +139,8 @@ export async function unlockVaultFromDeviceEnvelopes(
 
       setSessionVaultKey(vaultKey);
       await storeLocalVaultEnvelope(userId, deviceId, envelope);
+      const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
+      void recordTrustedDeviceUnlock(userId);
       return vaultKey;
     } catch {
       continue;
@@ -152,6 +154,8 @@ export async function unlockVaultFromDeviceEnvelopes(
         const vaultKey = await vaultKeyFromEnvelope(envelope, deviceSecret);
         setSessionVaultKey(vaultKey);
         await storeLocalVaultEnvelope(userId, deviceId, envelope);
+        const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
+        void recordTrustedDeviceUnlock(userId);
         return vaultKey;
       } catch {
         continue;

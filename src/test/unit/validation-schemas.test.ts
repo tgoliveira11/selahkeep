@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { vaultInitSchema, recoveryCodeSchema } from "@/lib/validation/vault";
-import { createTrustedDeviceSchema } from "@/lib/validation/trusted-devices";
+import { createTrustedDeviceSchema, updateTrustedDeviceSchema, touchTrustedDeviceSchema } from "@/lib/validation/trusted-devices";
 import { createLetterInput, encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 describe("validation schemas", () => {
@@ -44,6 +44,19 @@ describe("validation schemas", () => {
       encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
     });
     expect(result.success).toBe(true);
+  });
+
+  it("updateTrustedDeviceSchema requires device name", () => {
+    expect(updateTrustedDeviceSchema.safeParse({ deviceName: "Work laptop" }).success).toBe(true);
+    expect(updateTrustedDeviceSchema.safeParse({ deviceName: "" }).success).toBe(false);
+  });
+
+  it("touchTrustedDeviceSchema requires uuid deviceId", () => {
+    expect(
+      touchTrustedDeviceSchema.safeParse({
+        deviceId: "550e8400-e29b-41d4-a716-446655440000",
+      }).success
+    ).toBe(true);
   });
 
   it("createLetterInput fixture matches createLetterSchema", async () => {

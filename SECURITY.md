@@ -51,6 +51,8 @@ Forbidden in browser persistence:
 | **Sign out on shared device** | `clearVaultClientState()` wipes IndexedDB envelopes and in-memory vault key |
 | **Revoked trusted device** | Server envelope revoked; local material alone cannot re-register device without unlock flow |
 
+Trusted device records store display metadata only (`deviceName`, browser, platform, form factor, `devicePublicKey.deviceId`). They must not store exportable key bytes. Duplicate registration of the same client `deviceId` is rejected server-side.
+
 Residual risk: a malicious script running on this origin (XSS) or compromised browser profile on an unlocked session can still decrypt letters. That is inherent to client-side encryption; depth-in-defense is CSP + minimal persistence + non-extractable keys.
 
 ## Observability

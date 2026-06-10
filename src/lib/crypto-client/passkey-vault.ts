@@ -96,6 +96,8 @@ export async function unlockVaultFromPasskeyEnvelope(
     try {
       const vaultKey = await unwrapVaultKeyFromPasskey(encryptedVaultKey, prfOutput);
       await persistUnlockedVaultOnDevice(vaultKey, userId);
+      const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
+      void recordTrustedDeviceUnlock(userId);
       return vaultKey;
     } catch {
       // Fall through for passkeys registered before PRF-based wrapping.

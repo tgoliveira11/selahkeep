@@ -57,6 +57,14 @@ describe("typed API client modules", () => {
         if (url === "/api/trusted-devices/dev-1" && init?.method === "DELETE") {
           return new Response(JSON.stringify({ success: true }), { status: 200 });
         }
+        if (url === "/api/trusted-devices/dev-1" && init?.method === "PATCH") {
+          return new Response(JSON.stringify({ id: "dev-1", deviceName: "Home MacBook" }), {
+            status: 200,
+          });
+        }
+        if (url === "/api/trusted-devices/touch" && init?.method === "POST") {
+          return new Response(JSON.stringify({ updated: true }), { status: 200 });
+        }
         if (url === "/api/passkeys" && init?.method === "DELETE") {
           return new Response(JSON.stringify({ success: true }), { status: 200 });
         }
@@ -105,7 +113,7 @@ describe("typed API client modules", () => {
     await expect(vaultApi.deviceEnvelopes()).resolves.toEqual([]);
   });
 
-  it("trustedDevicesApi covers list/create/revoke", async () => {
+  it("trustedDevicesApi covers list/create/rename/touch/revoke", async () => {
     await expect(trustedDevicesApi.list()).resolves.toEqual([]);
     await expect(
       trustedDevicesApi.create({
@@ -113,6 +121,12 @@ describe("typed API client modules", () => {
         encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
       })
     ).resolves.toBeDefined();
+    await expect(
+      trustedDevicesApi.rename("dev-1", { deviceName: "Home MacBook" })
+    ).resolves.toEqual({ id: "dev-1", deviceName: "Home MacBook" });
+    await expect(
+      trustedDevicesApi.touch({ deviceId: "550e8400-e29b-41d4-a716-446655440000" })
+    ).resolves.toEqual({ updated: true });
     await expect(trustedDevicesApi.revoke("dev-1")).resolves.toEqual({ success: true });
   });
 

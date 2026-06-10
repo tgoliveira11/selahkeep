@@ -30,14 +30,18 @@ cp .env.example .env.local
 # NEXTAUTH_URL=http://localhost:3001
 
 # Generate and run migrations (reads .env.local automatically)
-npm run db:generate
-npm run db:migrate
+npm run db:generate   # after schema changes
+npm run db:migrate    # required after pulling schema updates (e.g. trusted device metadata)
 
 # Start dev server (port 3001)
 npm run dev
 ```
 
 Open [http://localhost:3001](http://localhost:3001).
+
+## Trusted devices
+
+On `/vault/devices`, users can register the current browser (with an optional friendly name), rename devices, revoke access, and see **This device** when the local device id matches a registered entry. Display metadata comes from `src/lib/device-display-info.ts` (browser, OS, form factor). `last_used_at` updates automatically after each successful vault unlock.
 
 ## Commands
 

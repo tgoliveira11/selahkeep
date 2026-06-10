@@ -55,6 +55,7 @@ export const trustedDevices = pgTable(
     devicePublicKey: jsonb("device_public_key"),
     browser: text("browser"),
     platform: text("platform"),
+    deviceType: text("device_type"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),

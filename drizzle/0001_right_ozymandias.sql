@@ -1,0 +1,1 @@
+ALTER TABLE "trusted_devices" ADD COLUMN "device_type" text;

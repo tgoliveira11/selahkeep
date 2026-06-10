@@ -14,17 +14,7 @@ import {
 import { vaultApi } from "@/lib/api-client/vault";
 import { storeLocalVaultEnvelope } from "@/lib/crypto-client/device-storage";
 import { unlockVaultWithPasskey } from "@/features/passkey/unlock-with-passkey";
-
-function getBrowserInfo() {
-  if (typeof navigator === "undefined") return { browser: "unknown", platform: "unknown" };
-  const ua = navigator.userAgent;
-  let browser = "unknown";
-  if (ua.includes("Chrome")) browser = "Chrome";
-  else if (ua.includes("Firefox")) browser = "Firefox";
-  else if (ua.includes("Safari")) browser = "Safari";
-  else if (ua.includes("Edge")) browser = "Edge";
-  return { browser, platform: navigator.platform ?? "unknown" };
-}
+import { getDeviceDisplayInfo } from "@/lib/device-display-info";
 
 export function useVault() {
   const { data: session } = useSession();
@@ -43,7 +33,7 @@ export function useVault() {
         userId,
         userId
       );
-      const { browser, platform } = getBrowserInfo();
+      const display = getDeviceDisplayInfo();
 
       await vaultApi.init({
         vaultVersion: VAULT_VERSION,
@@ -52,9 +42,10 @@ export function useVault() {
             method: "trusted_device",
             encryptedVaultKey,
             trustedDevice: {
-              deviceName: `${browser} on ${platform}`,
-              browser,
-              platform,
+              deviceName: display.defaultDeviceName,
+              browser: display.browser,
+              platform: display.platform,
+              deviceType: display.deviceType,
               devicePublicKey: { deviceId },
             },
           },

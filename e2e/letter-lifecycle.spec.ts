@@ -41,9 +41,17 @@ test.describe("private letter lifecycle", () => {
     await page.getByRole("button", { name: "Save letter" }).click();
     await page.waitForURL(/\/letters\/[^/]+$/, { timeout: 15_000 });
 
+    // --- Re-login should silently unlock from IndexedDB (same browser) ---
+    await page.context().clearCookies();
+    await page.goto("/login");
+    await page.getByPlaceholder("Email").fill(creds.email);
+    await page.getByPlaceholder("Password").fill(creds.password);
+    await page.getByRole("button", { name: "Sign in with email" }).click();
+    await page.waitForURL(/\/letters$/, { timeout: 15_000 });
+    await expect(page.getByRole("link", { name: creds.title })).toBeVisible({ timeout: 15_000 });
+
     // --- List letters ---
-    await page.getByRole("link", { name: "My Letters" }).click();
-    await page.waitForURL(/\/letters$/);
+    await page.goto("/letters");
     await expect(page.getByRole("link", { name: creds.title })).toBeVisible();
 
     // --- Open and edit letter ---
