@@ -162,7 +162,7 @@ The recovery code:
 
 - may be postponed;
 - must be generated client-side;
-- must have at least 128 bits of entropy;
+- must have at least 128 bits of entropy (project-specific wordlist in `recovery-code.ts` — **not BIP39**; currently 17 words from 252 unique words ≈ 135.6 bits);
 - must be shown only when generated or regenerated;
 - must never be stored in plaintext;
 - must derive a key using a versioned KDF;

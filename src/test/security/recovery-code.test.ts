@@ -18,6 +18,9 @@ describe("recovery code security", () => {
       Math.ceil(RECOVERY_CODE_MIN_ENTROPY_BITS / Math.log2(wordlistSize))
     );
     expect(entropyBits).toBeGreaterThanOrEqual(RECOVERY_CODE_MIN_ENTROPY_BITS);
+    expect(wordlistSize).toBe(252);
+    expect(RECOVERY_WORDS_PER_CODE).toBe(17);
+    expect(entropyBits).toBeCloseTo(135.6, 1);
   });
 
   it("generates codes with the configured word count", () => {

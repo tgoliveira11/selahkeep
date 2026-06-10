@@ -209,16 +209,14 @@ Recovery codes must provide at least:
 
 The recovery code may be human-readable, but must not be weak.
 
-Acceptable examples:
+**Format (MVP):** Implemented in `src/lib/crypto-client/recovery-code.ts`. Words are drawn uniformly at random (with rejection sampling) from a **project-specific English wordlist** — this is **not BIP39** and must **not** be described as BIP39-compatible. Duplicates in the source list are removed; word count is computed dynamically as `ceil(128 / log2(unique wordlist size))`.
+
+**Current parameters:** 17 words from a 252-word unique list → approximately **135.6 bits** of entropy (`getRecoveryCodeEntropyBits()`).
+
+Acceptable example (format: hyphen-separated words; word count follows the formula above):
 
 ```text
-river-candle-forest-window-silver-anchor-harbor-fabric-lantern-cloud
-```
-
-or:
-
-```text
-MESA-RIO-LUZ-4739-CASA-FLOR-82KQ-PONTE
+river-candle-forest-window-silver-anchor-harbor-fabric-lantern-cloud-meadow-thunder-crystal-horizon-willow-ember-canyon
 ```
 
 Short six-word examples are not acceptable unless the wordlist and word count provide at least 128 bits of entropy.
@@ -318,7 +316,7 @@ Security tests must create a letter with a unique sentinel phrase and verify tha
 
 Implemented in:
 
-- `src/lib/crypto-client/recovery-code.ts` — 12-word BIP39-style wordlist selection with rejection sampling; `getRecoveryCodeEntropyBits()` ≥ 128; Argon2id primary, PBKDF2-SHA-256 (600k iterations) fallback with `kdf-v1` metadata.
+- `src/lib/crypto-client/recovery-code.ts` — dynamic word-count generation from a 252-word unique project wordlist (17 words → ~135.6 bits entropy); **not BIP39**; uniform selection with rejection sampling; `getRecoveryCodeEntropyBits()` ≥ 128; Argon2id primary, PBKDF2-SHA-256 (600k iterations) fallback with `kdf-v1` metadata.
 - `src/server/policies/aad-validation.ts` — server-side AAD validation before letter/vault storage.
 - `src/lib/crypto-client/aad-verify.ts` — client-side AAD verification before decrypt.
 - Letter IDs: client generates UUID (`src/app/(vault)/letters/new/page.tsx`); server persists same ID (`letter-repository.ts`).

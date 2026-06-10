@@ -9,7 +9,7 @@
 - No AI APIs for private letter content.
 - No admin endpoints returning letter content.
 - **AAD binding:** validate `aad.userId`, `aad.resourceId`, `aad.field` server-side before storage; client verifies before decrypt.
-- **Recovery codes:** ≥128 bits entropy; client-generated; never stored plaintext; Argon2id KDF (PBKDF2-SHA-256 fallback with versioned metadata).
+- **Recovery codes:** ≥128 bits entropy; client-generated from a project-specific wordlist (**not BIP39**); never stored plaintext; Argon2id KDF (PBKDF2-SHA-256 fallback with versioned metadata).
 - **Trusted device revocation:** revoke envelope with device; client must check server device status before unlock; clear IndexedDB on revoke.
 - **Transactions:** vault init, device create/revoke, recovery code, passkey register/remove must use `runInTransaction()`.
 - **Rate limiting:** adapter interface; memory (local) or PostgreSQL (`RATE_LIMIT_STORE=postgres`); scoped keys only.

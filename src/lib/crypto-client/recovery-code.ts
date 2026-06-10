@@ -2,6 +2,11 @@ import { argon2id } from "hash-wasm";
 import type { KdfMetadata } from "@/lib/validation/encrypted-payload";
 import { bytesToBase64Url, base64UrlToBytes, stringToBytes, toBufferSource } from "./encoding";
 
+/**
+ * Recovery codes: hyphen-separated words from a project-specific English wordlist.
+ * Not BIP39 — do not describe as BIP39-compatible.
+ * Word count = ceil(128 / log2(unique wordlist size)); currently 17 words × 252 words ≈ 135.6 bits.
+ */
 const RECOVERY_WORDS_BASE = [
   "river", "candle", "forest", "window", "silver", "anchor", "harbor", "fabric",
   "lantern", "cloud", "meadow", "thunder", "crystal", "horizon", "willow", "ember",

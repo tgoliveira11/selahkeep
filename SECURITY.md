@@ -24,7 +24,7 @@
 - **AAD binding (server + client):** `aad.userId` must match session user; `aad.resourceId` must match persisted letter/vault id; `aad.field` must match the encrypted field. Reject mismatches before storage.
 - **Letter IDs:** client generates UUID; server persists the same id (no server reassignment).
 - Recovery KDF: Argon2id preferred; PBKDF2-SHA-256 fallback (600k iterations) with versioned `kdf-v1` metadata
-- Recovery codes: ≥128 bits entropy (uniform word selection + rejection sampling); shown only at generation/regeneration; never stored plaintext
+- Recovery codes: ≥128 bits entropy (project-specific wordlist, not BIP39; currently 17 words from 252 unique words ≈ 135.6 bits); uniform word selection + rejection sampling; shown only at generation/regeneration; never stored plaintext
 
 ## Vault Unlocking (ADR-002)
 
