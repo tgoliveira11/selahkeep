@@ -39,6 +39,18 @@ npm run dev
 
 Open [http://localhost:3001](http://localhost:3001).
 
+## API reference (Swagger UI)
+
+Browse REST endpoints in Swagger UI during local development:
+
+1. Run `npm run dev`
+2. Open [http://localhost:3001/api-docs](http://localhost:3001/api-docs)
+3. Sign in to the app in the **same browser** before trying authenticated routes
+
+OpenAPI spec: `docs/openapi.yaml` (JSON at `GET /api/openapi`). Full details: [docs/API_REFERENCE.md](./docs/API_REFERENCE.md).
+
+Production hides `/api-docs` unless `ENABLE_API_DOCS=true` in `.env.local`.
+
 ## Trusted devices
 
 On `/vault/devices`, users can register the current browser (with an optional friendly name), rename devices, revoke access, and see **This device** when the local device id matches a registered entry. Display metadata comes from `src/lib/device-display-info.ts` (browser, OS, form factor). `last_used_at` updates automatically after each successful vault unlock.
@@ -112,6 +124,7 @@ Production rate limiting: set `RATE_LIMIT_STORE=postgres` and run migrations (`r
 
 ## Documentation
 
+- [API Reference (Swagger / OpenAPI)](./docs/API_REFERENCE.md) — browse at `/api-docs` when running locally
 - [TDR](./docs/TDR_Private_Letters_Vault_MVP_Revised.md)
 - [ADR-001 Cryptography](./docs/ADR-001_Cryptographic_Payload_Format_and_Envelope_Encryption.md)
 - [ADR-002 Vault Unlocking](./docs/ADR-002_Vault_Unlocking_Passkeys_Trusted_Devices_Recovery_Code.md)

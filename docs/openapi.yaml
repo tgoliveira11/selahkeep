@@ -1,0 +1,455 @@
+openapi: 3.0.3
+info:
+  title: Letters to God — Private Letters Vault API
+  version: 0.1.0
+  description: |
+    REST API for the Private Letters Vault MVP.
+
+    **Security:** Private letter title and body must never be sent in plaintext.
+    All letter fields use structured encrypted payloads (see ADR-001 / ADR-003).
+
+    **Auth:** Most routes require a NextAuth session cookie (sign in via the web app first).
+    Use browser Swagger "Try it out" while logged in, or import the spec into Postman/Insomnia
+    with your session cookie.
+
+    **Spec file:** `docs/openapi.yaml` — served as JSON at `GET /api/openapi`.
+servers:
+  - url: http://localhost:3001
+    description: Local development (default port)
+tags:
+  - name: Auth
+  - name: Letters
+  - name: Vault
+  - name: TrustedDevices
+  - name: Passkeys
+  - name: Recovery
+  - name: Account
+  - name: Admin
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+      description: |
+        NextAuth JWT session cookie. Name may be `__Secure-next-auth.session-token` in production HTTPS.
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: object
+    EncryptedPayload:
+      type: object
+      required: [version, alg, iv, ciphertext, aad]
+      properties:
+        version:
+          type: string
+          enum: [enc-v1]
+        alg:
+          type: string
+          enum: [AES-GCM]
+        iv:
+          type: string
+          description: Base64url-encoded IV
+        ciphertext:
+          type: string
+          description: Base64url-encoded ciphertext
+        aad:
+          type: object
+          required: [userId, resourceId, field]
+          properties:
+            userId:
+              type: string
+              format: uuid
+            resourceId:
+              type: string
+              format: uuid
+            field:
+              type: string
+              enum: [title, body, letter_key, vault_key]
+    KdfMetadata:
+      oneOf:
+        - type: object
+          required: [kdf, version, salt, memory, iterations, parallelism]
+          properties:
+            kdf:
+              type: string
+              enum: [argon2id]
+            version:
+              type: string
+              enum: [kdf-v1]
+            salt:
+              type: string
+            memory:
+              type: integer
+            iterations:
+              type: integer
+            parallelism:
+              type: integer
+        - type: object
+          required: [kdf, version, salt, iterations]
+          properties:
+            kdf:
+              type: string
+              enum: [pbkdf2-sha256]
+            version:
+              type: string
+              enum: [kdf-v1]
+            salt:
+              type: string
+            iterations:
+              type: integer
+    Letter:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        encryptedTitle:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptedBody:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptedLetterKey:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptionVersion:
+          type: string
+        answered:
+          type: boolean
+        answeredAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateLetterRequest:
+      type: object
+      required: [id, encryptedTitle, encryptedBody, encryptedLetterKey, encryptionVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated letter UUID (used in AAD resourceId)
+        encryptedTitle:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptedBody:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptedLetterKey:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptionVersion:
+          type: string
+          enum: [enc-v1]
+        answered:
+          type: boolean
+    UpdateLetterRequest:
+      type: object
+      properties:
+        encryptedTitle:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptedBody:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptedLetterKey:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptionVersion:
+          type: string
+        answered:
+          type: boolean
+        answeredAt:
+          type: string
+          format: date-time
+          nullable: true
+paths:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '201':
+          description: User created
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email already registered
+        '429':
+          description: Rate limited
+  /api/letters:
+    get:
+      tags: [Letters]
+      summary: List encrypted letters for the authenticated user
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Encrypted letter list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Letter'
+        '401':
+          description: Unauthorized
+    post:
+      tags: [Letters]
+      summary: Create an encrypted letter
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLetterRequest'
+      responses:
+        '201':
+          description: Letter created
+        '400':
+          description: Plaintext rejected or invalid payload
+        '401':
+          description: Unauthorized
+  /api/letters/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Letters]
+      summary: Get one encrypted letter
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Encrypted letter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Letter'
+        '404':
+          description: Not found
+    put:
+      tags: [Letters]
+      summary: Update encrypted letter fields or answered metadata
+      security:
+        - sessionCookie: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLetterRequest'
+      responses:
+        '200':
+          description: Updated letter
+        '400':
+          description: Plaintext rejected or invalid payload
+        '404':
+          description: Not found
+    delete:
+      tags: [Letters]
+      summary: Permanently delete a letter
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Deleted
+        '404':
+          description: Not found
+  /api/vault/init:
+    post:
+      tags: [Vault]
+      summary: Initialize user vault with encrypted envelopes
+      security:
+        - sessionCookie: []
+      responses:
+        '201':
+          description: Vault initialized
+        '409':
+          description: Vault already exists
+  /api/vault/status:
+    get:
+      tags: [Vault]
+      summary: Vault and recovery status
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Vault status
+  /api/vault/device-envelopes:
+    get:
+      tags: [Vault]
+      summary: Trusted-device vault envelopes for this user
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Envelope list
+  /api/vault/unlock-with-recovery-code:
+    post:
+      tags: [Vault, Recovery]
+      summary: Fetch recovery envelope (client decrypts locally)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Encrypted vault key + KDF metadata
+        '429':
+          description: Rate limited
+  /api/recovery-code:
+    post:
+      tags: [Recovery]
+      summary: Store or regenerate recovery-code envelope
+      security:
+        - sessionCookie: []
+      responses:
+        '201':
+          description: Recovery envelope stored
+  /api/trusted-devices:
+    get:
+      tags: [TrustedDevices]
+      summary: List trusted devices
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Device list
+    post:
+      tags: [TrustedDevices]
+      summary: Register trusted device with vault envelope
+      security:
+        - sessionCookie: []
+      responses:
+        '201':
+          description: Device created
+        '429':
+          description: Rate limited
+  /api/trusted-devices/status:
+    get:
+      tags: [TrustedDevices]
+      summary: Client device active/revoked state
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: deviceId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Device state
+  /api/trusted-devices/touch:
+    post:
+      tags: [TrustedDevices]
+      summary: Update lastUsedAt after vault unlock
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Touch result
+  /api/trusted-devices/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [TrustedDevices]
+      summary: Rename trusted device
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Renamed device
+    delete:
+      tags: [TrustedDevices]
+      summary: Revoke trusted device and its vault envelope
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Revoked
+  /api/passkeys/register:
+    post:
+      tags: [Passkeys]
+      summary: Passkey registration (options or verify)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: WebAuthn options or verification result
+  /api/passkeys/authenticate:
+    post:
+      tags: [Passkeys]
+      summary: Passkey authentication (options or verify)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: WebAuthn options or verification result
+  /api/passkeys:
+    delete:
+      tags: [Passkeys]
+      summary: Remove all passkeys and passkey vault envelope
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Removed
+  /api/account:
+    delete:
+      tags: [Account]
+      summary: Delete account and all encrypted user data
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Account deleted
+        '429':
+          description: Rate limited
+  /api/admin/users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Admin]
+      summary: Admin user summary (no letter content)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: User summary with counts only

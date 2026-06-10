@@ -49,6 +49,11 @@ src/
 
 ## API Routes
 
+See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.yaml`](./docs/openapi.yaml).
+
+- Local Swagger UI: [http://localhost:3001/api-docs](http://localhost:3001/api-docs)
+- OpenAPI JSON: `GET /api/openapi`
+
 - `POST/GET /api/letters`, `GET/PUT/DELETE /api/letters/:id`
 - `POST /api/vault/init`, `GET /api/vault/status`
 - `GET/POST /api/trusted-devices`, `DELETE /api/trusted-devices/:id`
