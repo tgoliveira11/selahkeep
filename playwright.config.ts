@@ -14,6 +14,7 @@ export default defineConfig({
   workers: 1,
   reporter: "list",
   timeout: 60_000,
+  globalSetup: "./e2e/global-setup.ts",
   use: {
     baseURL,
     trace: "on-first-retry",

@@ -73,6 +73,8 @@ On `/vault/devices`, users can register the current browser (with an optional fr
 
 E2E browser install (once): `npx playwright install chromium`
 
+E2E runs `npm run db:migrate` automatically via Playwright global setup (requires PostgreSQL and `DATABASE_URL` in `.env.local`).
+
 Reuse an already-running dev server for E2E:
 
 ```bash

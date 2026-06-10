@@ -39,8 +39,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# drizzle
-drizzle/meta
+# drizzle snapshots are generated locally; migration journal must be committed
+drizzle/meta/*
+!drizzle/meta/_journal.json
 
 # playwright
 /playwright-report/
