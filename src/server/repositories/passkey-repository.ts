@@ -1,6 +1,13 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, lt } from "drizzle-orm";
 import { db, type DbClient } from "@/lib/db";
 import { passkeyCredentials, webauthnChallenges } from "@/lib/db/schema";
+
+export class ChallengeValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ChallengeValidationError";
+  }
+}
 
 export const passkeyRepository = {
   async createCredential(
@@ -68,13 +75,21 @@ export const passkeyRepository = {
       .returning({ id: passkeyCredentials.id });
   },
 
-  async storeChallenge(data: {
-    userId?: string;
-    challenge: string;
-    type: string;
-    expiresAt: Date;
-  }) {
-    const [row] = await db
+  async deleteExpiredChallenges(client: DbClient = db) {
+    await client.delete(webauthnChallenges).where(lt(webauthnChallenges.expiresAt, new Date()));
+  },
+
+  async storeChallenge(
+    data: {
+      userId?: string;
+      challenge: string;
+      type: string;
+      expiresAt: Date;
+    },
+    client: DbClient = db
+  ) {
+    await passkeyRepository.deleteExpiredChallenges(client);
+    const [row] = await client
       .insert(webauthnChallenges)
       .values({
         userId: data.userId ?? null,
@@ -86,7 +101,7 @@ export const passkeyRepository = {
     return row;
   },
 
-  async findValidChallenge(challenge: string, type: string) {
+  async findValidChallenge(challenge: string, type: string, expectedUserId?: string) {
     const [row] = await db
       .select()
       .from(webauthnChallenges)
@@ -94,11 +109,17 @@ export const passkeyRepository = {
         and(eq(webauthnChallenges.challenge, challenge), eq(webauthnChallenges.type, type))
       )
       .limit(1);
+
     if (!row || row.expiresAt < new Date()) return null;
+
+    if (expectedUserId !== undefined) {
+      if (row.userId !== expectedUserId) return null;
+    }
+
     return row;
   },
 
-  async deleteChallenge(id: string) {
-    await db.delete(webauthnChallenges).where(eq(webauthnChallenges.id, id));
+  async deleteChallenge(id: string, client: DbClient = db) {
+    await client.delete(webauthnChallenges).where(eq(webauthnChallenges.id, id));
   },
 };

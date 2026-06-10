@@ -4,7 +4,7 @@ import { trustedDeviceRepository } from "@/server/repositories/trusted-device-re
 import { auditRepository } from "@/server/repositories/audit-repository";
 import type { VaultInitInput, RecoveryCodeInput } from "@/lib/validation/vault";
 import { assertVaultKeyAad } from "@/server/policies/aad-validation";
-import { checkRateLimit } from "@/server/policies/rate-limit";
+import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 
 export const vaultService = {
   async init(userId: string, input: VaultInitInput) {
@@ -148,12 +148,20 @@ export const vaultService = {
       }));
   },
 
-  async unlockWithRecoveryCode(userId: string) {
-    const rateKey = `recovery-unlock:${userId}`;
-    const rate = checkRateLimit(rateKey, 5, 15 * 60 * 1000);
-    if (!rate.allowed) {
-      await auditRepository.record("failed_unlock_attempt", userId, { method: "recovery_code" });
-      throw new RateLimitError("Too many recovery attempts");
+  async unlockWithRecoveryCode(userId: string, ip?: string) {
+    try {
+      await enforceRateLimit({
+        operation: "recovery.attempt",
+        userId,
+        ip,
+        endpoint: "/api/vault/unlock-with-recovery-code",
+      });
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        await auditRepository.record("failed_unlock_attempt", userId, { method: "recovery_code" });
+        throw error;
+      }
+      throw error;
     }
 
     const envelope = await vaultRepository.findActiveEnvelopeByMethod(userId, "recovery_code");
@@ -183,9 +191,4 @@ export class NotFoundError extends Error {
   }
 }
 
-export class RateLimitError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "RateLimitError";
-  }
-}
+export { RateLimitError };

@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, type DbClient } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 
 export const userRepository = {
@@ -36,5 +36,10 @@ export const userRepository = {
       .where(eq(users.id, id))
       .returning();
     return user;
+  },
+
+  async deleteById(id: string, client: DbClient = db) {
+    const [user] = await client.delete(users).where(eq(users.id, id)).returning({ id: users.id });
+    return user ?? null;
   },
 };

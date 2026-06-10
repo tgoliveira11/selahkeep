@@ -12,7 +12,7 @@ import type {
 import { passkeyRepository } from "@/server/repositories/passkey-repository";
 import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
-import { checkRateLimit } from "@/server/policies/rate-limit";
+import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 import { passkeyPrfExtensions } from "@/lib/passkey/prf";
 import { assertVaultKeyAad } from "@/server/policies/aad-validation";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
@@ -22,9 +22,13 @@ const rpID = process.env.WEBAUTHN_RP_ID ?? "localhost";
 const origin = process.env.WEBAUTHN_ORIGIN ?? "http://localhost:3001";
 
 export const passkeyService = {
-  async getRegistrationOptions(userId: string, userName: string) {
-    const rate = checkRateLimit(`passkey-register:${userId}`, 10, 60 * 60 * 1000);
-    if (!rate.allowed) throw new RateLimitError("Too many passkey registration attempts");
+  async getRegistrationOptions(userId: string, userName: string, ip?: string) {
+    await enforceRateLimit({
+      operation: "passkey.register",
+      userId,
+      ip,
+      endpoint: "/api/passkeys/register",
+    });
 
     const existing = await passkeyRepository.findByUserId(userId);
     const options = await generateRegistrationOptions({
@@ -65,14 +69,15 @@ export const passkeyService = {
     );
     const challengeRecord = await passkeyRepository.findValidChallenge(
       clientData.challenge,
-      "registration"
+      "registration",
+      userId
     );
     if (challengeRecord) {
       storedChallenge = challengeRecord.challenge;
       await passkeyRepository.deleteChallenge(challengeRecord.id);
     }
 
-    if (!storedChallenge) throw new Error("Invalid or expired challenge");
+    if (!storedChallenge) throw new ChallengeError("Invalid or expired challenge");
 
     const verification = await verifyRegistrationResponse({
       response,
@@ -117,7 +122,7 @@ export const passkeyService = {
             userId,
             method: "passkey_authorized_device",
             encryptedVaultKey,
-            publicMetadata: { credentialId: credential.id },
+            publicMetadata: { credentialId: credential.id, prfRequired: true },
           },
           tx
         );
@@ -134,10 +139,13 @@ export const passkeyService = {
     };
   },
 
-  async getAuthenticationOptions(userId?: string) {
-    const rateKey = userId ? `passkey-auth:${userId}` : "passkey-auth:anonymous";
-    const rate = checkRateLimit(rateKey, 20, 15 * 60 * 1000);
-    if (!rate.allowed) throw new RateLimitError("Too many passkey authentication attempts");
+  async getAuthenticationOptions(userId?: string, ip?: string) {
+    await enforceRateLimit({
+      operation: "passkey.authenticate",
+      userId,
+      ip,
+      endpoint: "/api/passkeys/authenticate",
+    });
 
     let allowCredentials: { id: string; transports?: AuthenticatorTransport[] }[] | undefined;
     if (userId) {
@@ -171,9 +179,10 @@ export const passkeyService = {
     );
     const challengeRecord = await passkeyRepository.findValidChallenge(
       clientData.challenge,
-      "authentication"
+      "authentication",
+      userId
     );
-    if (!challengeRecord) throw new Error("Invalid or expired challenge");
+    if (!challengeRecord) throw new ChallengeError("Invalid or expired challenge");
     await passkeyRepository.deleteChallenge(challengeRecord.id);
 
     const credential = await passkeyRepository.findByCredentialId(response.id);
@@ -213,6 +222,8 @@ export const passkeyService = {
     return {
       verified: true,
       encryptedVaultKey: envelope?.encryptedVaultKey ?? null,
+      prfRequired:
+        (envelope?.publicMetadata as { prfRequired?: boolean } | null)?.prfRequired ?? true,
     };
   },
 
@@ -251,9 +262,11 @@ export class NotFoundError extends Error {
   }
 }
 
-export class RateLimitError extends Error {
+export class ChallengeError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "RateLimitError";
+    this.name = "ChallengeError";
   }
 }
+
+export { RateLimitError };

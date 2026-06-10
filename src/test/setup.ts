@@ -1,10 +1,20 @@
-import { vi } from "vitest";
+import { vi, beforeEach } from "vitest";
+import {
+  InMemoryRateLimitAdapter,
+  resetAllInMemoryRateLimits,
+} from "@/server/policies/rate-limit/in-memory-adapter";
+import { setRateLimitAdapterForTests } from "@/server/policies/rate-limit";
 
 vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/db/transaction", () => ({
   runInTransaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => fn({})),
 }));
+
+beforeEach(() => {
+  resetAllInMemoryRateLimits();
+  setRateLimitAdapterForTests(new InMemoryRateLimitAdapter());
+});
 
 process.env.DATABASE_URL =
   process.env.DATABASE_URL ?? "postgresql://letters:letters_dev@localhost:5432/letters_to_god";

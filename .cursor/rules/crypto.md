@@ -6,6 +6,7 @@
 - Letter Key per letter; encrypted by User Vault Key.
 - Recovery code: ≥128 bits entropy (uniform word selection + rejection sampling); Argon2id KDF primary; PBKDF2-SHA-256 fallback (600k iterations) with versioned `kdf-v1` metadata.
 - Recovery code shown only at generation/regeneration; never stored plaintext.
-- Passkeys must not be raw encryption keys (ADR-002).
+- Passkeys authenticate identity; PRF output wraps vault key (not signature bytes).
+- PRF required for passkey vault envelopes; document browser fallback (recovery/trusted device).
 - IV reuse forbidden.
 - Uncertain choices require `TODO_SECURITY_REVIEW_REQUIRED`.

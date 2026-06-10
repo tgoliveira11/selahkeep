@@ -9,3 +9,6 @@
 - Letter IDs: client generates UUID; server persists same ID (no server reassignment).
 - Sensitive multi-write flows must use `runInTransaction()` — see `src/lib/db/transaction.ts`.
 - Trusted-device envelopes must link to `publicMetadata.trustedDeviceId`; revoke envelope when device revoked.
+- Rate limits via `src/server/policies/rate-limit/` (never global operation-only keys).
+- Account deletion via `DELETE /api/account` (not UI-only hiding).
+- Autosave disabled for MVP; no plaintext drafts anywhere.

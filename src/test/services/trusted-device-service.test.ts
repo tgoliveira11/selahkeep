@@ -6,7 +6,6 @@ import {
   RateLimitError,
 } from "@/server/services/trusted-device-service";
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
-import { resetRateLimit } from "@/server/policies/rate-limit";
 
 const mocks = vi.hoisted(() => ({
   findByUserId: vi.fn(),
@@ -58,7 +57,6 @@ vi.mock("@/server/repositories/audit-repository", () => ({
 describe("trusted device service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resetRateLimit(`trusted-device-create:${USER_ID}`);
     mocks.findActiveByClientDeviceId.mockResolvedValue(null);
   });
 

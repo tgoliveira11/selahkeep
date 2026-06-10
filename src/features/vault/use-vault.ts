@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   generateUserVaultKey,
@@ -11,6 +11,12 @@ import {
   setSessionVaultKey,
   VAULT_VERSION,
 } from "@/lib/crypto-client/vault";
+import {
+  lockVaultSession,
+  registerVaultUnloadGuard,
+  touchVaultSession,
+  unlockVaultSession,
+} from "@/lib/crypto-client/vault-session";
 import { vaultApi } from "@/lib/api-client/vault";
 import { storeLocalVaultEnvelope } from "@/lib/crypto-client/device-storage";
 import { unlockVaultWithPasskey } from "@/features/passkey/unlock-with-passkey";
@@ -20,6 +26,14 @@ export function useVault() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    return registerVaultUnloadGuard();
+  }, []);
+
+  const lockVault = useCallback(() => {
+    lockVaultSession();
+  }, []);
 
   const initializeVault = useCallback(async () => {
     if (!session?.user?.id) throw new Error("Not authenticated");
@@ -54,7 +68,7 @@ export function useVault() {
 
       // Persist locally only after the server accepts vault init.
       await storeLocalVaultEnvelope(userId, deviceId, encryptedVaultKey);
-      setSessionVaultKey(vaultKey);
+      unlockVaultSession(vaultKey);
       return vaultKey;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Vault initialization failed");
@@ -69,7 +83,9 @@ export function useVault() {
     setLoading(true);
     setError(null);
     try {
-      await unwrapVaultKeyFromDevice(session.user.id);
+      const key = await unwrapVaultKeyFromDevice(session.user.id);
+      touchVaultSession();
+      return key;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unlock failed");
       throw e;
@@ -83,7 +99,9 @@ export function useVault() {
     setLoading(true);
     setError(null);
     try {
-      await unlockVaultWithPasskey(session.user.id);
+      const key = await unlockVaultWithPasskey(session.user.id);
+      touchVaultSession();
+      return key;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Passkey unlock failed");
       throw e;
@@ -107,6 +125,7 @@ export function useVault() {
           encryptedVaultKey,
           kdfMetadata
         );
+        touchVaultSession();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Recovery unlock failed");
         throw e;
@@ -125,5 +144,6 @@ export function useVault() {
     unlockFromDevice,
     unlockFromPasskey,
     unlockFromRecoveryCode,
+    lockVault,
   };
 }

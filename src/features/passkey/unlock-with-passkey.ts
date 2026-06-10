@@ -13,6 +13,7 @@ import { prepareAuthenticationOptions } from "@/lib/passkey/prepare-webauthn-opt
 interface PasskeyAuthResult {
   verified: boolean;
   encryptedVaultKey: EncryptedPayload | null;
+  prfRequired?: boolean;
 }
 
 export async function unlockVaultWithPasskey(userId: string): Promise<CryptoKey> {
@@ -40,13 +41,12 @@ export async function unlockVaultWithPasskey(userId: string): Promise<CryptoKey>
     return await unlockVaultFromPasskeyEnvelope(
       userId,
       result.encryptedVaultKey,
-      prfOutput
+      prfOutput,
+      { prfRequired: result.prfRequired ?? true }
     );
-  } catch {
-    if (!prfOutput) {
-      throw new Error(
-        "This passkey cannot unlock your vault on a new browser yet. Use your recovery code, or re-register your passkey from a device where your vault is already unlocked."
-      );
+  } catch (error) {
+    if (error instanceof Error && error.name === "PasskeyPrfRequiredError") {
+      throw error;
     }
     throw new Error(
       "Could not decrypt your vault with this passkey. Use your recovery code, or set up your passkey again from a trusted device."

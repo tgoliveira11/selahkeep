@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { passkeyService, RateLimitError } from "@/server/services/passkey-service";
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
-import { resetRateLimit } from "@/server/policies/rate-limit";
 
 const mocks = vi.hoisted(() => ({
   findByUserId: vi.fn(),
@@ -75,8 +74,6 @@ function registrationResponse(challenge: string) {
 describe("passkey service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resetRateLimit(`passkey-register:${USER_ID}`);
-    resetRateLimit(`passkey-auth:${USER_ID}`);
     mocks.findByUserId.mockResolvedValue([]);
     mocks.generateRegistrationOptions.mockResolvedValue({ challenge: "reg-challenge" });
     mocks.generateAuthenticationOptions.mockResolvedValue({ challenge: "auth-challenge" });

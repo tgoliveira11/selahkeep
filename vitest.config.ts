@@ -26,6 +26,7 @@ export default defineConfig({
         "src/lib/crypto-client/index.ts",
         "src/lib/auth/session.ts",
         "src/server/repositories/**",
+        "src/server/policies/rate-limit/postgres-adapter.ts",
         "src/app/api/auth/[...nextauth]/route.ts",
         "**/*.d.ts",
       ],

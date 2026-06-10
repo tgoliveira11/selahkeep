@@ -74,7 +74,7 @@ Tests are split by layer. Vitest runs everything under `src/test/`; Playwright r
 | Type | Location | What it covers |
 |------|----------|----------------|
 | **Unit** | `src/test/unit/` | Crypto helpers, vault unlock, PRF/WebAuthn option preparation, validation, rate limits, API client, logger, env loading |
-| **Security** | `src/test/security/` | Plaintext rejection, schema invariants, AAD canonicalization, sentinel phrase, frontend/API boundaries, logger redaction |
+| **Security** | `src/test/security/` | Plaintext rejection, boundaries, sentinel phrase (static + runtime integration), AAD, WebAuthn challenges, audit redaction |
 | **Services** | `src/test/services/` | Business logic with mocked repositories (letters, vault, passkeys, trusted devices, admin) |
 | **API routes** | `src/test/api/` | Route handlers with mocked auth + services (letters, vault, passkeys, recovery, register, admin) |
 | **Features** | `src/test/features/` | Client feature flows such as passkey unlock |
@@ -101,6 +101,14 @@ npm run test:all        # coverage + E2E smoke
 ## Architecture
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md), [SECURITY.md](./SECURITY.md), and [AGENTS.md](./AGENTS.md).
+
+## Beta readiness
+
+Before any **real beta**, complete the gates in [`docs/LGPD_BETA_GATES.md`](./docs/LGPD_BETA_GATES.md) and review [`docs/THREAT_MODEL_Private_Letters_Vault.md`](./docs/THREAT_MODEL_Private_Letters_Vault.md).
+
+Production rate limiting: set `RATE_LIMIT_STORE=postgres` and run migrations (`rate_limit_buckets` table).
+
+**Autosave:** explicitly disabled for MVP (encrypted autosave out of scope).
 
 ## Documentation
 

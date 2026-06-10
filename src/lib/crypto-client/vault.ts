@@ -25,6 +25,10 @@ export function setSessionVaultKey(key: CryptoKey | null): void {
   sessionVaultKey = key;
 }
 
+export function lockVault(): void {
+  sessionVaultKey = null;
+}
+
 export function isVaultUnlocked(): boolean {
   return sessionVaultKey !== null;
 }

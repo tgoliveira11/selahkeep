@@ -63,4 +63,13 @@ describe("passkey vault crypto", () => {
     const restored = await unlockVaultFromPasskeyEnvelope(USER_ID, envelope, prfOutput);
     expect(restored).toBeTruthy();
   });
+
+  it("rejects passkey unlock when PRF is required but unavailable", async () => {
+    const vaultKey = await generateUserVaultKey();
+    const prfOutput = crypto.getRandomValues(new Uint8Array(32));
+    const envelope = await wrapVaultKeyForPasskey(vaultKey, prfOutput, USER_ID, USER_ID);
+    await expect(
+      unlockVaultFromPasskeyEnvelope(USER_ID, envelope, null, { prfRequired: true })
+    ).rejects.toMatchObject({ name: "PasskeyPrfRequiredError" });
+  });
 });

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/auth/register/route";
-import { resetRateLimit } from "@/server/policies/rate-limit";
 
 const mocks = vi.hoisted(() => ({
   findByEmail: vi.fn(),
@@ -23,7 +22,6 @@ vi.mock("bcryptjs", () => ({
 describe("register API route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resetRateLimit("auth-register");
   });
 
   it("creates a new user", async () => {

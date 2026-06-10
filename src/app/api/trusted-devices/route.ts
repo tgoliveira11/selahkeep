@@ -3,6 +3,7 @@ import { requireSessionUser } from "@/lib/auth/session";
 import { createTrustedDeviceSchema } from "@/lib/validation/trusted-devices";
 import { trustedDeviceService } from "@/server/services/trusted-device-service";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
+import { getClientIp } from "@/lib/request-ip";
 
 export async function GET() {
   try {
@@ -26,7 +27,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const device = await trustedDeviceService.create(user.id, parsed.data);
+    const ip = getClientIp(request);
+    const device = await trustedDeviceService.create(user.id, parsed.data, ip);
     return NextResponse.json(device, { status: 201 });
   } catch (error) {
     return apiError(error, "POST /api/trusted-devices");

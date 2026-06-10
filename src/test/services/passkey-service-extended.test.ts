@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { passkeyService } from "@/server/services/passkey-service";
 import { USER_ID } from "@/test/helpers/fixtures";
-import { resetRateLimit } from "@/server/policies/rate-limit";
 
 const mocks = vi.hoisted(() => ({
   findByUserId: vi.fn(),
@@ -65,8 +64,6 @@ function authResponse(challenge: string) {
 describe("passkey service extended", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resetRateLimit("passkey-auth:anonymous");
-    resetRateLimit(`passkey-auth:${USER_ID}`);
     mocks.generateAuthenticationOptions.mockResolvedValue({ challenge: "auth-challenge" });
     mocks.findByUserId.mockResolvedValue([{ credentialId: "cred-id", transports: ["internal"] }]);
   });
@@ -75,9 +72,9 @@ describe("passkey service extended", () => {
     for (let i = 0; i < 20; i++) {
       await passkeyService.getAuthenticationOptions(USER_ID);
     }
-    await expect(passkeyService.getAuthenticationOptions(USER_ID)).rejects.toThrow(
-      "Too many passkey authentication attempts"
-    );
+    await expect(passkeyService.getAuthenticationOptions(USER_ID)).rejects.toMatchObject({
+      name: "RateLimitError",
+    });
   });
 
   it("supports anonymous authentication options", async () => {

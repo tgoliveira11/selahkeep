@@ -10,7 +10,6 @@ import { bytesToBase64Url, base64UrlToBytes, toBufferSource } from "./encoding";
 import {
   buildDeviceVaultEnvelope,
   setSessionVaultKey,
-  unwrapVaultKeyFromDevice,
 } from "./vault";
 import { storeLocalVaultEnvelope } from "./device-storage";
 
@@ -20,6 +19,20 @@ interface PrfClientExtensionResults {
       first?: ArrayBuffer;
     };
   };
+}
+
+export class PasskeyPrfRequiredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PasskeyPrfRequiredError";
+  }
+}
+
+export class PasskeyUnlockError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PasskeyUnlockError";
+  }
 }
 
 export function isPasskeySupported(): boolean {
@@ -87,24 +100,39 @@ export async function persistUnlockedVaultOnDevice(
   await storeLocalVaultEnvelope(userId, deviceId, encryptedVaultKey);
 }
 
+/**
+ * Passkey authentication proves identity; PRF output unwraps the vault envelope.
+ * PRF is required for passkey vault envelopes — no silent fallback to device secrets.
+ */
 export async function unlockVaultFromPasskeyEnvelope(
   userId: string,
   encryptedVaultKey: EncryptedPayload,
-  prfOutput: Uint8Array | null
+  prfOutput: Uint8Array | null,
+  options?: { prfRequired?: boolean }
 ): Promise<CryptoKey> {
-  if (prfOutput) {
-    try {
-      const vaultKey = await unwrapVaultKeyFromPasskey(encryptedVaultKey, prfOutput);
-      await persistUnlockedVaultOnDevice(vaultKey, userId);
-      const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
-      void recordTrustedDeviceUnlock(userId);
-      return vaultKey;
-    } catch {
-      // Fall through for passkeys registered before PRF-based wrapping.
-    }
+  const prfRequired = options?.prfRequired ?? true;
+
+  if (prfRequired && !prfOutput) {
+    throw new PasskeyPrfRequiredError(
+      "This passkey requires browser PRF support to unlock your vault. Use your recovery code or a trusted device, or re-register your passkey from a PRF-capable browser."
+    );
   }
 
-  const vaultKey = await unwrapVaultKeyFromDevice(userId, encryptedVaultKey);
-  await persistUnlockedVaultOnDevice(vaultKey, userId);
-  return vaultKey;
+  if (!prfOutput) {
+    throw new PasskeyUnlockError(
+      "Could not unlock your vault with this passkey. Use your recovery code or a trusted device."
+    );
+  }
+
+  try {
+    const vaultKey = await unwrapVaultKeyFromPasskey(encryptedVaultKey, prfOutput);
+    await persistUnlockedVaultOnDevice(vaultKey, userId);
+    const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
+    void recordTrustedDeviceUnlock(userId);
+    return vaultKey;
+  } catch {
+    throw new PasskeyUnlockError(
+      "Could not decrypt your vault with this passkey. Use your recovery code, or set up your passkey again from a trusted device."
+    );
+  }
 }

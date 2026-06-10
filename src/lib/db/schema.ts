@@ -6,6 +6,7 @@ import {
   boolean,
   jsonb,
   index,
+  integer,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -113,6 +114,12 @@ export const webauthnChallenges = pgTable("webauthn_challenges", {
   type: text("type").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const rateLimitBuckets = pgTable("rate_limit_buckets", {
+  bucketKey: text("bucket_key").primaryKey(),
+  count: integer("count").notNull().default(1),
+  resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
 });
 
 export type User = typeof users.$inferSelect;

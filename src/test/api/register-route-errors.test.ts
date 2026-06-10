@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/auth/register/route";
-import { resetRateLimit } from "@/server/policies/rate-limit";
 
 vi.mock("@/server/repositories/user-repository", () => ({
   userRepository: {
@@ -15,7 +14,6 @@ vi.mock("bcryptjs", () => ({
 
 describe("register route error mapping", () => {
   beforeEach(async () => {
-    resetRateLimit("auth-register");
     const { userRepository } = await import("@/server/repositories/user-repository");
     vi.mocked(userRepository.findByEmail).mockResolvedValue(null);
   });

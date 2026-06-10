@@ -53,7 +53,15 @@ Use unit/service/API tests for most coverage. Reserve E2E for end-to-end smoke o
 - Recovery envelope storage uses KDF metadata, not plaintext code.
 - Recovery entropy: mathematical test in `recovery-code.test.ts` (not word-count only).
 
-### AAD & transactions (when touching letters or vault flows)
+### P1 beta gates (required before real beta)
+
+- Runtime sentinel integration: `sentinel-runtime-integration.test.ts`
+- Rate limit abstraction: `rate-limit.test.ts`
+- Account deletion: `account-service.test.ts`, `account-route.test.ts`
+- Audit redaction: `audit-sanitization.test.ts`
+- WebAuthn challenges: `webauthn-challenge-hardening.test.ts`
+- Vault auto-lock: `vault-session.test.ts`
+- Threat model / LGPD / backup docs in `/docs`
 
 - AAD mismatch rejection: `aad-validation.test.ts`, `aad-verify.test.ts`, letter service tests.
 - Transaction rollback: mock `runInTransaction` in `setup.ts`; service tests pass `tx` client.

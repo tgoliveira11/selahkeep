@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireSessionUser } from "@/lib/auth/session";
 import { passkeyService } from "@/server/services/passkey-service";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
+import { getClientIp } from "@/lib/request-ip";
 import { z } from "zod";
 
 const authSchema = z.object({
@@ -19,8 +20,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
+    const ip = getClientIp(request);
+
     if (parsed.data.action === "options") {
-      const options = await passkeyService.getAuthenticationOptions(user.id);
+      const options = await passkeyService.getAuthenticationOptions(user.id, ip);
       return NextResponse.json(options);
     }
 

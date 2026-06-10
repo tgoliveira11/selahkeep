@@ -4,7 +4,7 @@ import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
 import type { CreateTrustedDeviceInput } from "@/lib/validation/trusted-devices";
 import { assertVaultKeyAad } from "@/server/policies/aad-validation";
-import { checkRateLimit } from "@/server/policies/rate-limit";
+import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 
 export type ClientDeviceState = "active" | "revoked" | "not_registered";
 
@@ -23,12 +23,13 @@ export const trustedDeviceService = {
     return "not_registered";
   },
 
-  async create(userId: string, input: CreateTrustedDeviceInput) {
-    const rateKey = `trusted-device-create:${userId}`;
-    const rate = checkRateLimit(rateKey, 10, 60 * 60 * 1000);
-    if (!rate.allowed) {
-      throw new RateLimitError("Too many trusted device registrations");
-    }
+  async create(userId: string, input: CreateTrustedDeviceInput, ip?: string) {
+    await enforceRateLimit({
+      operation: "trusted_device.create",
+      userId,
+      ip,
+      endpoint: "/api/trusted-devices",
+    });
 
     assertVaultKeyAad(userId, input.encryptedVaultKey);
 
@@ -150,9 +151,4 @@ export class ConflictError extends Error {
   }
 }
 
-export class RateLimitError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "RateLimitError";
-  }
-}
+export { RateLimitError };

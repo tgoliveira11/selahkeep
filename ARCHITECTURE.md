@@ -53,7 +53,8 @@ src/
 - `POST /api/vault/init`, `GET /api/vault/status`
 - `GET/POST /api/trusted-devices`, `DELETE /api/trusted-devices/:id`
 - `POST /api/recovery-code`, `POST /api/vault/unlock-with-recovery-code`
-- `POST /api/passkeys/register`, `POST /api/passkeys/authenticate`
+- `POST /api/passkeys/register`, `POST /api/passkeys/authenticate`, `DELETE /api/passkeys`
+- `DELETE /api/account` — account deletion
 
 ## Envelope Encryption
 
@@ -95,3 +96,22 @@ Failures roll back all related writes.
 
 - `GET /api/trusted-devices/status?deviceId=` — device active/revoked state for unlock gating
 - `POST /api/trusted-devices/touch` — updates `lastUsedAt`; returns revoked state
+- `DELETE /api/account` — account deletion (cascades encrypted user data)
+
+## Rate limiting
+
+`src/server/policies/rate-limit/` — adapter interface, in-memory (dev/test) and PostgreSQL (production via `RATE_LIMIT_STORE=postgres`).
+
+## Audit events
+
+`src/server/policies/audit-sanitization.ts` + `audit-repository.ts` — non-sensitive audit trail.
+
+## Vault session
+
+`src/lib/crypto-client/vault-session.ts` — inactivity auto-lock (15 min), manual lock, unload guard.
+
+## Beta documentation
+
+- [`docs/THREAT_MODEL_Private_Letters_Vault.md`](./docs/THREAT_MODEL_Private_Letters_Vault.md)
+- [`docs/LGPD_BETA_GATES.md`](./docs/LGPD_BETA_GATES.md)
+- [`docs/BACKUP_RESTORE_POLICY.md`](./docs/BACKUP_RESTORE_POLICY.md)

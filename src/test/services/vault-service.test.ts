@@ -6,7 +6,6 @@ import {
   RateLimitError,
 } from "@/server/services/vault-service";
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
-import { resetRateLimit } from "@/server/policies/rate-limit";
 
 const mocks = vi.hoisted(() => ({
   findVaultByUserId: vi.fn(),
@@ -48,7 +47,6 @@ vi.mock("@/server/repositories/audit-repository", () => ({
 describe("vault service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resetRateLimit(`recovery-unlock:${USER_ID}`);
   });
 
   it("initializes a new vault", async () => {

@@ -56,9 +56,10 @@ describe("unlockVaultWithPasskey", () => {
   it("fails on new browsers without PRF output", async () => {
     const passkeyVault = await import("@/lib/crypto-client/passkey-vault");
     vi.spyOn(passkeyVault, "extractPasskeyPrfOutput").mockReturnValue(null);
-    vi.mocked(passkeyVault.unlockVaultFromPasskeyEnvelope).mockRejectedValueOnce(
-      new Error("decrypt failed")
+    const prfError = new passkeyVault.PasskeyPrfRequiredError(
+      "This passkey requires browser PRF support to unlock your vault."
     );
+    vi.mocked(passkeyVault.unlockVaultFromPasskeyEnvelope).mockRejectedValueOnce(prfError);
     const { apiClient } = await import("@/lib/api-client/client");
     vi.mocked(apiClient.post).mockReset();
     vi.mocked(apiClient.post)
@@ -66,8 +67,9 @@ describe("unlockVaultWithPasskey", () => {
       .mockResolvedValueOnce({
         verified: true,
         encryptedVaultKey: { version: "enc-v1" },
+        prfRequired: true,
       });
-    await expect(unlockVaultWithPasskey(USER_ID)).rejects.toThrow("new browser");
+    await expect(unlockVaultWithPasskey(USER_ID)).rejects.toThrow("PRF support");
   });
 
   it("fails when decrypting the passkey envelope fails", async () => {

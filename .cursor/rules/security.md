@@ -12,4 +12,9 @@
 - **Recovery codes:** ≥128 bits entropy; client-generated; never stored plaintext; Argon2id KDF (PBKDF2-SHA-256 fallback with versioned metadata).
 - **Trusted device revocation:** revoke envelope with device; client must check server device status before unlock; clear IndexedDB on revoke.
 - **Transactions:** vault init, device create/revoke, recovery code, passkey register/remove must use `runInTransaction()`.
+- **Rate limiting:** adapter interface; memory (local) or PostgreSQL (`RATE_LIMIT_STORE=postgres`); scoped keys only.
+- **Account deletion:** `DELETE /api/account`; cascaded encrypted data removal.
+- **Audit logs:** sanitized metadata only; no sentinel phrases or letter content.
+- **Autosave:** explicitly disabled for MVP (Option A).
+- **Vault auto-lock:** 15-minute inactivity + manual lock; see `vault-session.ts`.
 - Mark uncertain crypto with `TODO_SECURITY_REVIEW_REQUIRED`.

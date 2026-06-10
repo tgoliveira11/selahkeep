@@ -4,6 +4,8 @@ import AppleProvider from "next-auth/providers/apple";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { userRepository } from "@/server/repositories/user-repository";
+import { authService } from "@/server/services/auth-service";
+import { RateLimitError } from "@/server/policies/rate-limit";
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -35,10 +37,27 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+
+        try {
+          await authService.assertLoginAllowed(credentials.email);
+        } catch (error) {
+          if (error instanceof RateLimitError) return null;
+          throw error;
+        }
+
         const user = await userRepository.findByEmail(credentials.email);
-        if (!user?.passwordHash) return null;
+        if (!user?.passwordHash) {
+          await authService.recordLoginFailure(credentials.email);
+          return null;
+        }
+
         const valid = await bcrypt.compare(credentials.password, user.passwordHash);
-        if (!valid) return null;
+        if (!valid) {
+          await authService.recordLoginFailure(credentials.email);
+          return null;
+        }
+
+        await authService.recordLoginSuccess(user.id, "credentials");
         return { id: user.id, email: user.email };
       },
     }),
@@ -46,12 +65,15 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (!user.email) return false;
-      const existing = await userRepository.findByEmail(user.email);
-      if (!existing && account) {
-        await userRepository.create({
+      let dbUser = await userRepository.findByEmail(user.email);
+      if (!dbUser && account) {
+        dbUser = await userRepository.create({
           email: user.email,
           authProvider: account.provider,
         });
+      }
+      if (dbUser && account?.provider && account.provider !== "credentials") {
+        await authService.recordLoginSuccess(dbUser.id, account.provider);
       }
       return true;
     },

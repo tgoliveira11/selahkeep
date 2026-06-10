@@ -3,15 +3,28 @@
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { clearVaultClientState } from "@/lib/crypto-client/vault";
+import { clearVaultClientState, isVaultUnlocked } from "@/lib/crypto-client/vault";
+import { lockVaultSession } from "@/lib/crypto-client/vault-session";
+import { useState, useEffect } from "react";
 
 export function Nav() {
   const { data: session } = useSession();
+  const [vaultUnlocked, setVaultUnlocked] = useState(false);
+
+  useEffect(() => {
+    setVaultUnlocked(isVaultUnlocked());
+  }, [session?.user?.id]);
+
+  function handleLockVault() {
+    lockVaultSession();
+    setVaultUnlocked(false);
+  }
 
   async function handleSignOut() {
     const userId = session?.user?.id;
     if (userId) {
       try {
+        lockVaultSession();
         await clearVaultClientState(userId);
       } catch {
         // Continue sign-out even if local cleanup fails.
@@ -37,6 +50,11 @@ export function Nav() {
             <Link href="/vault/recovery" className="text-sm hover:underline">
               Recovery
             </Link>
+            {vaultUnlocked && (
+              <Button variant="secondary" onClick={handleLockVault}>
+                Lock vault
+              </Button>
+            )}
             <Button variant="secondary" onClick={handleSignOut}>
               Sign out
             </Button>

@@ -21,6 +21,7 @@ export default function VaultUnlockPage() {
     unlockFromDevice,
     unlockFromPasskey,
     unlockFromRecoveryCode,
+    lockVault,
   } = useVault();
   const [vaultStatus, setVaultStatus] = useState<Awaited<ReturnType<typeof vaultApi.status>> | null>(null);
   const [recoveryCode, setRecoveryCode] = useState("");

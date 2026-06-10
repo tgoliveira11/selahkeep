@@ -70,6 +70,45 @@ Never log: plaintext title/body, User Vault Key, Letter Key, recovery code, decr
 
 Error tracking must strip request/response bodies and sensitive headers.
 
-## Threat Model
+## Threat Model & Beta Gates
 
-Formal threat model required before public beta. See TDR §26.
+- Formal threat model: [`docs/THREAT_MODEL_Private_Letters_Vault.md`](./docs/THREAT_MODEL_Private_Letters_Vault.md)
+- LGPD / privacy beta gates: [`docs/LGPD_BETA_GATES.md`](./docs/LGPD_BETA_GATES.md)
+- Backup/restore draft: [`docs/BACKUP_RESTORE_POLICY.md`](./docs/BACKUP_RESTORE_POLICY.md)
+
+## Rate limiting
+
+- Adapter interface with **in-memory** store for local/test (`RATE_LIMIT_STORE=memory`, default)
+- **PostgreSQL** store for production multi-instance (`RATE_LIMIT_STORE=postgres`, table `rate_limit_buckets`)
+- Scoped keys: operation + user/email + IP + endpoint (no global lockout keys)
+- Applied to: registration, login, recovery unlock, passkey register/auth, trusted-device create, account deletion
+
+## Account deletion
+
+- `DELETE /api/account` removes user and cascaded encrypted content (letters, vault, envelopes, devices, passkeys)
+- Audit event `account_deletion_requested` without sensitive metadata
+- Client should call `clearVaultClientState()` and sign out after deletion
+
+## Audit logging
+
+Safe audit events only (no plaintext letters, recovery codes, keys, or ciphertext). Sanitized metadata allowlist in `audit-sanitization.ts`.
+
+## Passkey vault unlock (PRF)
+
+- Passkey **authentication** is separate from vault **decryption**
+- Vault envelopes use WebAuthn **PRF** output as key-wrapping key (not raw signature bytes)
+- PRF required for passkey envelopes; no silent fallback to device secrets
+
+## WebAuthn challenges
+
+Challenges scoped by user ID and type; expire after 5 minutes; deleted on use; expired rows cleaned on issue.
+
+## Vault session hardening
+
+- Manual **Lock vault** in nav when unlocked
+- **15-minute inactivity** auto-lock (`vault-session.ts`)
+- In-memory User Vault Key cleared on lock, sign out, and `pagehide` (best effort)
+
+## Autosave (MVP decision)
+
+**Disabled.** Plaintext autosave is forbidden. Letters are saved only via explicit encrypted submit.

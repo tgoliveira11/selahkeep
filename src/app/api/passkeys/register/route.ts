@@ -3,6 +3,7 @@ import { requireSessionUser } from "@/lib/auth/session";
 import { passkeyService } from "@/server/services/passkey-service";
 import { encryptedPayloadSchema } from "@/lib/validation/encrypted-payload";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
+import { getClientIp } from "@/lib/request-ip";
 import { z } from "zod";
 
 const verifySchema = z.object({
@@ -21,8 +22,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
+    const ip = getClientIp(request);
+
     if (parsed.data.action === "options") {
-      const options = await passkeyService.getRegistrationOptions(user.id, user.email);
+      const options = await passkeyService.getRegistrationOptions(user.id, user.email, ip);
       return NextResponse.json(options);
     }
 
