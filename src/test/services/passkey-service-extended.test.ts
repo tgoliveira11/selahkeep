@@ -5,8 +5,7 @@ import { USER_ID } from "@/test/helpers/fixtures";
 const mocks = vi.hoisted(() => ({
   findByUserId: vi.fn(),
   storeChallenge: vi.fn(),
-  findValidChallenge: vi.fn(),
-  deleteChallenge: vi.fn(),
+  consumeValidChallenge: vi.fn(),
   findByCredentialId: vi.fn(),
   updateCounter: vi.fn(),
   findActiveEnvelopeByMethod: vi.fn(),
@@ -27,8 +26,7 @@ vi.mock("@/server/repositories/passkey-repository", () => ({
   passkeyRepository: {
     findByUserId: mocks.findByUserId,
     storeChallenge: mocks.storeChallenge,
-    findValidChallenge: mocks.findValidChallenge,
-    deleteChallenge: mocks.deleteChallenge,
+    consumeValidChallenge: mocks.consumeValidChallenge,
     findByCredentialId: mocks.findByCredentialId,
     updateCounter: mocks.updateCounter,
     createCredential: vi.fn(),
@@ -86,14 +84,14 @@ describe("passkey service extended", () => {
   });
 
   it("rejects invalid authentication challenge", async () => {
-    mocks.findValidChallenge.mockResolvedValue(null);
+    mocks.consumeValidChallenge.mockRejectedValue(new Error("Invalid or expired challenge"));
     await expect(
       passkeyService.verifyAuthentication(USER_ID, authResponse("missing"))
     ).rejects.toThrow("Invalid or expired challenge");
   });
 
   it("rejects failed WebAuthn verification", async () => {
-    mocks.findValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
     mocks.findByCredentialId.mockResolvedValue({
       userId: USER_ID,
       credentialId: "cred-id",
@@ -108,7 +106,7 @@ describe("passkey service extended", () => {
   });
 
   it("rejects credentials owned by another user", async () => {
-    mocks.findValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
     mocks.findByCredentialId.mockResolvedValue({
       userId: "other-user",
       credentialId: "cred-id",
@@ -121,7 +119,7 @@ describe("passkey service extended", () => {
   });
 
   it("rejects failed registration verification", async () => {
-    mocks.findValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "reg-challenge" });
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "reg-challenge" });
     mocks.verifyRegistrationResponse.mockResolvedValue({ verified: false });
     const clientDataJSON = Buffer.from(
       JSON.stringify({ type: "webauthn.create", challenge: "reg-challenge", origin: "http://localhost:3001" })

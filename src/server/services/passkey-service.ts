@@ -61,27 +61,27 @@ export const passkeyService = {
   async verifyRegistration(
     userId: string,
     response: RegistrationResponseJSON,
-    encryptedVaultKey?: EncryptedPayload
+    encryptedVaultKey?: EncryptedPayload,
+    options?: { prfVaultEnvelope?: boolean }
   ) {
-    let storedChallenge: string | null = null;
     const clientData = JSON.parse(
       Buffer.from(response.response.clientDataJSON, "base64url").toString()
     );
-    const challengeRecord = await passkeyRepository.findValidChallenge(
-      clientData.challenge,
-      "registration",
-      userId
-    );
-    if (challengeRecord) {
-      storedChallenge = challengeRecord.challenge;
-      await passkeyRepository.deleteChallenge(challengeRecord.id);
-    }
 
-    if (!storedChallenge) throw new ChallengeError("Invalid or expired challenge");
+    let challengeRecord;
+    try {
+      challengeRecord = await passkeyRepository.consumeValidChallenge(
+        clientData.challenge,
+        "registration",
+        userId
+      );
+    } catch {
+      throw new ChallengeError("Invalid or expired challenge");
+    }
 
     const verification = await verifyRegistrationResponse({
       response,
-      expectedChallenge: storedChallenge,
+      expectedChallenge: challengeRecord.challenge,
       expectedOrigin: origin,
       expectedRPID: rpID,
     });
@@ -92,6 +92,13 @@ export const passkeyService = {
 
     const { credential, credentialDeviceType, credentialBackedUp } =
       verification.registrationInfo;
+
+    const wantsVaultEnvelope = Boolean(encryptedVaultKey);
+    if (wantsVaultEnvelope && !options?.prfVaultEnvelope) {
+      throw new ChallengeError(
+        "Passkey vault unlock requires PRF support. Use a recovery code or trusted device."
+      );
+    }
 
     if (encryptedVaultKey) {
       assertVaultKeyAad(userId, encryptedVaultKey);
@@ -109,7 +116,7 @@ export const passkeyService = {
         tx
       );
 
-      if (encryptedVaultKey) {
+      if (encryptedVaultKey && options?.prfVaultEnvelope) {
         const existingEnvelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
         for (const envelope of existingEnvelopes) {
           if (envelope.method === "passkey_authorized_device") {
@@ -177,13 +184,17 @@ export const passkeyService = {
     const clientData = JSON.parse(
       Buffer.from(response.response.clientDataJSON, "base64url").toString()
     );
-    const challengeRecord = await passkeyRepository.findValidChallenge(
-      clientData.challenge,
-      "authentication",
-      userId
-    );
-    if (!challengeRecord) throw new ChallengeError("Invalid or expired challenge");
-    await passkeyRepository.deleteChallenge(challengeRecord.id);
+
+    let challengeRecord;
+    try {
+      challengeRecord = await passkeyRepository.consumeValidChallenge(
+        clientData.challenge,
+        "authentication",
+        userId
+      );
+    } catch {
+      throw new ChallengeError("Invalid or expired challenge");
+    }
 
     const credential = await passkeyRepository.findByCredentialId(response.id);
     if (!credential || credential.userId !== userId) {

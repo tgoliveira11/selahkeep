@@ -52,6 +52,7 @@ export const trustedDevices = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    clientDeviceId: text("client_device_id"),
     deviceName: text("device_name").notNull(),
     devicePublicKey: jsonb("device_public_key"),
     browser: text("browser"),
@@ -61,7 +62,10 @@ export const trustedDevices = pgTable(
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
   },
-  (table) => [index("idx_trusted_devices_user_id").on(table.userId)]
+  (table) => [
+    index("idx_trusted_devices_user_id").on(table.userId),
+    index("idx_trusted_devices_user_client_device_id").on(table.userId, table.clientDeviceId),
+  ]
 );
 
 export const letters = pgTable(
@@ -107,14 +111,21 @@ export const auditEvents = pgTable("audit_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const webauthnChallenges = pgTable("webauthn_challenges", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
-  challenge: text("challenge").notNull(),
-  type: text("type").notNull(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const webauthnChallenges = pgTable(
+  "webauthn_challenges",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    challenge: text("challenge").notNull(),
+    type: text("type").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_webauthn_challenges_lookup").on(table.challenge, table.type, table.userId),
+    index("idx_webauthn_challenges_expires_at").on(table.expiresAt),
+  ]
+);
 
 export const rateLimitBuckets = pgTable("rate_limit_buckets", {
   bucketKey: text("bucket_key").primaryKey(),

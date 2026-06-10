@@ -31,8 +31,11 @@
 - Passkeys must not be used as raw encryption keys
 - Trusted devices are revocable
 - Revoked devices cannot unlock vault when online (server checks `GET /api/trusted-devices/status`; local IndexedDB cleared on revoke)
+- **Fail closed:** `assertTrustedDeviceCanUnlock()` blocks unlock on HTTP 401/403/404/5xx and on `not_registered`; only real network/offline failures allow local-only unlock
+- Typed client errors: `RevokedTrustedDeviceError`, `UnauthenticatedTrustedDeviceError`, `ForbiddenTrustedDeviceError`, `UnknownTrustedDeviceError`, `TrustedDeviceServerError`, `TrustedDeviceUnexpectedError`
 - Every trusted-device envelope links to `publicMetadata.trustedDeviceId`
-- **Offline limitation:** if the client cannot reach the server, a previously cached local envelope might still decrypt until the next online revocation check. Documented residual risk.
+- Active trusted devices enforce unique `(user_id, client_device_id)` via `client_device_id` column + partial unique index
+- **Offline limitation:** if the client cannot reach the server (detected network failure only), a previously cached local envelope may still decrypt until the next successful online status check. HTTP auth/server errors do **not** fall back to offline unlock.
 
 ## Database transactions
 
@@ -80,14 +83,18 @@ Error tracking must strip request/response bodies and sensitive headers.
 
 - Adapter interface with **in-memory** store for local/test (`RATE_LIMIT_STORE=memory`, default)
 - **PostgreSQL** store for production multi-instance (`RATE_LIMIT_STORE=postgres`, table `rate_limit_buckets`)
-- Scoped keys: operation + user/email + IP + endpoint (no global lockout keys)
+- Scoped keys: operation + email + IP + endpoint with separate **email**, **IP**, and **email+IP** buckets for credentials login
+- Credentials login IP captured via NextAuth route wrapper (`login-request-context.ts`)
 - Applied to: registration, login, recovery unlock, passkey register/auth, trusted-device create, account deletion
+- **Social login:** OAuth token exchange and provider-side abuse controls are delegated to Google/Apple; local rate limits apply to app auth routes where request context is available. Document remaining distributed-abuse risk in threat model.
 
 ## Account deletion
 
-- `DELETE /api/account` removes user and cascaded encrypted content (letters, vault, envelopes, devices, passkeys)
+- UI: `/settings/account` — explains data removal, requires phrase `DELETE MY ACCOUNT`, password re-auth for credentials accounts
+- `DELETE /api/account` with JSON body `{ confirmationPhrase, password? }` removes user and cascaded encrypted content
+- OAuth-only accounts: session + confirmation phrase (see `TODO_SECURITY_REVIEW_REQUIRED` for provider re-auth before beta)
+- After deletion: client calls `clearVaultClientState()`, signs out, redirects to `/account-deleted`
 - Audit event `account_deletion_requested` without sensitive metadata
-- Client should call `clearVaultClientState()` and sign out after deletion
 
 ## Audit logging
 
@@ -97,7 +104,10 @@ Safe audit events only (no plaintext letters, recovery codes, keys, or ciphertex
 
 - Passkey **authentication** is separate from vault **decryption**
 - Vault envelopes use WebAuthn **PRF** output as key-wrapping key (not raw signature bytes)
-- PRF required for passkey envelopes; no silent fallback to device secrets
+- PRF required for passkey envelopes; **no registration fallback** to device-secret wrapping
+- If PRF is unavailable at registration, passkey vault envelope is **not** created and existing passkey envelopes are **not** revoked
+- WebAuthn challenges consumed atomically via `consumeValidChallenge()` (`DELETE … RETURNING` with expiry/user/type checks)
+- Indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
 
 ## WebAuthn challenges
 

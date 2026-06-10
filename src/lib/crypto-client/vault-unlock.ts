@@ -11,6 +11,26 @@ import { setSessionVaultKey, getSessionVaultKey } from "./vault";
 import { isVaultManuallyLocked, lockVaultSession, unlockVaultSession } from "./vault-session";
 import { vaultApi } from "@/lib/api-client/vault";
 import { trustedDevicesApi } from "@/lib/api-client/trusted-devices";
+import { ApiError } from "@/lib/api-client/api-error";
+import {
+  RevokedTrustedDeviceError,
+  UnknownTrustedDeviceError,
+  TrustedDeviceNetworkUnavailableError,
+  classifyTrustedDeviceApiError,
+  isNetworkUnavailableError,
+} from "./trusted-device-unlock-errors";
+
+export {
+  RevokedTrustedDeviceError,
+  UnauthenticatedTrustedDeviceError,
+  ForbiddenTrustedDeviceError,
+  UnknownTrustedDeviceError,
+  TrustedDeviceServerError,
+  TrustedDeviceNetworkUnavailableError,
+  TrustedDeviceUnexpectedError,
+  getTrustedDeviceUnlockErrorMessage,
+  isTrustedDeviceUnlockError,
+} from "./trusted-device-unlock-errors";
 
 function base64UrlToBytes(base64url: string): Uint8Array {
   const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
@@ -61,14 +81,21 @@ function storeUnlockedVaultKey(vaultKey: CryptoKey, explicit: boolean): void {
   }
 }
 
-export class RevokedTrustedDeviceError extends Error {
-  constructor(message = "This trusted device has been revoked.") {
-    super(message);
-    this.name = "RevokedTrustedDeviceError";
-  }
+async function handleRevokedTrustedDevice(userId: string): Promise<never> {
+  await clearLocalVaultData(userId);
+  lockVaultSession();
+  throw new RevokedTrustedDeviceError();
 }
 
-/** When online, verifies device is not revoked; clears local material if revoked. */
+async function handleUnknownTrustedDevice(userId: string): Promise<never> {
+  await clearLocalVaultData(userId);
+  throw new UnknownTrustedDeviceError();
+}
+
+/**
+ * When online, verifies trusted-device status with the server.
+ * Fail closed by default; allow local unlock only on real network/offline failures.
+ */
 export async function assertTrustedDeviceCanUnlock(
   userId: string,
   clientDeviceId: string
@@ -76,13 +103,21 @@ export async function assertTrustedDeviceCanUnlock(
   try {
     const { state } = await trustedDevicesApi.deviceState(clientDeviceId);
     if (state === "revoked") {
-      await clearLocalVaultData(userId);
-      lockVaultSession();
-      throw new RevokedTrustedDeviceError();
+      await handleRevokedTrustedDevice(userId);
+    }
+    if (state === "not_registered") {
+      await handleUnknownTrustedDevice(userId);
     }
   } catch (error) {
     if (error instanceof RevokedTrustedDeviceError) throw error;
-    // Offline or unauthenticated: local unlock may still work (documented limitation).
+    if (error instanceof UnknownTrustedDeviceError) throw error;
+    if (isNetworkUnavailableError(error)) {
+      return;
+    }
+    if (error instanceof ApiError && error.status === 404) {
+      await handleUnknownTrustedDevice(userId);
+    }
+    classifyTrustedDeviceApiError(error);
   }
 }
 
@@ -115,8 +150,11 @@ async function collectEnvelopeCandidates(
     for (const row of sorted) {
       add(row.encryptedVaultKey);
     }
-  } catch {
-    // Offline or unauthenticated; rely on local envelope only.
+  } catch (error) {
+    if (isNetworkUnavailableError(error)) {
+      return candidates;
+    }
+    classifyTrustedDeviceApiError(error);
   }
 
   return candidates;

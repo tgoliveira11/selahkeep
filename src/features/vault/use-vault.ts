@@ -21,6 +21,9 @@ import { vaultApi } from "@/lib/api-client/vault";
 import { storeLocalVaultEnvelope } from "@/lib/crypto-client/device-storage";
 import { unlockVaultWithPasskey } from "@/features/passkey/unlock-with-passkey";
 import { getDeviceDisplayInfo } from "@/lib/device-display-info";
+import {
+  getTrustedDeviceUnlockErrorMessage,
+} from "@/lib/crypto-client/vault-unlock";
 
 export function useVault() {
   const { data: session } = useSession();
@@ -89,7 +92,7 @@ export function useVault() {
       touchVaultSession();
       return key;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unlock failed");
+      setError(getTrustedDeviceUnlockErrorMessage(e));
       throw e;
     } finally {
       setLoading(false);

@@ -19,11 +19,30 @@ export const authService = {
   },
 
   async assertLoginAllowed(email: string, ip?: string) {
+    const normalizedEmail = email.toLowerCase();
+    const endpoint = "/api/auth/callback/credentials";
+
     await enforceRateLimit({
       operation: "auth.login",
-      userId: email.toLowerCase(),
-      ip,
-      endpoint: "/api/auth/callback/credentials",
+      userId: normalizedEmail,
+      endpoint,
+      keyMode: "email",
     });
+
+    if (ip) {
+      await enforceRateLimit({
+        operation: "auth.login",
+        ip,
+        endpoint,
+        keyMode: "ip",
+      });
+      await enforceRateLimit({
+        operation: "auth.login",
+        userId: normalizedEmail,
+        ip,
+        endpoint,
+        keyMode: "email_ip",
+      });
+    }
   },
 };

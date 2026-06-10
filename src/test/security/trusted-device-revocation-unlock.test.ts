@@ -2,8 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   assertTrustedDeviceCanUnlock,
   RevokedTrustedDeviceError,
+  UnauthenticatedTrustedDeviceError,
+  ForbiddenTrustedDeviceError,
+  UnknownTrustedDeviceError,
+  TrustedDeviceServerError,
+  TrustedDeviceUnexpectedError,
   unlockVaultFromDeviceEnvelopes,
 } from "@/lib/crypto-client/vault-unlock";
+import { ApiError } from "@/lib/api-client/api-error";
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 const deviceStorageMocks = vi.hoisted(() => ({
@@ -47,11 +53,13 @@ vi.mock("@/lib/crypto-client/record-device-unlock", () => ({
   recordTrustedDeviceUnlock: vi.fn(),
 }));
 
-describe("trusted device revocation unlock behavior", () => {
+describe("trusted device unlock hardening", () => {
+  const clientDeviceId = "660e8400-e29b-41d4-a716-446655440002";
+
   beforeEach(() => {
     vi.clearAllMocks();
     deviceStorageMocks.getOrCreateDeviceSecret.mockResolvedValue({
-      deviceId: "660e8400-e29b-41d4-a716-446655440002",
+      deviceId: clientDeviceId,
       deviceSecret: {} as CryptoKey,
     });
   });
@@ -59,19 +67,83 @@ describe("trusted device revocation unlock behavior", () => {
   it("clears local material and blocks unlock when server reports revoked device", async () => {
     const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
     vi.mocked(trustedDevicesApi.deviceState).mockResolvedValue({ state: "revoked" });
-    deviceStorageMocks.getLocalVaultEnvelope.mockResolvedValue(
-      encryptedPayload("vault_key", USER_ID)
+
+    await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).rejects.toBeInstanceOf(
+      RevokedTrustedDeviceError
     );
-
-    await expect(
-      assertTrustedDeviceCanUnlock(USER_ID, "660e8400-e29b-41d4-a716-446655440002")
-    ).rejects.toBeInstanceOf(RevokedTrustedDeviceError);
-
     expect(deviceStorageMocks.clearLocalVaultData).toHaveBeenCalledWith(USER_ID);
     expect(sessionMocks.lockVaultSession).toHaveBeenCalled();
   });
 
-  it("does not use local IndexedDB envelope after online revocation check", async () => {
+  it("blocks unlock on HTTP 401", async () => {
+    const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
+    vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(new ApiError(401, "Unauthorized"));
+
+    await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).rejects.toBeInstanceOf(
+      UnauthenticatedTrustedDeviceError
+    );
+  });
+
+  it("blocks unlock on HTTP 403", async () => {
+    const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
+    vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(new ApiError(403, "Forbidden"));
+
+    await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).rejects.toBeInstanceOf(
+      ForbiddenTrustedDeviceError
+    );
+  });
+
+  it("blocks unlock on HTTP 404 and clears local material", async () => {
+    const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
+    vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(new ApiError(404, "Not found"));
+
+    await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).rejects.toBeInstanceOf(
+      UnknownTrustedDeviceError
+    );
+    expect(deviceStorageMocks.clearLocalVaultData).toHaveBeenCalledWith(USER_ID);
+  });
+
+  it("blocks unlock on not_registered state and clears local material", async () => {
+    const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
+    vi.mocked(trustedDevicesApi.deviceState).mockResolvedValue({ state: "not_registered" });
+
+    await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).rejects.toBeInstanceOf(
+      UnknownTrustedDeviceError
+    );
+    expect(deviceStorageMocks.clearLocalVaultData).toHaveBeenCalledWith(USER_ID);
+  });
+
+  it("blocks unlock on HTTP 500", async () => {
+    const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
+    vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(
+      new ApiError(500, "Internal server error")
+    );
+
+    await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).rejects.toBeInstanceOf(
+      TrustedDeviceServerError
+    );
+  });
+
+  it("allows local unlock path on real network failure", async () => {
+    const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
+    vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(new TypeError("Failed to fetch"));
+    deviceStorageMocks.getLocalVaultEnvelope.mockResolvedValue(
+      encryptedPayload("vault_key", USER_ID)
+    );
+
+    await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).resolves.toBeUndefined();
+  });
+
+  it("fails closed on unexpected errors", async () => {
+    const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
+    vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(new ApiError(418, "Teapot"));
+
+    await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).rejects.toBeInstanceOf(
+      TrustedDeviceUnexpectedError
+    );
+  });
+
+  it("does not silently allow unlock after online revocation check", async () => {
     const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
     vi.mocked(trustedDevicesApi.deviceState).mockResolvedValue({ state: "revoked" });
     deviceStorageMocks.getLocalVaultEnvelope.mockResolvedValue(
@@ -87,9 +159,7 @@ describe("trusted device revocation unlock behavior", () => {
     const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
     vi.mocked(trustedDevicesApi.deviceState).mockResolvedValue({ state: "active" });
 
-    await expect(
-      assertTrustedDeviceCanUnlock(USER_ID, "660e8400-e29b-41d4-a716-446655440002")
-    ).resolves.toBeUndefined();
+    await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).resolves.toBeUndefined();
     expect(deviceStorageMocks.clearLocalVaultData).not.toHaveBeenCalled();
   });
 });

@@ -54,6 +54,10 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - Local Swagger UI: [http://localhost:3001/api-docs](http://localhost:3001/api-docs)
 - OpenAPI JSON: `GET /api/openapi`
 
+- Passkey registration without PRF does **not** create `passkey_authorized_device` envelopes and does **not** revoke existing passkey envelopes
+- `client_device_id` column on `trusted_devices` with partial unique index for active devices
+- WebAuthn challenge indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
+
 - `POST/GET /api/letters`, `GET/PUT/DELETE /api/letters/:id`
 - `POST /api/vault/init`, `GET /api/vault/status`
 - `GET/POST /api/trusted-devices`, `DELETE /api/trusted-devices/:id`

@@ -118,7 +118,9 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md), [SECURITY.md](./SECURITY.md), and [AGE
 
 Before any **real beta**, complete the gates in [`docs/LGPD_BETA_GATES.md`](./docs/LGPD_BETA_GATES.md) and review [`docs/THREAT_MODEL_Private_Letters_Vault.md`](./docs/THREAT_MODEL_Private_Letters_Vault.md).
 
-Production rate limiting: set `RATE_LIMIT_STORE=postgres` and run migrations (`rate_limit_buckets` table).
+Production rate limiting: set `RATE_LIMIT_STORE=postgres` and run migrations (`rate_limit_buckets`, `0003_trusted_device_client_id_webauthn_indexes`).
+
+**Account deletion:** `/settings/account` — requires phrase `DELETE MY ACCOUNT` and password re-auth (credentials accounts).
 
 **Autosave:** explicitly disabled for MVP (encrypted autosave out of scope).
 

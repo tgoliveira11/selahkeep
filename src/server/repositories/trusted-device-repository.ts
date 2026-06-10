@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { db, type DbClient } from "@/lib/db";
 import { trustedDevices } from "@/lib/db/schema";
 
@@ -39,15 +39,24 @@ export const trustedDeviceRepository = {
     return rows.length;
   },
 
+  clientDeviceMatch(userId: string, clientDeviceId: string) {
+    return and(
+      eq(trustedDevices.userId, userId),
+      or(
+        eq(trustedDevices.clientDeviceId, clientDeviceId),
+        sql`${trustedDevices.devicePublicKey}->>'deviceId' = ${clientDeviceId}`
+      )
+    );
+  },
+
   async findActiveByClientDeviceId(userId: string, clientDeviceId: string) {
     const [device] = await db
       .select()
       .from(trustedDevices)
       .where(
         and(
-          eq(trustedDevices.userId, userId),
-          isNull(trustedDevices.revokedAt),
-          sql`${trustedDevices.devicePublicKey}->>'deviceId' = ${clientDeviceId}`
+          trustedDeviceRepository.clientDeviceMatch(userId, clientDeviceId),
+          isNull(trustedDevices.revokedAt)
         )
       )
       .limit(1);
@@ -60,9 +69,8 @@ export const trustedDeviceRepository = {
       .from(trustedDevices)
       .where(
         and(
-          eq(trustedDevices.userId, userId),
-          isNotNull(trustedDevices.revokedAt),
-          sql`${trustedDevices.devicePublicKey}->>'deviceId' = ${clientDeviceId}`
+          trustedDeviceRepository.clientDeviceMatch(userId, clientDeviceId),
+          isNotNull(trustedDevices.revokedAt)
         )
       )
       .limit(1);
@@ -74,16 +82,22 @@ export const trustedDeviceRepository = {
       userId: string;
       deviceName: string;
       devicePublicKey?: Record<string, unknown> | null;
+      clientDeviceId?: string | null;
       browser?: string | null;
       platform?: string | null;
       deviceType?: string | null;
     },
     client: DbClient = db
   ) {
+    const clientDeviceId =
+      data.clientDeviceId ??
+      (typeof data.devicePublicKey?.deviceId === "string" ? data.devicePublicKey.deviceId : null);
+
     const [device] = await client
       .insert(trustedDevices)
       .values({
         userId: data.userId,
+        clientDeviceId,
         deviceName: data.deviceName,
         devicePublicKey: data.devicePublicKey ?? null,
         browser: data.browser ?? null,

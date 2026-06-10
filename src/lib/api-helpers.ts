@@ -28,6 +28,12 @@ export function apiError(error: unknown, endpoint: string) {
     if (named.name === "ChallengeError") {
       return NextResponse.json({ error: named.message }, { status: 400 });
     }
+    if (named.name === "ValidationError") {
+      return NextResponse.json({ error: named.message }, { status: 400 });
+    }
+    if (named.name === "ReauthenticationRequiredError") {
+      return NextResponse.json({ error: named.message }, { status: 401 });
+    }
   }
   safeLogger.error("API error", { endpoint, error: error instanceof Error ? error.message : "unknown" });
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });

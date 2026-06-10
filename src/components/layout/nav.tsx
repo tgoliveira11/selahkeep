@@ -57,6 +57,9 @@ export function Nav() {
             <Link href="/vault/recovery" className="text-sm hover:underline">
               Recovery
             </Link>
+            <Link href="/settings/account" className="text-sm hover:underline">
+              Account
+            </Link>
             {vaultUnlocked && (
               <Button variant="secondary" onClick={handleLockVault}>
                 Lock vault

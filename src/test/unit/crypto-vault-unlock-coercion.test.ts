@@ -32,6 +32,17 @@ vi.mock("@/lib/api-client/vault", () => ({
   vaultApi: { deviceEnvelopes: vi.fn(async () => []) },
 }));
 
+vi.mock("@/lib/api-client/trusted-devices", () => ({
+  trustedDevicesApi: {
+    deviceState: vi.fn(async () => ({ state: "active" as const })),
+    touch: vi.fn(),
+  },
+}));
+
+vi.mock("@/lib/crypto-client/record-device-unlock", () => ({
+  recordTrustedDeviceUnlock: vi.fn(),
+}));
+
 describe("vault unlock payload coercion", () => {
   beforeEach(async () => {
     storage.localEnvelope = null;

@@ -10,6 +10,7 @@ const verifySchema = z.object({
   action: z.enum(["options", "verify"]),
   response: z.unknown().optional(),
   encryptedVaultKey: encryptedPayloadSchema.optional(),
+  prfVaultEnvelope: z.literal(true).optional(),
 });
 
 export async function POST(request: Request) {
@@ -36,7 +37,8 @@ export async function POST(request: Request) {
     const result = await passkeyService.verifyRegistration(
       user.id,
       parsed.data.response as Parameters<typeof passkeyService.verifyRegistration>[1],
-      parsed.data.encryptedVaultKey
+      parsed.data.encryptedVaultKey,
+      parsed.data.prfVaultEnvelope ? { prfVaultEnvelope: true } : undefined
     );
     return NextResponse.json(result);
   } catch (error) {

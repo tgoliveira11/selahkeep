@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { userRepository } from "@/server/repositories/user-repository";
 import { authService } from "@/server/services/auth-service";
 import { RateLimitError } from "@/server/policies/rate-limit";
+import { getLoginRequestIp } from "@/lib/auth/login-request-context";
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -39,7 +40,7 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         try {
-          await authService.assertLoginAllowed(credentials.email);
+          await authService.assertLoginAllowed(credentials.email, getLoginRequestIp());
         } catch (error) {
           if (error instanceof RateLimitError) return null;
           throw error;

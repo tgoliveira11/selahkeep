@@ -304,7 +304,9 @@ Implemented in:
 
 - `src/server/services/vault-service.ts` — vault init creates trusted device first, then envelope with `publicMetadata.trustedDeviceId` (transactional).
 - `src/server/services/trusted-device-service.ts` — revoke device + envelope in one transaction; `getClientDeviceState()` for unlock gating.
-- `src/lib/crypto-client/vault-unlock.ts` — `assertTrustedDeviceCanUnlock()` checks `GET /api/trusted-devices/status`; clears IndexedDB on revoke.
-- `src/lib/db/transaction.ts` — `runInTransaction()` for vault init, device create/revoke, recovery code store, passkey register/remove.
-- **Offline limitation:** if the client cannot reach the server, a previously cached local envelope might still decrypt until the next online revocation check.
+- `src/lib/crypto-client/vault-unlock.ts` — fail-closed `assertTrustedDeviceCanUnlock()` with typed errors; offline unlock only on network failure
+- `src/lib/crypto-client/trusted-device-unlock-errors.ts` — error taxonomy + safe UI messages
+- `trusted_devices.client_device_id` + partial unique index on active devices
+- `passkeyRepository.consumeValidChallenge()` — atomic challenge consumption
+- **Offline limitation:** only when the status request fails due to network unavailability (not 401/403/404/5xx); cached local envelope may decrypt until the next successful online check
 - Tests: `src/test/security/trusted-device-revocation-unlock.test.ts`, `src/test/services/trusted-device-state.test.ts`.

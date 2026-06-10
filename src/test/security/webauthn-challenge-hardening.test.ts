@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { passkeyRepository } from "@/server/repositories/passkey-repository";
+import { passkeyRepository, ChallengeValidationError } from "@/server/repositories/passkey-repository";
 
 const dbMocks = vi.hoisted(() => ({
   select: vi.fn(),
@@ -28,10 +28,14 @@ function chain(result: unknown) {
   return { from, where, terminal };
 }
 
-describe("WebAuthn challenge hardening", () => {
+describe("WebAuthn challenge consumption", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    dbMocks.delete.mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) });
+    dbMocks.delete.mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        returning: dbMocks.returning,
+      }),
+    });
     dbMocks.insert.mockReturnValue({
       values: vi.fn().mockReturnValue({
         returning: vi.fn().mockResolvedValue([{ id: "challenge-1" }]),
@@ -39,35 +43,46 @@ describe("WebAuthn challenge hardening", () => {
     });
   });
 
-  it("rejects expired challenges", async () => {
-    chain([
-      {
-        id: "c1",
-        userId: "user-1",
-        challenge: "abc",
-        type: "registration",
-        expiresAt: new Date(Date.now() - 1000),
-      },
-    ]);
-    const result = await passkeyRepository.findValidChallenge("abc", "registration", "user-1");
-    expect(result).toBeNull();
+  it("rejects expired challenges via consumeValidChallenge", async () => {
+    dbMocks.returning.mockResolvedValue([]);
+    await expect(
+      passkeyRepository.consumeValidChallenge("abc", "registration", "user-1")
+    ).rejects.toBeInstanceOf(ChallengeValidationError);
+  });
+
+  it("consumes a valid challenge once", async () => {
+    const row = {
+      id: "c1",
+      userId: "user-1",
+      challenge: "abc",
+      type: "registration",
+      expiresAt: new Date(Date.now() + 60_000),
+    };
+    dbMocks.returning.mockResolvedValueOnce([row]).mockResolvedValueOnce([]);
+
+    const first = await passkeyRepository.consumeValidChallenge("abc", "registration", "user-1");
+    expect(first).toEqual(row);
+
+    await expect(
+      passkeyRepository.consumeValidChallenge("abc", "registration", "user-1")
+    ).rejects.toBeInstanceOf(ChallengeValidationError);
   });
 
   it("rejects challenge belonging to another user", async () => {
-    chain([
-      {
-        id: "c1",
-        userId: "user-2",
-        challenge: "abc",
-        type: "registration",
-        expiresAt: new Date(Date.now() + 60_000),
-      },
-    ]);
-    const result = await passkeyRepository.findValidChallenge("abc", "registration", "user-1");
-    expect(result).toBeNull();
+    dbMocks.returning.mockResolvedValue([]);
+    await expect(
+      passkeyRepository.consumeValidChallenge("abc", "registration", "user-1")
+    ).rejects.toBeInstanceOf(ChallengeValidationError);
   });
 
-  it("accepts valid scoped challenge", async () => {
+  it("rejects challenge with wrong type", async () => {
+    dbMocks.returning.mockResolvedValue([]);
+    await expect(
+      passkeyRepository.consumeValidChallenge("abc", "authentication", "user-1")
+    ).rejects.toBeInstanceOf(ChallengeValidationError);
+  });
+
+  it("accepts valid scoped challenge via findValidChallenge (legacy read path)", async () => {
     const row = {
       id: "c1",
       userId: "user-1",

@@ -13,7 +13,11 @@ export interface RateLimitScope {
   userId?: string;
   ip?: string;
   endpoint?: string;
+  /** How the bucket key is scoped — defaults to composite email+IP when both are present. */
+  keyMode?: RateLimitKeyMode;
 }
+
+export type RateLimitKeyMode = "email" | "ip" | "email_ip";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -43,8 +47,19 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitOperation, RateLimitPolicy> = 
 
 /** Builds a scoped bucket key — never use operation-only keys that could lock out all users. */
 export function buildRateLimitKey(scope: RateLimitScope): string {
-  const userPart = scope.userId ?? "anonymous";
-  const ipPart = scope.ip ?? "unknown-ip";
   const endpointPart = scope.endpoint ?? "default";
-  return `rate:${scope.operation}:user:${userPart}:ip:${ipPart}:endpoint:${endpointPart}`;
+  const emailPart = scope.userId ?? "anonymous";
+  const ipPart = scope.ip ?? "unknown-ip";
+  const mode: RateLimitKeyMode =
+    scope.keyMode ??
+    (scope.userId && scope.ip ? "email_ip" : scope.ip ? "ip" : "email");
+
+  switch (mode) {
+    case "email":
+      return `rate:${scope.operation}:email:${emailPart}:endpoint:${endpointPart}`;
+    case "ip":
+      return `rate:${scope.operation}:ip:${ipPart}:endpoint:${endpointPart}`;
+    case "email_ip":
+      return `rate:${scope.operation}:email:${emailPart}:ip:${ipPart}:endpoint:${endpointPart}`;
+  }
 }

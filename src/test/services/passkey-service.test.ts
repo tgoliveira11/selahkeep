@@ -5,8 +5,7 @@ import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 const mocks = vi.hoisted(() => ({
   findByUserId: vi.fn(),
   storeChallenge: vi.fn(),
-  findValidChallenge: vi.fn(),
-  deleteChallenge: vi.fn(),
+  consumeValidChallenge: vi.fn(),
   createCredential: vi.fn(),
   findByCredentialId: vi.fn(),
   updateCounter: vi.fn(),
@@ -32,8 +31,7 @@ vi.mock("@/server/repositories/passkey-repository", () => ({
   passkeyRepository: {
     findByUserId: mocks.findByUserId,
     storeChallenge: mocks.storeChallenge,
-    findValidChallenge: mocks.findValidChallenge,
-    deleteChallenge: mocks.deleteChallenge,
+    consumeValidChallenge: mocks.consumeValidChallenge,
     createCredential: mocks.createCredential,
     findByCredentialId: mocks.findByCredentialId,
     updateCounter: mocks.updateCounter,
@@ -87,7 +85,7 @@ describe("passkey service", () => {
   });
 
   it("verifies registration and stores passkey envelope", async () => {
-    mocks.findValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "reg-challenge" });
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "reg-challenge" });
     mocks.verifyRegistrationResponse.mockResolvedValue({
       verified: true,
       registrationInfo: {
@@ -109,7 +107,8 @@ describe("passkey service", () => {
     const result = await passkeyService.verifyRegistration(
       USER_ID,
       registrationResponse("reg-challenge"),
-      encryptedPayload("vault_key", USER_ID)
+      encryptedPayload("vault_key", USER_ID),
+      { prfVaultEnvelope: true }
     );
 
     expect(result.verified).toBe(true);
@@ -125,10 +124,63 @@ describe("passkey service", () => {
   });
 
   it("verifyRegistration rejects invalid challenge", async () => {
-    mocks.findValidChallenge.mockResolvedValue(null);
+    mocks.consumeValidChallenge.mockRejectedValue(new Error("Invalid or expired challenge"));
     await expect(
       passkeyService.verifyRegistration(USER_ID, registrationResponse("wrong"), undefined)
     ).rejects.toThrow("Invalid or expired challenge");
+  });
+
+  it("rejects passkey vault envelope without PRF confirmation", async () => {
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "reg-challenge" });
+    mocks.verifyRegistrationResponse.mockResolvedValue({
+      verified: true,
+      registrationInfo: {
+        credential: {
+          id: "cred-id",
+          publicKey: new Uint8Array(32),
+          counter: 0,
+          transports: ["internal"],
+        },
+        credentialDeviceType: "singleDevice",
+        credentialBackedUp: false,
+      },
+    });
+
+    await expect(
+      passkeyService.verifyRegistration(
+        USER_ID,
+        registrationResponse("reg-challenge"),
+        encryptedPayload("vault_key", USER_ID)
+      )
+    ).rejects.toThrow("Passkey vault unlock requires PRF support");
+    expect(mocks.createEnvelope).not.toHaveBeenCalled();
+    expect(mocks.revokeEnvelope).not.toHaveBeenCalled();
+  });
+
+  it("registers passkey credential without vault envelope when none is provided", async () => {
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "reg-challenge" });
+    mocks.verifyRegistrationResponse.mockResolvedValue({
+      verified: true,
+      registrationInfo: {
+        credential: {
+          id: "cred-id",
+          publicKey: new Uint8Array(32),
+          counter: 0,
+          transports: ["internal"],
+        },
+        credentialDeviceType: "singleDevice",
+        credentialBackedUp: false,
+      },
+    });
+    mocks.findActiveEnvelopesByUserId.mockResolvedValue([
+      { id: "keep-env", method: "passkey_authorized_device" },
+    ]);
+
+    await passkeyService.verifyRegistration(USER_ID, registrationResponse("reg-challenge"));
+
+    expect(mocks.createCredential).toHaveBeenCalled();
+    expect(mocks.createEnvelope).not.toHaveBeenCalled();
+    expect(mocks.revokeEnvelope).not.toHaveBeenCalled();
   });
 
   it("returns authentication options for a known user", async () => {
@@ -139,7 +191,7 @@ describe("passkey service", () => {
   });
 
   it("verifyAuthentication returns vault envelope", async () => {
-    mocks.findValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
     mocks.findByCredentialId.mockResolvedValue({
       userId: USER_ID,
       credentialId: "cred-id",
@@ -172,7 +224,7 @@ describe("passkey service", () => {
   });
 
   it("verifyAuthentication rejects unknown credential", async () => {
-    mocks.findValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
     mocks.findByCredentialId.mockResolvedValue(null);
     const clientDataJSON = Buffer.from(
       JSON.stringify({ type: "webauthn.get", challenge: "auth-challenge", origin: "http://localhost:3001" })

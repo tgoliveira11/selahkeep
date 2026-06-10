@@ -11,7 +11,6 @@ import {
   extractPasskeyPrfOutput,
   wrapVaultKeyForPasskey,
 } from "@/lib/crypto-client/passkey-vault";
-import { wrapVaultKeyForDevice } from "@/lib/crypto-client/vault";
 import { apiClient } from "@/lib/api-client/client";
 import { passkeysApi } from "@/lib/api-client/passkeys";
 import { prepareRegistrationOptions } from "@/lib/passkey/prepare-webauthn-options";
@@ -21,6 +20,9 @@ interface PasskeySetupProps {
   hasPasskey: boolean;
   onStatusChange: () => void;
 }
+
+const PRF_UNAVAILABLE_MESSAGE =
+  "This browser or passkey provider does not support vault unlock with passkey. Use a recovery code or another trusted device to recover your private letters.";
 
 export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetupProps) {
   const [loading, setLoading] = useState(false);
@@ -38,8 +40,6 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         throw new Error("Vault must be unlocked to set up a passkey");
       }
 
-      let encryptedVaultKey;
-
       const options = (await apiClient.post("/api/passkeys/register", {
         action: "options",
       })) as PublicKeyCredentialCreationOptionsJSON;
@@ -49,36 +49,34 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
       });
       const prfOutput = extractPasskeyPrfOutput(attestation.clientExtensionResults);
 
-      if (prfOutput) {
-        encryptedVaultKey = await wrapVaultKeyForPasskey(vaultKey, prfOutput, userId, userId);
-      } else {
-        const wrapped = await wrapVaultKeyForDevice(vaultKey, userId, userId);
-        encryptedVaultKey = wrapped.encryptedVaultKey;
+      if (!prfOutput) {
+        setError(PRF_UNAVAILABLE_MESSAGE);
+        return;
       }
+
+      const encryptedVaultKey = await wrapVaultKeyForPasskey(
+        vaultKey,
+        prfOutput,
+        userId,
+        userId
+      );
 
       const result = await apiClient.post<{ verified: boolean }>("/api/passkeys/register", {
         action: "verify",
         response: attestation,
         encryptedVaultKey,
+        prfVaultEnvelope: true,
       });
 
       if (result.verified) {
-        if (prfOutput) {
-          setMessage(
-            "Passkey registered. You can unlock your vault on a new device with your passkey."
-          );
-        } else {
-          setMessage(
-            "Passkey registered on this browser. For unlock on other browsers, use a recovery code or re-register your passkey with a device that supports passkey vault sync."
-          );
-        }
+        setMessage(
+          "Passkey registered. You can unlock your vault on a new device with your passkey."
+        );
         onStatusChange();
       }
     } catch (e) {
       if (e instanceof Error && e.name === "NotSupportedError") {
-        setError(
-          "This browser may not support passkeys. You can still use a recovery code or another trusted device."
-        );
+        setError(PRF_UNAVAILABLE_MESSAGE);
       } else {
         setError(e instanceof Error ? e.message : "Passkey registration failed");
       }
@@ -133,6 +131,7 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
     <div className="space-y-3">
       <p className="text-sm text-[var(--muted)]">
         Use your device PIN, fingerprint, or face recognition to unlock your vault on a new device.
+        Your browser must support passkey vault unlock (PRF).
       </p>
       <Button onClick={handleRegisterPasskey} disabled={loading} variant="secondary" className="w-full">
         {loading ? "Working..." : "Set up passkey"}

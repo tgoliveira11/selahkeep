@@ -38,6 +38,17 @@ vi.mock("@/lib/api-client/vault", () => ({
   },
 }));
 
+vi.mock("@/lib/api-client/trusted-devices", () => ({
+  trustedDevicesApi: {
+    deviceState: vi.fn(async () => ({ state: "active" as const })),
+    touch: vi.fn(),
+  },
+}));
+
+vi.mock("@/lib/crypto-client/record-device-unlock", () => ({
+  recordTrustedDeviceUnlock: vi.fn(),
+}));
+
 describe("vault unlock extended paths", () => {
   beforeEach(async () => {
     storage.localEnvelope = null;

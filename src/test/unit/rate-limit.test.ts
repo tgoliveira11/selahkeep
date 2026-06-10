@@ -19,6 +19,21 @@ describe("rate limit abstraction", () => {
     vi.useRealTimers();
   });
 
+  it("defaults key mode from scope fields", () => {
+    const ipOnly = buildRateLimitKey({
+      operation: "auth.login",
+      ip: "1.1.1.1",
+      endpoint: "/api/auth/callback/credentials",
+    });
+    const emailOnly = buildRateLimitKey({
+      operation: "auth.login",
+      userId: "user@example.com",
+      endpoint: "/api/auth/callback/credentials",
+    });
+    expect(ipOnly).toContain("ip:1.1.1.1");
+    expect(emailOnly).toContain("email:user@example.com");
+  });
+
   it("builds scoped keys without global lockout keys", () => {
     const userA = buildRateLimitKey({
       operation: "auth.login",
@@ -33,8 +48,8 @@ describe("rate limit abstraction", () => {
       endpoint: "/api/auth/callback/credentials",
     });
     expect(userA).not.toEqual(userB);
-    expect(userA).toContain("user-a");
-    expect(userB).toContain("user-b");
+    expect(userA).toContain("email:user-a");
+    expect(userB).toContain("email:user-b");
   });
 
   it("limits per user independently", async () => {

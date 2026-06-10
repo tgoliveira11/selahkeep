@@ -1,4 +1,5 @@
-import { and, eq, isNull, lt } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { db, type DbClient } from "@/lib/db";
 import { passkeyCredentials, webauthnChallenges } from "@/lib/db/schema";
 
@@ -76,7 +77,7 @@ export const passkeyRepository = {
   },
 
   async deleteExpiredChallenges(client: DbClient = db) {
-    await client.delete(webauthnChallenges).where(lt(webauthnChallenges.expiresAt, new Date()));
+    await client.delete(webauthnChallenges).where(sql`${webauthnChallenges.expiresAt} < ${new Date()}`);
   },
 
   async storeChallenge(
@@ -101,6 +102,7 @@ export const passkeyRepository = {
     return row;
   },
 
+  /** @deprecated Prefer consumeValidChallenge for one-time challenge use. */
   async findValidChallenge(challenge: string, type: string, expectedUserId?: string) {
     const [row] = await db
       .select()
@@ -114,6 +116,37 @@ export const passkeyRepository = {
 
     if (expectedUserId !== undefined) {
       if (row.userId !== expectedUserId) return null;
+    }
+
+    return row;
+  },
+
+  async consumeValidChallenge(
+    challenge: string,
+    type: string,
+    expectedUserId?: string,
+    client: DbClient = db
+  ) {
+    const now = new Date();
+    const userCondition =
+      expectedUserId === undefined
+        ? sql`true`
+        : eq(webauthnChallenges.userId, expectedUserId);
+
+    const [row] = await client
+      .delete(webauthnChallenges)
+      .where(
+        and(
+          eq(webauthnChallenges.challenge, challenge),
+          eq(webauthnChallenges.type, type),
+          gt(webauthnChallenges.expiresAt, now),
+          userCondition
+        )
+      )
+      .returning();
+
+    if (!row) {
+      throw new ChallengeValidationError("Invalid or expired challenge");
     }
 
     return row;

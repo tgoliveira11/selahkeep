@@ -137,7 +137,7 @@ Document for legal review:
 
 ### 4.1 Active storage behavior (implemented)
 
-When a user requests account deletion (`DELETE /api/account`):
+When a user requests account deletion (`DELETE /api/account` or `/settings/account` UI):
 
 | Data | Action |
 |------|--------|
