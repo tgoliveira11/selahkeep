@@ -1,6 +1,9 @@
 import nextConfig from "eslint-config-next";
 
-export default [
+const eslintConfig = [
+  {
+    ignores: ["coverage/**", "public/swagger-ui/**"],
+  },
   ...nextConfig,
   {
     rules: {
@@ -9,3 +12,5 @@ export default [
     },
   },
 ];
+
+export default eslintConfig;
