@@ -1,0 +1,142 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { passkeyService } from "@/server/services/passkey-service";
+import { USER_ID } from "@/test/helpers/fixtures";
+import { resetRateLimit } from "@/server/policies/rate-limit";
+
+const mocks = vi.hoisted(() => ({
+  findByUserId: vi.fn(),
+  storeChallenge: vi.fn(),
+  findValidChallenge: vi.fn(),
+  deleteChallenge: vi.fn(),
+  findByCredentialId: vi.fn(),
+  updateCounter: vi.fn(),
+  findActiveEnvelopeByMethod: vi.fn(),
+  record: vi.fn(),
+  generateAuthenticationOptions: vi.fn(),
+  verifyAuthenticationResponse: vi.fn(),
+  verifyRegistrationResponse: vi.fn(),
+}));
+
+vi.mock("@simplewebauthn/server", () => ({
+  generateRegistrationOptions: vi.fn(async () => ({ challenge: "reg" })),
+  verifyRegistrationResponse: mocks.verifyRegistrationResponse,
+  generateAuthenticationOptions: mocks.generateAuthenticationOptions,
+  verifyAuthenticationResponse: mocks.verifyAuthenticationResponse,
+}));
+
+vi.mock("@/server/repositories/passkey-repository", () => ({
+  passkeyRepository: {
+    findByUserId: mocks.findByUserId,
+    storeChallenge: mocks.storeChallenge,
+    findValidChallenge: mocks.findValidChallenge,
+    deleteChallenge: mocks.deleteChallenge,
+    findByCredentialId: mocks.findByCredentialId,
+    updateCounter: mocks.updateCounter,
+    createCredential: vi.fn(),
+  },
+}));
+
+vi.mock("@/server/repositories/vault-repository", () => ({
+  vaultRepository: {
+    findActiveEnvelopeByMethod: mocks.findActiveEnvelopeByMethod,
+    findActiveEnvelopesByUserId: vi.fn(async () => []),
+    createEnvelope: vi.fn(),
+    revokeEnvelope: vi.fn(),
+  },
+}));
+
+vi.mock("@/server/repositories/audit-repository", () => ({
+  auditRepository: { record: mocks.record },
+}));
+
+function authResponse(challenge: string) {
+  const clientDataJSON = Buffer.from(
+    JSON.stringify({ type: "webauthn.get", challenge, origin: "http://localhost:3001" })
+  ).toString("base64url");
+  return {
+    id: "cred-id",
+    rawId: "cred-id",
+    type: "public-key" as const,
+    response: { clientDataJSON, authenticatorData: "aa", signature: "sig" },
+    clientExtensionResults: {},
+  };
+}
+
+describe("passkey service extended", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetRateLimit("passkey-auth:anonymous");
+    resetRateLimit(`passkey-auth:${USER_ID}`);
+    mocks.generateAuthenticationOptions.mockResolvedValue({ challenge: "auth-challenge" });
+    mocks.findByUserId.mockResolvedValue([{ credentialId: "cred-id", transports: ["internal"] }]);
+  });
+
+  it("rate limits authentication options", async () => {
+    for (let i = 0; i < 20; i++) {
+      await passkeyService.getAuthenticationOptions(USER_ID);
+    }
+    await expect(passkeyService.getAuthenticationOptions(USER_ID)).rejects.toThrow(
+      "Too many passkey authentication attempts"
+    );
+  });
+
+  it("supports anonymous authentication options", async () => {
+    const options = await passkeyService.getAuthenticationOptions();
+    expect(options.challenge).toBe("auth-challenge");
+    expect(mocks.storeChallenge).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: undefined, type: "authentication" })
+    );
+  });
+
+  it("rejects invalid authentication challenge", async () => {
+    mocks.findValidChallenge.mockResolvedValue(null);
+    await expect(
+      passkeyService.verifyAuthentication(USER_ID, authResponse("missing"))
+    ).rejects.toThrow("Invalid or expired challenge");
+  });
+
+  it("rejects failed WebAuthn verification", async () => {
+    mocks.findValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
+    mocks.findByCredentialId.mockResolvedValue({
+      userId: USER_ID,
+      credentialId: "cred-id",
+      publicKey: Buffer.from(new Uint8Array(32)).toString("base64url"),
+      counter: "0",
+      transports: ["internal"],
+    });
+    mocks.verifyAuthenticationResponse.mockResolvedValue({ verified: false });
+    await expect(
+      passkeyService.verifyAuthentication(USER_ID, authResponse("auth-challenge"))
+    ).rejects.toThrow("Passkey authentication failed");
+  });
+
+  it("rejects credentials owned by another user", async () => {
+    mocks.findValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
+    mocks.findByCredentialId.mockResolvedValue({
+      userId: "other-user",
+      credentialId: "cred-id",
+      publicKey: Buffer.from(new Uint8Array(32)).toString("base64url"),
+      counter: "0",
+    });
+    await expect(
+      passkeyService.verifyAuthentication(USER_ID, authResponse("auth-challenge"))
+    ).rejects.toThrow("Credential not found");
+  });
+
+  it("rejects failed registration verification", async () => {
+    mocks.findValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "reg-challenge" });
+    mocks.verifyRegistrationResponse.mockResolvedValue({ verified: false });
+    const clientDataJSON = Buffer.from(
+      JSON.stringify({ type: "webauthn.create", challenge: "reg-challenge", origin: "http://localhost:3001" })
+    ).toString("base64url");
+    await expect(
+      passkeyService.verifyRegistration(USER_ID, {
+        id: "cred-id",
+        rawId: "cred-id",
+        type: "public-key",
+        response: { clientDataJSON, attestationObject: "oA" },
+        clientExtensionResults: {},
+      })
+    ).rejects.toThrow("Passkey registration failed");
+  });
+});

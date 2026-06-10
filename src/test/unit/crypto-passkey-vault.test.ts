@@ -1,0 +1,66 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import {
+  extractPasskeyPrfOutput,
+  isPasskeySupported,
+  wrapVaultKeyForPasskey,
+  unwrapVaultKeyFromPasskey,
+  unlockVaultFromPasskeyEnvelope,
+} from "@/lib/crypto-client/passkey-vault";
+import { generateUserVaultKey } from "@/lib/crypto-client/vault";
+import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
+
+vi.mock("@/lib/crypto-client/device-storage", () => ({
+  getOrCreateDeviceSecret: vi.fn(),
+  storeLocalVaultEnvelope: vi.fn(async () => {}),
+}));
+
+vi.mock("@/lib/crypto-client/vault", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/crypto-client/vault")>();
+  return {
+    ...actual,
+    buildDeviceVaultEnvelope: vi.fn(async (vaultKey: CryptoKey) => ({
+      encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+      deviceId: "device-1",
+    })),
+    unwrapVaultKeyFromDevice: vi.fn(async () => generateUserVaultKey()),
+  };
+});
+
+describe("passkey vault crypto", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("detects passkey support when WebAuthn is available", () => {
+    vi.stubGlobal("window", { PublicKeyCredential: class {} });
+    expect(isPasskeySupported()).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it("extractPasskeyPrfOutput reads PRF extension output", () => {
+    const bytes = new Uint8Array(32).fill(7);
+    expect(
+      extractPasskeyPrfOutput({
+        prf: { results: { first: bytes.buffer } },
+      } as never)
+    ).toEqual(bytes);
+  });
+
+  it("wraps and unwraps vault key with PRF output", async () => {
+    const vaultKey = await generateUserVaultKey();
+    const prfOutput = crypto.getRandomValues(new Uint8Array(32));
+    const envelope = await wrapVaultKeyForPasskey(vaultKey, prfOutput, USER_ID, USER_ID);
+    const restored = await unwrapVaultKeyFromPasskey(envelope, prfOutput);
+    expect(await crypto.subtle.exportKey("raw", restored)).toEqual(
+      await crypto.subtle.exportKey("raw", vaultKey)
+    );
+  });
+
+  it("unlockVaultFromPasskeyEnvelope persists device envelope after PRF unlock", async () => {
+    const vaultKey = await generateUserVaultKey();
+    const prfOutput = crypto.getRandomValues(new Uint8Array(32));
+    const envelope = await wrapVaultKeyForPasskey(vaultKey, prfOutput, USER_ID, USER_ID);
+    const restored = await unlockVaultFromPasskeyEnvelope(USER_ID, envelope, prfOutput);
+    expect(restored).toBeTruthy();
+  });
+});
