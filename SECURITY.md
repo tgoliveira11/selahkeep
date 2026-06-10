@@ -35,7 +35,8 @@
 - Typed client errors: `RevokedTrustedDeviceError`, `UnauthenticatedTrustedDeviceError`, `ForbiddenTrustedDeviceError`, `UnknownTrustedDeviceError`, `TrustedDeviceServerError`, `TrustedDeviceUnexpectedError`
 - Every trusted-device envelope links to `publicMetadata.trustedDeviceId`
 - Active trusted devices enforce unique `(user_id, client_device_id)` via `client_device_id` column + partial unique index
-- **Offline limitation:** if the client cannot reach the server (detected network failure only), a previously cached local envelope may still decrypt until the next successful online status check. HTTP auth/server errors do **not** fall back to offline unlock.
+- **Offline limitation:** if the client cannot reach the server (detected network failure only), a previously cached local envelope may still decrypt until the next successful online status check. HTTP auth/server errors do **not** fall back to offline unlock. When offline unlock is allowed, the UI shows: *"Unlocked using this device while offline. Device status will be verified again when you reconnect."*
+- When the app is offline and the current device has valid local vault material, local unlock may be allowed. The device revocation status will be verified again when the app reconnects. This is an offline usability trade-off and does not override online revocation checks.
 
 ## Database transactions
 
@@ -106,12 +107,13 @@ Safe audit events only (no plaintext letters, recovery codes, keys, or ciphertex
 - Vault envelopes use WebAuthn **PRF** output as key-wrapping key (not raw signature bytes)
 - PRF required for passkey envelopes; **no registration fallback** to device-secret wrapping
 - If PRF is unavailable at registration, passkey vault envelope is **not** created and existing passkey envelopes are **not** revoked
-- WebAuthn challenges consumed atomically via `consumeValidChallenge()` (`DELETE … RETURNING` with expiry/user/type checks)
+- Passkey-based vault unlock requires PRF support. If PRF is unavailable, the app must not create a passkey vault envelope and must not present that passkey as a recovery method.
+- WebAuthn challenges consumed atomically via `consumeValidChallenge()` (`DELETE … RETURNING` with expiry/user/type checks). **`findValidChallenge` is removed** — all flows must use atomic consumption.
 - Indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
 
 ## WebAuthn challenges
 
-Challenges scoped by user ID and type; expire after 5 minutes; deleted on use; expired rows cleaned on issue.
+Challenges scoped by user ID and type; expire after 5 minutes; deleted on use via atomic `consumeValidChallenge()`; expired rows cleaned on issue. Challenge reuse is impossible — concurrent consumption attempts cannot both succeed.
 
 ## Vault session hardening
 

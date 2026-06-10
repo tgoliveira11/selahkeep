@@ -102,25 +102,6 @@ export const passkeyRepository = {
     return row;
   },
 
-  /** @deprecated Prefer consumeValidChallenge for one-time challenge use. */
-  async findValidChallenge(challenge: string, type: string, expectedUserId?: string) {
-    const [row] = await db
-      .select()
-      .from(webauthnChallenges)
-      .where(
-        and(eq(webauthnChallenges.challenge, challenge), eq(webauthnChallenges.type, type))
-      )
-      .limit(1);
-
-    if (!row || row.expiresAt < new Date()) return null;
-
-    if (expectedUserId !== undefined) {
-      if (row.userId !== expectedUserId) return null;
-    }
-
-    return row;
-  },
-
   async consumeValidChallenge(
     challenge: string,
     type: string,
@@ -150,9 +131,5 @@ export const passkeyRepository = {
     }
 
     return row;
-  },
-
-  async deleteChallenge(id: string, client: DbClient = db) {
-    await client.delete(webauthnChallenges).where(eq(webauthnChallenges.id, id));
   },
 };

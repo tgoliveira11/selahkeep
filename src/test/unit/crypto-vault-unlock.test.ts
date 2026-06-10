@@ -63,7 +63,7 @@ describe("vault unlock from device envelopes", () => {
     const { encryptedVaultKey } = await buildDeviceVaultEnvelope(vaultKey, USER_ID, USER_ID);
     storage.localEnvelope = encryptedVaultKey;
 
-    const restored = await unlockVaultFromDeviceEnvelopes(USER_ID);
+    const restored = (await unlockVaultFromDeviceEnvelopes(USER_ID)).vaultKey;
     expect(await crypto.subtle.exportKey("raw", restored)).toEqual(
       await crypto.subtle.exportKey("raw", vaultKey)
     );
@@ -77,10 +77,9 @@ describe("vault unlock from device envelopes", () => {
     const wrongEnvelope = await buildDeviceVaultEnvelope(wrongKey, USER_ID, USER_ID);
     storage.localEnvelope = wrongEnvelope.encryptedVaultKey;
 
-    const restored = await unlockVaultFromDeviceEnvelopes(
-      USER_ID,
-      letter.encryptedLetterKey
-    );
+    const restored = (
+      await unlockVaultFromDeviceEnvelopes(USER_ID, letter.encryptedLetterKey)
+    ).vaultKey;
     expect(await crypto.subtle.exportKey("raw", restored)).toEqual(
       await crypto.subtle.exportKey("raw", vaultKey)
     );

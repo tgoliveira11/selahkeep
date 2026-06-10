@@ -16,6 +16,7 @@ export function VaultAccessGate({ purpose, onAccessGranted }: VaultAccessGatePro
   const {
     loading,
     error,
+    offlineNotice,
     initializeVault,
     unlockFromDevice,
     unlockFromPasskey,
@@ -120,6 +121,9 @@ export function VaultAccessGate({ purpose, onAccessGranted }: VaultAccessGatePro
       )}
 
       {error && <p className="text-[var(--danger)] text-sm">{error}</p>}
+      {offlineNotice && !error && (
+        <p className="text-sm text-[var(--muted)]">{offlineNotice}</p>
+      )}
     </div>
   );
 }

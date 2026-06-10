@@ -20,14 +20,6 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-function chain(result: unknown) {
-  const terminal = { limit: vi.fn().mockResolvedValue(result) };
-  const where = { limit: terminal.limit, where: vi.fn().mockReturnValue(terminal) };
-  const from = { where: where.where, from: vi.fn().mockReturnValue(where) };
-  dbMocks.select.mockReturnValue(from);
-  return { from, where, terminal };
-}
-
 describe("WebAuthn challenge consumption", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -82,7 +74,7 @@ describe("WebAuthn challenge consumption", () => {
     ).rejects.toBeInstanceOf(ChallengeValidationError);
   });
 
-  it("accepts valid scoped challenge via findValidChallenge (legacy read path)", async () => {
+  it("prevents concurrent double consumption", async () => {
     const row = {
       id: "c1",
       userId: "user-1",
@@ -90,8 +82,16 @@ describe("WebAuthn challenge consumption", () => {
       type: "registration",
       expiresAt: new Date(Date.now() + 60_000),
     };
-    chain([row]);
-    const result = await passkeyRepository.findValidChallenge("abc", "registration", "user-1");
-    expect(result).toEqual(row);
+    dbMocks.returning.mockResolvedValueOnce([row]).mockResolvedValueOnce([]);
+
+    const [first, second] = await Promise.allSettled([
+      passkeyRepository.consumeValidChallenge("abc", "registration", "user-1"),
+      passkeyRepository.consumeValidChallenge("abc", "registration", "user-1"),
+    ]);
+
+    const fulfilled = [first, second].filter((result) => result.status === "fulfilled");
+    const rejected = [first, second].filter((result) => result.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
   });
 });

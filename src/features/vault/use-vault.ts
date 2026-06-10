@@ -23,12 +23,14 @@ import { unlockVaultWithPasskey } from "@/features/passkey/unlock-with-passkey";
 import { getDeviceDisplayInfo } from "@/lib/device-display-info";
 import {
   getTrustedDeviceUnlockErrorMessage,
+  getTrustedDeviceOfflineNotice,
 } from "@/lib/crypto-client/vault-unlock";
 
 export function useVault() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
 
   useEffect(() => {
     return registerVaultUnloadGuard();
@@ -85,12 +87,14 @@ export function useVault() {
     if (!session?.user?.id) throw new Error("Not authenticated");
     setLoading(true);
     setError(null);
+    setOfflineNotice(null);
     try {
-      const key = await unwrapVaultKeyFromDevice(session.user.id, undefined, {
+      const { vaultKey, verification } = await unwrapVaultKeyFromDevice(session.user.id, undefined, {
         explicit: true,
       });
+      setOfflineNotice(getTrustedDeviceOfflineNotice(verification));
       touchVaultSession();
-      return key;
+      return vaultKey;
     } catch (e) {
       setError(getTrustedDeviceUnlockErrorMessage(e));
       throw e;
@@ -145,6 +149,7 @@ export function useVault() {
   return {
     loading,
     error,
+    offlineNotice,
     isUnlocked: isVaultUnlocked(),
     initializeVault,
     unlockFromDevice,

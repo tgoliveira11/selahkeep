@@ -185,6 +185,7 @@ Decryption of all letters while vault is unlocked. If device is registered and n
 
 - Unlocked session + physical access = full access until auto-lock or sign-out.
 - **Offline limitation:** revoked device may still decrypt from cached IndexedDB until next successful online revocation check.
+- **Offline usability trade-off:** When the app is offline and the current device has valid local vault material, local unlock may be allowed. The device revocation status will be verified again when the app reconnects. This does not override online revocation checks. The UI shows a discreet notice when unlock proceeds without an online device-status verification.
 - Screen capture, OS-level keyloggers, and forensic disk imaging are out of app scope.
 
 **Required follow-up**

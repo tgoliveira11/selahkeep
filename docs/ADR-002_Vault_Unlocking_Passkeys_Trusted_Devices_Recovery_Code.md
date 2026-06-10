@@ -304,9 +304,12 @@ Implemented in:
 
 - `src/server/services/vault-service.ts` — vault init creates trusted device first, then envelope with `publicMetadata.trustedDeviceId` (transactional).
 - `src/server/services/trusted-device-service.ts` — revoke device + envelope in one transaction; `getClientDeviceState()` for unlock gating.
-- `src/lib/crypto-client/vault-unlock.ts` — fail-closed `assertTrustedDeviceCanUnlock()` with typed errors; offline unlock only on network failure
+- `src/lib/crypto-client/vault-unlock.ts` — fail-closed `assertTrustedDeviceCanUnlock()` with typed errors; offline unlock only on network failure; returns `TrustedDeviceUnlockVerification` for UI offline notice
+- `src/lib/crypto-client/trusted-device-unlock-verification.ts` — typed verification result (`verified-online` | `allowed-offline`)
 - `src/lib/crypto-client/trusted-device-unlock-errors.ts` — error taxonomy + safe UI messages
+- `src/features/recovery/passkey-setup.tsx` — PRF pre-check via `detectPasskeyPrfSupport()`; clear PRF-unavailable messaging; no vault envelope without PRF output
 - `trusted_devices.client_device_id` + partial unique index on active devices
-- `passkeyRepository.consumeValidChallenge()` — atomic challenge consumption
-- **Offline limitation:** only when the status request fails due to network unavailability (not 401/403/404/5xx); cached local envelope may decrypt until the next successful online check
+- `passkeyRepository.consumeValidChallenge()` — atomic challenge consumption (single conditional delete); **`findValidChallenge` removed**
+- **Offline limitation:** When the app is offline and the current device has valid local vault material, local unlock may be allowed. The device revocation status will be verified again when the app reconnects. This is an offline usability trade-off and does not override online revocation checks.
+- **Passkey PRF:** Passkey-based vault unlock requires PRF support. If PRF is unavailable, the app must not create a passkey vault envelope and must not present that passkey as a recovery method.
 - Tests: `src/test/security/trusted-device-revocation-unlock.test.ts`, `src/test/services/trusted-device-state.test.ts`.

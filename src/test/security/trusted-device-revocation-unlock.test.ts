@@ -8,14 +8,17 @@ import {
   TrustedDeviceServerError,
   TrustedDeviceUnexpectedError,
   unlockVaultFromDeviceEnvelopes,
+  getTrustedDeviceOfflineNotice,
 } from "@/lib/crypto-client/vault-unlock";
+import { buildDeviceVaultEnvelope, generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { TRUSTED_DEVICE_OFFLINE_UNLOCK_MESSAGE } from "@/lib/crypto-client/trusted-device-unlock-verification";
 import { ApiError } from "@/lib/api-client/api-error";
-import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
+import { USER_ID } from "@/test/helpers/fixtures";
 
 const deviceStorageMocks = vi.hoisted(() => ({
-  getOrCreateDeviceSecret: vi.fn(),
-  getLocalVaultEnvelope: vi.fn(),
-  storeLocalVaultEnvelope: vi.fn(),
+  localEnvelope: null as Awaited<ReturnType<typeof buildDeviceVaultEnvelope>>["encryptedVaultKey"] | null,
+  deviceSecret: null as CryptoKey | null,
+  deviceId: "660e8400-e29b-41d4-a716-446655440002",
   clearLocalVaultData: vi.fn(),
 }));
 
@@ -28,16 +31,42 @@ const sessionMocks = vi.hoisted(() => ({
   lockVaultSession: vi.fn(),
 }));
 
-vi.mock("@/lib/crypto-client/device-storage", () => deviceStorageMocks);
+vi.mock("@/lib/crypto-client/device-storage", () => ({
+  getOrCreateDeviceSecret: vi.fn(async () => {
+    if (!deviceStorageMocks.deviceSecret) {
+      const bytes = crypto.getRandomValues(new Uint8Array(32));
+      deviceStorageMocks.deviceSecret = await crypto.subtle.importKey(
+        "raw",
+        bytes,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
+    }
+    return {
+      deviceId: deviceStorageMocks.deviceId,
+      deviceSecret: deviceStorageMocks.deviceSecret,
+    };
+  }),
+  getLocalVaultEnvelope: vi.fn(async () => deviceStorageMocks.localEnvelope),
+  storeLocalVaultEnvelope: vi.fn(async (_userId: string, _deviceId: string, envelope: unknown) => {
+    deviceStorageMocks.localEnvelope = envelope as typeof deviceStorageMocks.localEnvelope;
+  }),
+  clearLocalVaultData: deviceStorageMocks.clearLocalVaultData,
+}));
 vi.mock("@/lib/crypto-client/vault-session", () => ({
   lockVaultSession: sessionMocks.lockVaultSession,
   isVaultManuallyLocked: vi.fn(() => false),
   unlockVaultSession: vi.fn(),
 }));
-vi.mock("@/lib/crypto-client/vault", () => ({
-  setSessionVaultKey: vaultMocks.setSessionVaultKey,
-  getSessionVaultKey: vaultMocks.getSessionVaultKey,
-}));
+vi.mock("@/lib/crypto-client/vault", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/crypto-client/vault")>();
+  return {
+    ...actual,
+    setSessionVaultKey: vaultMocks.setSessionVaultKey,
+    getSessionVaultKey: vaultMocks.getSessionVaultKey,
+  };
+});
 vi.mock("@/lib/api-client/trusted-devices", () => ({
   trustedDevicesApi: {
     deviceState: vi.fn(),
@@ -54,14 +83,37 @@ vi.mock("@/lib/crypto-client/record-device-unlock", () => ({
 }));
 
 describe("trusted device unlock hardening", () => {
-  const clientDeviceId = "660e8400-e29b-41d4-a716-446655440002";
+  const clientDeviceId = deviceStorageMocks.deviceId;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    deviceStorageMocks.getOrCreateDeviceSecret.mockResolvedValue({
-      deviceId: clientDeviceId,
-      deviceSecret: {} as CryptoKey,
+    deviceStorageMocks.localEnvelope = null;
+    deviceStorageMocks.deviceSecret = null;
+    setSessionVaultKey(null);
+  });
+
+  it("returns verified-online when device is active on server", async () => {
+    const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
+    vi.mocked(trustedDevicesApi.deviceState).mockResolvedValue({ state: "active" });
+
+    await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).resolves.toEqual({
+      status: "verified-online",
     });
+    expect(getTrustedDeviceOfflineNotice({ status: "verified-online" })).toBeNull();
+  });
+
+  it("returns allowed-offline verification on network failure", async () => {
+    const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
+    vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(new TypeError("Failed to fetch"));
+
+    const verification = await assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId);
+    expect(verification).toEqual({
+      status: "allowed-offline",
+      message: TRUSTED_DEVICE_OFFLINE_UNLOCK_MESSAGE,
+    });
+    expect(getTrustedDeviceOfflineNotice(verification)).toBe(
+      TRUSTED_DEVICE_OFFLINE_UNLOCK_MESSAGE
+    );
   });
 
   it("clears local material and blocks unlock when server reports revoked device", async () => {
@@ -75,7 +127,7 @@ describe("trusted device unlock hardening", () => {
     expect(sessionMocks.lockVaultSession).toHaveBeenCalled();
   });
 
-  it("blocks unlock on HTTP 401", async () => {
+  it("blocks unlock on HTTP 401 without offline notice", async () => {
     const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
     vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(new ApiError(401, "Unauthorized"));
 
@@ -84,7 +136,7 @@ describe("trusted device unlock hardening", () => {
     );
   });
 
-  it("blocks unlock on HTTP 403", async () => {
+  it("blocks unlock on HTTP 403 without offline notice", async () => {
     const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
     vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(new ApiError(403, "Forbidden"));
 
@@ -103,17 +155,16 @@ describe("trusted device unlock hardening", () => {
     expect(deviceStorageMocks.clearLocalVaultData).toHaveBeenCalledWith(USER_ID);
   });
 
-  it("blocks unlock on not_registered state and clears local material", async () => {
+  it("blocks unlock on not_registered state", async () => {
     const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
     vi.mocked(trustedDevicesApi.deviceState).mockResolvedValue({ state: "not_registered" });
 
     await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).rejects.toBeInstanceOf(
       UnknownTrustedDeviceError
     );
-    expect(deviceStorageMocks.clearLocalVaultData).toHaveBeenCalledWith(USER_ID);
   });
 
-  it("blocks unlock on HTTP 500", async () => {
+  it("blocks unlock on HTTP 500 without offline notice", async () => {
     const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
     vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(
       new ApiError(500, "Internal server error")
@@ -124,17 +175,7 @@ describe("trusted device unlock hardening", () => {
     );
   });
 
-  it("allows local unlock path on real network failure", async () => {
-    const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
-    vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(new TypeError("Failed to fetch"));
-    deviceStorageMocks.getLocalVaultEnvelope.mockResolvedValue(
-      encryptedPayload("vault_key", USER_ID)
-    );
-
-    await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).resolves.toBeUndefined();
-  });
-
-  it("fails closed on unexpected errors", async () => {
+  it("fails closed on unexpected errors without offline notice", async () => {
     const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
     vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(new ApiError(418, "Teapot"));
 
@@ -143,23 +184,29 @@ describe("trusted device unlock hardening", () => {
     );
   });
 
+  it("surfaces offline notice when unlock succeeds after offline status check", async () => {
+    const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
+    vi.mocked(trustedDevicesApi.deviceState).mockRejectedValue(new TypeError("Failed to fetch"));
+    const vaultKey = await generateUserVaultKey();
+    const { encryptedVaultKey } = await buildDeviceVaultEnvelope(vaultKey, USER_ID, USER_ID);
+    deviceStorageMocks.localEnvelope = encryptedVaultKey;
+
+    const result = await unlockVaultFromDeviceEnvelopes(USER_ID);
+    expect(result.verification.status).toBe("allowed-offline");
+    expect(getTrustedDeviceOfflineNotice(result.verification)).toBe(
+      TRUSTED_DEVICE_OFFLINE_UNLOCK_MESSAGE
+    );
+  });
+
   it("does not silently allow unlock after online revocation check", async () => {
     const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
     vi.mocked(trustedDevicesApi.deviceState).mockResolvedValue({ state: "revoked" });
-    deviceStorageMocks.getLocalVaultEnvelope.mockResolvedValue(
-      encryptedPayload("vault_key", USER_ID)
-    );
+    const vaultKey = await generateUserVaultKey();
+    const { encryptedVaultKey } = await buildDeviceVaultEnvelope(vaultKey, USER_ID, USER_ID);
+    deviceStorageMocks.localEnvelope = encryptedVaultKey;
 
     await expect(unlockVaultFromDeviceEnvelopes(USER_ID)).rejects.toBeInstanceOf(
       RevokedTrustedDeviceError
     );
-  });
-
-  it("allows unlock path when device is active on server", async () => {
-    const { trustedDevicesApi } = await import("@/lib/api-client/trusted-devices");
-    vi.mocked(trustedDevicesApi.deviceState).mockResolvedValue({ state: "active" });
-
-    await expect(assertTrustedDeviceCanUnlock(USER_ID, clientDeviceId)).resolves.toBeUndefined();
-    expect(deviceStorageMocks.clearLocalVaultData).not.toHaveBeenCalled();
   });
 });

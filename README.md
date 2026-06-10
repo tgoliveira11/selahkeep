@@ -12,7 +12,7 @@ Web-first responsive MVP for private encrypted spiritual letters.
 - PostgreSQL + Drizzle ORM
 - NextAuth (Google, Apple, email/password)
 - Web Crypto API (AES-GCM) + Argon2id recovery KDF
-- WebAuthn passkeys (@simplewebauthn)
+- WebAuthn passkeys (@simplewebauthn) — vault unlock requires WebAuthn **PRF** support; browsers/providers without PRF cannot register a passkey vault envelope
 
 ## Quick Start
 
@@ -97,6 +97,8 @@ Tests are split by layer. Vitest runs everything under `src/test/`; Playwright r
 Recent passkey-related coverage includes:
 
 - PRF salt derivation (`src/test/security/passkey-prf.test.ts`)
+- PRF support pre-check (`src/test/unit/prf-support.test.ts`)
+- Passkey setup UX when PRF unavailable (`src/test/features/passkey-setup.test.tsx`)
 - WebAuthn JSON → `ArrayBuffer` conversion for PRF extensions (`src/test/unit/prepare-webauthn-options.test.ts`)
 - Passkey registration/authentication services and routes
 - Passkey removal (`DELETE /api/passkeys`)

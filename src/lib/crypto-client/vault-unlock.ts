@@ -15,10 +15,15 @@ import { ApiError } from "@/lib/api-client/api-error";
 import {
   RevokedTrustedDeviceError,
   UnknownTrustedDeviceError,
-  TrustedDeviceNetworkUnavailableError,
   classifyTrustedDeviceApiError,
   isNetworkUnavailableError,
 } from "./trusted-device-unlock-errors";
+import {
+  type DeviceVaultUnlockResult,
+  type TrustedDeviceUnlockVerification,
+  offlineTrustedDeviceVerification,
+  verifiedOnlineTrustedDeviceVerification,
+} from "./trusted-device-unlock-verification";
 
 export {
   RevokedTrustedDeviceError,
@@ -31,6 +36,15 @@ export {
   getTrustedDeviceUnlockErrorMessage,
   isTrustedDeviceUnlockError,
 } from "./trusted-device-unlock-errors";
+
+export {
+  TRUSTED_DEVICE_OFFLINE_UNLOCK_MESSAGE,
+  type TrustedDeviceUnlockVerification,
+  type DeviceVaultUnlockResult,
+  getTrustedDeviceOfflineNotice,
+  offlineTrustedDeviceVerification,
+  verifiedOnlineTrustedDeviceVerification,
+} from "./trusted-device-unlock-verification";
 
 function base64UrlToBytes(base64url: string): Uint8Array {
   const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
@@ -99,7 +113,7 @@ async function handleUnknownTrustedDevice(userId: string): Promise<never> {
 export async function assertTrustedDeviceCanUnlock(
   userId: string,
   clientDeviceId: string
-): Promise<void> {
+): Promise<TrustedDeviceUnlockVerification> {
   try {
     const { state } = await trustedDevicesApi.deviceState(clientDeviceId);
     if (state === "revoked") {
@@ -108,11 +122,12 @@ export async function assertTrustedDeviceCanUnlock(
     if (state === "not_registered") {
       await handleUnknownTrustedDevice(userId);
     }
+    return verifiedOnlineTrustedDeviceVerification();
   } catch (error) {
     if (error instanceof RevokedTrustedDeviceError) throw error;
     if (error instanceof UnknownTrustedDeviceError) throw error;
     if (isNetworkUnavailableError(error)) {
-      return;
+      return offlineTrustedDeviceVerification();
     }
     if (error instanceof ApiError && error.status === 404) {
       await handleUnknownTrustedDevice(userId);
@@ -124,7 +139,7 @@ export async function assertTrustedDeviceCanUnlock(
 async function collectEnvelopeCandidates(
   userId: string,
   clientDeviceId: string
-): Promise<EncryptedPayload[]> {
+): Promise<{ candidates: EncryptedPayload[]; verification: TrustedDeviceUnlockVerification }> {
   const seen = new Set<string>();
   const candidates: EncryptedPayload[] = [];
 
@@ -137,7 +152,7 @@ async function collectEnvelopeCandidates(
     candidates.push(payload);
   }
 
-  await assertTrustedDeviceCanUnlock(userId, clientDeviceId);
+  const verification = await assertTrustedDeviceCanUnlock(userId, clientDeviceId);
 
   const local = await getLocalVaultEnvelope(userId);
   if (local) add(local);
@@ -152,12 +167,12 @@ async function collectEnvelopeCandidates(
     }
   } catch (error) {
     if (isNetworkUnavailableError(error)) {
-      return candidates;
+      return { candidates, verification };
     }
     classifyTrustedDeviceApiError(error);
   }
 
-  return candidates;
+  return { candidates, verification };
 }
 
 async function vaultKeyFromEnvelope(
@@ -189,14 +204,14 @@ export async function unlockVaultFromDeviceEnvelopes(
   userId: string,
   sampleEncryptedLetterKey?: EncryptedPayload,
   options?: { explicit?: boolean }
-): Promise<CryptoKey> {
+): Promise<DeviceVaultUnlockResult> {
   const explicit = options?.explicit ?? false;
   if (isVaultManuallyLocked() && !explicit) {
     throw new Error("Vault is locked");
   }
 
   const { deviceId, deviceSecret } = await getOrCreateDeviceSecret(userId);
-  const candidates = await collectEnvelopeCandidates(userId, deviceId);
+  const { candidates, verification } = await collectEnvelopeCandidates(userId, deviceId);
 
   if (candidates.length === 0) {
     throw new Error("No vault envelope found for this device");
@@ -204,7 +219,10 @@ export async function unlockVaultFromDeviceEnvelopes(
 
   if (sampleEncryptedLetterKey && getSessionVaultKey()) {
     if (await canDecryptLetterKey(getSessionVaultKey()!, sampleEncryptedLetterKey)) {
-      return getSessionVaultKey()!;
+      return {
+        vaultKey: getSessionVaultKey()!,
+        verification,
+      };
     }
     setSessionVaultKey(null);
   }
@@ -223,7 +241,7 @@ export async function unlockVaultFromDeviceEnvelopes(
       await storeLocalVaultEnvelope(userId, deviceId, envelope);
       const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
       void recordTrustedDeviceUnlock(userId);
-      return vaultKey;
+      return { vaultKey, verification };
     } catch {
       continue;
     }
@@ -237,7 +255,7 @@ export async function unlockVaultFromDeviceEnvelopes(
         await storeLocalVaultEnvelope(userId, deviceId, envelope);
         const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
         void recordTrustedDeviceUnlock(userId);
-        return vaultKey;
+        return { vaultKey, verification };
       } catch {
         continue;
       }

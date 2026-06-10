@@ -65,7 +65,7 @@ describe("vault unlock extended paths", () => {
       { id: "env-1", encryptedVaultKey, createdAt: "2024-01-01T00:00:00.000Z" },
     ];
 
-    const restored = await unlockVaultFromDeviceEnvelopes(USER_ID);
+    const restored = (await unlockVaultFromDeviceEnvelopes(USER_ID)).vaultKey;
     expect(await crypto.subtle.exportKey("raw", restored)).toEqual(
       await crypto.subtle.exportKey("raw", vaultKey)
     );
@@ -78,6 +78,8 @@ describe("vault unlock extended paths", () => {
     serverEnvelopes.value = [
       { id: "env-1", encryptedVaultKey, createdAt: "2024-01-02T00:00:00.000Z" },
     ];
-    await expect(unlockVaultFromDeviceEnvelopes(USER_ID)).resolves.toBeTruthy();
+    await expect(unlockVaultFromDeviceEnvelopes(USER_ID)).resolves.toMatchObject({
+      verification: { status: "verified-online" },
+    });
   });
 });

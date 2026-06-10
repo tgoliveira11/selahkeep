@@ -55,6 +55,9 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - OpenAPI JSON: `GET /api/openapi`
 
 - Passkey registration without PRF does **not** create `passkey_authorized_device` envelopes and does **not** revoke existing passkey envelopes
+- Passkey-based vault unlock requires PRF support. If PRF is unavailable, the app must not create a passkey vault envelope and must not present that passkey as a recovery method.
+- Trusted-device offline unlock: when the app is offline and the current device has valid local vault material, local unlock may be allowed. The device revocation status will be verified again when the app reconnects. This is an offline usability trade-off and does not override online revocation checks. UI surfaces `TrustedDeviceUnlockVerification` (`verified-online` vs `allowed-offline`) via `useVault().offlineNotice`.
+- WebAuthn challenge validation uses atomic `consumeValidChallenge()` only (`findValidChallenge` removed)
 - `client_device_id` column on `trusted_devices` with partial unique index for active devices
 - WebAuthn challenge indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
 

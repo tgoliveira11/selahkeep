@@ -13,6 +13,8 @@ import {
   getLocalVaultEnvelope,
 } from "./device-storage";
 import { unlockVaultSession } from "./vault-session";
+import type { DeviceVaultUnlockResult } from "./trusted-device-unlock-verification";
+import { verifiedOnlineTrustedDeviceVerification } from "./trusted-device-unlock-verification";
 
 export const VAULT_VERSION = "vault-v1";
 
@@ -79,7 +81,7 @@ export async function unwrapVaultKeyFromDevice(
   userId: string,
   encryptedVaultKey?: EncryptedPayload,
   options?: { explicit?: boolean }
-): Promise<CryptoKey> {
+): Promise<DeviceVaultUnlockResult> {
   const explicit = options?.explicit ?? false;
   const applyVaultKey = (vaultKey: CryptoKey): CryptoKey => {
     if (explicit) {
@@ -100,7 +102,10 @@ export async function unwrapVaultKeyFromDevice(
     applyVaultKey(vaultKey);
     const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
     void recordTrustedDeviceUnlock(userId);
-    return vaultKey;
+    return {
+      vaultKey,
+      verification: verifiedOnlineTrustedDeviceVerification(),
+    };
   }
   return unlockVaultFromDeviceEnvelopes(userId, undefined, { explicit });
 }

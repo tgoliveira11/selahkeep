@@ -55,7 +55,7 @@ describe("vault key lifecycle", () => {
     const { encryptedVaultKey } = await buildDeviceVaultEnvelope(vaultKey, USER_ID, USER_ID);
     setSessionVaultKey(null);
     const { unwrapVaultKeyFromDevice } = await import("@/lib/crypto-client/vault");
-    const restored = await unwrapVaultKeyFromDevice(USER_ID, encryptedVaultKey);
+    const { vaultKey: restored } = await unwrapVaultKeyFromDevice(USER_ID, encryptedVaultKey);
     expect(await crypto.subtle.exportKey("raw", restored)).toEqual(
       await crypto.subtle.exportKey("raw", vaultKey)
     );

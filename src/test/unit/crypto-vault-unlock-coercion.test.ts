@@ -66,6 +66,8 @@ describe("vault unlock payload coercion", () => {
       version: encryptedVaultKey.version,
     };
     storage.localEnvelope = reordered;
-    await expect(unlockVaultFromDeviceEnvelopes(USER_ID)).resolves.toBeTruthy();
+    await expect(unlockVaultFromDeviceEnvelopes(USER_ID)).resolves.toMatchObject({
+      verification: { status: "verified-online" },
+    });
   });
 });
