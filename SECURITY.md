@@ -21,13 +21,22 @@
 
 - AES-GCM, 256-bit keys, 96-bit random IV per operation
 - Structured payload: `version`, `alg`, `iv`, `ciphertext`, `aad`
-- Recovery KDF: Argon2id preferred; PBKDF2-SHA-256 fallback with versioned metadata
+- **AAD binding (server + client):** `aad.userId` must match session user; `aad.resourceId` must match persisted letter/vault id; `aad.field` must match the encrypted field. Reject mismatches before storage.
+- **Letter IDs:** client generates UUID; server persists the same id (no server reassignment).
+- Recovery KDF: Argon2id preferred; PBKDF2-SHA-256 fallback (600k iterations) with versioned `kdf-v1` metadata
+- Recovery codes: ≥128 bits entropy (uniform word selection + rejection sampling); shown only at generation/regeneration; never stored plaintext
 
 ## Vault Unlocking (ADR-002)
 
 - Passkeys must not be used as raw encryption keys
 - Trusted devices are revocable
-- Revoked devices cannot unlock vault
+- Revoked devices cannot unlock vault when online (server checks `GET /api/trusted-devices/status`; local IndexedDB cleared on revoke)
+- Every trusted-device envelope links to `publicMetadata.trustedDeviceId`
+- **Offline limitation:** if the client cannot reach the server, a previously cached local envelope might still decrypt until the next online revocation check. Documented residual risk.
+
+## Database transactions
+
+Multi-step sensitive flows use `runInTransaction()` (vault init, trusted device create/revoke, recovery code store, passkey register/remove). Failures roll back related writes.
 
 ## Browser Storage (IndexedDB)
 
@@ -49,7 +58,7 @@ Forbidden in browser persistence:
 | **IndexedDB export / DevTools copy** | Device secret stored as non-extractable `CryptoKey`, not copy-paste base64; vault key remains AES-GCM ciphertext |
 | **Stolen session cookie only** | Server stores ciphertext only; unlock still requires client key material |
 | **Sign out on shared device** | `clearVaultClientState()` wipes IndexedDB envelopes and in-memory vault key |
-| **Revoked trusted device** | Server envelope revoked; local material alone cannot re-register device without unlock flow |
+| **Revoked trusted device** | Server envelope revoked; online unlock checks device status and clears local IndexedDB; revoking current device calls `clearVaultClientState()` |
 
 Trusted device records store display metadata only (`deviceName`, browser, platform, form factor, `devicePublicKey.deviceId`). They must not store exportable key bytes. Duplicate registration of the same client `deviceId` is rejected server-side.
 

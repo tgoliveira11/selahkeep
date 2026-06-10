@@ -43,9 +43,14 @@ describe("passkey removal", () => {
 
   it("revokes credentials, envelopes, and records audit event", async () => {
     await expect(passkeyService.removeAll(USER_ID)).resolves.toEqual({ success: true });
-    expect(mocks.revokeAllByUserId).toHaveBeenCalledWith(USER_ID);
-    expect(mocks.revokeEnvelope).toHaveBeenCalledWith("env-1", USER_ID);
-    expect(mocks.record).toHaveBeenCalledWith("passkey_removed", USER_ID);
+    expect(mocks.revokeAllByUserId).toHaveBeenCalledWith(USER_ID, expect.anything());
+    expect(mocks.revokeEnvelope).toHaveBeenCalledWith("env-1", USER_ID, expect.anything());
+    expect(mocks.record).toHaveBeenCalledWith(
+      "passkey_removed",
+      USER_ID,
+      undefined,
+      expect.anything()
+    );
   });
 
   it("throws when no passkey is configured", async () => {

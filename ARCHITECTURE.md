@@ -62,3 +62,36 @@ Letter title/body -> Letter Key -> User Vault Key -> vault envelopes
 ```
 
 Vault envelope methods: `trusted_device`, `passkey_authorized_device`, `recovery_code`
+
+## AAD binding (ADR-001)
+
+Client generates letter UUIDs and binds encrypted payloads with AAD:
+
+- `aad.userId` — authenticated user ID
+- `aad.resourceId` — persisted letter/vault resource ID (client-provided letter UUID)
+- `aad.field` — encrypted field name (`title`, `body`, `letter_key`, etc.)
+
+Server validates AAD in `src/server/policies/aad-validation.ts` before storage. Client verifies AAD in `src/lib/crypto-client/aad-verify.ts` before decryption.
+
+## Database transactions
+
+Multi-step sensitive flows use `runInTransaction()` (`src/lib/db/transaction.ts`):
+
+- vault initialization (trusted device + envelope + link)
+- trusted device create/revoke (device row + envelope revoke)
+- recovery code store/regenerate
+- passkey register/remove
+
+Failures roll back all related writes.
+
+## Trusted device revocation
+
+- Every trusted-device envelope stores `publicMetadata.trustedDeviceId`
+- Revoking a device revokes its envelope in the same transaction
+- Client checks `GET /api/trusted-devices/status?deviceId=` before unlock; clears IndexedDB on revoke
+- **Offline limitation:** cached local envelope may still decrypt until the next online status check
+
+## API Routes (additional)
+
+- `GET /api/trusted-devices/status?deviceId=` — device active/revoked state for unlock gating
+- `POST /api/trusted-devices/touch` — updates `lastUsedAt`; returns revoked state

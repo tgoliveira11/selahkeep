@@ -1,3 +1,7 @@
+import type {
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+} from "@simplewebauthn/browser";
 import { base64UrlToBytes } from "@/lib/crypto-client/encoding";
 
 type PrfEvalInput = {
@@ -52,18 +56,26 @@ export function prepareWebAuthnExtensions<T extends { prf?: PrfExtensionInput } 
   return { ...extensions, prf: prepared };
 }
 
-export function prepareRegistrationOptions<
-  T extends { extensions?: { prf?: PrfExtensionInput } },
->(options: T): T {
+export function prepareRegistrationOptions(
+  options: PublicKeyCredentialCreationOptionsJSON
+): PublicKeyCredentialCreationOptionsJSON {
   if (!options.extensions) return options;
   return {
     ...options,
-    extensions: prepareWebAuthnExtensions(options.extensions),
+    extensions: prepareWebAuthnExtensions(
+      options.extensions as { prf?: PrfExtensionInput }
+    ) as PublicKeyCredentialCreationOptionsJSON["extensions"],
   };
 }
 
-export function prepareAuthenticationOptions<
-  T extends { extensions?: { prf?: PrfExtensionInput } },
->(options: T): T {
-  return prepareRegistrationOptions(options);
+export function prepareAuthenticationOptions(
+  options: PublicKeyCredentialRequestOptionsJSON
+): PublicKeyCredentialRequestOptionsJSON {
+  if (!options.extensions) return options;
+  return {
+    ...options,
+    extensions: prepareWebAuthnExtensions(
+      options.extensions as { prf?: PrfExtensionInput }
+    ) as PublicKeyCredentialRequestOptionsJSON["extensions"],
+  };
 }

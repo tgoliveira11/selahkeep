@@ -24,6 +24,7 @@ export function encryptedPayload(
 
 export function createLetterInput() {
   return {
+    id: LETTER_ID,
     encryptedTitle: encryptedPayload("title"),
     encryptedBody: encryptedPayload("body"),
     encryptedLetterKey: encryptedPayload("letter_key"),

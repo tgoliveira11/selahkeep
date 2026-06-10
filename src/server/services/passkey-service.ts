@@ -1,3 +1,4 @@
+import { runInTransaction } from "@/lib/db/transaction";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -13,11 +14,12 @@ import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
 import { checkRateLimit } from "@/server/policies/rate-limit";
 import { passkeyPrfExtensions } from "@/lib/passkey/prf";
+import { assertVaultKeyAad } from "@/server/policies/aad-validation";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
 const rpName = process.env.WEBAUTHN_RP_NAME ?? "Letters to God";
 const rpID = process.env.WEBAUTHN_RP_ID ?? "localhost";
-const origin = process.env.WEBAUTHN_ORIGIN ?? "http://localhost:3000";
+const origin = process.env.WEBAUTHN_ORIGIN ?? "http://localhost:3001";
 
 export const passkeyService = {
   async getRegistrationOptions(userId: string, userName: string) {
@@ -86,31 +88,44 @@ export const passkeyService = {
     const { credential, credentialDeviceType, credentialBackedUp } =
       verification.registrationInfo;
 
-    await passkeyRepository.createCredential({
-      userId,
-      credentialId: credential.id,
-      publicKey: Buffer.from(credential.publicKey).toString("base64url"),
-      counter: String(credential.counter),
-      transports: credential.transports,
-    });
-
     if (encryptedVaultKey) {
-      const existingEnvelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
-      for (const envelope of existingEnvelopes) {
-        if (envelope.method === "passkey_authorized_device") {
-          await vaultRepository.revokeEnvelope(envelope.id, userId);
-        }
-      }
-
-      await vaultRepository.createEnvelope({
-        userId,
-        method: "passkey_authorized_device",
-        encryptedVaultKey,
-        publicMetadata: { credentialId: credential.id },
-      });
+      assertVaultKeyAad(userId, encryptedVaultKey);
     }
 
-    await auditRepository.record("passkey_added", userId);
+    await runInTransaction(async (tx) => {
+      await passkeyRepository.createCredential(
+        {
+          userId,
+          credentialId: credential.id,
+          publicKey: Buffer.from(credential.publicKey).toString("base64url"),
+          counter: String(credential.counter),
+          transports: credential.transports,
+        },
+        tx
+      );
+
+      if (encryptedVaultKey) {
+        const existingEnvelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
+        for (const envelope of existingEnvelopes) {
+          if (envelope.method === "passkey_authorized_device") {
+            await vaultRepository.revokeEnvelope(envelope.id, userId, tx);
+          }
+        }
+
+        await vaultRepository.createEnvelope(
+          {
+            userId,
+            method: "passkey_authorized_device",
+            encryptedVaultKey,
+            publicMetadata: { credentialId: credential.id },
+          },
+          tx
+        );
+      }
+
+      await auditRepository.record("passkey_added", userId, undefined, tx);
+    });
+
     return {
       verified: true,
       credentialId: credential.id,
@@ -212,16 +227,19 @@ export const passkeyService = {
       throw new NotFoundError("No passkey configured");
     }
 
-    await passkeyRepository.revokeAllByUserId(userId);
+    await runInTransaction(async (tx) => {
+      await passkeyRepository.revokeAllByUserId(userId, tx);
 
-    const envelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
-    for (const item of envelopes) {
-      if (item.method === "passkey_authorized_device") {
-        await vaultRepository.revokeEnvelope(item.id, userId);
+      const envelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
+      for (const item of envelopes) {
+        if (item.method === "passkey_authorized_device") {
+          await vaultRepository.revokeEnvelope(item.id, userId, tx);
+        }
       }
-    }
 
-    await auditRepository.record("passkey_removed", userId);
+      await auditRepository.record("passkey_removed", userId, undefined, tx);
+    });
+
     return { success: true };
   },
 };

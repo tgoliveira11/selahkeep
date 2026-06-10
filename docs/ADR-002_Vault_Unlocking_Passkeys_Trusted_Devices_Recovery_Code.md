@@ -297,3 +297,14 @@ Vault unlocking implementation requires human security review.
 4. Trusted devices must be revocable.
 5. Revoked devices must not continue to unlock the vault.
 6. Losing all recovery methods means private letters cannot be restored.
+
+## Implementation Notes (MVP)
+
+Implemented in:
+
+- `src/server/services/vault-service.ts` — vault init creates trusted device first, then envelope with `publicMetadata.trustedDeviceId` (transactional).
+- `src/server/services/trusted-device-service.ts` — revoke device + envelope in one transaction; `getClientDeviceState()` for unlock gating.
+- `src/lib/crypto-client/vault-unlock.ts` — `assertTrustedDeviceCanUnlock()` checks `GET /api/trusted-devices/status`; clears IndexedDB on revoke.
+- `src/lib/db/transaction.ts` — `runInTransaction()` for vault init, device create/revoke, recovery code store, passkey register/remove.
+- **Offline limitation:** if the client cannot reach the server, a previously cached local envelope might still decrypt until the next online revocation check.
+- Tests: `src/test/security/trusted-device-revocation-unlock.test.ts`, `src/test/services/trusted-device-state.test.ts`.

@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, type DbClient } from "@/lib/db";
 import { auditEvents } from "@/lib/db/schema";
 
 const ALLOWED_METADATA_KEYS = new Set([
@@ -21,8 +21,13 @@ function sanitizeMetadata(metadata?: Record<string, unknown>): Record<string, un
 }
 
 export const auditRepository = {
-  async record(eventType: string, userId?: string, metadata?: Record<string, unknown>) {
-    await db.insert(auditEvents).values({
+  async record(
+    eventType: string,
+    userId?: string,
+    metadata?: Record<string, unknown>,
+    client: DbClient = db
+  ) {
+    await client.insert(auditEvents).values({
       userId: userId ?? null,
       eventType,
       metadata: sanitizeMetadata(metadata),

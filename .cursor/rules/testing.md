@@ -51,6 +51,13 @@ Use unit/service/API tests for most coverage. Reserve E2E for end-to-end smoke o
 - WebAuthn JSON options convert PRF salts to `ArrayBuffer` before browser calls (`prepare-webauthn-options.test.ts`).
 - Passkey register/authenticate/remove covered in service + API tests.
 - Recovery envelope storage uses KDF metadata, not plaintext code.
+- Recovery entropy: mathematical test in `recovery-code.test.ts` (not word-count only).
+
+### AAD & transactions (when touching letters or vault flows)
+
+- AAD mismatch rejection: `aad-validation.test.ts`, `aad-verify.test.ts`, letter service tests.
+- Transaction rollback: mock `runInTransaction` in `setup.ts`; service tests pass `tx` client.
+- Trusted device revocation unlock: `trusted-device-revocation-unlock.test.ts`, `trusted-device-state.test.ts`.
 
 ## Sentinel phrase test
 

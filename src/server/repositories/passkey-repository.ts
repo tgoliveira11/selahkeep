@@ -1,16 +1,19 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, type DbClient } from "@/lib/db";
 import { passkeyCredentials, webauthnChallenges } from "@/lib/db/schema";
 
 export const passkeyRepository = {
-  async createCredential(data: {
-    userId: string;
-    credentialId: string;
-    publicKey: string;
-    counter: string;
-    transports?: string[] | null;
-  }) {
-    const [cred] = await db
+  async createCredential(
+    data: {
+      userId: string;
+      credentialId: string;
+      publicKey: string;
+      counter: string;
+      transports?: string[] | null;
+    },
+    client: DbClient = db
+  ) {
+    const [cred] = await client
       .insert(passkeyCredentials)
       .values({
         userId: data.userId,
@@ -57,8 +60,8 @@ export const passkeyRepository = {
     return cred ?? null;
   },
 
-  async revokeAllByUserId(userId: string) {
-    return db
+  async revokeAllByUserId(userId: string, client: DbClient = db) {
+    return client
       .update(passkeyCredentials)
       .set({ revokedAt: new Date() })
       .where(and(eq(passkeyCredentials.userId, userId), isNull(passkeyCredentials.revokedAt)))

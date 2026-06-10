@@ -1,20 +1,25 @@
 import { and, desc, eq } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, type DbClient } from "@/lib/db";
 import { letters } from "@/lib/db/schema";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
 export const letterRepository = {
-  async create(data: {
-    userId: string;
-    encryptedTitle: EncryptedPayload;
-    encryptedBody: EncryptedPayload;
-    encryptedLetterKey: EncryptedPayload;
-    encryptionVersion: string;
-    answered?: boolean;
-  }) {
-    const [letter] = await db
+  async create(
+    data: {
+      id: string;
+      userId: string;
+      encryptedTitle: EncryptedPayload;
+      encryptedBody: EncryptedPayload;
+      encryptedLetterKey: EncryptedPayload;
+      encryptionVersion: string;
+      answered?: boolean;
+    },
+    client: DbClient = db
+  ) {
+    const [letter] = await client
       .insert(letters)
       .values({
+        id: data.id,
         userId: data.userId,
         encryptedTitle: data.encryptedTitle,
         encryptedBody: data.encryptedBody,

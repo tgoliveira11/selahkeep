@@ -2,7 +2,7 @@ import { argon2id } from "hash-wasm";
 import type { KdfMetadata } from "@/lib/validation/encrypted-payload";
 import { bytesToBase64Url, base64UrlToBytes, stringToBytes, toBufferSource } from "./encoding";
 
-const RECOVERY_WORDS = [
+const RECOVERY_WORDS_BASE = [
   "river", "candle", "forest", "window", "silver", "anchor", "harbor", "fabric",
   "lantern", "cloud", "meadow", "thunder", "crystal", "horizon", "willow", "ember",
   "canyon", "breeze", "summit", "mirror", "pebble", "aurora", "compass", "garden",
@@ -15,20 +15,62 @@ const RECOVERY_WORDS = [
   "iris", "jade", "kelp", "lunar", "mist", "noble", "opal", "pine",
   "quest", "ridge", "stone", "trail", "umber", "vine", "wren", "yarrow",
   "amber", "brook", "cliff", "dusk", "fern", "glen", "haze", "ink",
-  "juniper", "knoll", "leaf", "moss", "nest", "oak", "pond", "quartz",
-  "root", "stream", "thorn", "urn", "veil", "wood", "yarn", "aspen",
-  "birch", "coral", "dew", "echo", "frost", "gale", "hush", "ivy",
-  "jewel", "knack", "lark", "mirth", "nook", "oasis", "plume", "quiver",
-  "rust", "spire", "talon", "ultra", "vista", "wisp", "yearn", "zest",
+  "juniper", "knoll", "leaf", "moss", "nest", "oak", "pond", "root",
+  "stream", "thorn", "urn", "veil", "wood", "yarn", "aspen", "coral",
+  "dew", "echo", "frost", "gale", "hush", "ivy", "jewel", "knack",
+  "lark", "mirth", "nook", "oasis", "plume", "quiver", "rust", "spire",
+  "talon", "ultra", "vista", "wisp", "yearn", "zest", "acorn", "basin",
+  "cobalt", "drift", "ember", "flint", "granite", "hollow", "inlet", "jolt",
+  "keystone", "lagoon", "marble", "nectar", "onyx", "prism", "quartzite", "ripple",
+  "saffron", "topaz", "upland", "verdant", "wildflower", "yonderlight", "zen", "arbor",
+  "bluff", "cinder", "dapple", "evergreen", "fable", "gossamer", "heather", "indigo",
+  "juniper", "kindle", "lumen", "meander", "northstar", "obsidian", "petal", "quasar",
+  "raven", "solstice", "tundra", "uplift", "voyage", "willowisp", "yarrowroot", "zodiac",
+  "atlas", "beacon", "citrine", "dawnlight", "emberfall", "falcon", "glimmer", "harborlight",
+  "ironwood", "juniper", "kestrel", "lilac", "moonrise", "nightfall", "oracle", "pinecone",
+  "quillpen", "riverstone", "sunbeam", "thistle", "uplands", "violetdusk", "windward", "yonderpeak",
+  "amberglow", "brookside", "cloudbank", "driftwood", "evermist", "firelight", "goldleaf", "hollowbrook",
+  "ironcliff", "jadebrook", "kitehill", "larkspur", "mistvale", "northwind", "oakheart", "pebblebrook",
+  "quartzfall", "riverbend", "stonepath", "timberline", "uplandtrail", "valleybrook", "whisperwind", "yarrowfield",
+  "ambertrail", "blueheron", "copperleaf", "duskwood", "embertrail", "frostline", "greenvale", "harborstone",
+  "ironroot", "jadeleaf", "kitepath", "larkwood", "moontrail", "nightbrook", "obsidiancliff", "pinebrook",
+  "quillwood", "riverleaf", "stonebrook", "timberbrook", "uplandwood", "valleytrail", "whisperbrook", "yarrowbrook",
 ];
 
-const WORDS_FOR_CODE = 12; // ~132 bits with 128-word list expanded
+/** Minimum entropy required by ADR-001 / ADR-002. */
+export const RECOVERY_CODE_MIN_ENTROPY_BITS = 128;
+
+const RECOVERY_WORDLIST = Array.from(new Set(RECOVERY_WORDS_BASE));
+
+/** Words per code — ceil(128 / log2(wordlist size)). */
+export const RECOVERY_WORDS_PER_CODE = Math.ceil(
+  RECOVERY_CODE_MIN_ENTROPY_BITS / Math.log2(RECOVERY_WORDLIST.length)
+);
+
+/** Entropy bits for a generated recovery code (uniform word selection). */
+export function getRecoveryCodeEntropyBits(): number {
+  return RECOVERY_WORDS_PER_CODE * Math.log2(RECOVERY_WORDLIST.length);
+}
+
+export function getRecoveryWordlistSize(): number {
+  return RECOVERY_WORDLIST.length;
+}
+
+function randomWordIndex(): number {
+  const wordCount = RECOVERY_WORDLIST.length;
+  const maxUnbiased = Math.floor(0x1_0000_0000 / wordCount) * wordCount;
+  while (true) {
+    const random = crypto.getRandomValues(new Uint32Array(1))[0];
+    if (random < maxUnbiased) {
+      return random % wordCount;
+    }
+  }
+}
 
 export function generateRecoveryCode(): string {
   const words: string[] = [];
-  const random = crypto.getRandomValues(new Uint32Array(WORDS_FOR_CODE));
-  for (let i = 0; i < WORDS_FOR_CODE; i++) {
-    words.push(RECOVERY_WORDS[random[i] % RECOVERY_WORDS.length]);
+  for (let i = 0; i < RECOVERY_WORDS_PER_CODE; i++) {
+    words.push(RECOVERY_WORDLIST[randomWordIndex()]);
   }
   return words.join("-");
 }
@@ -71,7 +113,7 @@ export async function deriveRecoveryKey(
       },
     };
   } catch {
-    // PBKDF2 fallback per ADR-001
+    // PBKDF2-SHA-256 fallback per ADR-001 when Argon2id is unavailable in the browser.
     const keyMaterial = await crypto.subtle.importKey(
       "raw",
       toBufferSource(password),

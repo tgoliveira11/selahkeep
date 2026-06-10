@@ -1,18 +1,34 @@
 import { describe, it, expect } from "vitest";
-import { generateRecoveryCode } from "@/lib/crypto-client/recovery-code";
+import {
+  generateRecoveryCode,
+  getRecoveryCodeEntropyBits,
+  getRecoveryWordlistSize,
+  RECOVERY_CODE_MIN_ENTROPY_BITS,
+  RECOVERY_WORDS_PER_CODE,
+} from "@/lib/crypto-client/recovery-code";
 import { readFileSync } from "fs";
 import { join } from "path";
 
 describe("recovery code security", () => {
-  it("generates codes with sufficient word count", () => {
+  it("meets minimum 128-bit entropy mathematically", () => {
+    const wordlistSize = getRecoveryWordlistSize();
+    const entropyBits = getRecoveryCodeEntropyBits();
+    expect(wordlistSize).toBeGreaterThan(1);
+    expect(RECOVERY_WORDS_PER_CODE).toBeGreaterThanOrEqual(
+      Math.ceil(RECOVERY_CODE_MIN_ENTROPY_BITS / Math.log2(wordlistSize))
+    );
+    expect(entropyBits).toBeGreaterThanOrEqual(RECOVERY_CODE_MIN_ENTROPY_BITS);
+  });
+
+  it("generates codes with the configured word count", () => {
     const code = generateRecoveryCode();
     const words = code.split("-");
-    expect(words.length).toBeGreaterThanOrEqual(12);
+    expect(words.length).toBe(RECOVERY_WORDS_PER_CODE);
   });
 
   it("generates unique codes", () => {
-    const codes = new Set(Array.from({ length: 10 }, () => generateRecoveryCode()));
-    expect(codes.size).toBe(10);
+    const codes = new Set(Array.from({ length: 20 }, () => generateRecoveryCode()));
+    expect(codes.size).toBe(20);
   });
 
   it("vault repository stores kdf metadata not plaintext recovery code", () => {

@@ -18,7 +18,7 @@ export interface LetterResponse {
 export const lettersApi = {
   list: () => apiClient.get<LetterResponse[]>("/api/letters"),
   get: (id: string) => apiClient.get<LetterResponse>(`/api/letters/${id}`),
-  create: (payload: EncryptedLetterPayload & { answered?: boolean }) =>
+  create: (payload: EncryptedLetterPayload & { id: string; answered?: boolean }) =>
     apiClient.post<LetterResponse>("/api/letters", payload),
   update: (id: string, payload: Partial<EncryptedLetterPayload> & { answered?: boolean }) =>
     apiClient.put<LetterResponse>(`/api/letters/${id}`, payload),

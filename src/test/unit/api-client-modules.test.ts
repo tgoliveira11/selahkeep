@@ -63,7 +63,10 @@ describe("typed API client modules", () => {
           });
         }
         if (url === "/api/trusted-devices/touch" && init?.method === "POST") {
-          return new Response(JSON.stringify({ updated: true }), { status: 200 });
+          return new Response(JSON.stringify({ updated: true, state: "active" }), { status: 200 });
+        }
+        if (url.startsWith("/api/trusted-devices/status")) {
+          return new Response(JSON.stringify({ state: "active" }), { status: 200 });
         }
         if (url === "/api/passkeys" && init?.method === "DELETE") {
           return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -126,7 +129,7 @@ describe("typed API client modules", () => {
     ).resolves.toEqual({ id: "dev-1", deviceName: "Home MacBook" });
     await expect(
       trustedDevicesApi.touch({ deviceId: "550e8400-e29b-41d4-a716-446655440000" })
-    ).resolves.toEqual({ updated: true });
+    ).resolves.toEqual({ updated: true, state: "active" });
     await expect(trustedDevicesApi.revoke("dev-1")).resolves.toEqual({ success: true });
   });
 

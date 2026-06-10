@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   findByUserId: vi.fn(),
   countActiveByUserId: vi.fn(),
   findActiveByClientDeviceId: vi.fn(),
+  findRevokedByClientDeviceId: vi.fn(),
   create: vi.fn(),
   findByIdForUser: vi.fn(),
   updateDeviceName: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock("@/server/repositories/trusted-device-repository", () => ({
     findByUserId: mocks.findByUserId,
     countActiveByUserId: mocks.countActiveByUserId,
     findActiveByClientDeviceId: mocks.findActiveByClientDeviceId,
+    findRevokedByClientDeviceId: mocks.findRevokedByClientDeviceId,
     create: mocks.create,
     findByIdForUser: mocks.findByIdForUser,
     updateDeviceName: mocks.updateDeviceName,
@@ -43,6 +45,10 @@ vi.mock("@/server/repositories/vault-repository", () => ({
     findActiveEnvelopesByUserId: mocks.findActiveEnvelopesByUserId,
     revokeEnvelope: mocks.revokeEnvelope,
   },
+}));
+
+vi.mock("@/lib/db/transaction", () => ({
+  runInTransaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => fn({})),
 }));
 
 vi.mock("@/server/repositories/audit-repository", () => ({
@@ -96,13 +102,25 @@ describe("trusted device service", () => {
     mocks.updateLastUsed.mockResolvedValue({ id: "device-1" });
     await expect(trustedDeviceService.touchLastUsed(USER_ID, "client-id")).resolves.toEqual({
       updated: true,
+      state: "active",
     });
   });
 
   it("touchLastUsed no-ops when device is not registered", async () => {
     mocks.findActiveByClientDeviceId.mockResolvedValue(null);
+    mocks.findRevokedByClientDeviceId.mockResolvedValue(null);
     await expect(trustedDeviceService.touchLastUsed(USER_ID, "missing")).resolves.toEqual({
       updated: false,
+      state: "not_registered",
+    });
+  });
+
+  it("touchLastUsed reports revoked device without updating", async () => {
+    mocks.findActiveByClientDeviceId.mockResolvedValue(null);
+    mocks.findRevokedByClientDeviceId.mockResolvedValue({ id: "device-revoked" });
+    await expect(trustedDeviceService.touchLastUsed(USER_ID, "client-id")).resolves.toEqual({
+      updated: false,
+      state: "revoked",
     });
   });
 
@@ -127,7 +145,13 @@ describe("trusted device service", () => {
       },
     ]);
     await trustedDeviceService.revoke("device-1", USER_ID);
-    expect(mocks.revokeEnvelope).toHaveBeenCalledWith("env-1", USER_ID);
+    expect(mocks.revokeEnvelope).toHaveBeenCalledWith("env-1", USER_ID, expect.anything());
+    expect(mocks.record).toHaveBeenCalledWith(
+      "trusted_device_revoked",
+      USER_ID,
+      { deviceId: "device-1" },
+      expect.anything()
+    );
   });
 
   it("revoke rejects already revoked device", async () => {

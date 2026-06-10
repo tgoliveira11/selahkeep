@@ -69,7 +69,48 @@ describe("vault service", () => {
     });
 
     expect(result.id).toBe("vault-1");
-    expect(mocks.record).toHaveBeenCalledWith("vault_initialized", USER_ID);
+    expect(mocks.createEnvelope).toHaveBeenCalledWith(
+      expect.objectContaining({
+        publicMetadata: { trustedDeviceId: "device-1" },
+      }),
+      expect.anything()
+    );
+    expect(mocks.record).toHaveBeenCalledWith(
+      "vault_initialized",
+      USER_ID,
+      undefined,
+      expect.anything()
+    );
+  });
+
+  it("initializes vault with non-device envelopes in the same transaction", async () => {
+    mocks.findVaultByUserId.mockResolvedValue(null);
+    mocks.createVault.mockResolvedValue({ id: "vault-1" });
+    mocks.createEnvelope.mockResolvedValue({ id: "env-recovery" });
+
+    await vaultService.init(USER_ID, {
+      vaultVersion: "vault-v1",
+      envelopes: [
+        {
+          method: "recovery_code",
+          encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+          kdfMetadata: {
+            kdf: "argon2id",
+            version: "kdf-v1",
+            salt: "c2FsdA",
+            memory: 65536,
+            iterations: 3,
+            parallelism: 1,
+          },
+        },
+      ],
+    });
+
+    expect(mocks.createDevice).not.toHaveBeenCalled();
+    expect(mocks.createEnvelope).toHaveBeenCalledWith(
+      expect.objectContaining({ method: "recovery_code" }),
+      expect.anything()
+    );
   });
 
   it("rejects trusted device limit during init", async () => {
@@ -144,7 +185,7 @@ describe("vault service", () => {
     });
 
     expect(result.id).toBe("env-new");
-    expect(mocks.revokeEnvelope).toHaveBeenCalledWith("env-old", USER_ID);
+    expect(mocks.revokeEnvelope).toHaveBeenCalledWith("env-old", USER_ID, expect.anything());
   });
 
   it("unlockWithRecoveryCode rate limits attempts", async () => {

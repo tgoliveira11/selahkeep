@@ -42,11 +42,25 @@ vi.mock("@/server/repositories/audit-repository", () => ({
 describe("vault service extended", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns trusted device envelopes only", async () => {
+  it("returns trusted device envelopes linked to active devices only", async () => {
     mocks.findActiveEnvelopesByUserId.mockResolvedValue([
-      { id: "1", method: "trusted_device", encryptedVaultKey: encryptedPayload("vault_key", USER_ID), createdAt: new Date() },
+      {
+        id: "1",
+        method: "trusted_device",
+        encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+        createdAt: new Date(),
+        publicMetadata: { trustedDeviceId: "device-1" },
+      },
+      {
+        id: "3",
+        method: "trusted_device",
+        encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+        createdAt: new Date(),
+        publicMetadata: { trustedDeviceId: "device-revoked" },
+      },
       { id: "2", method: "recovery_code", encryptedVaultKey: encryptedPayload("vault_key", USER_ID), createdAt: new Date() },
     ]);
+    mocks.findActiveByUserId.mockResolvedValue([{ id: "device-1" }]);
     const envelopes = await vaultService.getTrustedDeviceEnvelopes(USER_ID);
     expect(envelopes).toHaveLength(1);
     expect(envelopes[0].id).toBe("1");
@@ -82,7 +96,12 @@ describe("vault service extended", () => {
         parallelism: 1,
       },
     });
-    expect(mocks.record).toHaveBeenCalledWith("recovery_code_generated", USER_ID);
+    expect(mocks.record).toHaveBeenCalledWith(
+      "recovery_code_generated",
+      USER_ID,
+      undefined,
+      expect.anything()
+    );
   });
 
   it("storeRecoveryCode fails when vault missing", async () => {

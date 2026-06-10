@@ -313,3 +313,13 @@ Security tests must create a letter with a unique sentinel phrase and verify tha
 5. Recovery-code-derived keys must use a versioned KDF.
 6. IV reuse with the same key is forbidden.
 7. Any cryptographic uncertainty must trigger `TODO_SECURITY_REVIEW_REQUIRED`.
+
+## Implementation Notes (MVP)
+
+Implemented in:
+
+- `src/lib/crypto-client/recovery-code.ts` — 12-word BIP39-style wordlist selection with rejection sampling; `getRecoveryCodeEntropyBits()` ≥ 128; Argon2id primary, PBKDF2-SHA-256 (600k iterations) fallback with `kdf-v1` metadata.
+- `src/server/policies/aad-validation.ts` — server-side AAD validation before letter/vault storage.
+- `src/lib/crypto-client/aad-verify.ts` — client-side AAD verification before decrypt.
+- Letter IDs: client generates UUID (`src/app/(vault)/letters/new/page.tsx`); server persists same ID (`letter-repository.ts`).
+- Tests: `src/test/security/recovery-code.test.ts` (mathematical entropy), `src/test/security/aad-validation.test.ts`, `src/test/unit/aad-verify.test.ts`, `src/test/security/sentinel-encrypted-payload.test.ts`.

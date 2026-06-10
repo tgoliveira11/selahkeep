@@ -1,5 +1,5 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { db, type DbClient } from "@/lib/db";
 import { trustedDevices } from "@/lib/db/schema";
 
 const MAX_TRUSTED_DEVICES = parseInt(process.env.MAX_TRUSTED_DEVICES ?? "50", 10);
@@ -54,15 +54,33 @@ export const trustedDeviceRepository = {
     return device ?? null;
   },
 
-  async create(data: {
-    userId: string;
-    deviceName: string;
-    devicePublicKey?: Record<string, unknown> | null;
-    browser?: string | null;
-    platform?: string | null;
-    deviceType?: string | null;
-  }) {
+  async findRevokedByClientDeviceId(userId: string, clientDeviceId: string) {
     const [device] = await db
+      .select()
+      .from(trustedDevices)
+      .where(
+        and(
+          eq(trustedDevices.userId, userId),
+          isNotNull(trustedDevices.revokedAt),
+          sql`${trustedDevices.devicePublicKey}->>'deviceId' = ${clientDeviceId}`
+        )
+      )
+      .limit(1);
+    return device ?? null;
+  },
+
+  async create(
+    data: {
+      userId: string;
+      deviceName: string;
+      devicePublicKey?: Record<string, unknown> | null;
+      browser?: string | null;
+      platform?: string | null;
+      deviceType?: string | null;
+    },
+    client: DbClient = db
+  ) {
+    const [device] = await client
       .insert(trustedDevices)
       .values({
         userId: data.userId,
@@ -101,8 +119,8 @@ export const trustedDeviceRepository = {
     return device ?? null;
   },
 
-  async revoke(id: string, userId: string) {
-    const [device] = await db
+  async revoke(id: string, userId: string, client: DbClient = db) {
+    const [device] = await client
       .update(trustedDevices)
       .set({ revokedAt: new Date() })
       .where(

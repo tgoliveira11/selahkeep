@@ -69,7 +69,7 @@ describe("trusted devices API routes", () => {
   });
 
   it("POST touch updates last used", async () => {
-    mocks.touchLastUsed.mockResolvedValue({ updated: true });
+    mocks.touchLastUsed.mockResolvedValue({ updated: true, state: "active" });
     const res = await touchPost(
       new Request("http://localhost", {
         method: "POST",

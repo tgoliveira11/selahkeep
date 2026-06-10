@@ -2,6 +2,11 @@ import { letterRepository } from "@/server/repositories/letter-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
 import type { CreateLetterInput, UpdateLetterInput } from "@/lib/validation/letters";
 import { ENCRYPTION_VERSION } from "@/lib/validation/encrypted-payload";
+import {
+  assertLetterCreateAad,
+  assertLetterUpdateAad,
+  AadValidationError,
+} from "@/server/policies/aad-validation";
 
 const MAX_ENCRYPTED_PAYLOAD_SIZE = 100_000;
 
@@ -22,7 +27,10 @@ export const letterService = {
       throw new Error("Unsupported encryption version");
     }
 
+    assertLetterCreateAad(userId, input.id, input);
+
     const letter = await letterRepository.create({
+      id: input.id,
       userId,
       encryptedTitle: input.encryptedTitle,
       encryptedBody: input.encryptedBody,
@@ -51,6 +59,8 @@ export const letterService = {
     if (input.encryptedTitle) validatePayloadSize(input.encryptedTitle);
     if (input.encryptedBody) validatePayloadSize(input.encryptedBody);
     if (input.encryptedLetterKey) validatePayloadSize(input.encryptedLetterKey);
+
+    assertLetterUpdateAad(userId, id, input);
 
     const updateData: Parameters<typeof letterRepository.update>[2] = {};
     if (input.encryptedTitle) updateData.encryptedTitle = input.encryptedTitle;
@@ -84,3 +94,5 @@ export class NotFoundError extends Error {
     this.name = "NotFoundError";
   }
 }
+
+export { AadValidationError };

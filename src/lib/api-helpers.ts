@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PlaintextRejectionError } from "@/server/policies/plaintext-rejection";
+import { AadValidationError } from "@/server/policies/aad-validation";
 import { UnauthorizedError } from "@/lib/auth/session";
 import { safeLogger } from "@/lib/logger";
 
@@ -8,6 +9,9 @@ export function apiError(error: unknown, endpoint: string) {
     return NextResponse.json({ error: error.message }, { status: 401 });
   }
   if (error instanceof PlaintextRejectionError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof AadValidationError) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
   if (error && typeof error === "object" && "name" in error) {

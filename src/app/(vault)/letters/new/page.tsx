@@ -73,7 +73,7 @@ export default function NewLetterPage() {
       const letterId = crypto.randomUUID();
       const finalTitle = title.trim() || generateDefaultTitle();
       const payload = await encryptLetter(userId, letterId, finalTitle, body);
-      const letter = await lettersApi.create(payload);
+      const letter = await lettersApi.create({ id: letterId, ...payload });
       router.push(`/letters/${letter.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save letter");

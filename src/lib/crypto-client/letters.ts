@@ -1,6 +1,7 @@
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import { ENCRYPTION_VERSION } from "@/lib/validation/encrypted-payload";
 import { generateAesKey, exportAesKey, importAesKey, encryptField, decryptField } from "./aes-gcm";
+import { verifyPayloadAad } from "./aad-verify";
 import { getSessionVaultKey } from "./vault";
 
 export const TITLE_MAX_LENGTH = 200;
@@ -67,6 +68,11 @@ export async function decryptLetter(
 ): Promise<DecryptedLetter> {
   const key = vaultKey ?? getSessionVaultKey();
   if (!key) throw new Error("Vault is locked");
+
+  const { userId, resourceId } = encryptedLetterKey.aad;
+  verifyPayloadAad(encryptedLetterKey, { userId, resourceId, field: "letter_key" });
+  verifyPayloadAad(encryptedTitle, { userId, resourceId, field: "title" });
+  verifyPayloadAad(encryptedBody, { userId, resourceId, field: "body" });
 
   const letterKeyB64 = await decryptField(encryptedLetterKey, key);
   const letterKeyBytes = base64UrlToBytes(letterKeyB64);

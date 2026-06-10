@@ -49,6 +49,12 @@ describe("letter service", () => {
     );
   });
 
+  it("rejects create when AAD resourceId does not match letter id", async () => {
+    const input = createLetterInput();
+    input.encryptedTitle.aad.resourceId = "00000000-0000-0000-0000-000000000099";
+    await expect(letterService.create(USER_ID, input)).rejects.toThrow("resourceId");
+  });
+
   it("rejects oversized payloads", async () => {
     const input = createLetterInput();
     input.encryptedTitle.ciphertext = "x".repeat(120_000);

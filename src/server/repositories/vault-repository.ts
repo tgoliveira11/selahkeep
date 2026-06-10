@@ -1,5 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, type DbClient } from "@/lib/db";
 import { userVaults, vaultEnvelopes } from "@/lib/db/schema";
 import type { EncryptedPayload, KdfMetadata } from "@/lib/validation/encrypted-payload";
 
@@ -13,22 +13,25 @@ export const vaultRepository = {
     return vault ?? null;
   },
 
-  async createVault(userId: string, vaultVersion: string) {
-    const [vault] = await db
+  async createVault(userId: string, vaultVersion: string, client: DbClient = db) {
+    const [vault] = await client
       .insert(userVaults)
       .values({ userId, vaultVersion })
       .returning();
     return vault;
   },
 
-  async createEnvelope(data: {
-    userId: string;
-    method: string;
-    encryptedVaultKey: EncryptedPayload;
-    kdfMetadata?: KdfMetadata | null;
-    publicMetadata?: Record<string, unknown> | null;
-  }) {
-    const [envelope] = await db
+  async createEnvelope(
+    data: {
+      userId: string;
+      method: string;
+      encryptedVaultKey: EncryptedPayload;
+      kdfMetadata?: KdfMetadata | null;
+      publicMetadata?: Record<string, unknown> | null;
+    },
+    client: DbClient = db
+  ) {
+    const [envelope] = await client
       .insert(vaultEnvelopes)
       .values({
         userId: data.userId,
@@ -63,13 +66,12 @@ export const vaultRepository = {
     return envelope ?? null;
   },
 
-  async revokeEnvelope(id: string, userId: string) {
-    const [envelope] = await db
+  async revokeEnvelope(id: string, userId: string, client: DbClient = db) {
+    const [envelope] = await client
       .update(vaultEnvelopes)
       .set({ revokedAt: new Date() })
       .where(and(eq(vaultEnvelopes.id, id), eq(vaultEnvelopes.userId, userId)))
       .returning();
     return envelope ?? null;
   },
-
 };

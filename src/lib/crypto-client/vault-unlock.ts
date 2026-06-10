@@ -5,9 +5,11 @@ import {
   getOrCreateDeviceSecret,
   getLocalVaultEnvelope,
   storeLocalVaultEnvelope,
+  clearLocalVaultData,
 } from "./device-storage";
 import { setSessionVaultKey, getSessionVaultKey } from "./vault";
 import { vaultApi } from "@/lib/api-client/vault";
+import { trustedDevicesApi } from "@/lib/api-client/trusted-devices";
 
 function base64UrlToBytes(base64url: string): Uint8Array {
   const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
@@ -24,7 +26,6 @@ function normalizePayload(raw: unknown): EncryptedPayload | null {
   const parsed = encryptedPayloadSchema.safeParse(raw);
   if (parsed.success) return parsed.data;
 
-  // Coerce payloads returned from PostgreSQL jsonb (key order may differ).
   if (!raw || typeof raw !== "object") return null;
   const record = raw as Record<string, unknown>;
   const aadRaw = record.aad;
@@ -51,7 +52,35 @@ function envelopeKey(envelope: EncryptedPayload): string {
   return `${envelope.iv}:${envelope.ciphertext}`;
 }
 
-async function collectEnvelopeCandidates(userId: string): Promise<EncryptedPayload[]> {
+export class RevokedTrustedDeviceError extends Error {
+  constructor(message = "This trusted device has been revoked.") {
+    super(message);
+    this.name = "RevokedTrustedDeviceError";
+  }
+}
+
+/** When online, verifies device is not revoked; clears local material if revoked. */
+export async function assertTrustedDeviceCanUnlock(
+  userId: string,
+  clientDeviceId: string
+): Promise<void> {
+  try {
+    const { state } = await trustedDevicesApi.deviceState(clientDeviceId);
+    if (state === "revoked") {
+      await clearLocalVaultData(userId);
+      setSessionVaultKey(null);
+      throw new RevokedTrustedDeviceError();
+    }
+  } catch (error) {
+    if (error instanceof RevokedTrustedDeviceError) throw error;
+    // Offline or unauthenticated: local unlock may still work (documented limitation).
+  }
+}
+
+async function collectEnvelopeCandidates(
+  userId: string,
+  clientDeviceId: string
+): Promise<EncryptedPayload[]> {
   const seen = new Set<string>();
   const candidates: EncryptedPayload[] = [];
 
@@ -64,12 +93,13 @@ async function collectEnvelopeCandidates(userId: string): Promise<EncryptedPaylo
     candidates.push(payload);
   }
 
+  await assertTrustedDeviceCanUnlock(userId, clientDeviceId);
+
   const local = await getLocalVaultEnvelope(userId);
   if (local) add(local);
 
   try {
     const serverEnvelopes = await vaultApi.deviceEnvelopes();
-    // Oldest server envelope first — matches the key used when letters were first created.
     const sorted = [...serverEnvelopes].sort(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
@@ -113,13 +143,12 @@ export async function unlockVaultFromDeviceEnvelopes(
   sampleEncryptedLetterKey?: EncryptedPayload
 ): Promise<CryptoKey> {
   const { deviceId, deviceSecret } = await getOrCreateDeviceSecret(userId);
-  const candidates = await collectEnvelopeCandidates(userId);
+  const candidates = await collectEnvelopeCandidates(userId, deviceId);
 
   if (candidates.length === 0) {
     throw new Error("No vault envelope found for this device");
   }
 
-  // Fast path: current session key still works for existing letters.
   if (sampleEncryptedLetterKey && getSessionVaultKey()) {
     if (await canDecryptLetterKey(getSessionVaultKey()!, sampleEncryptedLetterKey)) {
       return getSessionVaultKey()!;
@@ -147,7 +176,6 @@ export async function unlockVaultFromDeviceEnvelopes(
     }
   }
 
-  // No letter sample: return first envelope that decrypts (legacy unlock path).
   if (!sampleEncryptedLetterKey) {
     for (const envelope of candidates) {
       try {

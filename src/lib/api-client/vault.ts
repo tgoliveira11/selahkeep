@@ -24,6 +24,7 @@ export const vaultApi = {
         devicePublicKey?: Record<string, unknown>;
         browser?: string;
         platform?: string;
+        deviceType?: "desktop" | "mobile" | "tablet" | "unknown";
       };
     }>;
   }) => apiClient.post<{ id: string }>("/api/vault/init", payload),

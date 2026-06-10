@@ -108,7 +108,7 @@ export function VaultAccessGate({ purpose, onAccessGranted }: VaultAccessGatePro
           <Button
             onClick={handleUnlock}
             disabled={loading}
-            variant={showPasskeyUnlock ? "secondary" : "default"}
+            variant={showPasskeyUnlock ? "secondary" : "primary"}
             className="w-full"
           >
             {loading ? "Unlocking..." : "Unlock on this device"}

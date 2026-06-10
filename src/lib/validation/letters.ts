@@ -21,6 +21,7 @@ export function rejectPlaintextFields(body: Record<string, unknown>): string | n
 }
 
 export const createLetterSchema = z.object({
+  id: z.string().uuid(),
   encryptedTitle: encryptedPayloadSchema,
   encryptedBody: encryptedPayloadSchema,
   encryptedLetterKey: encryptedPayloadSchema,

@@ -118,7 +118,13 @@ describe("passkey service", () => {
     expect(result.verified).toBe(true);
     expect(mocks.createCredential).toHaveBeenCalled();
     expect(mocks.createEnvelope).toHaveBeenCalled();
-    expect(mocks.revokeEnvelope).toHaveBeenCalledWith("old-env", USER_ID);
+    expect(mocks.revokeEnvelope).toHaveBeenCalledWith("old-env", USER_ID, expect.anything());
+    expect(mocks.record).toHaveBeenCalledWith(
+      "passkey_added",
+      USER_ID,
+      undefined,
+      expect.anything()
+    );
   });
 
   it("verifyRegistration rejects invalid challenge", async () => {

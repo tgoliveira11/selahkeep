@@ -17,8 +17,8 @@ Web-first responsive MVP for private encrypted spiritual letters.
 ## Quick Start
 
 ```bash
-# Install dependencies
-npm install
+# Install dependencies (CI / clean checkout)
+npm ci
 
 # Start PostgreSQL
 docker compose up -d
@@ -47,8 +47,10 @@ On `/vault/devices`, users can register the current browser (with an optional fr
 
 | Command | Description |
 |---------|-------------|
+| `npm ci` | Clean install from lockfile (CI / fresh checkout) |
 | `npm run dev` | Start development server (port 3001) |
 | `npm run build` | Production build |
+| `npm run lint` | ESLint (`eslint .`) |
 | `npm run test` | Run all Vitest tests |
 | `npm run test:coverage` | Vitest with coverage thresholds (≥90% lines/statements/functions) |
 | `npm run test:all` | Coverage tests, then Playwright E2E |
@@ -88,7 +90,11 @@ Recent passkey-related coverage includes:
 Coverage is enforced on core application code (`src/lib`, `src/server/services`, `src/server/policies`, `src/app/api`, `src/features/passkey`). Repository adapters and UI pages are covered indirectly via service/API/E2E tests.
 
 ```bash
-npm run test:coverage   # must pass before merge
+npm ci                  # clean install
+npm run lint            # ESLint
+npm run test:coverage   # must pass before merge (≥90% lines/statements/functions)
+npm run build           # production build
+npm run db:migrate      # apply migrations (requires PostgreSQL)
 npm run test:all        # coverage + E2E smoke
 ```
 

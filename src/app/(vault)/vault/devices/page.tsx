@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trustedDevicesApi, type TrustedDeviceResponse } from "@/lib/api-client/trusted-devices";
 import { getOrCreateDeviceSecret } from "@/lib/crypto-client/device-storage";
-import { getSessionVaultKey, wrapVaultKeyForDevice } from "@/lib/crypto-client/vault";
+import { getSessionVaultKey, wrapVaultKeyForDevice, clearVaultClientState } from "@/lib/crypto-client/vault";
 import { isVaultUnlocked } from "@/lib/crypto-client/vault";
 import { getDeviceDisplayInfo, formatDeviceMetadataSubtitle } from "@/lib/device-display-info";
 import {
@@ -62,8 +62,16 @@ export default function TrustedDevicesPage() {
 
   async function handleRevoke(id: string) {
     if (!confirm("Revoke this device? It will no longer be able to unlock your vault.")) return;
+    const revokedDevice = devices.find((device) => device.id === id);
     try {
       await trustedDevicesApi.revoke(id);
+      if (
+        session?.user?.id &&
+        revokedDevice &&
+        isCurrentTrustedDevice(revokedDevice, currentDeviceId)
+      ) {
+        await clearVaultClientState(session.user.id);
+      }
       setDevices((prev) =>
         prev.map((d) => (d.id === id ? { ...d, revokedAt: new Date().toISOString() } : d))
       );

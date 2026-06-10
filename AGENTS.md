@@ -77,7 +77,10 @@ Rules:
 Before finishing any task:
 
 ```bash
+npm ci                  # clean install from lockfile
+npm run lint            # ESLint
 npm run test:coverage   # must pass thresholds
+npm run build           # production typecheck + build
 ```
 
 If coverage drops below 90%, add or extend tests until `npm run test:coverage` passes. Do not lower thresholds to make CI green.
