@@ -12,6 +12,7 @@ import {
   storeLocalVaultEnvelope,
   getLocalVaultEnvelope,
 } from "./device-storage";
+import { unlockVaultSession } from "./vault-session";
 
 export const VAULT_VERSION = "vault-v1";
 
@@ -36,6 +37,8 @@ export function isVaultUnlocked(): boolean {
 /** Clears in-memory vault key and local trusted-device material for this user. */
 export async function clearVaultClientState(userId: string): Promise<void> {
   setSessionVaultKey(null);
+  const { resetVaultSessionLockState } = await import("./vault-session");
+  resetVaultSessionLockState();
   const { clearLocalVaultData } = await import("./device-storage");
   await clearLocalVaultData(userId);
 }
@@ -74,8 +77,19 @@ export async function wrapVaultKeyForDevice(
 
 export async function unwrapVaultKeyFromDevice(
   userId: string,
-  encryptedVaultKey?: EncryptedPayload
+  encryptedVaultKey?: EncryptedPayload,
+  options?: { explicit?: boolean }
 ): Promise<CryptoKey> {
+  const explicit = options?.explicit ?? false;
+  const applyVaultKey = (vaultKey: CryptoKey): CryptoKey => {
+    if (explicit) {
+      unlockVaultSession(vaultKey);
+    } else {
+      setSessionVaultKey(vaultKey);
+    }
+    return vaultKey;
+  };
+
   const { unlockVaultFromDeviceEnvelopes } = await import("./vault-unlock");
   if (encryptedVaultKey) {
     const { deviceSecret } = await getOrCreateDeviceSecret(userId);
@@ -83,12 +97,12 @@ export async function unwrapVaultKeyFromDevice(
       await decryptField(encryptedVaultKey, deviceSecret)
     );
     const vaultKey = await importAesKey(keyBytes);
-    sessionVaultKey = vaultKey;
+    applyVaultKey(vaultKey);
     const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
     void recordTrustedDeviceUnlock(userId);
     return vaultKey;
   }
-  return unlockVaultFromDeviceEnvelopes(userId);
+  return unlockVaultFromDeviceEnvelopes(userId, undefined, { explicit });
 }
 
 export async function wrapVaultKeyForRecovery(
@@ -109,14 +123,19 @@ export async function wrapVaultKeyForRecovery(
 export async function unwrapVaultKeyFromRecovery(
   recoveryCode: string,
   encryptedVaultKey: EncryptedPayload,
-  kdfMetadata: KdfMetadata
+  kdfMetadata: KdfMetadata,
+  options?: { explicit?: boolean }
 ): Promise<CryptoKey> {
   const derivedKey = await deriveRecoveryKeyFromMetadata(recoveryCode, kdfMetadata);
   const keyBytes = base64UrlToBytes(
     await decryptField(encryptedVaultKey, derivedKey)
   );
   const vaultKey = await importAesKey(keyBytes);
-  sessionVaultKey = vaultKey;
+  if (options?.explicit ?? true) {
+    unlockVaultSession(vaultKey);
+  } else {
+    setSessionVaultKey(vaultKey);
+  }
   const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
   void recordTrustedDeviceUnlock(encryptedVaultKey.aad.userId);
   return vaultKey;

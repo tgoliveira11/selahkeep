@@ -6,7 +6,7 @@ import { Nav } from "@/components/layout/nav";
 import { Button } from "@/components/ui/button";
 import { lettersApi } from "@/lib/api-client/letters";
 import { decryptLetter } from "@/lib/crypto-client/letters";
-import { unlockVaultFromDeviceEnvelopes } from "@/lib/crypto-client/vault-unlock";
+import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 
 interface LetterListItem {
@@ -24,6 +24,12 @@ export default function LettersPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    return subscribeVaultSession(() => {
+      setLetters([]);
+    });
+  }, []);
+
+  useEffect(() => {
     if (vault.status !== "ready") return;
     const userId = vault.userId;
     const vaultUnlocked = vault.vaultUnlocked;
@@ -35,10 +41,6 @@ export default function LettersPage() {
       setError(null);
       try {
         const encrypted = await lettersApi.list();
-
-        if (vaultUnlocked && encrypted.length > 0) {
-          await unlockVaultFromDeviceEnvelopes(userId, encrypted[0].encryptedLetterKey);
-        }
 
         const items: LetterListItem[] = [];
 
@@ -128,7 +130,7 @@ export default function LettersPage() {
 
         {!vault.vaultUnlocked && letters.length > 0 && (
           <p className="text-sm text-[var(--muted)] mb-4">
-            Open a letter to unlock your vault on this device.
+            Your vault is locked. Unlock it to read letter titles, or open a letter to unlock.
           </p>
         )}
 

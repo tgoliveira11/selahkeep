@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { isVaultUnlocked, unwrapVaultKeyFromDevice } from "@/lib/crypto-client/vault";
 import {
-  isVaultUnlocked,
-  unwrapVaultKeyFromDevice,
-  setSessionVaultKey,
-} from "@/lib/crypto-client/vault";
+  isVaultManuallyLocked,
+  subscribeVaultSession,
+  unlockVaultSession,
+} from "@/lib/crypto-client/vault-session";
 
 type VaultGateState =
   | { status: "loading" }
@@ -16,8 +17,8 @@ type VaultGateState =
   | { status: "error"; message: string };
 
 /**
- * Ensures the user is authenticated. Attempts silent vault unlock from this
- * device's IndexedDB envelope but does not force a visit to /vault/unlock.
+ * Ensures the user is authenticated. Silently unlocks from this device's envelope
+ * only when the vault was not manually locked.
  */
 export function useRequireVault(): VaultGateState & { recheckVault: () => void } {
   const { data: session, status: authStatus } = useSession();
@@ -27,6 +28,12 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
 
   const recheckVault = useCallback(() => {
     setRecheckToken((token) => token + 1);
+  }, []);
+
+  useEffect(() => {
+    return subscribeVaultSession(() => {
+      setRecheckToken((token) => token + 1);
+    });
   }, []);
 
   useEffect(() => {
@@ -48,12 +55,19 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
     let cancelled = false;
 
     async function ensureAuth() {
+      if (isVaultManuallyLocked()) {
+        if (!cancelled) {
+          setState({ status: "ready", userId, vaultUnlocked: false });
+        }
+        return;
+      }
+
       let vaultUnlocked = isVaultUnlocked();
 
       if (!vaultUnlocked) {
         try {
-          await unwrapVaultKeyFromDevice(userId);
-          vaultUnlocked = true;
+          await unwrapVaultKeyFromDevice(userId, undefined, { explicit: false });
+          vaultUnlocked = isVaultUnlocked();
         } catch {
           vaultUnlocked = false;
         }
@@ -76,5 +90,5 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
 
 /** Call after generating a new vault key during first-time setup. */
 export function rememberVaultKey(vaultKey: CryptoKey): void {
-  setSessionVaultKey(vaultKey);
+  unlockVaultSession(vaultKey);
 }

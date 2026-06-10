@@ -83,7 +83,9 @@ export function useVault() {
     setLoading(true);
     setError(null);
     try {
-      const key = await unwrapVaultKeyFromDevice(session.user.id);
+      const key = await unwrapVaultKeyFromDevice(session.user.id, undefined, {
+        explicit: true,
+      });
       touchVaultSession();
       return key;
     } catch (e) {
@@ -123,7 +125,8 @@ export function useVault() {
         await unwrapVaultKeyFromRecovery(
           recoveryCode,
           encryptedVaultKey,
-          kdfMetadata
+          kdfMetadata,
+          { explicit: true }
         );
         touchVaultSession();
       } catch (e) {

@@ -3,16 +3,23 @@
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { clearVaultClientState, isVaultUnlocked } from "@/lib/crypto-client/vault";
-import { lockVaultSession } from "@/lib/crypto-client/vault-session";
 import { useState, useEffect } from "react";
+import { clearVaultClientState, isVaultUnlocked } from "@/lib/crypto-client/vault";
+import {
+  isVaultManuallyLocked,
+  lockVaultSession,
+  subscribeVaultSession,
+} from "@/lib/crypto-client/vault-session";
 
 export function Nav() {
   const { data: session } = useSession();
   const [vaultUnlocked, setVaultUnlocked] = useState(false);
 
   useEffect(() => {
-    setVaultUnlocked(isVaultUnlocked());
+    setVaultUnlocked(isVaultUnlocked() && !isVaultManuallyLocked());
+    return subscribeVaultSession(() => {
+      setVaultUnlocked(isVaultUnlocked() && !isVaultManuallyLocked());
+    });
   }, [session?.user?.id]);
 
   function handleLockVault() {

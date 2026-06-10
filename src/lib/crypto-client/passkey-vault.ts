@@ -9,8 +9,8 @@ import {
 import { bytesToBase64Url, base64UrlToBytes, toBufferSource } from "./encoding";
 import {
   buildDeviceVaultEnvelope,
-  setSessionVaultKey,
 } from "./vault";
+import { unlockVaultSession } from "./vault-session";
 import { storeLocalVaultEnvelope } from "./device-storage";
 
 interface PrfClientExtensionResults {
@@ -83,7 +83,7 @@ export async function unwrapVaultKeyFromPasskey(
   const prfKey = await importPrfAsAesKey(prfOutput);
   const keyBytes = base64UrlToBytes(await decryptField(encryptedVaultKey, prfKey));
   const vaultKey = await importAesKey(keyBytes);
-  setSessionVaultKey(vaultKey);
+  unlockVaultSession(vaultKey);
   return vaultKey;
 }
 

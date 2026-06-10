@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { lettersApi } from "@/lib/api-client/letters";
 import { encryptLetter, decryptLetter } from "@/lib/crypto-client/letters";
-import { unlockVaultFromDeviceEnvelopes } from "@/lib/crypto-client/vault-unlock";
-import { isVaultUnlocked } from "@/lib/crypto-client/vault";
+import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { VaultAccessGate } from "@/features/vault/vault-access-gate";
 
@@ -26,10 +25,18 @@ export default function LetterDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [accessGranted, setAccessGranted] = useState(false);
 
-  const canRead =
-    vault.status === "ready" && (vault.vaultUnlocked || accessGranted || isVaultUnlocked());
+  const canRead = vault.status === "ready" && vault.vaultUnlocked;
+
+  useEffect(() => {
+    return subscribeVaultSession(() => {
+      setTitle("");
+      setBody("");
+      setEditing(false);
+      setError(null);
+      setLoading(false);
+    });
+  }, []);
 
   useEffect(() => {
     if (!canRead) {
@@ -46,7 +53,6 @@ export default function LetterDetailPage() {
       setError(null);
       try {
         const letter = await lettersApi.get(id);
-        await unlockVaultFromDeviceEnvelopes(userId, letter.encryptedLetterKey);
         const decrypted = await decryptLetter(
           letter.encryptedTitle,
           letter.encryptedBody,
@@ -75,7 +81,6 @@ export default function LetterDetailPage() {
 
   function handleAccessGranted() {
     vault.recheckVault();
-    setAccessGranted(true);
     setLoading(true);
   }
 

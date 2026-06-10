@@ -18,7 +18,16 @@ const vaultMocks = vi.hoisted(() => ({
   getSessionVaultKey: vi.fn(),
 }));
 
+const sessionMocks = vi.hoisted(() => ({
+  lockVaultSession: vi.fn(),
+}));
+
 vi.mock("@/lib/crypto-client/device-storage", () => deviceStorageMocks);
+vi.mock("@/lib/crypto-client/vault-session", () => ({
+  lockVaultSession: sessionMocks.lockVaultSession,
+  isVaultManuallyLocked: vi.fn(() => false),
+  unlockVaultSession: vi.fn(),
+}));
 vi.mock("@/lib/crypto-client/vault", () => ({
   setSessionVaultKey: vaultMocks.setSessionVaultKey,
   getSessionVaultKey: vaultMocks.getSessionVaultKey,
@@ -59,7 +68,7 @@ describe("trusted device revocation unlock behavior", () => {
     ).rejects.toBeInstanceOf(RevokedTrustedDeviceError);
 
     expect(deviceStorageMocks.clearLocalVaultData).toHaveBeenCalledWith(USER_ID);
-    expect(vaultMocks.setSessionVaultKey).toHaveBeenCalledWith(null);
+    expect(sessionMocks.lockVaultSession).toHaveBeenCalled();
   });
 
   it("does not use local IndexedDB envelope after online revocation check", async () => {

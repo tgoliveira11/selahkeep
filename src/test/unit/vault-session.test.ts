@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   lockVaultSession,
+  unlockVaultSession,
   scheduleVaultAutoLock,
-  touchVaultSession,
+  isVaultManuallyLocked,
+  subscribeVaultSession,
   VAULT_INACTIVITY_MS,
   clearVaultAutoLockTimer,
 } from "@/lib/crypto-client/vault-session";
@@ -12,6 +14,7 @@ describe("vault session auto-lock", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     clearVaultAutoLockTimer();
+    setSessionVaultKey(null);
   });
 
   afterEach(() => {
@@ -21,25 +24,39 @@ describe("vault session auto-lock", () => {
 
   it("locks vault after inactivity timeout", async () => {
     const key = await generateUserVaultKey();
-    setSessionVaultKey(key);
-    scheduleVaultAutoLock();
+    unlockVaultSession(key);
     expect(isVaultUnlocked()).toBe(true);
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
     expect(isVaultUnlocked()).toBe(false);
+    expect(isVaultManuallyLocked()).toBe(true);
   });
 
-  it("manual lock clears vault key", async () => {
+  it("manual lock clears vault key and blocks silent unlock until explicit unlock", async () => {
     setSessionVaultKey(await generateUserVaultKey());
     lockVaultSession();
     expect(isVaultUnlocked()).toBe(false);
+    expect(isVaultManuallyLocked()).toBe(true);
   });
 
-  it("touchVaultSession resets inactivity timer", async () => {
-    setSessionVaultKey(await generateUserVaultKey());
-    scheduleVaultAutoLock();
-    vi.advanceTimersByTime(VAULT_INACTIVITY_MS - 1000);
-    touchVaultSession();
-    vi.advanceTimersByTime(1500);
+  it("explicit unlock clears manual lock flag", async () => {
+    lockVaultSession();
+    unlockVaultSession(await generateUserVaultKey());
     expect(isVaultUnlocked()).toBe(true);
+    expect(isVaultManuallyLocked()).toBe(false);
+  });
+
+  it("notifies subscribers when locked", async () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeVaultSession(listener);
+    lockVaultSession();
+    expect(listener).toHaveBeenCalled();
+    unsubscribe();
+  });
+
+  it("does not schedule auto-lock while manually locked", async () => {
+    lockVaultSession();
+    scheduleVaultAutoLock();
+    vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
+    expect(isVaultUnlocked()).toBe(false);
   });
 });

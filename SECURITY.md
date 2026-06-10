@@ -105,8 +105,8 @@ Challenges scoped by user ID and type; expire after 5 minutes; deleted on use; e
 
 ## Vault session hardening
 
-- Manual **Lock vault** in nav when unlocked
-- **15-minute inactivity** auto-lock (`vault-session.ts`)
+- **15-minute inactivity** auto-lock (`vault-session.ts`) — same as manual lock; blocks silent re-unlock until explicit unlock via gate or unlock screen
+- Manual **Lock vault** clears in-memory key and sets a session lock flag; letter pages hide decrypted content and require unlock again
 - In-memory User Vault Key cleared on lock, sign out, and `pagehide` (best effort)
 
 ## Autosave (MVP decision)

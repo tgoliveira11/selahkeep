@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Nav } from "@/components/layout/nav";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { lettersApi } from "@/lib/api-client/letters";
 import { encryptLetter } from "@/lib/crypto-client/letters";
-import { generateDefaultTitle, isVaultUnlocked } from "@/lib/crypto-client/vault";
+import { generateDefaultTitle } from "@/lib/crypto-client/vault";
+import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { VaultAccessGate } from "@/features/vault/vault-access-gate";
 
@@ -19,10 +20,16 @@ export default function NewLetterPage() {
   const [body, setBody] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [accessGranted, setAccessGranted] = useState(false);
 
-  const canWrite =
-    vault.status === "ready" && (vault.vaultUnlocked || accessGranted || isVaultUnlocked());
+  const canWrite = vault.status === "ready" && vault.vaultUnlocked;
+
+  useEffect(() => {
+    return subscribeVaultSession(() => {
+      setTitle("");
+      setBody("");
+      setError(null);
+    });
+  }, []);
 
   if (vault.status === "loading" || vault.status === "redirecting") {
     return (
@@ -54,7 +61,6 @@ export default function NewLetterPage() {
             purpose="write"
             onAccessGranted={() => {
               vault.recheckVault();
-              setAccessGranted(true);
             }}
           />
         </main>

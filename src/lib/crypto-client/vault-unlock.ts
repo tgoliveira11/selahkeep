@@ -8,6 +8,7 @@ import {
   clearLocalVaultData,
 } from "./device-storage";
 import { setSessionVaultKey, getSessionVaultKey } from "./vault";
+import { isVaultManuallyLocked, lockVaultSession, unlockVaultSession } from "./vault-session";
 import { vaultApi } from "@/lib/api-client/vault";
 import { trustedDevicesApi } from "@/lib/api-client/trusted-devices";
 
@@ -52,6 +53,14 @@ function envelopeKey(envelope: EncryptedPayload): string {
   return `${envelope.iv}:${envelope.ciphertext}`;
 }
 
+function storeUnlockedVaultKey(vaultKey: CryptoKey, explicit: boolean): void {
+  if (explicit) {
+    unlockVaultSession(vaultKey);
+  } else {
+    setSessionVaultKey(vaultKey);
+  }
+}
+
 export class RevokedTrustedDeviceError extends Error {
   constructor(message = "This trusted device has been revoked.") {
     super(message);
@@ -68,7 +77,7 @@ export async function assertTrustedDeviceCanUnlock(
     const { state } = await trustedDevicesApi.deviceState(clientDeviceId);
     if (state === "revoked") {
       await clearLocalVaultData(userId);
-      setSessionVaultKey(null);
+      lockVaultSession();
       throw new RevokedTrustedDeviceError();
     }
   } catch (error) {
@@ -140,8 +149,14 @@ async function canDecryptLetterKey(
  */
 export async function unlockVaultFromDeviceEnvelopes(
   userId: string,
-  sampleEncryptedLetterKey?: EncryptedPayload
+  sampleEncryptedLetterKey?: EncryptedPayload,
+  options?: { explicit?: boolean }
 ): Promise<CryptoKey> {
+  const explicit = options?.explicit ?? false;
+  if (isVaultManuallyLocked() && !explicit) {
+    throw new Error("Vault is locked");
+  }
+
   const { deviceId, deviceSecret } = await getOrCreateDeviceSecret(userId);
   const candidates = await collectEnvelopeCandidates(userId, deviceId);
 
@@ -166,7 +181,7 @@ export async function unlockVaultFromDeviceEnvelopes(
         }
       }
 
-      setSessionVaultKey(vaultKey);
+      storeUnlockedVaultKey(vaultKey, explicit);
       await storeLocalVaultEnvelope(userId, deviceId, envelope);
       const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
       void recordTrustedDeviceUnlock(userId);
@@ -180,7 +195,7 @@ export async function unlockVaultFromDeviceEnvelopes(
     for (const envelope of candidates) {
       try {
         const vaultKey = await vaultKeyFromEnvelope(envelope, deviceSecret);
-        setSessionVaultKey(vaultKey);
+        storeUnlockedVaultKey(vaultKey, explicit);
         await storeLocalVaultEnvelope(userId, deviceId, envelope);
         const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
         void recordTrustedDeviceUnlock(userId);
