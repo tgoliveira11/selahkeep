@@ -3,6 +3,11 @@ import { requireSessionUser } from "@/lib/auth/session";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
 import { getClientIp } from "@/lib/request-ip";
 import { accountService } from "@/server/services/account-service";
+import {
+  assertAuthPasswordRequestMethod,
+  assertPasswordNotInUrl,
+  AuthPasswordTransportError,
+} from "@/server/policies/auth-password-input";
 import { z } from "zod";
 
 const deleteSchema = z.object({
@@ -22,6 +27,9 @@ export async function GET() {
 
 export async function DELETE(request: Request) {
   try {
+    assertAuthPasswordRequestMethod(request.method, new Set(["DELETE"]));
+    assertPasswordNotInUrl(request.url);
+
     const session = await requireSessionUser();
     const ip = getClientIp(request);
     const body = await parseJsonBody(request);
@@ -33,6 +41,9 @@ export async function DELETE(request: Request) {
     await accountService.deleteAccount(session.id, parsed.data, ip);
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof AuthPasswordTransportError) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
     return apiError(error, "DELETE /api/account");
   }
 }

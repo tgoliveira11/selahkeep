@@ -1,6 +1,13 @@
 import { eq } from "drizzle-orm";
 import { db, type DbClient } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { assertPasswordHashFormat } from "@/server/policies/password-hashing";
+
+function validateStoredPasswordHash(passwordHash: string | null | undefined) {
+  if (passwordHash != null) {
+    assertPasswordHashFormat(passwordHash);
+  }
+}
 
 export const userRepository = {
   async findByEmail(email: string) {
@@ -18,6 +25,8 @@ export const userRepository = {
     authProvider: string;
     passwordHash?: string | null;
   }) {
+    validateStoredPasswordHash(data.passwordHash);
+
     const [user] = await db
       .insert(users)
       .values({
@@ -30,6 +39,8 @@ export const userRepository = {
   },
 
   async updatePassword(id: string, passwordHash: string) {
+    validateStoredPasswordHash(passwordHash);
+
     const [user] = await db
       .update(users)
       .set({ passwordHash, updatedAt: new Date() })

@@ -1,7 +1,7 @@
-import bcrypt from "bcryptjs";
 import { runInTransaction } from "@/lib/db/transaction";
 import { userRepository } from "@/server/repositories/user-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
+import { verifyPassword } from "@/server/policies/password-hashing";
 import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 
 import { ACCOUNT_DELETION_CONFIRMATION_PHRASE } from "@/lib/account-deletion";
@@ -36,7 +36,7 @@ export const accountService = {
       if (!input.password) {
         throw new ReauthenticationRequiredError("Password is required to delete this account");
       }
-      const valid = await bcrypt.compare(input.password, user.passwordHash);
+      const valid = await verifyPassword(input.password, user.passwordHash);
       if (!valid) {
         throw new ReauthenticationRequiredError("Incorrect password");
       }

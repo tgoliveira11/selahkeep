@@ -187,10 +187,13 @@ create table users (
   id uuid primary key,
   email text not null,
   auth_provider text not null,
+  password_hash text,
   created_at timestamptz not null,
   updated_at timestamptz not null
 );
 ```
+
+`password_hash` stores a **bcrypt digest** for email/password accounts only (cost factor 12). Plaintext passwords must never be persisted. OAuth-only users keep `password_hash` null.
 
 ### user_vaults
 

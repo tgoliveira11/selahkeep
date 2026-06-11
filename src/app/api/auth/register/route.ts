@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { userRepository } from "@/server/repositories/user-repository";
+import { hashPassword } from "@/server/policies/password-hashing";
+import {
+  assertAuthPasswordRequestMethod,
+  assertPasswordNotInUrl,
+  AuthPasswordTransportError,
+} from "@/server/policies/auth-password-input";
 import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 import { safeLogger } from "@/lib/logger";
 import { getClientIp } from "@/lib/request-ip";
@@ -35,6 +40,9 @@ function registrationErrorMessage(error: unknown): string {
 
 export async function POST(request: Request) {
   try {
+    assertAuthPasswordRequestMethod(request.method, new Set(["POST"]));
+    assertPasswordNotInUrl(request.url);
+
     const ip = getClientIp(request);
     await enforceRateLimit({
       operation: "auth.register",
@@ -53,15 +61,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email already registered" }, { status: 409 });
     }
 
-    const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+    const { email, password } = parsed.data;
+    const passwordHash = await hashPassword(password);
+
     const user = await userRepository.create({
-      email: parsed.data.email,
+      email,
       authProvider: "credentials",
       passwordHash,
     });
 
     return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthPasswordTransportError) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
     if (error instanceof RateLimitError) {
       return apiError(error, "/api/auth/register");
     }

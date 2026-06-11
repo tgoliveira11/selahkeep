@@ -8,8 +8,10 @@ vi.mock("@/server/repositories/user-repository", () => ({
   },
 }));
 
-vi.mock("bcryptjs", () => ({
-  default: { hash: vi.fn(async () => "hashed") },
+vi.mock("@/server/policies/password-hashing", () => ({
+  hashPassword: vi.fn(
+    async () => "$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
+  ),
 }));
 
 describe("register route error mapping", () => {

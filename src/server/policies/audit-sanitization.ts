@@ -36,6 +36,7 @@ const SENSITIVE_METADATA_PATTERNS = [
   /ciphertext/i,
   /plaintext/i,
   /sentinel/i,
+  /password/i,
 ];
 
 export function sanitizeAuditMetadata(

@@ -2,9 +2,9 @@ import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import AppleProvider from "next-auth/providers/apple";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
 import { userRepository } from "@/server/repositories/user-repository";
 import { authService } from "@/server/services/auth-service";
+import { verifyPassword } from "@/server/policies/password-hashing";
 import { RateLimitError } from "@/server/policies/rate-limit";
 import { getLoginRequestIp } from "@/lib/auth/login-request-context";
 
@@ -52,7 +52,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const valid = await bcrypt.compare(credentials.password, user.passwordHash);
+        const valid = await verifyPassword(credentials.password, user.passwordHash);
         if (!valid) {
           await authService.recordLoginFailure(credentials.email);
           return null;

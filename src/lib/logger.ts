@@ -14,6 +14,8 @@ const SENSITIVE_KEYS = new Set([
   "vaultKey",
   "letterKey",
   "password",
+  "passwordHash",
+  "password_hash",
 ]);
 
 function redactValue(key: string, value: unknown): unknown {

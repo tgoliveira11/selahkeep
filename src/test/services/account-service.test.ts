@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   deleteById: vi.fn(),
   record: vi.fn(),
   runInTransaction: vi.fn(),
-  compare: vi.fn(),
+  verifyPassword: vi.fn(),
 }));
 
 vi.mock("@/server/repositories/user-repository", () => ({
@@ -31,10 +31,8 @@ vi.mock("@/lib/db/transaction", () => ({
   runInTransaction: mocks.runInTransaction,
 }));
 
-vi.mock("bcryptjs", () => ({
-  default: {
-    compare: mocks.compare,
-  },
+vi.mock("@/server/policies/password-hashing", () => ({
+  verifyPassword: mocks.verifyPassword,
 }));
 
 describe("account deletion service", () => {
@@ -46,9 +44,9 @@ describe("account deletion service", () => {
       id: USER_ID,
       email: "user@test.local",
       authProvider: "credentials",
-      passwordHash: "hash",
+      passwordHash: "$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
     });
-    mocks.compare.mockResolvedValue(true);
+    mocks.verifyPassword.mockResolvedValue(true);
     mocks.runInTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) =>
       fn({})
     );
@@ -75,7 +73,7 @@ describe("account deletion service", () => {
       "127.0.0.1"
     );
     expect(result.success).toBe(true);
-    expect(mocks.compare).not.toHaveBeenCalled();
+    expect(mocks.verifyPassword).not.toHaveBeenCalled();
   });
 
   it("requires matching confirmation phrase", async () => {
@@ -93,7 +91,7 @@ describe("account deletion service", () => {
       )
     ).rejects.toBeInstanceOf(ReauthenticationRequiredError);
 
-    mocks.compare.mockResolvedValue(false);
+    mocks.verifyPassword.mockResolvedValue(false);
     await expect(
       accountService.deleteAccount(
         USER_ID,
@@ -104,7 +102,7 @@ describe("account deletion service", () => {
         "127.0.0.1"
       )
     ).rejects.toBeInstanceOf(ReauthenticationRequiredError);
-    mocks.compare.mockResolvedValue(true);
+    mocks.verifyPassword.mockResolvedValue(true);
   });
 
   it("deletes account after confirmation and password verification", async () => {
@@ -117,7 +115,7 @@ describe("account deletion service", () => {
       "127.0.0.1"
     );
     expect(result).toEqual({ success: true });
-    expect(mocks.compare).toHaveBeenCalled();
+    expect(mocks.verifyPassword).toHaveBeenCalled();
     expect(mocks.deleteById).toHaveBeenCalledWith(USER_ID, expect.anything());
   });
 

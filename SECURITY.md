@@ -83,6 +83,26 @@ Error tracking must strip request/response bodies and sensitive headers.
 - LGPD / privacy beta gates: [`docs/LGPD_BETA_GATES.md`](./docs/LGPD_BETA_GATES.md)
 - Backup/restore draft: [`docs/BACKUP_RESTORE_POLICY.md`](./docs/BACKUP_RESTORE_POLICY.md)
 
+## Authentication passwords
+
+Credentials passwords are **never stored in plaintext** and are **not reversibly encrypted**. The server stores a **bcrypt one-way hash** in `users.password_hash` (cost factor **12** via `src/server/policies/password-hashing.ts`).
+
+### Transport (API)
+
+- Passwords may appear **only transiently** in **HTTPS POST/DELETE JSON bodies** for registration, NextAuth credentials login, and account-deletion re-auth
+- Passwords must **never** be sent in URLs, query strings, path segments, or API responses
+- `assertPasswordNotInUrl()` rejects query-string password attempts on auth routes
+- Registration and account deletion responses never include `password` or `password_hash`
+
+### Verification (server-only)
+
+- Registration: `hashPassword()` on the server, then persist digest only
+- Login: NextAuth `authorize()` calls `verifyPassword()` → `bcrypt.compare()` against `password_hash` on the server only
+- Account deletion: `verifyPassword()` for credentials accounts
+- The client must **not** compare passwords for authentication; it only collects the value and sends it over HTTPS
+
+Plaintext passwords are redacted from logs (`safeLogger`) and blocked from audit metadata. OAuth accounts keep `password_hash` null.
+
 ## Rate limiting
 
 - Adapter interface with **in-memory** store for local/test (`RATE_LIMIT_STORE=memory`, default)

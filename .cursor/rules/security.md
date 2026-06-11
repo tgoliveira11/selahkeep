@@ -14,6 +14,7 @@
 - **Transactions:** vault init, device create/revoke, recovery code, passkey register/remove must use `runInTransaction()`.
 - **Rate limiting:** adapter interface; memory (local) or PostgreSQL (`RATE_LIMIT_STORE=postgres`); scoped keys only.
 - **Account deletion:** `DELETE /api/account`; cascaded encrypted data removal.
+- **Credentials passwords:** bcrypt hash in `users.password_hash` only; never plaintext or reversible encryption (`password-hashing.ts`). Passwords accepted only in HTTPS POST/DELETE JSON bodies; verified server-side with `verifyPassword()`; never in URLs or API responses (`auth-password-input.ts`).
 - **Audit logs:** sanitized metadata only; no sentinel phrases or letter content.
 - **Autosave:** explicitly disabled for MVP (Option A).
 - **Vault auto-lock:** 15-minute inactivity + manual lock; see `vault-session.ts`.

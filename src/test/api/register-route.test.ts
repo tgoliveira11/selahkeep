@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/auth/register/route";
+import { hashPassword } from "@/server/policies/password-hashing";
 
 const mocks = vi.hoisted(() => ({
   findByEmail: vi.fn(),
@@ -13,10 +14,10 @@ vi.mock("@/server/repositories/user-repository", () => ({
   },
 }));
 
-vi.mock("bcryptjs", () => ({
-  default: {
-    hash: vi.fn(async () => "hashed-password"),
-  },
+vi.mock("@/server/policies/password-hashing", () => ({
+  hashPassword: vi.fn(
+    async () => "$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
+  ),
 }));
 
 describe("register API route", () => {
@@ -24,7 +25,7 @@ describe("register API route", () => {
     vi.clearAllMocks();
   });
 
-  it("creates a new user", async () => {
+  it("creates a new user with a bcrypt password hash", async () => {
     mocks.findByEmail.mockResolvedValue(null);
     mocks.create.mockResolvedValue({ id: "user-1", email: "new@example.com" });
     const res = await POST(
@@ -35,6 +36,12 @@ describe("register API route", () => {
     );
     expect(res.status).toBe(201);
     await expect(res.json()).resolves.toEqual({ id: "user-1", email: "new@example.com" });
+    expect(hashPassword).toHaveBeenCalledWith("password123");
+    expect(mocks.create).toHaveBeenCalledWith({
+      email: "new@example.com",
+      authProvider: "credentials",
+      passwordHash: "$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
+    });
   });
 
   it("rejects invalid input", async () => {
