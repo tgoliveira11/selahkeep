@@ -24,6 +24,7 @@ Private journal + prayer space + secure vault:
 - Warm accent for subtle highlights (`#c4a574`)
 - Soft card surfaces, 12px radius, light border, minimal shadow
 - No religious clipart, gamification, or crypto-wallet aesthetics
+- App mark / favicon: sealed letter on sage ground (`src/app/icon.svg`, `src/app/apple-icon.tsx`, `AppMark` in nav) — private journal, not religious or wallet iconography
 
 ---
 

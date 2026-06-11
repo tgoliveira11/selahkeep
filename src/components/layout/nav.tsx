@@ -6,6 +6,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AppMark } from "@/components/ui/app-mark";
 import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { lockVaultSession } from "@/lib/crypto-client/vault-session";
 import { useVaultSessionUnlocked } from "@/features/vault/use-vault-session-unlocked";
@@ -52,8 +53,12 @@ export function Nav() {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-sm)]">
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
-        <Link href={session ? "/letters" : "/"} className="text-lg font-semibold text-[var(--primary)]">
-          Letters to God
+        <Link
+          href={session ? "/letters" : "/"}
+          className="flex items-center gap-2 text-lg font-semibold text-[var(--primary)]"
+        >
+          <AppMark size={28} />
+          <span>Letters to God</span>
         </Link>
 
         {session ? (
