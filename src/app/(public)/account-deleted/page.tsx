@@ -1,21 +1,23 @@
 import Link from "next/link";
-import { Nav } from "@/components/layout/nav";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AccountDeletedPage() {
   return (
-    <>
-      <Nav />
-      <main className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-        <h1 className="text-2xl font-semibold">Your account has been deleted</h1>
-        <p className="text-sm text-[var(--muted)]">
-          Your account and encrypted data have been removed from active storage. Local vault material
-          on this browser was cleared when possible.
-        </p>
-        <Link href="/">
+    <PageLayout width="medium" className="text-center">
+      <Card className="mx-auto max-w-lg py-4">
+        <CardHeader className="items-center text-center">
+          <CardTitle>Your account has been deleted</CardTitle>
+          <CardDescription>
+            Your account and encrypted data have been removed from active storage. Local private
+            material on this browser was cleared when possible.
+          </CardDescription>
+        </CardHeader>
+        <Link href="/" className="mt-2 inline-block">
           <Button variant="secondary">Return home</Button>
         </Link>
-      </main>
-    </>
+      </Card>
+    </PageLayout>
   );
 }

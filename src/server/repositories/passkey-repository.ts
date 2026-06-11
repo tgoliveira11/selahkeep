@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, lt } from "drizzle-orm";
 import { db, type DbClient } from "@/lib/db";
 import { passkeyCredentials, webauthnChallenges } from "@/lib/db/schema";
 
@@ -77,7 +77,7 @@ export const passkeyRepository = {
   },
 
   async deleteExpiredChallenges(client: DbClient = db) {
-    await client.delete(webauthnChallenges).where(sql`${webauthnChallenges.expiresAt} < ${new Date()}`);
+    await client.delete(webauthnChallenges).where(lt(webauthnChallenges.expiresAt, new Date()));
   },
 
   async storeChallenge(

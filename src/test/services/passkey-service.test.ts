@@ -237,7 +237,7 @@ describe("passkey service", () => {
         response: { clientDataJSON, authenticatorData: "aa", signature: "sig" },
         clientExtensionResults: {},
       })
-    ).rejects.toThrow("Credential not found");
+    ).rejects.toThrow("This passkey is not registered");
     expect(mocks.record).toHaveBeenCalledWith("failed_unlock_attempt", USER_ID, {
       method: "passkey",
     });

@@ -2,8 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Nav } from "@/components/layout/nav";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { LoadingState } from "@/components/ui/loading-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { LetterCard } from "@/components/letters/letter-card";
 import { lettersApi } from "@/lib/api-client/letters";
 import { decryptLetter } from "@/lib/crypto-client/letters";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
@@ -19,6 +25,8 @@ interface LetterListItem {
 
 export default function LettersPage() {
   const vault = useRequireVault();
+  const vaultUserId = vault.status === "ready" ? vault.userId : null;
+  const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
   const [letters, setLetters] = useState<LetterListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,9 +38,7 @@ export default function LettersPage() {
   }, []);
 
   useEffect(() => {
-    if (vault.status !== "ready") return;
-    const userId = vault.userId;
-    const vaultUnlocked = vault.vaultUnlocked;
+    if (!vaultUserId) return;
 
     let cancelled = false;
 
@@ -41,7 +47,6 @@ export default function LettersPage() {
       setError(null);
       try {
         const encrypted = await lettersApi.list();
-
         const items: LetterListItem[] = [];
 
         for (const letter of encrypted) {
@@ -72,7 +77,7 @@ export default function LettersPage() {
           } catch {
             items.push({
               id: letter.id,
-              title: "Unable to decrypt this letter",
+              title: "Unable to open this letter",
               answered: letter.answered,
               createdAt: letter.createdAt,
               locked: false,
@@ -95,76 +100,74 @@ export default function LettersPage() {
     return () => {
       cancelled = true;
     };
-  }, [vault.status, vault.status === "ready" ? vault.userId : null, vault.status === "ready" ? vault.vaultUnlocked : null]);
+  }, [vaultUserId, vaultUnlocked]);
 
   if (vault.status === "loading" || vault.status === "redirecting" || loading) {
     return (
-      <>
-        <Nav />
-        <main className="max-w-2xl mx-auto px-4 py-12">Loading...</main>
-      </>
+      <PageLayout>
+        <LoadingState label="Loading your letters" />
+      </PageLayout>
     );
   }
 
   if (vault.status === "error") {
     return (
-      <>
-        <Nav />
-        <main className="max-w-2xl mx-auto px-4 py-12">
-          <p className="text-[var(--danger)]">{vault.message}</p>
-        </main>
-      </>
+      <PageLayout>
+        <ErrorState message={vault.message} />
+      </PageLayout>
     );
   }
 
   return (
-    <>
-      <Nav />
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">My Letters</h1>
+    <PageLayout>
+      <PageHeader
+        title="My letters"
+        description="A private collection of your letters — not a feed, not shared with anyone."
+        action={
           <Link href="/letters/new">
-            <Button>Write a letter</Button>
+            <Button className="w-full sm:w-auto">Write a letter</Button>
           </Link>
+        }
+      />
+
+      {!vault.vaultUnlocked && letters.length > 0 && (
+        <Alert variant="info" className="mb-6" title="Vault locked">
+          Letter titles are hidden while your vault is locked. Unlock to read titles, or open a letter
+          to unlock and read it.
+        </Alert>
+      )}
+
+      {error && (
+        <div className="mb-6">
+          <ErrorState message={error} onRetry={() => window.location.reload()} />
         </div>
+      )}
 
-        {!vault.vaultUnlocked && letters.length > 0 && (
-          <p className="text-sm text-[var(--muted)] mb-4">
-            Your vault is locked. Unlock it to read letter titles, or open a letter to unlock.
-          </p>
-        )}
-
-        {error && <p className="text-[var(--danger)] mb-4">{error}</p>}
-
-        {letters.length === 0 ? (
-          <p className="text-[var(--muted)]">No letters yet. Write your first private letter.</p>
-        ) : (
-          <ul className="space-y-3">
-            {letters.map((letter) => (
-              <li key={letter.id}>
-                <Link
-                  href={`/letters/${letter.id}`}
-                  className="block p-4 bg-white border border-[var(--border)] rounded-lg hover:shadow-sm"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className={letter.locked ? "font-medium text-[var(--muted)]" : "font-medium"}>
-                      {letter.title}
-                    </span>
-                    {letter.answered && (
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                        Answered
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-sm text-[var(--muted)]">
-                    {new Date(letter.createdAt).toLocaleDateString()}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </main>
-    </>
+      {letters.length === 0 ? (
+        <EmptyState
+          title="No letters yet"
+          description="When you're ready, write your first private letter. It stays protected on your device before it is saved."
+          action={
+            <Link href="/letters/new">
+              <Button>Write your first letter</Button>
+            </Link>
+          }
+        />
+      ) : (
+        <ul className="space-y-3">
+          {letters.map((letter) => (
+            <li key={letter.id}>
+              <LetterCard
+                id={letter.id}
+                title={letter.title}
+                answered={letter.answered}
+                createdAt={letter.createdAt}
+                locked={letter.locked}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </PageLayout>
   );
 }

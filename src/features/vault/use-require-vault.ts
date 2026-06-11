@@ -16,6 +16,11 @@ type VaultGateState =
   | { status: "ready"; userId: string; vaultUnlocked: boolean }
   | { status: "error"; message: string };
 
+type VaultReadyState =
+  | { status: "pending" }
+  | { status: "ready"; userId: string; vaultUnlocked: boolean }
+  | { status: "error"; message: string };
+
 /**
  * Ensures the user is authenticated. Silently unlocks from this device's envelope
  * only when the vault was not manually locked.
@@ -23,7 +28,7 @@ type VaultGateState =
 export function useRequireVault(): VaultGateState & { recheckVault: () => void } {
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
-  const [state, setState] = useState<VaultGateState>({ status: "loading" });
+  const [readyState, setReadyState] = useState<VaultReadyState>({ status: "pending" });
   const [recheckToken, setRecheckToken] = useState(0);
 
   const recheckVault = useCallback(() => {
@@ -37,17 +42,18 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
   }, []);
 
   useEffect(() => {
-    if (authStatus === "loading") return;
-
     if (authStatus === "unauthenticated") {
-      setState({ status: "redirecting" });
       router.push("/login");
+    }
+  }, [authStatus, router]);
+
+  useEffect(() => {
+    if (authStatus === "loading" || authStatus === "unauthenticated") {
       return;
     }
 
     const sessionUserId = session?.user?.id;
     if (!sessionUserId) {
-      setState({ status: "error", message: "Session is missing user id." });
       return;
     }
 
@@ -57,7 +63,7 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
     async function ensureAuth() {
       if (isVaultManuallyLocked()) {
         if (!cancelled) {
-          setState({ status: "ready", userId, vaultUnlocked: false });
+          setReadyState({ status: "ready", userId, vaultUnlocked: false });
         }
         return;
       }
@@ -74,7 +80,7 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
       }
 
       if (!cancelled) {
-        setState({ status: "ready", userId, vaultUnlocked });
+        setReadyState({ status: "ready", userId, vaultUnlocked });
       }
     }
 
@@ -83,9 +89,25 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
     return () => {
       cancelled = true;
     };
-  }, [authStatus, session?.user?.id, router, recheckToken]);
+  }, [authStatus, session?.user?.id, recheckToken]);
 
-  return { ...state, recheckVault };
+  if (authStatus === "loading") {
+    return { status: "loading", recheckVault };
+  }
+
+  if (authStatus === "unauthenticated") {
+    return { status: "redirecting", recheckVault };
+  }
+
+  if (authStatus === "authenticated" && !session?.user?.id) {
+    return { status: "error", message: "Session is missing user id.", recheckVault };
+  }
+
+  if (readyState.status === "pending") {
+    return { status: "loading", recheckVault };
+  }
+
+  return { ...readyState, recheckVault };
 }
 
 /** Call after generating a new vault key during first-time setup. */

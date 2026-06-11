@@ -6,6 +6,9 @@ import {
   type PublicKeyCredentialCreationOptionsJSON,
 } from "@simplewebauthn/browser";
 import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { SuccessState } from "@/components/ui/success-state";
 import { getSessionVaultKey } from "@/lib/crypto-client/vault";
 import {
   extractPasskeyPrfOutput,
@@ -38,6 +41,7 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showOrphanNote, setShowOrphanNote] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
 
   function showPrfUnavailable(options: { attemptedRegistration: boolean }) {
     setOutcome("prf-unavailable");
@@ -56,7 +60,7 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
     try {
       const vaultKey = getSessionVaultKey();
       if (!vaultKey) {
-        throw new Error("Vault must be unlocked to set up a passkey");
+        throw new Error("Unlock your vault before setting up a passkey.");
       }
 
       const prfSupport = await detectPasskeyPrfSupport();
@@ -116,14 +120,6 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
   }
 
   async function handleRemovePasskey() {
-    if (
-      !confirm(
-        "Remove your passkey? You will no longer be able to unlock your vault with it on new devices."
-      )
-    ) {
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setMessage(null);
@@ -139,52 +135,66 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
       setError(e instanceof Error ? e.message : "Failed to remove passkey");
     } finally {
       setLoading(false);
+      setRemoveOpen(false);
     }
   }
 
   if (hasPasskey) {
     return (
-      <div className="space-y-3">
-        <p className="text-sm text-green-700">Passkey is set up for vault unlock on this account.</p>
+      <div className="space-y-4">
+        <SuccessState message="Passkey is set up. You can unlock your vault on a new device with your passkey." />
         <Button
-          onClick={handleRemovePasskey}
+          onClick={() => setRemoveOpen(true)}
           disabled={loading}
           variant="danger"
-          className="w-full"
+          className="w-full sm:w-auto"
         >
-          {loading ? "Removing..." : "Remove passkey"}
+          Remove passkey
         </Button>
-        {message && <p className="text-sm text-green-700">{message}</p>}
-        {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
+        {message && <SuccessState message={message} />}
+        {error && (
+          <Alert variant="danger" role="alert">
+            {error}
+          </Alert>
+        )}
+        <ConfirmDialog
+          open={removeOpen}
+          title="Remove passkey?"
+          description="You will no longer be able to unlock your vault with this passkey on new devices."
+          confirmLabel="Remove passkey"
+          loading={loading}
+          onConfirm={handleRemovePasskey}
+          onCancel={() => setRemoveOpen(false)}
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-[var(--muted)]">
-        Use your device PIN, fingerprint, or face recognition to unlock your vault on a new device.
-        Passkey-based vault unlock requires PRF support in your browser or passkey provider.
+    <div className="space-y-4">
+      <p className="text-sm leading-relaxed text-[var(--muted)]">
+        When supported by your browser, a passkey lets you unlock your vault with your device PIN,
+        fingerprint, or face recognition on a new device.
       </p>
-      <Button onClick={handleRegisterPasskey} disabled={loading} variant="secondary" className="w-full">
-        {loading ? "Working..." : "Set up passkey"}
+      <Button onClick={handleRegisterPasskey} disabled={loading} variant="secondary" className="w-full sm:w-auto">
+        {loading ? "Working…" : "Set up passkey"}
       </Button>
-      {outcome === "vault-registered" && message && (
-        <p className="text-sm text-green-700">{message}</p>
-      )}
+      {outcome === "vault-registered" && message && <SuccessState message={message} />}
       {outcome === "prf-unavailable" && message && (
-        <div className="space-y-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
-          <p className="text-sm text-[var(--muted)]">{message}</p>
+        <Alert variant="warning" title="Passkey unlock not available here">
+          {message}
           {showOrphanNote && (
-            <p className="text-sm text-[var(--muted)]">{PASSKEY_ORPHAN_CREDENTIAL_NOTE}</p>
+            <span className="mt-2 block text-[var(--muted)]">{PASSKEY_ORPHAN_CREDENTIAL_NOTE}</span>
           )}
-        </div>
+        </Alert>
       )}
       {outcome === "cancelled" && error && (
-        <p className="text-sm text-[var(--muted)]">{error}</p>
+        <Alert variant="muted">{error}</Alert>
       )}
       {outcome === "failed" && error && (
-        <p className="text-sm text-[var(--danger)]">{error}</p>
+        <Alert variant="danger" role="alert">
+          {error}
+        </Alert>
       )}
     </div>
   );

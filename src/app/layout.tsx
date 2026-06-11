@@ -1,16 +1,23 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { SkipLink } from "@/components/layout/skip-link";
 
 export const metadata: Metadata = {
   title: "Letters to God",
   description: "Your private letters are protected on your device before they are saved.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen antialiased">
+      <body className="relative min-h-screen antialiased">
+        <SkipLink />
         <Providers>{children}</Providers>
       </body>
     </html>

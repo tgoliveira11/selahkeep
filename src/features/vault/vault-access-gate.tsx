@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useVault } from "@/features/vault/use-vault";
 import { vaultApi } from "@/lib/api-client/vault";
-import { isPasskeySupported } from "@/lib/crypto-client/passkey-vault";
+import { VaultUnlockPanel, type VaultUnlockPanelMode } from "@/features/vault/vault-unlock-panel";
 
 interface VaultAccessGateProps {
   purpose: "read" | "write";
@@ -33,8 +31,11 @@ export function VaultAccessGate({ purpose, onAccessGranted }: VaultAccessGatePro
   }, []);
 
   const needsInit = vaultStatus?.initialized === false;
-  const showPasskeyUnlock =
-    isPasskeySupported() && (vaultStatus?.hasPasskey ?? false);
+  const panelMode: VaultUnlockPanelMode = showRecovery
+    ? "recovery"
+    : needsInit
+      ? "init"
+      : "unlock";
 
   async function handleInit() {
     await initializeVault();
@@ -68,62 +69,27 @@ export function VaultAccessGate({ purpose, onAccessGranted }: VaultAccessGatePro
       : "Unlock to read this letter";
 
   const description = needsInit
-    ? "Before your first letter is saved, we set up encryption on this device. Our team cannot read your letters."
-    : "Your letters are protected on your device. Unlock your vault to continue on this browser.";
+    ? "Before your first letter is saved, we protect it on this device. Our team cannot read your private letters."
+    : "Unlock your vault to continue on this browser.";
 
   return (
-    <div className="max-w-md space-y-4 p-6 bg-white border border-[var(--border)] rounded-lg">
-      <h2 className="text-lg font-semibold">{heading}</h2>
-      <p className="text-sm text-[var(--muted)]">{description}</p>
-
-      {needsInit ? (
-        <Button onClick={handleInit} disabled={loading} className="w-full">
-          {loading ? "Setting up..." : "Set up my vault"}
-        </Button>
-      ) : showRecovery ? (
-        <div className="space-y-3">
-          <Input
-            type="text"
-            placeholder="recovery-code-words-here"
-            value={recoveryCode}
-            onChange={(e) => setRecoveryCode(e.target.value)}
-          />
-          <Button
-            onClick={handleRecovery}
-            disabled={loading || !recoveryCode}
-            className="w-full"
-          >
-            {loading ? "Unlocking..." : "Unlock with recovery code"}
-          </Button>
-          <Button variant="secondary" onClick={() => setShowRecovery(false)} className="w-full">
-            Back
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {showPasskeyUnlock && (
-            <Button onClick={handlePasskeyUnlock} disabled={loading} className="w-full">
-              {loading ? "Unlocking..." : "Unlock with passkey"}
-            </Button>
-          )}
-          <Button
-            onClick={handleUnlock}
-            disabled={loading}
-            variant={showPasskeyUnlock ? "secondary" : "primary"}
-            className="w-full"
-          >
-            {loading ? "Unlocking..." : "Unlock on this device"}
-          </Button>
-          <Button variant="secondary" onClick={() => setShowRecovery(true)} className="w-full">
-            Use recovery code
-          </Button>
-        </div>
-      )}
-
-      {error && <p className="text-[var(--danger)] text-sm">{error}</p>}
-      {offlineNotice && !error && (
-        <p className="text-sm text-[var(--muted)]">{offlineNotice}</p>
-      )}
-    </div>
+    <VaultUnlockPanel
+      embedded
+      mode={panelMode}
+      loading={loading}
+      error={error}
+      offlineNotice={offlineNotice}
+      vaultStatus={vaultStatus}
+      recoveryCode={recoveryCode}
+      onRecoveryCodeChange={setRecoveryCode}
+      onInit={handleInit}
+      onUnlockDevice={handleUnlock}
+      onUnlockPasskey={handlePasskeyUnlock}
+      onUnlockRecovery={handleRecovery}
+      onShowRecovery={() => setShowRecovery(true)}
+      onBackFromRecovery={() => setShowRecovery(false)}
+      heading={heading}
+      description={description}
+    />
   );
 }

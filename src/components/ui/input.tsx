@@ -1,9 +1,15 @@
 import { InputHTMLAttributes } from "react";
+import { cn } from "@/lib/ui/cn";
 
-export function Input({ className = "", ...props }: InputHTMLAttributes<HTMLInputElement>) {
+export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`w-full px-3 py-2 border border-[var(--border)] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${className}`}
+      className={cn(
+        "min-h-11 w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2",
+        "text-[var(--foreground)] placeholder:text-[var(--muted)]",
+        "focus:outline-none focus:ring-2 focus:ring-[var(--ring)]",
+        className
+      )}
       {...props}
     />
   );

@@ -1,9 +1,12 @@
-import { vi, beforeEach } from "vitest";
+import { vi, beforeEach, expect } from "vitest";
+import { toHaveNoViolations } from "jest-axe";
 import {
   InMemoryRateLimitAdapter,
   resetAllInMemoryRateLimits,
 } from "@/server/policies/rate-limit/in-memory-adapter";
 import { setRateLimitAdapterForTests } from "@/server/policies/rate-limit";
+
+expect.extend(toHaveNoViolations);
 
 vi.mock("server-only", () => ({}));
 

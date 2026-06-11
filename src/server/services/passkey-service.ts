@@ -14,12 +14,18 @@ import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
 import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 import { passkeyPrfExtensions } from "@/lib/passkey/prf";
+import {
+  getWebAuthnOrigins,
+  getWebAuthnRpId,
+  getWebAuthnRpName,
+  toPasskeyVerificationErrorMessage,
+} from "@/lib/passkey/webauthn-config";
 import { assertVaultKeyAad } from "@/server/policies/aad-validation";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
-const rpName = process.env.WEBAUTHN_RP_NAME ?? "Letters to God";
-const rpID = process.env.WEBAUTHN_RP_ID ?? "localhost";
-const origin = process.env.WEBAUTHN_ORIGIN ?? "http://localhost:3001";
+const rpName = getWebAuthnRpName();
+const rpID = getWebAuthnRpId();
+const origins = getWebAuthnOrigins();
 
 export const passkeyService = {
   async getRegistrationOptions(userId: string, userName: string, ip?: string) {
@@ -82,7 +88,7 @@ export const passkeyService = {
     const verification = await verifyRegistrationResponse({
       response,
       expectedChallenge: challengeRecord.challenge,
-      expectedOrigin: origin,
+      expectedOrigin: origins,
       expectedRPID: rpID,
     });
 
@@ -157,10 +163,12 @@ export const passkeyService = {
     let allowCredentials: { id: string; transports?: AuthenticatorTransport[] }[] | undefined;
     if (userId) {
       const creds = await passkeyRepository.findByUserId(userId);
-      allowCredentials = creds.map((c) => ({
-        id: c.credentialId,
-        transports: (c.transports as AuthenticatorTransport[]) ?? undefined,
-      }));
+      if (creds.length > 0) {
+        allowCredentials = creds.map((c) => ({
+          id: c.credentialId,
+          transports: (c.transports as AuthenticatorTransport[]) ?? undefined,
+        }));
+      }
     }
 
     const options = await generateAuthenticationOptions({
@@ -199,25 +207,33 @@ export const passkeyService = {
     const credential = await passkeyRepository.findByCredentialId(response.id);
     if (!credential || credential.userId !== userId) {
       await auditRepository.record("failed_unlock_attempt", userId, { method: "passkey" });
-      throw new Error("Credential not found");
+      throw new NotFoundError(
+        "This passkey is not registered for your account. Set up your passkey again from Recovery while your vault is unlocked."
+      );
     }
 
-    const verification = await verifyAuthenticationResponse({
-      response,
-      expectedChallenge: challengeRecord.challenge,
-      expectedOrigin: origin,
-      expectedRPID: rpID,
-      credential: {
-        id: credential.credentialId,
-        publicKey: Buffer.from(credential.publicKey, "base64url"),
-        counter: parseInt(credential.counter, 10),
-        transports: (credential.transports as AuthenticatorTransport[]) ?? undefined,
-      },
-    });
+    let verification;
+    try {
+      verification = await verifyAuthenticationResponse({
+        response,
+        expectedChallenge: challengeRecord.challenge,
+        expectedOrigin: origins,
+        expectedRPID: rpID,
+        credential: {
+          id: credential.credentialId,
+          publicKey: new Uint8Array(Buffer.from(credential.publicKey, "base64url")),
+          counter: Number.parseInt(credential.counter, 10) || 0,
+          transports: (credential.transports as AuthenticatorTransport[]) ?? undefined,
+        },
+      });
+    } catch (error) {
+      await auditRepository.record("failed_unlock_attempt", userId, { method: "passkey" });
+      throw new ChallengeError(toPasskeyVerificationErrorMessage(error));
+    }
 
     if (!verification.verified) {
       await auditRepository.record("failed_unlock_attempt", userId, { method: "passkey" });
-      throw new Error("Passkey authentication failed");
+      throw new ChallengeError("Passkey authentication failed. Try again or use your recovery code.");
     }
 
     await passkeyRepository.updateCounter(

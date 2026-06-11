@@ -5,14 +5,72 @@
   --foreground: #1a1a1a;
   --primary: #4a6741;
   --primary-hover: #3d5636;
+  --accent: #c4a574;
+  --accent-muted: #e8dcc8;
   --muted: #6b7280;
   --border: #e5e0d8;
   --card: #ffffff;
+  --card-muted: #f5f2ed;
   --danger: #b91c1c;
+  --danger-muted: #fef2f2;
+  --success: #3d5636;
+  --success-muted: #ecfdf3;
+  --warning: #92400e;
+  --warning-muted: #fffbeb;
+  --info: #1e40af;
+  --info-muted: #eff6ff;
+  --radius: 0.75rem;
+  --shadow-sm: 0 1px 2px rgb(26 26 26 / 0.06);
+  --ring: rgb(74 103 65 / 0.35);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  line-height: 1.5;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 1.5s ease-in-out infinite;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  background: var(--card);
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
 }

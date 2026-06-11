@@ -102,7 +102,24 @@ describe("passkey service extended", () => {
     mocks.verifyAuthenticationResponse.mockResolvedValue({ verified: false });
     await expect(
       passkeyService.verifyAuthentication(USER_ID, authResponse("auth-challenge"))
-    ).rejects.toThrow("Passkey authentication failed");
+    ).rejects.toMatchObject({ name: "ChallengeError" });
+  });
+
+  it("maps WebAuthn verification exceptions to ChallengeError", async () => {
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
+    mocks.findByCredentialId.mockResolvedValue({
+      userId: USER_ID,
+      credentialId: "cred-id",
+      publicKey: Buffer.from(new Uint8Array(32)).toString("base64url"),
+      counter: "0",
+      transports: ["internal"],
+    });
+    mocks.verifyAuthenticationResponse.mockRejectedValue(
+      new Error('Unexpected authentication response origin "http://127.0.0.1:3001"')
+    );
+    await expect(
+      passkeyService.verifyAuthentication(USER_ID, authResponse("auth-challenge"))
+    ).rejects.toMatchObject({ name: "ChallengeError" });
   });
 
   it("rejects credentials owned by another user", async () => {
@@ -115,7 +132,7 @@ describe("passkey service extended", () => {
     });
     await expect(
       passkeyService.verifyAuthentication(USER_ID, authResponse("auth-challenge"))
-    ).rejects.toThrow("Credential not found");
+    ).rejects.toThrow("This passkey is not registered");
   });
 
   it("rejects failed registration verification", async () => {

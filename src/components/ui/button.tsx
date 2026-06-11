@@ -1,22 +1,35 @@
-import { ButtonHTMLAttributes } from "react";
+"use client";
+
+import { forwardRef, type ButtonHTMLAttributes } from "react";
+import { cn } from "@/lib/ui/cn";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "danger";
 }
 
-export function Button({ variant = "primary", className = "", children, ...props }: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { variant = "primary", className, children, ...props },
+  ref
+) {
   const variants = {
     primary: "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]",
-    secondary: "bg-white border border-[var(--border)] text-[var(--foreground)] hover:bg-gray-50",
+    secondary:
+      "border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--card-muted)]",
     danger: "bg-[var(--danger)] text-white hover:bg-red-800",
   };
 
   return (
     <button
-      className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 ${variants[variant]} ${className}`}
+      ref={ref}
+      className={cn(
+        "min-h-11 rounded-[var(--radius)] px-4 py-2.5 text-sm font-medium transition-colors",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        variants[variant],
+        className
+      )}
       {...props}
     >
       {children}
     </button>
   );
-}
+});

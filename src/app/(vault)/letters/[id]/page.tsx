@@ -2,10 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Nav } from "@/components/layout/nav";
+import Link from "next/link";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { FormField } from "@/components/ui/form-field";
+import { ErrorState } from "@/components/ui/error-state";
+import { LoadingState } from "@/components/ui/loading-state";
+import { SuccessState } from "@/components/ui/success-state";
 import { lettersApi } from "@/lib/api-client/letters";
 import { encryptLetter, decryptLetter } from "@/lib/crypto-client/letters";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
@@ -20,13 +29,17 @@ export default function LetterDetailPage() {
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const canRead = vault.status === "ready" && vault.vaultUnlocked;
+  const vaultUserId = vault.status === "ready" ? vault.userId : null;
 
   useEffect(() => {
     return subscribeVaultSession(() => {
@@ -39,12 +52,7 @@ export default function LetterDetailPage() {
   }, []);
 
   useEffect(() => {
-    if (!canRead) {
-      setLoading(false);
-      return;
-    }
-    if (vault.status !== "ready") return;
-    const userId = vault.userId;
+    if (!canRead || !vaultUserId) return;
 
     let cancelled = false;
 
@@ -62,6 +70,7 @@ export default function LetterDetailPage() {
           setTitle(decrypted.title);
           setBody(decrypted.body);
           setAnswered(letter.answered);
+          setCreatedAt(letter.createdAt);
         }
       } catch (e) {
         if (!cancelled) {
@@ -77,7 +86,7 @@ export default function LetterDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [canRead, vault.status, vault.status === "ready" ? vault.userId : null, id]);
+  }, [canRead, vaultUserId, id]);
 
   function handleAccessGranted() {
     vault.recheckVault();
@@ -112,98 +121,136 @@ export default function LetterDetailPage() {
   }
 
   async function handleDelete() {
-    if (!confirm("Permanently delete this letter? This cannot be undone.")) return;
+    setDeleting(true);
     try {
       await lettersApi.delete(id);
       router.push("/letters");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to delete");
+      setDeleting(false);
+      setDeleteOpen(false);
     }
   }
 
   if (vault.status === "loading" || vault.status === "redirecting") {
     return (
-      <>
-        <Nav />
-        <main className="max-w-2xl mx-auto px-4 py-12">Loading...</main>
-      </>
+      <PageLayout>
+        <LoadingState label="Opening your letter" />
+      </PageLayout>
     );
   }
 
   if (vault.status === "error") {
     return (
-      <>
-        <Nav />
-        <main className="max-w-2xl mx-auto px-4 py-12">
-          <p className="text-[var(--danger)]">{vault.message}</p>
-        </main>
-      </>
+      <PageLayout>
+        <ErrorState message={vault.message} />
+      </PageLayout>
     );
   }
 
   if (!canRead) {
     return (
-      <>
-        <Nav />
-        <main className="max-w-2xl mx-auto px-4 py-8">
+      <PageLayout>
+        <Card>
           <VaultAccessGate purpose="read" onAccessGranted={handleAccessGranted} />
-        </main>
-      </>
+        </Card>
+      </PageLayout>
     );
   }
 
   if (loading) {
     return (
-      <>
-        <Nav />
-        <main className="max-w-2xl mx-auto px-4 py-12">Loading...</main>
-      </>
+      <PageLayout>
+        <LoadingState label="Opening your letter" />
+      </PageLayout>
     );
   }
 
   return (
-    <>
-      <Nav />
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        {editing ? (
-          <div className="space-y-4">
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
-            <Textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={20000} />
-            <div className="flex gap-3">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? "Saving..." : "Save changes"}
-              </Button>
-              <Button variant="secondary" onClick={() => setEditing(false)}>
-                Cancel
-              </Button>
-            </div>
+    <PageLayout>
+      <div className="mb-6">
+        <Link href="/letters" className="text-sm font-medium text-[var(--primary)] hover:underline">
+          ← Back to my letters
+        </Link>
+      </div>
+
+      {editing ? (
+        <Card className="space-y-5">
+          <FormField id="edit-title" label="Title">
+            <Input id="edit-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
+          </FormField>
+          <FormField id="edit-body" label="Your letter">
+            <Textarea id="edit-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={20000} />
+          </FormField>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Saving…" : "Save changes"}
+            </Button>
+            <Button variant="secondary" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
           </div>
-        ) : (
-          <div>
-            <h1 className="text-2xl font-bold mb-4">{title}</h1>
-            <div className="prose whitespace-pre-wrap mb-6">{body}</div>
-            {answered && (
-              <p className="text-sm text-green-700 mb-4">
-                Marked as answered in your journey.
+        </Card>
+      ) : (
+        <article className="space-y-6">
+          <header className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+              {answered && <Badge variant="success">Answered</Badge>}
+            </div>
+            {createdAt && (
+              <p className="text-sm text-[var(--muted)]">
+                Written{" "}
+                {new Date(createdAt).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
               </p>
             )}
-            <div className="flex flex-wrap gap-3">
-              <Button variant="secondary" onClick={() => setEditing(true)}>
-                Edit
+          </header>
+
+          <Card muted className="p-6">
+            <div className="whitespace-pre-wrap text-base leading-relaxed text-[var(--foreground)]">{body}</div>
+          </Card>
+
+          {answered && (
+            <SuccessState message="You marked this letter as answered in your journey." />
+          )}
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Button variant="secondary" onClick={() => setEditing(true)}>
+              Edit
+            </Button>
+            {!answered && (
+              <Button variant="secondary" onClick={handleMarkAnswered} disabled={saving}>
+                Mark as answered
               </Button>
-              {!answered && (
-                <Button variant="secondary" onClick={handleMarkAnswered} disabled={saving}>
-                  Mark as answered
-                </Button>
-              )}
-              <Button variant="danger" onClick={handleDelete}>
-                Delete
-              </Button>
-            </div>
+            )}
+            <Button variant="danger" onClick={() => setDeleteOpen(true)}>
+              Delete letter
+            </Button>
           </div>
-        )}
-        {error && <p className="text-[var(--danger)] text-sm mt-4">{error}</p>}
-      </main>
-    </>
+        </article>
+      )}
+
+      {error && (
+        <div className="mt-4">
+          <Alert variant="danger" role="alert">
+            {error}
+          </Alert>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete this letter?"
+        description="This permanently removes the letter. This cannot be undone."
+        confirmLabel="Delete letter"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteOpen(false)}
+      />
+    </PageLayout>
   );
 }

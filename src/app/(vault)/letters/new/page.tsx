@@ -2,10 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Nav } from "@/components/layout/nav";
+import Link from "next/link";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import { FormField } from "@/components/ui/form-field";
+import { PrivacyNotice } from "@/components/ui/privacy-notice";
+import { ErrorState } from "@/components/ui/error-state";
+import { LoadingState } from "@/components/ui/loading-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { lettersApi } from "@/lib/api-client/letters";
 import { encryptLetter } from "@/lib/crypto-client/letters";
 import { generateDefaultTitle } from "@/lib/crypto-client/vault";
@@ -33,38 +40,33 @@ export default function NewLetterPage() {
 
   if (vault.status === "loading" || vault.status === "redirecting") {
     return (
-      <>
-        <Nav />
-        <main className="max-w-2xl mx-auto px-4 py-12">Loading...</main>
-      </>
+      <PageLayout>
+        <LoadingState label="Preparing your writing space" />
+      </PageLayout>
     );
   }
 
   if (vault.status === "error") {
     return (
-      <>
-        <Nav />
-        <main className="max-w-2xl mx-auto px-4 py-12">
-          <p className="text-[var(--danger)]">{vault.message}</p>
-        </main>
-      </>
+      <PageLayout>
+        <ErrorState message={vault.message} />
+      </PageLayout>
     );
   }
 
   if (!canWrite) {
     return (
-      <>
-        <Nav />
-        <main className="max-w-2xl mx-auto px-4 py-8">
-          <h1 className="text-2xl font-bold mb-6">Write a letter</h1>
+      <PageLayout>
+        <PageHeader title="Write a letter" description="Unlock your vault to begin writing." />
+        <Card>
           <VaultAccessGate
             purpose="write"
             onAccessGranted={() => {
               vault.recheckVault();
             }}
           />
-        </main>
-      </>
+        </Card>
+      </PageLayout>
     );
   }
 
@@ -89,41 +91,50 @@ export default function NewLetterPage() {
   }
 
   return (
-    <>
-      <Nav />
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Write a letter</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Title (optional)</label>
+    <PageLayout>
+      <PageHeader
+        title="Write a letter"
+        description="Take your time. This space is private and calm."
+      />
+
+      <Card className="space-y-6">
+        <PrivacyNotice compact />
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <FormField id="letter-title" label="Title (optional)" hint="Leave blank to use a date-based title">
             <Input
+              id="letter-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="A title for your letter"
               maxLength={200}
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Your letter</label>
+          </FormField>
+          <FormField id="letter-body" label="Your letter">
             <Textarea
+              id="letter-body"
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              placeholder="Dear God..."
+              placeholder="Dear God…"
               maxLength={20000}
               required
             />
-          </div>
-          {error && <p className="text-[var(--danger)] text-sm">{error}</p>}
-          <div className="flex gap-3">
-            <Button type="submit" disabled={loading || !body.trim()}>
-              {loading ? "Encrypting & saving..." : "Save letter"}
+          </FormField>
+          {error && (
+            <p className="text-sm text-[var(--danger)]" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button type="submit" disabled={loading || !body.trim()} className="w-full sm:w-auto">
+              {loading ? "Saving securely…" : "Save letter"}
             </Button>
-            <Button type="button" variant="secondary" onClick={() => router.back()}>
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => router.back()}>
               Cancel
             </Button>
           </div>
         </form>
-      </main>
-    </>
+      </Card>
+    </PageLayout>
   );
 }

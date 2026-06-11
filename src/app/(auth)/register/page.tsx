@@ -4,9 +4,14 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Nav } from "@/components/layout/nav";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { FormField } from "@/components/ui/form-field";
+import { PrivacyNotice } from "@/components/ui/privacy-notice";
+import { PageHeader } from "@/components/ui/page-header";
+import { SocialSignIn } from "@/components/auth/social-sign-in";
 import { getErrorMessage } from "@/lib/api-client/parse-response";
 
 export default function RegisterPage() {
@@ -43,38 +48,61 @@ export default function RegisterPage() {
   }
 
   return (
-    <>
-      <Nav />
-      <main className="max-w-md mx-auto px-4 py-12">
-        <h1 className="text-2xl font-bold mb-6">Create account</h1>
+    <PageLayout width="narrow">
+      <PageHeader
+        title="Create your account"
+        description="Start writing private letters protected on your device."
+      />
+
+      <Card className="space-y-6">
+        <PrivacyNotice compact />
+
         <form onSubmit={handleRegister} className="space-y-4">
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            placeholder="Password (min 8 characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={8}
-            required
-          />
-          {error && <p className="text-[var(--danger)] text-sm">{error}</p>}
+          <FormField id="register-email" label="Email">
+            <Input
+              id="register-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </FormField>
+          <FormField id="register-password" label="Password" hint="At least 8 characters">
+            <Input
+              id="register-password"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={8}
+              required
+            />
+          </FormField>
+          {error && (
+            <p className="text-sm text-[var(--danger)]" role="alert">
+              {error}
+            </p>
+          )}
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Creating account..." : "Create account"}
+            {loading ? "Creating account…" : "Create account with email"}
           </Button>
         </form>
-        <p className="mt-6 text-center text-sm">
-          Already have an account?{" "}
-          <Link href="/login" className="text-[var(--primary)] hover:underline">
-            Sign in
-          </Link>
+
+        <SocialSignIn dividerLabel="or sign up with" />
+
+        <p className="text-center text-xs text-[var(--muted)]">
+          Google and Apple create your account automatically on first sign-in — the same providers
+          available on the sign-in page.
         </p>
-      </main>
-    </>
+      </Card>
+
+      <p className="mt-6 text-center text-sm text-[var(--muted)]">
+        Already have an account?{" "}
+        <Link href="/login" className="font-medium text-[var(--primary)] hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </PageLayout>
   );
 }

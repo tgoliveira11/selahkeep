@@ -4,9 +4,14 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Nav } from "@/components/layout/nav";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { FormField } from "@/components/ui/form-field";
+import { PrivacyNotice } from "@/components/ui/privacy-notice";
+import { PageHeader } from "@/components/ui/page-header";
+import { SocialSignIn } from "@/components/auth/social-sign-in";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,57 +34,55 @@ export default function LoginPage() {
   }
 
   return (
-    <>
-      <Nav />
-      <main className="max-w-md mx-auto px-4 py-12">
-        <h1 className="text-2xl font-bold mb-6">Sign in</h1>
+    <PageLayout width="narrow">
+      <PageHeader
+        title="Welcome back"
+        description="Sign in to continue writing your private letters."
+      />
+
+      <Card className="space-y-6">
+        <PrivacyNotice compact />
+
         <form onSubmit={handleCredentials} className="space-y-4">
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          {error && <p className="text-[var(--danger)] text-sm">{error}</p>}
+          <FormField id="login-email" label="Email" error={error ? undefined : undefined}>
+            <Input
+              id="login-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </FormField>
+          <FormField id="login-password" label="Password">
+            <Input
+              id="login-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </FormField>
+          {error && (
+            <p className="text-sm text-[var(--danger)]" role="alert">
+              {error}
+            </p>
+          )}
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Signing in..." : "Sign in with email"}
+            {loading ? "Signing in…" : "Sign in with email"}
           </Button>
         </form>
 
-        <div className="my-6 text-center text-[var(--muted)]">or</div>
+        <SocialSignIn />
+      </Card>
 
-        <div className="space-y-3">
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => signIn("google", { callbackUrl: "/letters" })}
-          >
-            Sign in with Google
-          </Button>
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => signIn("apple", { callbackUrl: "/letters" })}
-          >
-            Sign in with Apple
-          </Button>
-        </div>
-
-        <p className="mt-6 text-center text-sm">
-          No account?{" "}
-          <Link href="/register" className="text-[var(--primary)] hover:underline">
-            Create one
-          </Link>
-        </p>
-      </main>
-    </>
+      <p className="mt-6 text-center text-sm text-[var(--muted)]">
+        No account?{" "}
+        <Link href="/register" className="font-medium text-[var(--primary)] hover:underline">
+          Create one
+        </Link>
+      </p>
+    </PageLayout>
   );
 }

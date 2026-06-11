@@ -3,9 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Nav } from "@/components/layout/nav";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { LoadingState } from "@/components/ui/loading-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { trustedDevicesApi, type TrustedDeviceResponse } from "@/lib/api-client/trusted-devices";
 import { getOrCreateDeviceSecret } from "@/lib/crypto-client/device-storage";
 import { getSessionVaultKey, wrapVaultKeyForDevice, clearVaultClientState } from "@/lib/crypto-client/vault";
@@ -28,9 +36,12 @@ export default function TrustedDevicesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [savingRename, setSavingRename] = useState(false);
+  const [revokeTarget, setRevokeTarget] = useState<TrustedDeviceResponse | null>(null);
+  const [revoking, setRevoking] = useState(false);
 
   const displayInfo = useMemo(() => getDeviceDisplayInfo(), []);
   const currentDeviceRegistered = isDeviceAlreadyRegistered(devices, currentDeviceId);
+  const activeDevices = devices.filter((device) => !device.revokedAt);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -60,23 +71,27 @@ export default function TrustedDevicesPage() {
     if (status === "authenticated") load();
   }, [status, router, session]);
 
-  async function handleRevoke(id: string) {
-    if (!confirm("Revoke this device? It will no longer be able to unlock your vault.")) return;
-    const revokedDevice = devices.find((device) => device.id === id);
+  async function handleRevokeConfirm() {
+    if (!revokeTarget) return;
+    const id = revokeTarget.id;
+    setRevoking(true);
+    setError(null);
     try {
       await trustedDevicesApi.revoke(id);
       if (
         session?.user?.id &&
-        revokedDevice &&
-        isCurrentTrustedDevice(revokedDevice, currentDeviceId)
+        isCurrentTrustedDevice(revokeTarget, currentDeviceId)
       ) {
         await clearVaultClientState(session.user.id);
       }
       setDevices((prev) =>
         prev.map((d) => (d.id === id ? { ...d, revokedAt: new Date().toISOString() } : d))
       );
+      setRevokeTarget(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to revoke device");
+    } finally {
+      setRevoking(false);
     }
   }
 
@@ -143,47 +158,59 @@ export default function TrustedDevicesPage() {
 
   if (loading) {
     return (
-      <>
-        <Nav />
-        <main className="max-w-2xl mx-auto px-4 py-12">Loading...</main>
-      </>
+      <PageLayout>
+        <LoadingState label="Loading trusted devices" />
+      </PageLayout>
     );
   }
 
   return (
-    <>
-      <Nav />
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6 gap-4">
-          <h1 className="text-2xl font-bold">Trusted devices</h1>
+    <PageLayout>
+      <PageHeader
+        title="Trusted devices"
+        description="Browsers you trust to unlock your private letters on this account."
+      />
+
+      {error && (
+        <div className="mb-6">
+          <ErrorState message={error} />
         </div>
+      )}
 
-        {error && <p className="text-[var(--danger)] mb-4">{error}</p>}
+      {!currentDeviceRegistered && (
+        <Card className="mb-8 space-y-4">
+          <CardHeader>
+            <CardTitle>Register this browser</CardTitle>
+            <CardDescription>
+              Detected as {formatDeviceMetadataSubtitle(displayInfo)}. Add a friendly name if you
+              like.
+            </CardDescription>
+          </CardHeader>
+          <Input
+            value={registerName}
+            onChange={(e) => setRegisterName(e.target.value)}
+            placeholder={displayInfo.defaultDeviceName}
+            maxLength={200}
+            aria-label="Device name"
+          />
+          <Button onClick={handleRegisterCurrent} disabled={registering}>
+            {registering ? "Registering…" : "Register this device"}
+          </Button>
+        </Card>
+      )}
 
-        {!currentDeviceRegistered ? (
-          <section className="mb-8 p-4 bg-white border rounded-lg space-y-3">
-            <h2 className="font-medium">Register this device</h2>
-            <p className="text-sm text-[var(--muted)]">
-              Detected as {formatDeviceMetadataSubtitle(displayInfo)}. You can add a friendly name
-              or use the default label.
-            </p>
-            <Input
-              value={registerName}
-              onChange={(e) => setRegisterName(e.target.value)}
-              placeholder={displayInfo.defaultDeviceName}
-              maxLength={200}
-              aria-label="Device name"
-            />
-            <Button onClick={handleRegisterCurrent} disabled={registering}>
-              {registering ? "Registering..." : "Register this device"}
-            </Button>
-          </section>
-        ) : (
-          <p className="mb-6 text-sm text-[var(--muted)]">
-            This browser is already registered as a trusted device.
-          </p>
-        )}
+      {currentDeviceRegistered && (
+        <Alert variant="success" className="mb-6">
+          This browser is registered as a trusted device.
+        </Alert>
+      )}
 
+      {activeDevices.length === 0 ? (
+        <EmptyState
+          title="No trusted devices yet"
+          description="Register this browser to unlock your letters here without a recovery code each time."
+        />
+      ) : (
         <ul className="space-y-3">
           {devices.map((device) => {
             const isCurrent = isCurrentTrustedDevice(device, currentDeviceId);
@@ -191,72 +218,72 @@ export default function TrustedDevicesPage() {
             const isEditing = editingId === device.id;
 
             return (
-              <li
-                key={device.id}
-                className={`p-4 bg-white border rounded-lg ${isRevoked ? "opacity-50" : ""}`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    {isEditing ? (
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <Input
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          maxLength={200}
-                          aria-label="Rename device"
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => handleRename(device.id)}
-                            disabled={savingRename}
-                          >
-                            Save
-                          </Button>
-                          <Button variant="secondary" onClick={cancelRename}>
-                            Cancel
-                          </Button>
+              <li key={device.id}>
+                <Card className={isRevoked ? "opacity-60" : undefined}>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      {isEditing ? (
+                        <div className="space-y-3">
+                          <Input
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            maxLength={200}
+                            aria-label="Rename device"
+                          />
+                          <div className="flex gap-2">
+                            <Button onClick={() => handleRename(device.id)} disabled={savingRename}>
+                              Save
+                            </Button>
+                            <Button variant="secondary" onClick={cancelRename}>
+                              Cancel
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <p className="font-medium">
-                        {device.deviceName}
-                        {isCurrent && (
-                          <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                            This device
-                          </span>
-                        )}
-                        {isRevoked && (
-                          <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">
-                            Revoked
-                          </span>
-                        )}
-                      </p>
-                    )}
-                    <p className="text-sm text-[var(--muted)]">
-                      {formatDeviceMetadataSubtitle(device)}
-                    </p>
-                    <p className="text-xs text-[var(--muted)]">
-                      Added {new Date(device.createdAt).toLocaleDateString()}
-                      {device.lastUsedAt &&
-                        ` · Last used ${new Date(device.lastUsedAt).toLocaleDateString()}`}
-                    </p>
-                  </div>
-                  {!isRevoked && !isEditing && (
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <Button variant="secondary" onClick={() => startRename(device)}>
-                        Rename
-                      </Button>
-                      <Button variant="danger" onClick={() => handleRevoke(device.id)}>
-                        Revoke
-                      </Button>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium">{device.deviceName}</p>
+                            {isCurrent && <Badge variant="info">This device</Badge>}
+                            {isRevoked && <Badge variant="danger">Revoked</Badge>}
+                          </div>
+                          <p className="text-sm text-[var(--muted)]">
+                            {formatDeviceMetadataSubtitle(device)}
+                          </p>
+                          <p className="text-xs text-[var(--muted)]">
+                            Added {new Date(device.createdAt).toLocaleDateString()}
+                            {device.lastUsedAt &&
+                              ` · Last used ${new Date(device.lastUsedAt).toLocaleDateString()}`}
+                          </p>
+                        </>
+                      )}
                     </div>
-                  )}
-                </div>
+                    {!isRevoked && !isEditing && (
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <Button variant="secondary" onClick={() => startRename(device)}>
+                          Rename
+                        </Button>
+                        <Button variant="danger" onClick={() => setRevokeTarget(device)}>
+                          Revoke
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </Card>
               </li>
             );
           })}
         </ul>
-      </main>
-    </>
+      )}
+
+      <ConfirmDialog
+        open={Boolean(revokeTarget)}
+        title="Revoke this device?"
+        description="This device will no longer be able to unlock your vault. You can register it again later if needed."
+        confirmLabel="Revoke device"
+        loading={revoking}
+        onConfirm={handleRevokeConfirm}
+        onCancel={() => setRevokeTarget(null)}
+      />
+    </PageLayout>
   );
 }

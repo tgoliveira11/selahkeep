@@ -22,6 +22,8 @@ Swagger UI is **disabled in production** unless you set:
 ENABLE_API_DOCS=true
 ```
 
+The `/api-docs` page intentionally **does not use the app navigation shell** (`Nav` / `PageLayout`) so Swagger UI can use the full viewport. It still inherits the root skip link and sets `id="main-content"` on its `<main>`. See `ARCHITECTURE.md` for rationale.
+
 ## OpenAPI spec file
 
 | Resource | URL / path |

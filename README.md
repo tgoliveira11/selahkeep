@@ -39,6 +39,15 @@ npm run dev
 
 Open [http://localhost:3001](http://localhost:3001).
 
+## UI / UX
+
+Design audit and implementation plan:
+
+- [`docs/UI_UX_AUDIT.md`](./docs/UI_UX_AUDIT.md) — screen inventory, issues, priorities
+- [`docs/UI_UX_IMPLEMENTATION_PLAN.md`](./docs/UI_UX_IMPLEMENTATION_PLAN.md) — design principles, components, checklists
+
+Shared UI components live under `src/components/ui/`. Pages use `PageLayout` for consistent mobile-first shell and navigation.
+
 ## API reference (Swagger UI)
 
 Browse REST endpoints in Swagger UI during local development:
