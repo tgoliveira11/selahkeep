@@ -68,7 +68,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 
 - `POST/GET /api/letters`, `GET/PUT/DELETE /api/letters/:id`
 - `POST /api/vault/init`, `GET /api/vault/status`
-- `GET/POST /api/trusted-devices`, `DELETE /api/trusted-devices/:id`
+- `GET/POST /api/trusted-devices`, `POST /api/trusted-devices/:id/relink`, `POST /api/trusted-devices/:id/remove`, `DELETE /api/trusted-devices/:id`
 - `POST /api/recovery-code`, `POST /api/vault/unlock-with-recovery-code`
 - `POST /api/passkeys/register`, `POST /api/passkeys/authenticate`, `DELETE /api/passkeys`
 - `DELETE /api/account` — account deletion

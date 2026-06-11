@@ -133,6 +133,39 @@ export const trustedDeviceRepository = {
     return device ?? null;
   },
 
+  async updateClientIdentity(
+    id: string,
+    userId: string,
+    data: {
+      clientDeviceId: string;
+      devicePublicKey: Record<string, unknown>;
+      browser?: string | null;
+      platform?: string | null;
+      deviceType?: string | null;
+    },
+    client: DbClient = db
+  ) {
+    const [device] = await client
+      .update(trustedDevices)
+      .set({
+        clientDeviceId: data.clientDeviceId,
+        devicePublicKey: data.devicePublicKey,
+        browser: data.browser ?? null,
+        platform: data.platform ?? null,
+        deviceType: data.deviceType ?? null,
+        lastUsedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(trustedDevices.id, id),
+          eq(trustedDevices.userId, userId),
+          isNull(trustedDevices.revokedAt)
+        )
+      )
+      .returning();
+    return device ?? null;
+  },
+
   async revoke(id: string, userId: string, client: DbClient = db) {
     const [device] = await client
       .update(trustedDevices)
@@ -145,6 +178,20 @@ export const trustedDeviceRepository = {
         )
       )
       .returning();
+    return device ?? null;
+  },
+
+  async deleteRevoked(id: string, userId: string, client: DbClient = db) {
+    const [device] = await client
+      .delete(trustedDevices)
+      .where(
+        and(
+          eq(trustedDevices.id, id),
+          eq(trustedDevices.userId, userId),
+          isNotNull(trustedDevices.revokedAt)
+        )
+      )
+      .returning({ id: trustedDevices.id });
     return device ?? null;
   },
 };

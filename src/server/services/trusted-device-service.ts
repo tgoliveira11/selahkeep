@@ -2,25 +2,33 @@ import { runInTransaction } from "@/lib/db/transaction";
 import { trustedDeviceRepository } from "@/server/repositories/trusted-device-repository";
 import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
-import type { CreateTrustedDeviceInput } from "@/lib/validation/trusted-devices";
+import type { CreateTrustedDeviceInput, RelinkTrustedDeviceInput } from "@/lib/validation/trusted-devices";
 import { assertVaultKeyAad } from "@/server/policies/aad-validation";
 import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 
 export type ClientDeviceState = "active" | "revoked" | "not_registered";
+
+export type ClientDeviceStateResult = {
+  state: ClientDeviceState;
+  trustedDeviceId?: string;
+};
 
 export const trustedDeviceService = {
   async list(userId: string) {
     return trustedDeviceRepository.findByUserId(userId);
   },
 
-  async getClientDeviceState(userId: string, clientDeviceId: string): Promise<ClientDeviceState> {
+  async getClientDeviceState(
+    userId: string,
+    clientDeviceId: string
+  ): Promise<ClientDeviceStateResult> {
     const active = await trustedDeviceRepository.findActiveByClientDeviceId(userId, clientDeviceId);
-    if (active) return "active";
+    if (active) return { state: "active", trustedDeviceId: active.id };
 
     const revoked = await trustedDeviceRepository.findRevokedByClientDeviceId(userId, clientDeviceId);
-    if (revoked) return "revoked";
+    if (revoked) return { state: "revoked", trustedDeviceId: revoked.id };
 
-    return "not_registered";
+    return { state: "not_registered" };
   },
 
   async create(userId: string, input: CreateTrustedDeviceInput, ip?: string) {
@@ -92,8 +100,76 @@ export const trustedDeviceService = {
     return updated;
   },
 
+  async relinkClientDevice(
+    id: string,
+    userId: string,
+    input: RelinkTrustedDeviceInput,
+    ip?: string
+  ) {
+    await enforceRateLimit({
+      operation: "trusted_device.relink",
+      userId,
+      ip,
+      endpoint: "/api/trusted-devices/:id/relink",
+    });
+
+    assertVaultKeyAad(userId, input.encryptedVaultKey);
+
+    const clientDeviceId =
+      typeof input.devicePublicKey?.deviceId === "string" ? input.devicePublicKey.deviceId : null;
+    if (!clientDeviceId) {
+      throw new ConflictError("Device identity is missing");
+    }
+
+    const device = await trustedDeviceRepository.findByIdForUser(id, userId);
+    if (!device) throw new NotFoundError("Device not found");
+    if (device.revokedAt) throw new ConflictError("Device is revoked");
+
+    const existing = await trustedDeviceRepository.findActiveByClientDeviceId(userId, clientDeviceId);
+    if (existing && existing.id !== id) {
+      throw new ConflictError("This browser is already registered");
+    }
+
+    return runInTransaction(async (tx) => {
+      const updated = await trustedDeviceRepository.updateClientIdentity(
+        id,
+        userId,
+        {
+          clientDeviceId,
+          devicePublicKey: input.devicePublicKey,
+          browser: input.browser ?? null,
+          platform: input.platform ?? null,
+          deviceType: input.deviceType ?? null,
+        },
+        tx
+      );
+      if (!updated) throw new NotFoundError("Device not found");
+
+      const envelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
+      for (const envelope of envelopes) {
+        const meta = envelope.publicMetadata as { trustedDeviceId?: string } | null;
+        if (envelope.method === "trusted_device" && meta?.trustedDeviceId === id) {
+          await vaultRepository.revokeEnvelope(envelope.id, userId, tx);
+        }
+      }
+
+      await vaultRepository.createEnvelope(
+        {
+          userId,
+          method: "trusted_device",
+          encryptedVaultKey: input.encryptedVaultKey,
+          publicMetadata: { trustedDeviceId: id },
+        },
+        tx
+      );
+
+      await auditRepository.record("trusted_device_relinked", userId, { deviceId: id }, tx);
+      return updated;
+    });
+  },
+
   async touchLastUsed(userId: string, clientDeviceId: string) {
-    const state = await this.getClientDeviceState(userId, clientDeviceId);
+    const { state } = await this.getClientDeviceState(userId, clientDeviceId);
     if (state === "revoked") {
       return { updated: false, state };
     }
@@ -128,6 +204,20 @@ export const trustedDeviceService = {
       await auditRepository.record("trusted_device_revoked", userId, { deviceId: id }, tx);
     });
 
+    return { success: true };
+  },
+
+  async removeRevoked(id: string, userId: string) {
+    const device = await trustedDeviceRepository.findByIdForUser(id, userId);
+    if (!device) throw new NotFoundError("Device not found");
+    if (!device.revokedAt) {
+      throw new ConflictError("Only revoked devices can be removed");
+    }
+
+    const deleted = await trustedDeviceRepository.deleteRevoked(id, userId);
+    if (!deleted) throw new NotFoundError("Device not found");
+
+    await auditRepository.record("trusted_device_removed", userId, { deviceId: id });
     return { success: true };
   },
 

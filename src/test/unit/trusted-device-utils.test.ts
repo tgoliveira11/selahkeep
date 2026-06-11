@@ -3,6 +3,7 @@ import {
   getTrustedDeviceClientId,
   isCurrentTrustedDevice,
   isDeviceAlreadyRegistered,
+  findActiveDeviceWithMatchingMetadata,
 } from "@/lib/trusted-device-utils";
 import type { TrustedDeviceResponse } from "@/lib/api-client/trusted-devices";
 
@@ -10,6 +11,7 @@ const baseDevice: TrustedDeviceResponse = {
   id: "server-1",
   userId: "user-1",
   deviceName: "Chrome on macOS",
+  clientDeviceId: "client-device-1",
   devicePublicKey: { deviceId: "client-device-1" },
   browser: "Chrome",
   platform: "macOS",
@@ -20,7 +22,16 @@ const baseDevice: TrustedDeviceResponse = {
 };
 
 describe("trusted device utils", () => {
-  it("reads client device id from devicePublicKey", () => {
+  it("reads client device id from clientDeviceId column", () => {
+    expect(
+      getTrustedDeviceClientId({
+        clientDeviceId: "client-device-1",
+        devicePublicKey: null,
+      })
+    ).toBe("client-device-1");
+  });
+
+  it("falls back to devicePublicKey.deviceId", () => {
     expect(getTrustedDeviceClientId(baseDevice)).toBe("client-device-1");
   });
 
@@ -38,5 +49,22 @@ describe("trusted device utils", () => {
   it("detects when current browser is already registered", () => {
     expect(isDeviceAlreadyRegistered([baseDevice], "client-device-1")).toBe(true);
     expect(isDeviceAlreadyRegistered([baseDevice], "other-id")).toBe(false);
+  });
+
+  it("finds active devices with matching metadata", () => {
+    expect(
+      findActiveDeviceWithMatchingMetadata([baseDevice], {
+        browser: "Chrome",
+        platform: "macOS",
+        deviceType: "desktop",
+      })?.id
+    ).toBe("server-1");
+    expect(
+      findActiveDeviceWithMatchingMetadata([baseDevice], {
+        browser: "Firefox",
+        platform: "macOS",
+        deviceType: "desktop",
+      })
+    ).toBeNull();
   });
 });

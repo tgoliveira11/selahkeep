@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET, POST } from "@/app/api/trusted-devices/route";
 import { PATCH, DELETE } from "@/app/api/trusted-devices/[id]/route";
+import { POST as removePost } from "@/app/api/trusted-devices/[id]/remove/route";
 import { POST as touchPost } from "@/app/api/trusted-devices/touch/route";
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   rename: vi.fn(),
   touchLastUsed: vi.fn(),
   revoke: vi.fn(),
+  removeRevoked: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
@@ -24,6 +26,7 @@ vi.mock("@/server/services/trusted-device-service", () => ({
     rename: mocks.rename,
     touchLastUsed: mocks.touchLastUsed,
     revoke: mocks.revoke,
+    removeRevoked: mocks.removeRevoked,
   },
   NotFoundError: class NotFoundError extends Error {
     name = "NotFoundError";
@@ -85,5 +88,14 @@ describe("trusted devices API routes", () => {
       params: Promise.resolve({ id: "device-1" }),
     });
     expect(res.status).toBe(200);
+  });
+
+  it("POST remove deletes revoked device record", async () => {
+    mocks.removeRevoked.mockResolvedValue({ success: true });
+    const res = await removePost(new Request("http://localhost"), {
+      params: Promise.resolve({ id: "device-1" }),
+    });
+    expect(res.status).toBe(200);
+    expect(mocks.removeRevoked).toHaveBeenCalledWith("device-1", USER_ID);
   });
 });

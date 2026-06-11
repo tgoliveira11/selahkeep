@@ -101,7 +101,8 @@ The UI must allow the user to:
 - see browser, OS platform, and form factor (`desktop` / `mobile` / `tablet`) from `getDeviceDisplayInfo()`;
 - see creation date;
 - see last used date (updated on each successful vault unlock when the browser is registered);
-- revoke device.
+- revoke device;
+- remove revoked device entries from the list (permanent delete of revoked rows only; does not restore vault access).
 
 Stored server metadata per trusted device:
 

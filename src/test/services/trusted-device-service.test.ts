@@ -13,10 +13,12 @@ const mocks = vi.hoisted(() => ({
   findActiveByClientDeviceId: vi.fn(),
   findRevokedByClientDeviceId: vi.fn(),
   create: vi.fn(),
+  updateClientIdentity: vi.fn(),
   findByIdForUser: vi.fn(),
   updateDeviceName: vi.fn(),
   updateLastUsed: vi.fn(),
   revoke: vi.fn(),
+  deleteRevoked: vi.fn(),
   createEnvelope: vi.fn(),
   findActiveEnvelopesByUserId: vi.fn(),
   revokeEnvelope: vi.fn(),
@@ -30,10 +32,12 @@ vi.mock("@/server/repositories/trusted-device-repository", () => ({
     findActiveByClientDeviceId: mocks.findActiveByClientDeviceId,
     findRevokedByClientDeviceId: mocks.findRevokedByClientDeviceId,
     create: mocks.create,
+    updateClientIdentity: mocks.updateClientIdentity,
     findByIdForUser: mocks.findByIdForUser,
     updateDeviceName: mocks.updateDeviceName,
     updateLastUsed: mocks.updateLastUsed,
     revoke: mocks.revoke,
+    deleteRevoked: mocks.deleteRevoked,
     maxDevices: 1,
   },
 }));
@@ -85,6 +89,35 @@ describe("trusted device service", () => {
         encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
       })
     ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("relinks current browser identity to an existing trusted device", async () => {
+    mocks.findByIdForUser.mockResolvedValue({ id: "device-1", revokedAt: null });
+    mocks.findActiveByClientDeviceId.mockResolvedValue(null);
+    mocks.updateClientIdentity.mockResolvedValue({ id: "device-1", clientDeviceId: "new-id" });
+    mocks.findActiveEnvelopesByUserId.mockResolvedValue([
+      {
+        id: "env-1",
+        method: "trusted_device",
+        publicMetadata: { trustedDeviceId: "device-1" },
+      },
+    ]);
+
+    const device = await trustedDeviceService.relinkClientDevice("device-1", USER_ID, {
+      devicePublicKey: { deviceId: "new-id" },
+      encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+    });
+
+    expect(device.id).toBe("device-1");
+    expect(mocks.updateClientIdentity).toHaveBeenCalled();
+    expect(mocks.revokeEnvelope).toHaveBeenCalledWith("env-1", USER_ID, expect.anything());
+    expect(mocks.createEnvelope).toHaveBeenCalled();
+    expect(mocks.record).toHaveBeenCalledWith(
+      "trusted_device_relinked",
+      USER_ID,
+      { deviceId: "device-1" },
+      expect.anything()
+    );
   });
 
   it("renames active device", async () => {
@@ -190,6 +223,28 @@ describe("trusted device service", () => {
     mocks.findByIdForUser.mockResolvedValue(null);
     await expect(trustedDeviceService.revoke("missing", USER_ID)).rejects.toBeInstanceOf(
       NotFoundError
+    );
+  });
+
+  it("removes revoked device records", async () => {
+    mocks.findByIdForUser.mockResolvedValue({
+      id: "device-1",
+      revokedAt: new Date(),
+    });
+    mocks.deleteRevoked.mockResolvedValue({ id: "device-1" });
+    await expect(trustedDeviceService.removeRevoked("device-1", USER_ID)).resolves.toEqual({
+      success: true,
+    });
+    expect(mocks.deleteRevoked).toHaveBeenCalledWith("device-1", USER_ID);
+    expect(mocks.record).toHaveBeenCalledWith("trusted_device_removed", USER_ID, {
+      deviceId: "device-1",
+    });
+  });
+
+  it("removeRevoked rejects active devices", async () => {
+    mocks.findByIdForUser.mockResolvedValue({ id: "device-1", revokedAt: null });
+    await expect(trustedDeviceService.removeRevoked("device-1", USER_ID)).rejects.toBeInstanceOf(
+      ConflictError
     );
   });
 });

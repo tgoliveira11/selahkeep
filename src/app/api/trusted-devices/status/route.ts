@@ -17,8 +17,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Invalid deviceId" }, { status: 400 });
     }
 
-    const state = await trustedDeviceService.getClientDeviceState(user.id, parsed.data.deviceId);
-    return NextResponse.json({ state });
+    const result = await trustedDeviceService.getClientDeviceState(user.id, parsed.data.deviceId);
+    return NextResponse.json(result);
   } catch (error) {
     return apiError(error, "GET /api/trusted-devices/status");
   }

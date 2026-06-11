@@ -1,10 +1,18 @@
 import { apiClient } from "./client";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
+export type ClientDeviceState = "active" | "revoked" | "not_registered";
+
+export interface ClientDeviceStateResponse {
+  state: ClientDeviceState;
+  trustedDeviceId?: string;
+}
+
 export interface TrustedDeviceResponse {
   id: string;
   userId: string;
   deviceName: string;
+  clientDeviceId: string | null;
   devicePublicKey: Record<string, unknown> | null;
   browser: string | null;
   platform: string | null;
@@ -26,15 +34,27 @@ export const trustedDevicesApi = {
   }) => apiClient.post<TrustedDeviceResponse>("/api/trusted-devices", payload),
   rename: (id: string, payload: { deviceName: string }) =>
     apiClient.patch<TrustedDeviceResponse>(`/api/trusted-devices/${id}`, payload),
+  relink: (
+    id: string,
+    payload: {
+      devicePublicKey: Record<string, unknown>;
+      browser?: string;
+      platform?: string;
+      deviceType?: string;
+      encryptedVaultKey: EncryptedPayload;
+    }
+  ) => apiClient.post<TrustedDeviceResponse>(`/api/trusted-devices/${id}/relink`, payload),
   touch: (payload: { deviceId: string }) =>
-    apiClient.post<{ updated: boolean; state: "active" | "revoked" | "not_registered" }>(
+    apiClient.post<{ updated: boolean; state: ClientDeviceState }>(
       "/api/trusted-devices/touch",
       payload
     ),
   deviceState: (deviceId: string) =>
-    apiClient.get<{ state: "active" | "revoked" | "not_registered" }>(
+    apiClient.get<ClientDeviceStateResponse>(
       `/api/trusted-devices/status?deviceId=${encodeURIComponent(deviceId)}`
     ),
   revoke: (id: string) =>
     apiClient.delete<{ success: boolean }>(`/api/trusted-devices/${id}`),
+  remove: (id: string) =>
+    apiClient.post<{ success: boolean }>(`/api/trusted-devices/${id}/remove`, {}),
 };
