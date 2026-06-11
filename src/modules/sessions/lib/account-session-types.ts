@@ -1,4 +1,10 @@
-export type AccountAuthMethod = "password" | "google" | "apple" | "passkey" | "unknown";
+export type AccountAuthMethod =
+  | "password"
+  | "google"
+  | "apple"
+  | "microsoft"
+  | "passkey"
+  | "unknown";
 
 export type AccountSessionView = {
   id: string;

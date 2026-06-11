@@ -249,7 +249,7 @@ Account takeover, recovery code capture, or plaintext exfiltration if user decry
 
 - WebAuthn/passkeys resist phishing when used (origin-bound).
 - Recovery code entry only on authentic origin with client-side KDF — phishing site would need to mimic full app flow.
-- OAuth (Google, Apple) uses provider consent screens.
+- OAuth (Google, Apple, Microsoft) uses provider consent screens.
 - No email links embedding secrets.
 
 **Remaining risk**
@@ -354,7 +354,7 @@ Script runs with page privileges; can harvest plaintext during entry/decryption 
 ### 11. Compromised OAuth account
 
 **Description**  
-Attacker compromises user's Google or Apple account and uses linked OAuth login to access Letters to God.
+Attacker compromises user's Google, Apple, or Microsoft account and uses OAuth login to access Letters to God.
 
 **Impact**  
 Full account access at application layer. Attacker still needs vault unlock on a new device unless victim's browser session/device is also compromised.
@@ -373,7 +373,8 @@ Full account access at application layer. Attacker still needs vault unlock on a
 
 **Required follow-up**
 
-- Recommend users secure Google/Apple accounts (2FA).
+- Recommend users secure Google/Apple/Microsoft accounts (2FA).
+- Microsoft sign-in uses minimal OIDC scopes only; no automatic cross-provider account linking.
 - Consider notifying user on login from new IP/device.
 - Document OAuth + vault independence in user-facing security FAQ.
 

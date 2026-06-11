@@ -8,6 +8,22 @@ import { authLoginService } from "@/server/services/auth-login-service";
 import { twoFactorService } from "@/server/services/two-factor-service";
 import { accountSessionService } from "@/server/services/account-session-service";
 import { safeLogger } from "@/lib/logger";
+import { evaluateOAuthSignIn } from "@/modules/auth/lib/oauth-sign-in-policy";
+import { createMicrosoftAzureAdProvider } from "@/modules/auth/lib/microsoft-azure-ad-provider";
+import {
+  describeMicrosoftProviderConfigIssue,
+  readMicrosoftProviderEnv,
+} from "@/modules/auth/lib/microsoft-provider-config";
+
+const microsoftProviderConfigIssue = describeMicrosoftProviderConfigIssue();
+if (microsoftProviderConfigIssue) {
+  safeLogger.warn("Microsoft OAuth provider disabled due to invalid configuration", {
+    errorCode: microsoftProviderConfigIssue,
+    endpoint: "auth-options",
+  });
+}
+
+const microsoftProviderEnv = readMicrosoftProviderEnv();
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -47,6 +63,7 @@ export const authOptions: NextAuthOptions = {
           }),
         ]
       : []),
+    ...(microsoftProviderEnv ? [createMicrosoftAzureAdProvider(microsoftProviderEnv)] : []),
     CredentialsProvider({
       id: "login-token",
       name: "LoginToken",
@@ -67,20 +84,46 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }) {
-      if (!user.email) return false;
-      let dbUser = await userRepository.findByEmail(user.email);
-      if (!dbUser && account) {
+      if (account?.provider === "login-token") {
+        if (!user.email) return false;
+        const dbUser = await userRepository.findByEmail(user.email);
+        if (!dbUser) return false;
+        await authService.recordLoginSuccess(dbUser.id, account.provider);
+        return true;
+      }
+
+      const decision = evaluateOAuthSignIn({
+        email: user.email,
+        accountProvider: account?.provider,
+        existingUser: user.email
+          ? await userRepository.findByEmail(user.email)
+          : null,
+      });
+
+      if (decision.action === "reject") {
+        return decision.redirectPath;
+      }
+
+      let dbUser = user.email ? await userRepository.findByEmail(user.email) : null;
+
+      if (decision.action === "create_user" && user.email) {
         dbUser = await userRepository.create({
           email: user.email,
-          authProvider: account.provider,
+          authProvider: decision.authProvider,
         });
         await userRepository.markEmailVerified(dbUser.id);
-      } else if (dbUser && account?.provider && account.provider !== "login-token" && !dbUser.emailVerifiedAt) {
+      } else if (
+        decision.action === "allow_existing" &&
+        dbUser &&
+        decision.markEmailVerified
+      ) {
         await userRepository.markEmailVerified(dbUser.id);
       }
-      if (dbUser && account?.provider && account.provider !== "login-token") {
+
+      if (dbUser && account?.provider) {
         await authService.recordLoginSuccess(dbUser.id, account.provider);
       }
+
       return true;
     },
     async jwt({ token, user, account, trigger, session }) {

@@ -30,7 +30,7 @@ export function ChangePasswordSettings({
       <p className="text-sm text-[var(--muted)]">
         {authProvider === "credentials"
           ? "Password change is not available for this account."
-          : "This account signs in with Google or Apple. Password change is not available unless you add an email/password sign-in method."}
+          : "This account signs in with Google, Apple, or Microsoft. Password change is not available unless you add an email/password sign-in method."}
       </p>
     );
   }

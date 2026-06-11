@@ -46,7 +46,7 @@ Most routes require a **NextAuth session cookie**:
 
 After logging in via the browser, copy the cookie from DevTools → Application → Cookies, or use Swagger UI in the same browser session so cookies are sent automatically.
 
-Registration (`POST /api/auth/register`) and NextAuth OAuth/credentials flows are documented in ADR-003; interactive OAuth is easier through the web login page than Swagger.
+Registration (`POST /api/auth/register`) and NextAuth OAuth/credentials flows are documented in ADR-003; interactive OAuth (Google, Apple, Microsoft `azure-ad`) is easier through the web login page than Swagger. Microsoft sign-in is account authentication only and does not unlock the vault.
 
 ### Account two-factor authentication (TOTP)
 
@@ -63,7 +63,7 @@ Optional account-level 2FA protects **sign-in only** — it does not decrypt pri
 | `POST` | `/api/auth/login/verify-2fa` | Public (challenge token + code) |
 | `POST` | `/api/auth/login/verify-2fa-oauth` | Partial OAuth session |
 
-Credentials login: `login/start` → optional `verify-2fa` → one-time `login-token` NextAuth provider. OAuth users with 2FA enabled receive a partial session until `verify-2fa-oauth` completes.
+Credentials login: `login/start` → optional `verify-2fa` → one-time `login-token` NextAuth provider. OAuth users (Google, Apple, Microsoft) with 2FA enabled receive a partial session until `verify-2fa-oauth` completes.
 
 **Passkey sign-in bypasses TOTP** when account 2FA is enabled (passkey user verification is sufficient for account authentication).
 

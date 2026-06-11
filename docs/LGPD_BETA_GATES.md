@@ -190,7 +190,7 @@ Privacy policy must describe:
 1. **Client-side encryption model** — letters encrypted on device before save; operator does not hold decryption keys for letter content.
 2. **Recovery responsibility** — if user loses recovery code and all devices, letters cannot be recovered by support.
 3. **Metadata collected** — email, auth method, letter dates, answered status, device labels, security audit events.
-4. **Subprocessors** — hosting, database, OAuth (Google, Apple), email delivery if used.
+4. **Subprocessors** — hosting, database, OAuth (Google, Apple, Microsoft), email delivery if used.
 5. **Data location** — once residency decision is made.
 6. **Retention and deletion** — active deletion vs. backup lag per [BACKUP_RESTORE_POLICY](./BACKUP_RESTORE_POLICY.md).
 7. **Security measures** — high-level: encryption, auto-lock, device management; no false guarantees against malware or phishing.
@@ -252,7 +252,7 @@ Reference table for consistent messaging:
 |-------|------|
 | Letter encryption | Client-side AES-GCM before API; server stores ciphertext only |
 | Operator access to letters | No server-side decryption path by design |
-| Authentication | Google, Apple, email/password; passkeys for vault unlock |
+| Authentication | Google, Apple, Microsoft, email/password; passkeys for vault unlock |
 | Session vs. vault | Login ≠ vault unlock; keys required on each device |
 | Auto-lock | 15 minutes inactivity |
 | Autosave | Disabled in MVP |

@@ -8,6 +8,8 @@ export function formatAuthMethod(method: AccountAuthMethod | string): string {
       return "Google";
     case "apple":
       return "Apple";
+    case "microsoft":
+      return "Microsoft";
     case "passkey":
       return "Passkey";
     default:

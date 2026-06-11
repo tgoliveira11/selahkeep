@@ -18,6 +18,7 @@ vi.mock("next-auth/react", () => ({
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() })),
   usePathname: vi.fn(() => "/"),
+  useSearchParams: vi.fn(() => new URLSearchParams()),
 }));
 
 describe("UI pages and components", () => {
@@ -45,6 +46,8 @@ describe("UI pages and components", () => {
     expect(screen.getByText(/protected on this device/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with google/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with apple/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /continue with microsoft/i })).toBeTruthy();
+    expect(screen.getByText(/microsoft create your account automatically/i)).toBeTruthy();
   });
 
   it("renders account deleted page", () => {

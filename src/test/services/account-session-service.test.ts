@@ -71,6 +71,7 @@ describe("accountSessionService", () => {
   it("maps providers to auth methods", () => {
     expect(accountSessionService.mapProviderToAuthMethod("google")).toBe("google");
     expect(accountSessionService.mapProviderToAuthMethod("apple")).toBe("apple");
+    expect(accountSessionService.mapProviderToAuthMethod("azure-ad")).toBe("microsoft");
     expect(accountSessionService.mapProviderToAuthMethod("credentials")).toBe("password");
     expect(accountSessionService.mapProviderToAuthMethod("login-token", "passkey")).toBe("passkey");
     expect(accountSessionService.mapProviderToAuthMethod("login-token", "bogus")).toBe("unknown");

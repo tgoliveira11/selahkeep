@@ -81,6 +81,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - `DELETE /api/account` — account deletion
 - `GET /api/account/2fa/status`, `POST /api/account/2fa/setup/start`, `POST /api/account/2fa/setup/verify`, `POST /api/account/2fa/disable`, `POST /api/account/2fa/backup-codes/regenerate`
 - `POST /api/auth/login/start`, `POST /api/auth/login/verify-2fa`, `POST /api/auth/login/verify-2fa-oauth`
+- NextAuth OAuth providers: Google, Apple, Microsoft (`azure-ad` — Microsoft identity platform; account auth only; scopes `openid email profile`)
 - `POST /api/auth/verify-email/resend`, `POST /api/auth/verify-email/confirm` — email verification (hashed tokens in `account_tokens`)
 - `POST /api/auth/forgot-password`, `POST /api/auth/reset-password` — password reset (generic forgot response; no vault involvement)
 - `POST /api/account/change-password`, `GET /api/account/auth-status` — signed-in password change and auth capability flags

@@ -18,6 +18,7 @@ const CHALLENGE_STORAGE_KEY = "letters-2fa-login-challenge";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mocks.push }),
   usePathname: () => "/login",
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("next-auth/react", () => ({

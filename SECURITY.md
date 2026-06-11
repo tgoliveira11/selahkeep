@@ -93,7 +93,7 @@ Optional TOTP 2FA protects **account sign-in only**. It does **not** decrypt pri
 - Backup codes generated on enable; hashed (SHA-256 + pepper) and one-time use; shown once
 - Credentials login: `POST /api/auth/login/start` → optional `POST /api/auth/login/verify-2fa` → one-time `login-token` NextAuth provider
 - Passkey login: `POST /api/auth/passkey/login/options` → `POST /api/auth/passkey/login/verify` → one-time `login-token` NextAuth provider (**TOTP not required**, even when 2FA is enabled)
-- OAuth login: partial session until `POST /api/auth/login/verify-2fa-oauth` + session upgrade token; middleware blocks app routes until verified
+- OAuth login (Google, Apple, Microsoft): partial session until `POST /api/auth/login/verify-2fa-oauth` + session upgrade token; middleware blocks app routes until verified
 - Rate limits: setup verify, login verify, disable, backup regeneration
 - Audit events never include TOTP secrets, codes, or backup codes
 
@@ -178,7 +178,8 @@ Account sessions are **not** trusted devices. Revoking a session signs out that 
 - Scoped keys: operation + email + IP + endpoint with separate **email**, **IP**, and **email+IP** buckets for credentials login
 - Credentials login IP captured via NextAuth route wrapper (`login-request-context.ts`)
 - Applied to: registration, login, email verification resend/confirm, forgot/reset password, change password, session revoke actions, recovery unlock, passkey register/auth, trusted-device create, account deletion
-- **Social login:** OAuth token exchange and provider-side abuse controls are delegated to Google/Apple; local rate limits apply to app auth routes where request context is available. Document remaining distributed-abuse risk in threat model.
+- **Social login:** OAuth token exchange and provider-side abuse controls are delegated to Google/Apple/Microsoft (NextAuth `azure-ad` provider); local rate limits apply to app auth routes where request context is available. Microsoft sign-in requests only `openid`, `email`, `profile` — no Microsoft Graph mail/calendar/files scopes; custom profile mapping avoids default Graph photo fetch. Document remaining distributed-abuse risk in threat model.
+- **Microsoft sign-in:** account authentication only via `AUTH_AZURE_AD_*` env vars; provider ID `azure-ad`; callback `/api/auth/callback/azure-ad`; tenant default `common`. Does not unlock vault. No automatic cross-provider account linking (`oauth-sign-in-policy.ts`). Missing Microsoft email claim rejects sign-in safely.
 
 ## Account deletion
 

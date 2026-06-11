@@ -6,6 +6,7 @@ describe("formatAuthProvider", () => {
     expect(formatAuthProvider("credentials")).toBe("Email and password");
     expect(formatAuthProvider("google")).toBe("Google");
     expect(formatAuthProvider("apple")).toBe("Apple");
+    expect(formatAuthProvider("azure-ad")).toBe("Microsoft");
   });
 
   it("returns the raw provider id for unknown values", () => {

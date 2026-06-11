@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { signOutAccount } from "@/lib/auth/sign-out-client";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,7 @@ import {
   PASSKEY_LOGIN_CANCELLED_MESSAGE,
   PASSKEY_LOGIN_UNSUPPORTED_MESSAGE,
 } from "@/lib/passkey/messages";
+import { OAuthSignInError } from "@/components/auth/oauth-sign-in-error";
 
 const CHALLENGE_STORAGE_KEY = "letters-2fa-login-challenge";
 
@@ -155,6 +156,9 @@ export default function LoginPage() {
               Forgot password?
             </Link>
           </p>
+          <Suspense fallback={null}>
+            <OAuthSignInError />
+          </Suspense>
           {error && (
             <p className="text-sm text-[var(--danger)]" role="alert">
               {error}

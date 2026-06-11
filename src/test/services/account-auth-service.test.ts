@@ -201,7 +201,21 @@ describe("accountAuthService", () => {
         currentPassword: "x",
         newPassword: "long-enough-password",
       })
-    ).rejects.toThrow("Google or Apple");
+    ).rejects.toThrow("Google, Apple, or Microsoft");
+  });
+
+  it("rejects change password for Microsoft OAuth-only accounts", async () => {
+    mocks.findById.mockResolvedValue({
+      ...credentialsUser,
+      passwordHash: null,
+      authProvider: "azure-ad",
+    });
+    await expect(
+      accountAuthService.changePassword(USER_ID, {
+        currentPassword: "x",
+        newPassword: "long-enough-password",
+      })
+    ).rejects.toThrow("Microsoft");
   });
 
   it("stores only hashed tokens when issuing verification email", async () => {

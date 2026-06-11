@@ -19,6 +19,7 @@
 - **Account tokens:** verification/reset tokens hashed in `account_tokens`; single-use atomic consumption; never log token plaintext.
 - **Email delivery:** account-auth links only in email; SMTP via nodemailer; `EMAIL_PROVIDER=console` forbidden in production; never log email bodies or tokens in SMTP mode.
 - **Email/password flows:** account auth only — never unlock vault, rotate vault keys, or send letter content in email (`account-auth-service.ts`).
+- **Microsoft OAuth:** NextAuth `azure-ad` provider only; scopes `openid email profile`; env `AUTH_AZURE_AD_*`; account auth only — never vault unlock; no cross-provider auto-linking (`oauth-sign-in-policy.ts`).
 - **Forgot password:** generic response always; no account enumeration.
 - **Session invalidation:** `password_updated_at` vs JWT `iat` after reset/change; account sessions use JWT `sid` + `account_sessions.revoked_at`.
 - **Account sessions ≠ trusted devices:** session revoke signs out account only; never revoke vault envelopes from session APIs.

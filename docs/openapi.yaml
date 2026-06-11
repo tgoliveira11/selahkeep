@@ -475,7 +475,7 @@ paths:
   /api/auth/login/verify-2fa-oauth:
     post:
       tags: [Auth]
-      summary: Complete OAuth login when account 2FA is enabled
+      summary: Complete OAuth login (Google, Apple, Microsoft) when account 2FA is enabled
       security:
         - sessionCookie: []
       requestBody:

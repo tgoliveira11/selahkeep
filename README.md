@@ -10,7 +10,7 @@ Web-first responsive MVP for private encrypted spiritual letters.
 
 - Next.js + TypeScript + React
 - PostgreSQL + Drizzle ORM
-- NextAuth (Google, Apple, email/password)
+- NextAuth (Google, Apple, Microsoft, email/password)
 - Web Crypto API (AES-GCM) + Argon2id recovery KDF
 - WebAuthn passkeys (@simplewebauthn) — passkeys can sign in to the account; vault unlock via passkey requires WebAuthn **PRF** support and a valid PRF-based vault envelope
 
@@ -75,6 +75,33 @@ Run `npm run db:migrate` after pulling passkey account-auth schema updates (`000
 Account-level TOTP 2FA can be enabled from **Account settings**. It adds an extra sign-in code when signing in with **email and password** and does **not** replace your private letter recovery code or vault unlock methods. **Passkeys** use device verification and do not require a separate one-time code.
 
 Requires `TWO_FACTOR_SECRET_ENCRYPTION_KEY` in `.env.local` (see `.env.example`). Run `npm run db:migrate` after pulling 2FA schema updates.
+
+## Microsoft sign-in (account authentication only)
+
+Microsoft sign-in uses the NextAuth **Azure AD** provider (`azure-ad`) against Microsoft Entra ID / the Microsoft identity platform. It authenticates the **account only** — it does **not** unlock the private letters vault, replace trusted devices, passkey PRF vault unlock, or the recovery code.
+
+| Setting | Value |
+|---------|--------|
+| Provider ID | `azure-ad` |
+| Scopes | `openid`, `email`, `profile` only (no Microsoft Graph mail/calendar/files scopes) |
+| Env vars | `AUTH_AZURE_AD_ID` (Application/client ID **GUID**), `AUTH_AZURE_AD_SECRET` (client secret value), `AUTH_AZURE_AD_TENANT_ID` (default `common`) |
+| Local callback | `http://localhost:3001/api/auth/callback/azure-ad` |
+
+**Microsoft Entra app registration (summary)**
+
+1. [Microsoft Entra admin center](https://entra.microsoft.com/) → **App registrations** → **New registration**.
+2. Supported account types: **Accounts in any organizational directory and personal Microsoft accounts** if using `AUTH_AZURE_AD_TENANT_ID=common` (alternatives: `consumers`, `organizations`, or a specific tenant GUID).
+3. **Authentication** → add **Web** platform redirect URIs (must match exactly; do not use SPA-only for this server-side flow):
+   - Local: `http://localhost:3001/api/auth/callback/azure-ad`
+   - Staging: `https://<staging-host>/api/auth/callback/azure-ad`
+   - Production: `https://<production-host>/api/auth/callback/azure-ad`
+   - The app enables PKCE automatically (required by Microsoft Entra for code redemption).
+4. **Certificates & secrets** → create a client secret → set `AUTH_AZURE_AD_SECRET` (never commit).
+5. Set env vars in `.env.local`, restart the app.
+
+**Account linking:** no automatic linking across providers. If an email is already registered with email/password (or another OAuth provider), Microsoft sign-in is rejected with a safe error.
+
+**OAuth + TOTP:** when account 2FA is enabled, OAuth sign-in (Google, Apple, Microsoft) receives a partial session until `/login/2fa` + `POST /api/auth/login/verify-2fa-oauth` completes. Passkey sign-in bypasses TOTP.
 
 ## Email verification and account passwords
 
