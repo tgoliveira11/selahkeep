@@ -157,6 +157,8 @@ Rate limiting applies to account deletion attempts. Deletion is audited as `acco
 
 **Account verification and password emails:** transactional messages (email verification, password reset) contain account links only — never private letter title/body or vault keys. Tokens are stored hashed server-side; privacy policy must disclose email processing and retention of `account_tokens` metadata.
 
+**Account sessions:** stores coarse device metadata and masked IP for session list; full IP hashed; disclose in privacy policy; distinct from trusted-device vault data.
+
 ### 4.2 Retention after deletion
 
 | Data type | Retention | Content |

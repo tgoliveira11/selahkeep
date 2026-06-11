@@ -53,6 +53,14 @@ Use unit/service/API tests for most coverage. Reserve E2E for end-to-end smoke o
 - Recovery envelope storage uses KDF metadata, not plaintext code.
 - Recovery entropy: mathematical test in `recovery-code.test.ts` (not word-count only).
 
+### Account sessions (when touching session management)
+
+- IP masking/hashing: `session-ip.test.ts`
+- User-agent parsing: `user-agent-metadata.test.ts`
+- Session service + API routes: `account-session-service.test.ts`, `account-sessions-routes.test.ts`
+- Security boundary: `account-sessions-boundary.test.ts`
+- UI: `active-sessions-settings.test.tsx`, `session-card.test.tsx`
+
 ### Account email verification and passwords (when touching auth flows)
 
 - Password policy off/warn/enforce: `password-policy.test.ts`

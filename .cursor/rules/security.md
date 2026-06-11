@@ -20,7 +20,8 @@
 - **Email delivery:** account-auth links only in email; SMTP via nodemailer; `EMAIL_PROVIDER=console` forbidden in production; never log email bodies or tokens in SMTP mode.
 - **Email/password flows:** account auth only — never unlock vault, rotate vault keys, or send letter content in email (`account-auth-service.ts`).
 - **Forgot password:** generic response always; no account enumeration.
-- **Session invalidation:** `password_updated_at` vs JWT `iat` after reset/change.
+- **Session invalidation:** `password_updated_at` vs JWT `iat` after reset/change; account sessions use JWT `sid` + `account_sessions.revoked_at`.
+- **Account sessions ≠ trusted devices:** session revoke signs out account only; never revoke vault envelopes from session APIs.
 - **Audit logs:** sanitized metadata only; no sentinel phrases or letter content.
 - **Autosave:** explicitly disabled for MVP (Option A).
 - **Vault auto-lock:** 15-minute inactivity + manual lock; see `vault-session.ts`.

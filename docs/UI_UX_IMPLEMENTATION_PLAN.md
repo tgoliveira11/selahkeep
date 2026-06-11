@@ -127,6 +127,7 @@ Badges map to tokens, not hardcoded Tailwind palette classes.
 - [x] Forgot password (`/forgot-password`) — generic submitted state
 - [x] Reset password (`/reset-password`) — token states + vault separation copy
 - [x] Account settings — email verification status, change password (credentials only), `PasswordStrengthField`
+- [x] Account settings — active sessions list, current session badge, revoke confirmations
 - [x] Form labels accessibility
 
 ### P2

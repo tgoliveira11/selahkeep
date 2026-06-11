@@ -158,13 +158,26 @@ These flows protect **account authentication only**. They do **not** unlock, rec
 - Password **change** keeps the current session (issued after update); other sessions invalidated via timestamp check
 - Password **reset** invalidates all prior sessions (user must sign in again)
 
+### Account sessions (sign-in state)
+
+Account sessions are **not** trusted devices. Revoking a session signs out that browser from the account; it does not revoke vault unlock trust or delete trusted-device envelopes.
+
+- Each successful sign-in creates a server-side `account_sessions` row; JWT carries `sid` (session id)
+- A session stays **active** while `revoked_at` is null **and** `expires_at` is in the future (`expires_at` aligns with `NEXTAUTH_SESSION_MAX_AGE`, default 30 days)
+- Revocation is enforced in the NextAuth JWT callback — revoked sessions receive `sessionInvalidated`
+- **Sign out** revokes the current `account_sessions` row (`POST /api/account/sessions/revoke-current` before clearing the cookie; NextAuth `signOut` event is a fallback)
+- Metadata stored: auth method, coarse browser/platform/device type, hashed IP, masked IP for display
+- Full IP is never shown in the UI; geolocation is not used
+- `last_used_at` updates at most every `SESSION_LAST_USED_UPDATE_INTERVAL_SECONDS` (default 300) during JWT refresh and when the account settings page pings sessions
+- **Limitation:** Edge middleware decodes JWT without DB checks; revocation fully applies on the next `getServerSession`/JWT callback (same class of limitation as `password_updated_at`)
+
 ## Rate limiting
 
 - Adapter interface with **in-memory** store for local/test (`RATE_LIMIT_STORE=memory`, default)
 - **PostgreSQL** store for production multi-instance (`RATE_LIMIT_STORE=postgres`, table `rate_limit_buckets`)
 - Scoped keys: operation + email + IP + endpoint with separate **email**, **IP**, and **email+IP** buckets for credentials login
 - Credentials login IP captured via NextAuth route wrapper (`login-request-context.ts`)
-- Applied to: registration, login, email verification resend/confirm, forgot/reset password, change password, recovery unlock, passkey register/auth, trusted-device create, account deletion
+- Applied to: registration, login, email verification resend/confirm, forgot/reset password, change password, session revoke actions, recovery unlock, passkey register/auth, trusted-device create, account deletion
 - **Social login:** OAuth token exchange and provider-side abuse controls are delegated to Google/Apple; local rate limits apply to app auth routes where request context is available. Document remaining distributed-abuse risk in threat model.
 
 ## Account deletion

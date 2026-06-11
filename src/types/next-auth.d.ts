@@ -11,13 +11,16 @@ declare module "next-auth" {
     twoFactorVerified: boolean;
     twoFactorPending: boolean;
     twoFactorUpgradeToken?: string;
+    accountSessionId?: string;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     sub?: string;
+    sid?: string;
     provider?: string;
+    sessionInvalidated?: boolean;
     twoFactorVerified?: boolean;
     twoFactorPending?: boolean;
   }

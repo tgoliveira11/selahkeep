@@ -32,6 +32,12 @@ export const AUDIT_EVENT_TYPES = [
   "password_reset_failed",
   "password_changed",
   "password_change_failed",
+  "session_created",
+  "session_last_used_updated",
+  "session_revoked",
+  "session_revoke_failed",
+  "all_other_sessions_revoked",
+  "all_sessions_revoked",
 ] as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[number];

@@ -200,7 +200,7 @@ export const passkeyLoginService = {
         )
       : null;
 
-    const loginToken = await authLoginService.issueLoginToken(credential.userId);
+    const loginToken = await authLoginService.issueLoginToken(credential.userId, "passkey");
     await authService.recordLoginSuccess(credential.userId, "passkey");
     await auditRepository.record("passkey_login_success", credential.userId, {
       vaultUnlockAvailable: Boolean(envelope),

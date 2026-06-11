@@ -38,6 +38,7 @@ The Private Letters Vault uses **client-side encryption**. Private letter title 
 | Email verification & password reset | Hashed opaque tokens in `account_tokens`; single-use atomic consumption; generic forgot-password response; rate limits; no vault key or letter content in emails; password reset/change does not unlock vault |
 | Email delivery (SMTP) | Nodemailer SMTP relay; console provider dev-only; SMTP logs domain/subject only; credentials in env; Mailpit for local capture; production must not use `EMAIL_PROVIDER=console` |
 | Session invalidation on password change | `password_updated_at` compared to JWT `iat`; sessions issued before update invalidated |
+| Account session management | Server-side `account_sessions` with JWT `sid`; revocation enforced in JWT callback; masked IP display; sessions ≠ trusted devices |
 
 ### Trusted device identity
 

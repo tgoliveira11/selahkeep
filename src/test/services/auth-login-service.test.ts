@@ -85,6 +85,12 @@ describe("auth login service", () => {
     expect(mocks.recordLoginSuccess).toHaveBeenCalledWith(USER_ID, "credentials");
   });
 
+  it("normalizes email before lookup", async () => {
+    await authLoginService.startCredentialsLogin("  User@Example.COM  ", "password123");
+    expect(mocks.findByEmail).toHaveBeenCalledWith("user@example.com");
+    expect(mocks.assertLoginAllowed).toHaveBeenCalledWith("user@example.com", undefined);
+  });
+
   it("returns challenge when 2FA is enabled", async () => {
     mocks.isEnabledForUser.mockResolvedValue(true);
     const result = await authLoginService.startCredentialsLogin(
@@ -135,10 +141,26 @@ describe("auth login service", () => {
     ).rejects.toBeInstanceOf(InvalidTwoFactorCodeError);
   });
 
+  it("issues login token with auth method metadata", async () => {
+    mocks.createLoginToken.mockResolvedValue({});
+    await authLoginService.issueLoginToken(USER_ID, "passkey");
+    expect(mocks.createLoginToken).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: USER_ID,
+        authMethod: "passkey",
+      })
+    );
+  });
+
   it("consumes login token for NextAuth", async () => {
-    mocks.consumeLoginToken.mockResolvedValue({ userId: USER_ID });
-    const user = await authLoginService.consumeLoginToken("login-token");
-    expect(user?.id).toBe(USER_ID);
+    mocks.consumeLoginToken.mockResolvedValue({
+      userId: USER_ID,
+      authMethod: "passkey",
+    });
+    mocks.findById.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
+    const result = await authLoginService.consumeLoginToken("login-token");
+    expect(result?.user.id).toBe(USER_ID);
+    expect(result?.authMethod).toBe("passkey");
   });
 
   it("returns null when login token is invalid", async () => {

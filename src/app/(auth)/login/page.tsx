@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
+import { signOutAccount } from "@/lib/auth/sign-out-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
@@ -13,6 +14,7 @@ import { PrivacyNotice } from "@/components/ui/privacy-notice";
 import { PageHeader } from "@/components/ui/page-header";
 import { SocialSignIn } from "@/components/auth/social-sign-in";
 import { authLoginApi } from "@/lib/api-client/two-factor";
+import { ApiError } from "@/lib/api-client/api-error";
 import {
   getPasskeyLoginUnsupportedMessage,
   isPasskeyLoginSupported,
@@ -49,7 +51,12 @@ export default function LoginPage() {
     try {
       const start = await authLoginApi.start({ email, password });
       if (start.requiresTwoFactor) {
+        if (!start.challengeToken) {
+          setError("Could not start two-factor sign-in. Please try again.");
+          return;
+        }
         sessionStorage.setItem(CHALLENGE_STORAGE_KEY, start.challengeToken);
+        await signOutAccount();
         router.push("/login/2fa?mode=credentials");
         return;
       }
@@ -59,12 +66,18 @@ export default function LoginPage() {
         redirect: false,
       });
       if (result?.error) {
-        setError("Invalid email or password");
+        setError("Could not complete sign-in. Please try again.");
       } else {
         router.push("/letters");
       }
-    } catch {
-      setError("Invalid email or password");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        setError("Invalid email or password");
+      } else if (error instanceof ApiError) {
+        setError(error.message);
+      } else {
+        setError("Could not sign in right now. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

@@ -13,17 +13,18 @@ import { twoFactorService } from "@/server/services/two-factor-service";
 
 export const authLoginService = {
   async startCredentialsLogin(email: string, password: string, ip?: string) {
-    await authService.assertLoginAllowed(email, ip);
+    const normalizedEmail = email.trim().toLowerCase();
+    await authService.assertLoginAllowed(normalizedEmail, ip);
 
-    const user = await userRepository.findByEmail(email);
+    const user = await userRepository.findByEmail(normalizedEmail);
     if (!user?.passwordHash) {
-      await authService.recordLoginFailure(email);
+      await authService.recordLoginFailure(normalizedEmail);
       throw new InvalidCredentialsError();
     }
 
     const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) {
-      await authService.recordLoginFailure(email);
+      await authService.recordLoginFailure(normalizedEmail);
       throw new InvalidCredentialsError();
     }
 
@@ -44,7 +45,7 @@ export const authLoginService = {
       };
     }
 
-    const loginToken = await authLoginService.issueLoginToken(user.id);
+    const loginToken = await authLoginService.issueLoginToken(user.id, "password");
     await authService.recordLoginSuccess(user.id, "credentials");
     return {
       requiresTwoFactor: false as const,
@@ -85,7 +86,7 @@ export const authLoginService = {
       provider: challenge.authProvider,
     });
 
-    const loginToken = await authLoginService.issueLoginToken(challenge.userId);
+    const loginToken = await authLoginService.issueLoginToken(challenge.userId, "password");
     await authService.recordLoginSuccess(challenge.userId, challenge.authProvider);
     return { loginToken };
   },
@@ -121,12 +122,13 @@ export const authLoginService = {
     return { upgradeToken };
   },
 
-  async issueLoginToken(userId: string) {
+  async issueLoginToken(userId: string, authMethod: "password" | "passkey" = "password") {
     const loginToken = createOpaqueToken();
     const tokenHash = hashOpaqueToken(loginToken);
     await twoFactorRepository.createLoginToken({
       userId,
       tokenHash,
+      authMethod,
       expiresAt: new Date(Date.now() + TWO_FACTOR_LOGIN_TOKEN_TTL_MS),
     });
     return loginToken;
@@ -138,7 +140,7 @@ export const authLoginService = {
     if (!row) return null;
     const user = await userRepository.findById(row.userId);
     if (!user) return null;
-    return user;
+    return { user, authMethod: row.authMethod ?? "password" };
   },
 };
 

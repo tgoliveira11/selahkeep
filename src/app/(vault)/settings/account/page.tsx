@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { signOutAccount } from "@/lib/auth/sign-out-client";
 import { useRouter } from "next/navigation";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import { TwoFactorSettings } from "@/components/settings/two-factor-settings";
 import { PasskeySettings } from "@/components/settings/passkey-settings";
 import { EmailVerificationSettings } from "@/components/settings/email-verification-settings";
 import { ChangePasswordSettings } from "@/components/settings/change-password-settings";
+import { ActiveSessionsSettings } from "@/components/settings/active-sessions-settings";
 import { accountAuthApi, type AccountAuthStatus } from "@/lib/api-client/account-auth";
 
 export default function AccountSettingsPage() {
@@ -94,7 +96,7 @@ export default function AccountSettingsPage() {
         // Continue sign-out even if local cleanup fails.
       }
 
-      await signOut({ redirect: false });
+      await signOutAccount();
       router.push("/account-deleted");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Account deletion failed");
@@ -201,6 +203,17 @@ export default function AccountSettingsPage() {
       {session?.user?.id && <PasskeySettings userId={session.user.id} />}
 
       <TwoFactorSettings />
+
+      <Card className="mb-8 border-[var(--danger-muted)]">
+        <CardHeader>
+          <CardTitle>Active sessions</CardTitle>
+          <CardDescription>
+            Browsers and devices signed in to your account — separate from trusted devices for
+            vault unlock.
+          </CardDescription>
+        </CardHeader>
+        <ActiveSessionsSettings />
+      </Card>
 
       <Card className="border-[var(--danger-muted)]">
         <CardHeader>

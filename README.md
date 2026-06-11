@@ -143,6 +143,14 @@ For real sending, configure SPF/DKIM/DMARC on your domain per your provider. Nev
 
 Run `npm run db:migrate` after pulling account-auth schema updates (`0006_account_email_verification_password_reset.sql`).
 
+## Active sessions
+
+From **Account settings → Active sessions**, users can see browsers/devices signed in to the account, revoke one session, sign out of all other sessions, or sign out everywhere.
+
+Account sessions are separate from **trusted devices** (vault unlock). Revoking a session signs out the account on that browser; it does not remove vault trust.
+
+Run `npm run db:migrate` after pulling session schema updates (`0007_account_sessions.sql`).
+
 ## Trusted devices
 
 On `/vault/devices`, users can register the current browser storage profile (with an optional friendly name), rename devices, revoke access, and see **This device** when the local `clientDeviceId` matches an active registered entry.

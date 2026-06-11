@@ -130,7 +130,12 @@ export const twoFactorRepository = {
   },
 
   async createLoginToken(
-    data: { userId: string; tokenHash: string; expiresAt: Date },
+    data: {
+      userId: string;
+      tokenHash: string;
+      expiresAt: Date;
+      authMethod?: string | null;
+    },
     client: DbClient = db
   ) {
     const [row] = await client.insert(userTwoFactorLoginTokens).values(data).returning();

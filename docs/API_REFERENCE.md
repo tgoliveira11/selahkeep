@@ -97,6 +97,21 @@ Account-only flows — **no private letter content**, **no vault keys**.
 
 Registration (`POST /api/auth/register`) creates credentials users with `email_verified_at` null and sends a verification email. Password reset updates `password_updated_at` and invalidates older JWT sessions. TOTP remains enabled after password reset.
 
+### Account sessions
+
+Account sessions (sign-in state) are separate from trusted devices (vault unlock).
+
+| Method | Path | Auth |
+|--------|------|------|
+| `GET` | `/api/account/sessions` | Session |
+| `DELETE` | `/api/account/sessions/:id` | Session |
+| `POST` | `/api/account/sessions/revoke-current` | Session — used on sign out |
+| `POST` | `/api/account/sessions/revoke-others` | Session |
+| `POST` | `/api/account/sessions/revoke-all` | Session |
+| `POST` | `/api/account/sessions/ping` | Session |
+
+Responses include masked IP and coarse browser/platform metadata only — never raw session tokens or private letter content.
+
 **Email delivery:** transactional messages use `sendEmail()` with `EMAIL_PROVIDER=console` (dev debug), `smtp` (Mailpit locally or Brevo/staging), or future providers. Emails contain account-auth links only — never private letter content. See `README.md` for Mailpit and Brevo SMTP configuration.
 
 ## Security notes

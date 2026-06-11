@@ -16,7 +16,10 @@ export type RateLimitOperation =
   | "auth.verify_email_confirm"
   | "auth.forgot_password"
   | "auth.reset_password"
-  | "account.password_change";
+  | "account.password_change"
+  | "account.session_revoke"
+  | "account.session_revoke_others"
+  | "account.session_revoke_all";
 
 export interface RateLimitScope {
   operation: RateLimitOperation;
@@ -63,6 +66,9 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitOperation, RateLimitPolicy> = 
   "auth.forgot_password": { maxAttempts: 5, windowMs: 60 * 60 * 1000 },
   "auth.reset_password": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
   "account.password_change": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
+  "account.session_revoke": { maxAttempts: 20, windowMs: 15 * 60 * 1000 },
+  "account.session_revoke_others": { maxAttempts: 5, windowMs: 15 * 60 * 1000 },
+  "account.session_revoke_all": { maxAttempts: 3, windowMs: 60 * 60 * 1000 },
 };
 
 /** Builds a scoped bucket key — never use operation-only keys that could lock out all users. */

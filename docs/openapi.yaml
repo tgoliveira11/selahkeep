@@ -357,6 +357,71 @@ paths:
       responses:
         '200':
           description: Auth status for account settings UI
+  /api/account/sessions:
+    get:
+      tags: [Account]
+      summary: List active account sessions (no raw tokens)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Active sessions for current user
+        '401':
+          description: Unauthorized
+  /api/account/sessions/ping:
+    post:
+      tags: [Account]
+      summary: Update current session metadata from request headers
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Metadata updated
+  /api/account/sessions/revoke-current:
+    post:
+      tags: [Account]
+      summary: Revoke the current account session (sign out)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Current session revoked if present
+  /api/account/sessions/revoke-others:
+    post:
+      tags: [Account]
+      summary: Revoke all sessions except the current one
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Other sessions revoked
+  /api/account/sessions/revoke-all:
+    post:
+      tags: [Account]
+      summary: Revoke all sessions including current (sign out everywhere)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: All sessions revoked
+  /api/account/sessions/{id}:
+    delete:
+      tags: [Account]
+      summary: Revoke a specific account session
+      security:
+        - sessionCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session revoked
+        '404':
+          description: Session not found
   /api/auth/login/start:
     post:
       tags: [Auth]

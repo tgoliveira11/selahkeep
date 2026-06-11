@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { signOutAccount } from "@/lib/auth/sign-out-client";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +47,7 @@ export function Nav() {
         // Continue sign-out even if local cleanup fails.
       }
     }
-    await signOut({ redirect: false });
+    await signOutAccount();
     router.push("/");
   }
 

@@ -45,6 +45,7 @@ React components must NOT import database clients, repositories, or ORM code.
 - Using TOTP 2FA, backup codes, or account login secrets as vault keys, letter keys, recovery codes, or trusted-device unlock material
 - Plaintext email verification or password reset tokens in database, logs, or analytics
 - Password reset or change flows that unlock, recover, or rotate the private letters vault
+- Confusing account sessions with trusted devices; revoking sessions must not revoke trusted-device vault envelopes
 
 ## Stop Conditions
 

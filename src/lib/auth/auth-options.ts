@@ -6,10 +6,29 @@ import { userRepository } from "@/server/repositories/user-repository";
 import { authService } from "@/server/services/auth-service";
 import { authLoginService } from "@/server/services/auth-login-service";
 import { twoFactorService } from "@/server/services/two-factor-service";
+import { accountSessionService } from "@/server/services/account-session-service";
+import { safeLogger } from "@/lib/logger";
+
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
+  },
+  events: {
+    async signOut(message) {
+      const token = "token" in message ? message.token : undefined;
+      const userId = typeof token?.sub === "string" ? token.sub : undefined;
+      const sessionId = typeof token?.sid === "string" ? token.sid : undefined;
+      if (!userId) return;
+      try {
+        await accountSessionService.revokeOnSignOut(userId, sessionId);
+      } catch (error) {
+        safeLogger.warn("Account session revoke on sign-out skipped", {
+          errorCode: "session_revoke_on_signout_failed",
+          endpoint: "signout-event",
+        });
+      }
+    },
   },
   providers: [
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
@@ -36,9 +55,13 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.loginToken) return null;
-        const user = await authLoginService.consumeLoginToken(credentials.loginToken);
-        if (!user) return null;
-        return { id: user.id, email: user.email };
+        const result = await authLoginService.consumeLoginToken(credentials.loginToken);
+        if (!result) return null;
+        return {
+          id: result.user.id,
+          email: result.user.email,
+          authMethod: result.authMethod,
+        };
       },
     }),
   ],
@@ -114,6 +137,52 @@ export const authOptions: NextAuthOptions = {
       if (token.twoFactorVerified === undefined) {
         token.twoFactorVerified = true;
       }
+
+      const userId = typeof token.sub === "string" ? token.sub : undefined;
+      let sessionJustCreated = false;
+
+      try {
+        if (account && userId) {
+          const authMethod = accountSessionService.mapProviderToAuthMethod(
+            account.provider,
+            (user as { authMethod?: string } | undefined)?.authMethod
+          );
+          const sessionRow = await accountSessionService.createSession({
+            userId,
+            authMethod,
+          });
+          token.sid = sessionRow.id;
+          sessionJustCreated = true;
+        } else if (userId && !token.sid) {
+          const sessionRow = await accountSessionService.createSession({
+            userId,
+            authMethod: accountSessionService.mapProviderToAuthMethod(
+              typeof token.provider === "string" ? token.provider : undefined
+            ),
+          });
+          token.sid = sessionRow.id;
+          sessionJustCreated = true;
+        }
+
+        if (token.sid && userId) {
+          if (!sessionJustCreated) {
+            const active = await accountSessionService.assertSessionActive(
+              token.sid as string,
+              userId
+            );
+            if (!active) {
+              return { ...token, sub: undefined, sessionInvalidated: true };
+            }
+          }
+          await accountSessionService.touchSessionThrottled(token.sid as string, userId);
+        }
+      } catch (error) {
+        safeLogger.warn("Account session tracking skipped", {
+          errorCode: "session_tracking_unavailable",
+          endpoint: "jwt-callback",
+        });
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -122,6 +191,9 @@ export const authOptions: NextAuthOptions = {
       }
       if (session.user && token.sub) {
         session.user.id = token.sub;
+      }
+      if (typeof token.sid === "string") {
+        session.accountSessionId = token.sid;
       }
       session.twoFactorVerified = token.twoFactorVerified !== false;
       session.twoFactorPending =

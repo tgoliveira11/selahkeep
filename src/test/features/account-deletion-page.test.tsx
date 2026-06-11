@@ -9,7 +9,10 @@ vi.mock("next-auth/react", () => ({
     status: "authenticated",
     data: { user: { id: "user-1", email: "user@test.local" } },
   })),
-  signOut: vi.fn(async () => undefined),
+}));
+
+vi.mock("@/lib/auth/sign-out-client", () => ({
+  signOutAccount: vi.fn(async () => undefined),
 }));
 
 vi.mock("next/navigation", () => ({
