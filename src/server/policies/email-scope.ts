@@ -1,2 +1,2 @@
-/** @deprecated Import from "@/modules/email/email-scope" — Phase 1 modular monolith shim */
-export * from "@/modules/email/email-scope";
+/** @deprecated Import from "@/modules/security/scopes/email-scope" — Phase 2 utility extraction shim */
+export * from "@/modules/security/scopes/email-scope";

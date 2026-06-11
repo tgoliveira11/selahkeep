@@ -1,7 +1,9 @@
 # Architecture Rules
 
-- **Phase 1 modular monolith:** domain code under `src/modules/*`; see `docs/MODULE_BOUNDARIES.md` and ADR-004.
+- **Phase 1 + 2 modular monolith:** domain code under `src/modules/*`; pure utilities in `core/`, `adapters/`, `primitives/` subfolders (see `docs/UTILITY_EXTRACTION_INVENTORY.md`).
 - Prefer `@/modules/{name}` public APIs (`index.ts`, `server.ts`) over deep cross-module imports.
+- Utility modules (`security`, `email/core`, `rate-limit/core`, `audit/core`, `ui/primitives`) must not import `vault` or `letters`.
+- Product copy components (`PrivacyNotice`, `RecoveryNotice`) live in `vault/components`, not `ui/primitives`.
 - Follow layer boundary: UI -> Crypto Client -> API Client -> API Route -> Module Service -> Repository -> PostgreSQL.
 - Only `src/lib/crypto-client` (vault module) handles plaintext letter title/body.
 - React components must not import from `src/lib/db`, repositories, or ORM clients.

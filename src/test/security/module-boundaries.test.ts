@@ -45,11 +45,7 @@ const RULES: BoundaryRule[] = [
   },
   {
     module: "security",
-    forbidden: [/@\/modules\/letters/, /@\/modules\/vault\/services/],
-  },
-  {
-    module: "ui",
-    forbidden: [/@\/modules\/letters/, /@\/modules\/vault\/services/, /@\/lib\/db/],
+    forbidden: [/@\/modules\/letters/, /@\/modules\/vault/],
   },
   {
     module: "vault",
@@ -72,8 +68,22 @@ function collectSourceFiles(dir: string): string[] {
   return files;
 }
 
-describe("module boundary imports (Phase 1)", () => {
-  for (const rule of RULES) {
+const UI_PRIMITIVE_RULE: BoundaryRule = {
+  module: "ui/primitives",
+  forbidden: [
+    /@\/modules\/letters/,
+    /@\/modules\/vault/,
+    /@\/modules\/auth/,
+    /@\/modules\/account/,
+    /@\/modules\/sessions/,
+    /@\/modules\/two-factor/,
+    /@\/modules\/passkeys/,
+    /@\/lib\/db/,
+  ],
+};
+
+describe("module boundary imports (Phase 1 + Phase 2)", () => {
+  for (const rule of [...RULES, UI_PRIMITIVE_RULE]) {
     it(`${rule.module} must not import forbidden modules`, () => {
       const moduleDir = join(MODULE_ROOT, rule.module);
       const files = collectSourceFiles(moduleDir);

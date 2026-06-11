@@ -1,2 +1,2 @@
-/** @deprecated Import from "@/modules/security/load-env" — Phase 1 modular monolith shim */
-export * from "@/modules/security/load-env";
+/** @deprecated Import from "@/modules/security/env/load-env" — Phase 2 utility extraction shim */
+export * from "@/modules/security/env/load-env";

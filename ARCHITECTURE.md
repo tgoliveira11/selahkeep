@@ -7,14 +7,15 @@
 - **Database:** PostgreSQL
 - **ORM:** Drizzle
 
-## Modular monolith (Phase 1)
+## Modular monolith (Phase 1 + Phase 2)
 
 This project uses an **internal modular monolith** per `docs/ADR-004_Modularization_and_Reusability_Strategy.md`.
 
 - Business logic lives under `src/modules/{auth,account,sessions,two-factor,passkeys,email,audit,rate-limit,security,vault,letters,ui}`.
+- **Phase 2** isolates pure utilities in subfolders (`security/logger`, `email/core`, `rate-limit/adapters`, `ui/primitives`, …). See `docs/UTILITY_EXTRACTION_INVENTORY.md`.
 - Next.js routes stay in `src/app/api` and delegate to module services.
-- Legacy paths (`src/server/services`, `src/lib/auth`, …) may re-export from `src/modules/*` during migration.
-- **No external packages** or monorepo in Phase 1.
+- Legacy paths (`src/server/services`, `src/lib/auth`, …) re-export from `src/modules/*` during migration.
+- **No external packages** or monorepo — utilities are internal only until Phase 4.
 
 See `docs/MODULE_BOUNDARIES.md` for responsibilities and forbidden cross-module imports.
 

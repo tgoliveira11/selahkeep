@@ -4,10 +4,10 @@ import type {
   RateLimitOperation,
   RateLimitResult,
   RateLimitScope,
-} from "./types";
-import { RATE_LIMIT_POLICIES } from "./types";
-import { InMemoryRateLimitAdapter } from "./in-memory-adapter";
-import { PostgresRateLimitAdapter } from "./postgres-adapter";
+} from "./core/types";
+import { RATE_LIMIT_POLICIES } from "./core/types";
+import { InMemoryRateLimitAdapter } from "./adapters/in-memory-adapter";
+import { PostgresRateLimitAdapter } from "./adapters/postgres-adapter";
 
 let adapter: RateLimitAdapter | null = null;
 
@@ -51,5 +51,10 @@ export class RateLimitError extends Error {
   }
 }
 
-export { buildRateLimitKey, RATE_LIMIT_POLICIES } from "./types";
-export type { RateLimitOperation, RateLimitScope, RateLimitResult, RateLimitAdapter } from "./types";
+export { buildRateLimitKey, RATE_LIMIT_POLICIES } from "./core/types";
+export type {
+  RateLimitOperation,
+  RateLimitScope,
+  RateLimitResult,
+  RateLimitAdapter,
+} from "./core/types";

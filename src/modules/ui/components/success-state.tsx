@@ -1,13 +1,2 @@
-import { Alert } from "@/components/ui/alert";
-
-interface SuccessStateProps {
-  message: string;
-}
-
-export function SuccessState({ message }: SuccessStateProps) {
-  return (
-    <Alert variant="success" role="status">
-      {message}
-    </Alert>
-  );
-}
+/** @deprecated Import from "@/modules/ui/primitives/success-state" — Phase 2 utility extraction shim */
+export * from "@/modules/ui/primitives/success-state";

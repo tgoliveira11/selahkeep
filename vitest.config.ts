@@ -33,7 +33,7 @@ export default defineConfig({
         "src/modules/**/repositories/**",
         "src/modules/**/index.ts",
         "src/modules/**/server.ts",
-        "src/modules/rate-limit/postgres-adapter.ts",
+        "src/modules/rate-limit/adapters/postgres-adapter.ts",
         "src/app/api/auth/[...nextauth]/route.ts",
         "**/*.d.ts",
       ],

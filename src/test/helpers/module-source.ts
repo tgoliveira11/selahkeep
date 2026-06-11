@@ -1,19 +1,34 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const SHIM_RE = /Phase 1 modular monolith shim[\s\S]*?export \* from "(@\/[^"]+)"/;
+const SHIM_RE =
+  /Phase (?:1|2)[^]*?shim[\s\S]*?export \* from "(@\/[^"]+)"/;
+
+function resolveModuleFile(moduleImport: string): string {
+  const base = join(process.cwd(), moduleImport.replace("@/", "src/"));
+  if (existsSync(`${base}.ts`)) return `${base}.ts`;
+  if (existsSync(`${base}.tsx`)) return `${base}.tsx`;
+  if (existsSync(join(base, "index.ts"))) return join(base, "index.ts");
+  if (existsSync(join(base, "index.tsx"))) return join(base, "index.tsx");
+  return `${base}.ts`;
+}
 
 /**
  * Read source for static security/boundary tests.
- * Follows Phase 1 re-export shims to the implementation under src/modules.
+ * Follows Phase 1/2 re-export shims to the implementation under src/modules.
  */
 export function readModuleSource(relativePath: string): string {
-  const absolute = join(process.cwd(), relativePath);
-  const content = readFileSync(absolute, "utf8");
-  const match = content.match(SHIM_RE);
-  if (!match) {
-    return content;
+  let absolute = join(process.cwd(), relativePath);
+  let content = readFileSync(absolute, "utf8");
+  let depth = 0;
+
+  while (depth < 6) {
+    const match = content.match(SHIM_RE);
+    if (!match) break;
+    absolute = resolveModuleFile(match[1]!);
+    content = readFileSync(absolute, "utf8");
+    depth += 1;
   }
-  const modulePath = `${match[1]!.replace("@/", "src/")}.ts`;
-  return readFileSync(join(process.cwd(), modulePath), "utf8");
+
+  return content;
 }

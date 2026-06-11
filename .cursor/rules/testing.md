@@ -13,7 +13,7 @@ Place new tests in the correct folder:
 | Layer | Path | Examples |
 |-------|------|------------|
 | Unit | `src/test/unit/` | AES-GCM, vault unlock, WebAuthn PRF prep, validation, API client |
-| Security | `src/test/security/` | Plaintext rejection, schema, AAD, sentinel phrase, module boundaries |
+| Security | `src/test/security/` | Plaintext rejection, schema, AAD, sentinel phrase, module + utility boundaries |
 | Services | `src/test/services/` | letter/vault/passkey/trusted-device/admin services |
 | API | `src/test/api/` | Route handlers (`/api/letters`, `/api/passkeys`, `/api/vault`, …) |
 | Features | `src/test/features/` | `unlock-with-passkey`, client orchestration |
@@ -55,7 +55,7 @@ Use unit/service/API tests for most coverage. Reserve E2E for end-to-end smoke o
 
 ### Module boundaries (Phase 1 modular monolith)
 
-- Static import guards: `src/test/security/module-boundaries.test.ts`
+- Static import guards: `src/test/security/module-boundaries.test.ts`, `src/test/security/utility-module-boundaries.test.ts` (Phase 2 utility cores)
 - Shim-aware source reads: `src/test/helpers/module-source.ts`
 - See `docs/MODULE_BOUNDARIES.md` for forbidden cross-module imports
 

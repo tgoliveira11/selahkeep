@@ -10,6 +10,7 @@ Read and follow these documents before implementing:
 - `docs/ADR-003_API_Contract_Database_Schema_No_Plaintext_Enforcement.md`
 - `docs/ADR-004_Modularization_and_Reusability_Strategy.md`
 - `docs/MODULE_BOUNDARIES.md`
+- `docs/UTILITY_EXTRACTION_INVENTORY.md` (Phase 2 pure utilities)
 
 ## Core Rule
 

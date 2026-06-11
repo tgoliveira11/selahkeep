@@ -1,6 +1,6 @@
-# Module Boundaries — Phase 1
+# Module Boundaries — Phase 1 + Phase 2
 
-**Status:** Phase 1 — Internal Modular Monolith (in progress)
+**Status:** Phase 2 — Pure internal utilities extracted (no external packages)
 
 This project uses a **modular monolith** under `src/modules/`. No external packages or monorepo are created in Phase 1.
 
@@ -13,13 +13,13 @@ This project uses a **modular monolith** under `src/modules/`. No external packa
 | `sessions` | Account sessions (sign-in state), revocation, session metadata |
 | `two-factor` | TOTP setup/verify, backup codes, login 2FA challenge |
 | `passkeys` | WebAuthn registration, passkey account authentication |
-| `email` | Provider abstraction, SMTP/console, account email templates |
+| `email` | `core/` provider abstraction (SMTP/console); `templates/` account-auth emails only |
 | `audit` | Audit events, persistence, sanitization |
 | `rate-limit` | Rate limit adapters and policies |
-| `security` | Logger/redaction, password policy, token hashing, IP helpers |
+| `security` | Logger/redaction, password policy, token hashing, IP mask/hash, user-agent parse/hash, email scope hashing (`logger/`, `env/`, `ip/`, `user-agent/`, `scopes/`) |
 | `vault` | User Vault Key, unlock, trusted devices, recovery, passkey PRF envelopes |
 | `letters` | Private letter CRUD (encrypted payloads only) |
-| `ui` | Domain-neutral UI primitives |
+| `ui` | `primitives/` domain-neutral UI only; product copy (`PrivacyNotice`, `RecoveryNotice`) in `vault/components` |
 
 ## Critical distinctions
 
@@ -62,9 +62,23 @@ ui, security, email, audit, rate-limit
 
 During Phase 1, many moved files keep **re-export shims** at their original paths (e.g. `src/server/services/auth-service.ts` → `src/modules/auth/services/`). New code should prefer `@/modules/*` public APIs (`index.ts`, `server.ts`).
 
+## Phase 2 utility layout
+
+```text
+src/modules/security/{logger,env,password-policy,ip,user-agent,scopes,policies}
+src/modules/email/{core,templates}
+src/modules/rate-limit/{core,adapters}
+src/modules/audit/{core,repositories}
+src/modules/ui/{primitives,lib}
+src/modules/vault/components/{privacy-notice,recovery-notice}
+```
+
+Public APIs: `@/modules/security`, `@/modules/email`, `@/modules/email/templates`, `@/modules/rate-limit`, `@/modules/audit`, `@/modules/ui`.
+
+Inventory: `docs/UTILITY_EXTRACTION_INVENTORY.md`.
+
 ## Next phases (not in scope)
 
-- Phase 2: isolate pure utilities
 - Phase 3: secure Next.js account starter template
 - Phase 4: extract packages only after a second real consumer
 

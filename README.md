@@ -251,7 +251,7 @@ npm run test:all        # coverage + E2E smoke
 
 ## Architecture
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md), [SECURITY.md](./SECURITY.md), and [AGENTS.md](./AGENTS.md).
+See [ARCHITECTURE.md](./ARCHITECTURE.md), [SECURITY.md](./SECURITY.md), [AGENTS.md](./AGENTS.md), and [docs/UTILITY_EXTRACTION_INVENTORY.md](./docs/UTILITY_EXTRACTION_INVENTORY.md) (Phase 2 internal utilities).
 
 ## Beta readiness
 

@@ -1,11 +1,2 @@
-/** Best-effort client IP for rate limiting (supports common proxy headers). */
-export function getClientIp(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
-  }
-  const realIp = request.headers.get("x-real-ip");
-  if (realIp) return realIp.trim();
-  return "unknown-ip";
-}
+/** @deprecated Import from "@/modules/security/ip/request-ip" — Phase 2 utility extraction shim */
+export * from "@/modules/security/ip/request-ip";

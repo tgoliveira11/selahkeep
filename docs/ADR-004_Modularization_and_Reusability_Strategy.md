@@ -2,7 +2,7 @@
 
 ## Status
 
-**Status:** Accepted — Phase 1 (internal modular monolith) in progress
+**Status:** Accepted — Phase 1 complete; Phase 2 (pure internal utilities) complete
 
 **Decision type:** Architecture / Code Organization / Future Reusability
 
@@ -673,6 +673,13 @@ This keeps Next.js routing compatible while moving business logic into modules.
 - Utility modules do not depend on Next.js route handlers.
 - Utility modules do not depend on product-specific vault/letters code.
 - Tests are module-local and reusable.
+
+**Phase 2 outcome (implemented):**
+
+- Utilities organized under `core/`, `adapters/`, `primitives/` inside existing `src/modules/*` modules.
+- Inventory: `docs/UTILITY_EXTRACTION_INVENTORY.md`.
+- No `packages/` directory; no npm publishing.
+- Vault/letters remain product-specific; `PrivacyNotice` / `RecoveryNotice` moved to `vault/components`.
 
 ### Phase 3 — Create a Reusable Starter or Internal Template
 

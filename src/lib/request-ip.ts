@@ -1,2 +1,2 @@
-/** @deprecated Import from "@/modules/security/request-ip" — Phase 1 modular monolith shim */
-export * from "@/modules/security/request-ip";
+/** @deprecated Import from "@/modules/security/ip/request-ip" — Phase 2 utility extraction shim */
+export * from "@/modules/security/ip/request-ip";
