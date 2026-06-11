@@ -24,6 +24,12 @@ vi.mock("@/server/policies/password-hashing", () => ({
   ),
 }));
 
+vi.mock("@/server/services/account-auth-service", () => ({
+  accountAuthService: {
+    sendVerificationEmailForUser: vi.fn(async () => ({ alreadyVerified: false })),
+  },
+}));
+
 vi.mock("@/lib/auth/session", () => ({
   requireSessionUser: mocks.requireSessionUser,
 }));
@@ -67,7 +73,11 @@ describe("auth password API boundaries", () => {
 
     const body = await res.json();
     expect(res.status).toBe(201);
-    expect(body).toEqual({ id: "user-1", email: "new@example.com" });
+    expect(body).toEqual({
+      id: "user-1",
+      email: "new@example.com",
+      requiresEmailVerification: true,
+    });
     expect(JSON.stringify(body)).not.toContain("password");
     expect(JSON.stringify(body)).not.toContain("passwordHash");
   });

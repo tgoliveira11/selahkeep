@@ -35,6 +35,9 @@ The Private Letters Vault uses **client-side encryption**. Private letter title 
 | IndexedDB | Non-extractable device `CryptoKey`; encrypted vault envelope only |
 | Account 2FA (TOTP) | Optional sign-in protection for email/password (and OAuth partial session) only; passkey sign-in bypasses TOTP by design; secrets encrypted at rest (`TWO_FACTOR_SECRET_ENCRYPTION_KEY`); backup codes hashed; separate from vault crypto |
 | Passkey account sign-in | WebAuthn `login` challenges; issues `login-token` session; vault unlock only with PRF envelope client-side; sign-in-only passkeys must not be shown as vault recovery |
+| Email verification & password reset | Hashed opaque tokens in `account_tokens`; single-use atomic consumption; generic forgot-password response; rate limits; no vault key or letter content in emails; password reset/change does not unlock vault |
+| Email delivery (SMTP) | Nodemailer SMTP relay; console provider dev-only; SMTP logs domain/subject only; credentials in env; Mailpit for local capture; production must not use `EMAIL_PROVIDER=console` |
+| Session invalidation on password change | `password_updated_at` compared to JWT `iat`; sessions issued before update invalidated |
 
 ### Trusted device identity
 

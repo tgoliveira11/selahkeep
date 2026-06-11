@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
@@ -12,8 +11,8 @@ import { FormField } from "@/components/ui/form-field";
 import { PrivacyNotice } from "@/components/ui/privacy-notice";
 import { PageHeader } from "@/components/ui/page-header";
 import { SocialSignIn } from "@/components/auth/social-sign-in";
-import { authLoginApi } from "@/lib/api-client/two-factor";
 import { getErrorMessage } from "@/lib/api-client/parse-response";
+import { PasswordStrengthField } from "@/components/auth/password-strength-field";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -39,23 +38,8 @@ export default function RegisterPage() {
       return;
     }
 
-    const start = await authLoginApi.start({ email, password });
-    if (start.requiresTwoFactor) {
-      setError("Account created but two-factor sign-in is required. Please sign in.");
-      setLoading(false);
-      return;
-    }
-
-    const result = await signIn("login-token", {
-      loginToken: start.loginToken,
-      redirect: false,
-    });
     setLoading(false);
-    if (result?.error) {
-      setError("Account created but sign-in failed");
-    } else {
-      router.push("/letters");
-    }
+    router.push(`/check-email?email=${encodeURIComponent(email)}`);
   }
 
   return (
@@ -79,17 +63,14 @@ export default function RegisterPage() {
               required
             />
           </FormField>
-          <FormField id="register-password" label="Password" hint="At least 8 characters">
-            <Input
-              id="register-password"
-              type="password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={8}
-              required
-            />
-          </FormField>
+          <PasswordStrengthField
+            id="register-password"
+            label="Password"
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+            hint="At least 8 characters"
+          />
           {error && (
             <p className="text-sm text-[var(--danger)]" role="alert">
               {error}

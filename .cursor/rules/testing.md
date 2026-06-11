@@ -53,6 +53,15 @@ Use unit/service/API tests for most coverage. Reserve E2E for end-to-end smoke o
 - Recovery envelope storage uses KDF metadata, not plaintext code.
 - Recovery entropy: mathematical test in `recovery-code.test.ts` (not word-count only).
 
+### Account email verification and passwords (when touching auth flows)
+
+- Password policy off/warn/enforce: `password-policy.test.ts`
+- Token hash, single-use, expiration: `account-auth-service.test.ts`
+- API generic forgot-password, rate limits: `account-auth-routes.test.ts`
+- No token plaintext in DB/logs; no vault in reset/change: `account-auth-boundary.test.ts`
+- UI states: `forgot-password-page.test.tsx`, `verify-email-page.test.tsx`
+- Email adapters: `send-email.test.ts`, `smtp-provider.test.ts`, `email-config.test.ts` (mock transport; no real SMTP in CI)
+
 ### Account 2FA (when touching TOTP login or settings)
 
 - TOTP secret encryption round-trip: `two-factor-secret-crypto.test.ts`

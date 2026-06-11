@@ -117,13 +117,54 @@ Credentials passwords are **never stored in plaintext** and are **not reversibly
 
 Plaintext passwords are redacted from logs (`safeLogger`) and blocked from audit metadata. OAuth accounts keep `password_hash` null.
 
+### Email verification, password reset, and change password
+
+These flows protect **account authentication only**. They do **not** unlock, recover, rotate, or decrypt the private letters vault. User-facing copy states this on reset and change-password screens.
+
+**Email verification**
+
+- Email/password registration creates users with `email_verified_at` null; OAuth sign-in marks email verified
+- Verification tokens: cryptographically random opaque tokens; **hashed** (SHA-256) in `account_tokens`; single-use via atomic `consumeValidToken()`; 24-hour TTL
+- Routes: `POST /api/auth/verify-email/resend`, `POST /api/auth/verify-email/confirm`; UI `/check-email`, `/verify-email?token=…`
+- Resend is rate-limited; generic responses avoid account enumeration
+
+**Forgot / reset password**
+
+- `POST /api/auth/forgot-password` always returns the same generic message (no email-exists leak)
+- Reset tokens: hashed in `account_tokens`; single-use; 1-hour TTL; consumed atomically in a transaction with password hash update
+- `POST /api/auth/reset-password` (`action: validate` | `reset`); UI `/forgot-password`, `/reset-password?token=…`
+- Password reset does **not** disable TOTP; next email/password login still requires 2FA when enabled
+- Password reset does **not** touch vault keys, envelopes, or recovery codes
+
+**Change password (signed in)**
+
+- `POST /api/account/change-password` — requires current password; OAuth-only accounts rejected
+- Configurable password policy (`src/lib/password-policy.ts`); default `PASSWORD_POLICY_ENFORCEMENT=warn`
+
+**Token and email security**
+
+- Never store verification or reset tokens in plaintext
+- Never log tokens or passwords; console adapter logs full URLs only when `EMAIL_PROVIDER=console` and `NODE_ENV !== "production"`
+- SMTP adapter logs recipient domain and subject only — never email body or tokens
+- Email abstraction: `sendEmail({ to, subject, html, text })` — providers: `console` (dev only), `smtp` (nodemailer); `resend`/`sendgrid` not implemented
+- Account emails contain verification/reset links only — never private letter title/body or vault keys
+- `EMAIL_PROVIDER=console` must not be used in production; use `smtp` with a real relay
+- SMTP credentials via env vars only — never commit to the repository
+
+**Session invalidation after password change**
+
+- `users.password_updated_at` set on reset and change
+- JWT callback compares session `iat` to `password_updated_at`; older sessions receive `sessionInvalidated` and are signed out on next request
+- Password **change** keeps the current session (issued after update); other sessions invalidated via timestamp check
+- Password **reset** invalidates all prior sessions (user must sign in again)
+
 ## Rate limiting
 
 - Adapter interface with **in-memory** store for local/test (`RATE_LIMIT_STORE=memory`, default)
 - **PostgreSQL** store for production multi-instance (`RATE_LIMIT_STORE=postgres`, table `rate_limit_buckets`)
 - Scoped keys: operation + email + IP + endpoint with separate **email**, **IP**, and **email+IP** buckets for credentials login
 - Credentials login IP captured via NextAuth route wrapper (`login-request-context.ts`)
-- Applied to: registration, login, recovery unlock, passkey register/auth, trusted-device create, account deletion
+- Applied to: registration, login, email verification resend/confirm, forgot/reset password, change password, recovery unlock, passkey register/auth, trusted-device create, account deletion
 - **Social login:** OAuth token exchange and provider-side abuse controls are delegated to Google/Apple; local rate limits apply to app auth routes where request context is available. Document remaining distributed-abuse risk in threat model.
 
 ## Account deletion

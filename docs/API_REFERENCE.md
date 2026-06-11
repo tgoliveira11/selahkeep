@@ -82,6 +82,23 @@ Passkeys authenticate the account separately from vault decryption. A passkey un
 
 Vault recovery passkeys (PRF envelope while vault unlocked) also use `POST /api/passkeys/register` and `POST /api/passkeys/authenticate` on `/vault/recovery`.
 
+### Email verification and account passwords
+
+Account-only flows — **no private letter content**, **no vault keys**.
+
+| Method | Path | Auth |
+|--------|------|------|
+| `POST` | `/api/auth/verify-email/resend` | Public (email in body) or session |
+| `POST` | `/api/auth/verify-email/confirm` | Public (`token` in body) |
+| `POST` | `/api/auth/forgot-password` | Public (`email`) — generic response |
+| `POST` | `/api/auth/reset-password` | Public (`action: validate` \| `reset`, `token`, `newPassword?`) |
+| `POST` | `/api/account/change-password` | Session + current password |
+| `GET` | `/api/account/auth-status` | Session |
+
+Registration (`POST /api/auth/register`) creates credentials users with `email_verified_at` null and sends a verification email. Password reset updates `password_updated_at` and invalidates older JWT sessions. TOTP remains enabled after password reset.
+
+**Email delivery:** transactional messages use `sendEmail()` with `EMAIL_PROVIDER=console` (dev debug), `smtp` (Mailpit locally or Brevo/staging), or future providers. Emails contain account-auth links only — never private letter content. See `README.md` for Mailpit and Brevo SMTP configuration.
+
 ## Security notes
 
 - **Never** send plaintext `title`, `body`, or similar fields — only structured `encrypted*` payloads.

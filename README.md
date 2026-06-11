@@ -76,6 +76,73 @@ Account-level TOTP 2FA can be enabled from **Account settings**. It adds an extr
 
 Requires `TWO_FACTOR_SECRET_ENCRYPTION_KEY` in `.env.local` (see `.env.example`). Run `npm run db:migrate` after pulling 2FA schema updates.
 
+## Email verification and account passwords
+
+Email/password accounts are **unverified by default** until the user opens the link sent after registration (`/check-email` → `/verify-email?token=…`).
+
+| Flow | Page / API |
+|------|------------|
+| Register + verify prompt | `/register` → `/check-email` |
+| Verify email | `/verify-email?token=…`, `POST /api/auth/verify-email/confirm` |
+| Resend verification | `POST /api/auth/verify-email/resend` |
+| Forgot password | `/forgot-password`, `POST /api/auth/forgot-password` |
+| Reset password | `/reset-password?token=…`, `POST /api/auth/reset-password` |
+| Change password | `/settings/account`, `POST /api/account/change-password` |
+
+**Vault separation:** changing or resetting the account password does **not** unlock, recover, or rotate the private letters vault. Users still need a trusted device, passkey, or recovery code for vault access.
+
+**Email delivery** (account verification and password reset only — never private letter content):
+
+| Mode | `EMAIL_PROVIDER` | Use |
+|------|------------------|-----|
+| Console debug | `console` | Logs links to server console; **never use in production** |
+| Local SMTP (Mailpit) | `smtp` | Real delivery to [Mailpit](http://localhost:8025) |
+| Staging / production | `smtp` | Brevo or other SMTP relay |
+
+**Console (quick local debug):**
+
+```bash
+EMAIL_PROVIDER=console
+EMAIL_FROM=noreply@localhost
+APP_BASE_URL=http://localhost:3001
+```
+
+**Mailpit (local real SMTP):**
+
+```bash
+docker compose up -d mailpit   # SMTP :1025, UI http://localhost:8025
+```
+
+```env
+EMAIL_PROVIDER=smtp
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASSWORD=
+EMAIL_FROM="Letters to God <noreply@localhost>"
+APP_BASE_URL=http://localhost:3001
+```
+
+**Brevo SMTP (staging example — do not commit credentials):**
+
+```env
+EMAIL_PROVIDER=smtp
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=<brevo-smtp-login>
+SMTP_PASSWORD=<brevo-smtp-key>
+EMAIL_FROM="Letters to God <noreply@yourdomain.com>"
+APP_BASE_URL=https://your-staging-url
+```
+
+For real sending, configure SPF/DKIM/DMARC on your domain per your provider. Never commit SMTP credentials.
+
+**Password policy:** see `.env.example` (`PASSWORD_POLICY_ENFORCEMENT=warn` by default). `enforce` blocks weak passwords; `warn` shows feedback only.
+
+Run `npm run db:migrate` after pulling account-auth schema updates (`0006_account_email_verification_password_reset.sql`).
+
 ## Trusted devices
 
 On `/vault/devices`, users can register the current browser storage profile (with an optional friendly name), rename devices, revoke access, and see **This device** when the local `clientDeviceId` matches an active registered entry.

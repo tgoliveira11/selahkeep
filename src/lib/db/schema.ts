@@ -14,9 +14,29 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   authProvider: text("auth_provider").notNull(),
   passwordHash: text("password_hash"),
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  passwordUpdatedAt: timestamp("password_updated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const accountTokens = pgTable(
+  "account_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    email: text("email"),
+    type: text("type").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_account_tokens_user_id_type").on(table.userId, table.type),
+    index("idx_account_tokens_expires_at").on(table.expiresAt),
+  ]
+);
 
 export const userVaults = pgTable("user_vaults", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -11,6 +11,7 @@ import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 import { safeLogger } from "@/lib/logger";
 import { getClientIp } from "@/lib/request-ip";
 import { apiError } from "@/lib/api-helpers";
+import { accountAuthService } from "@/server/services/account-auth-service";
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -70,7 +71,12 @@ export async function POST(request: Request) {
       passwordHash,
     });
 
-    return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
+    await accountAuthService.sendVerificationEmailForUser(user.id, ip);
+
+    return NextResponse.json(
+      { id: user.id, email: user.email, requiresEmailVerification: true },
+      { status: 201 }
+    );
   } catch (error) {
     if (error instanceof AuthPasswordTransportError) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });

@@ -16,6 +16,11 @@
 - **Account deletion:** `DELETE /api/account`; cascaded encrypted data removal.
 - **Account 2FA (TOTP):** account sign-in only; never vault keys, letter content, or recovery codes; TOTP secrets encrypted at rest (`TWO_FACTOR_SECRET_ENCRYPTION_KEY`).
 - **Credentials passwords:** bcrypt hash in `users.password_hash` only; never plaintext or reversible encryption (`password-hashing.ts`). Passwords accepted only in HTTPS POST/DELETE JSON bodies; verified server-side with `verifyPassword()`; never in URLs or API responses (`auth-password-input.ts`).
+- **Account tokens:** verification/reset tokens hashed in `account_tokens`; single-use atomic consumption; never log token plaintext.
+- **Email delivery:** account-auth links only in email; SMTP via nodemailer; `EMAIL_PROVIDER=console` forbidden in production; never log email bodies or tokens in SMTP mode.
+- **Email/password flows:** account auth only — never unlock vault, rotate vault keys, or send letter content in email (`account-auth-service.ts`).
+- **Forgot password:** generic response always; no account enumeration.
+- **Session invalidation:** `password_updated_at` vs JWT `iat` after reset/change.
 - **Audit logs:** sanitized metadata only; no sentinel phrases or letter content.
 - **Autosave:** explicitly disabled for MVP (Option A).
 - **Vault auto-lock:** 15-minute inactivity + manual lock; see `vault-session.ts`.

@@ -51,6 +51,9 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           authProvider: account.provider,
         });
+        await userRepository.markEmailVerified(dbUser.id);
+      } else if (dbUser && account?.provider && account.provider !== "login-token" && !dbUser.emailVerifiedAt) {
+        await userRepository.markEmailVerified(dbUser.id);
       }
       if (dbUser && account?.provider && account.provider !== "login-token") {
         await authService.recordLoginSuccess(dbUser.id, account.provider);
@@ -61,6 +64,15 @@ export const authOptions: NextAuthOptions = {
       if (user?.email) {
         const dbUser = await userRepository.findByEmail(user.email);
         if (dbUser) {
+          const issuedAtMs =
+            typeof token.iat === "number" ? token.iat * 1000 : undefined;
+          if (
+            dbUser.passwordUpdatedAt &&
+            issuedAtMs !== undefined &&
+            issuedAtMs < dbUser.passwordUpdatedAt.getTime()
+          ) {
+            return { ...token, sub: undefined, sessionInvalidated: true };
+          }
           token.sub = dbUser.id;
           if (account?.provider === "login-token") {
             token.twoFactorVerified = true;
@@ -70,6 +82,17 @@ export const authOptions: NextAuthOptions = {
             token.twoFactorVerified = !enabled;
             token.twoFactorPending = enabled;
           }
+        }
+      } else if (token.sub) {
+        const dbUser = await userRepository.findById(token.sub);
+        const issuedAtMs =
+          typeof token.iat === "number" ? token.iat * 1000 : undefined;
+        if (
+          dbUser?.passwordUpdatedAt &&
+          issuedAtMs !== undefined &&
+          issuedAtMs < dbUser.passwordUpdatedAt.getTime()
+        ) {
+          return { ...token, sub: undefined, sessionInvalidated: true };
         }
       } else if (token.email && !token.sub) {
         const dbUser = await userRepository.findByEmail(token.email);
@@ -94,6 +117,9 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      if (token.sessionInvalidated) {
+        return { ...session, user: undefined, expires: new Date(0).toISOString() };
+      }
       if (session.user && token.sub) {
         session.user.id = token.sub;
       }

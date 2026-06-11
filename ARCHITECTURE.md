@@ -76,6 +76,29 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - `DELETE /api/account` — account deletion
 - `GET /api/account/2fa/status`, `POST /api/account/2fa/setup/start`, `POST /api/account/2fa/setup/verify`, `POST /api/account/2fa/disable`, `POST /api/account/2fa/backup-codes/regenerate`
 - `POST /api/auth/login/start`, `POST /api/auth/login/verify-2fa`, `POST /api/auth/login/verify-2fa-oauth`
+- `POST /api/auth/verify-email/resend`, `POST /api/auth/verify-email/confirm` — email verification (hashed tokens in `account_tokens`)
+- `POST /api/auth/forgot-password`, `POST /api/auth/reset-password` — password reset (generic forgot response; no vault involvement)
+- `POST /api/account/change-password`, `GET /api/account/auth-status` — signed-in password change and auth capability flags
+
+### Account email and password flows
+
+```text
+Register (credentials) -> unverified user + verification email -> /check-email
+Verify link -> POST /api/auth/verify-email/confirm -> email_verified_at
+
+Forgot -> POST /api/auth/forgot-password (generic) -> reset email
+Reset link -> POST /api/auth/reset-password -> password_hash + password_updated_at
+
+Settings -> POST /api/account/change-password -> password_updated_at (current session kept)
+```
+
+- Service: `src/server/services/account-auth-service.ts`
+- Tokens: `src/server/repositories/account-token-repository.ts` (`email_verification`, `password_reset`)
+- Email: `src/server/email/send-email.ts` dispatches by `EMAIL_PROVIDER`; `smtp-provider.ts` (nodemailer); `config.ts` (SMTP/Mailpit/Brevo env parsing)
+- Password policy: `src/lib/password-policy.ts` (env-driven `off` | `warn` | `enforce`)
+- UI: `(auth)/check-email`, `verify-email`, `forgot-password`, `reset-password`; settings components `email-verification-settings`, `change-password-settings`, `password-strength-field`
+
+Changing or resetting the account password does **not** unlock, recover, or rotate the private letters vault.
 
 ## Envelope Encryption
 

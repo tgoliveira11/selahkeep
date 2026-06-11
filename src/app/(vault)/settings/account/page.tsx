@@ -21,12 +21,16 @@ import { formatAuthProvider } from "@/lib/ui/format-auth-provider";
 import { getRecoveryStateLabel } from "@/lib/ui/recovery-state-labels";
 import { TwoFactorSettings } from "@/components/settings/two-factor-settings";
 import { PasskeySettings } from "@/components/settings/passkey-settings";
+import { EmailVerificationSettings } from "@/components/settings/email-verification-settings";
+import { ChangePasswordSettings } from "@/components/settings/change-password-settings";
+import { accountAuthApi, type AccountAuthStatus } from "@/lib/api-client/account-auth";
 
 export default function AccountSettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [requiresPassword, setRequiresPassword] = useState(true);
   const [authProvider, setAuthProvider] = useState<string>("credentials");
+  const [authStatus, setAuthStatus] = useState<AccountAuthStatus | null>(null);
   const [vaultStatus, setVaultStatus] = useState<VaultStatus | null>(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [confirmationPhrase, setConfirmationPhrase] = useState("");
@@ -45,14 +49,16 @@ export default function AccountSettingsPage() {
 
     (async () => {
       try {
-        const [requirements, statusResult] = await Promise.all([
+        const [requirements, statusResult, accountAuthStatus] = await Promise.all([
           accountApi.getDeletionRequirements(),
           vaultApi.status().catch(() => null),
+          accountAuthApi.getStatus().catch(() => null),
         ]);
         if (cancelled) return;
         setRequiresPassword(requirements.requiresPassword);
         setAuthProvider(requirements.authProvider);
         setVaultStatus(statusResult);
+        setAuthStatus(accountAuthStatus);
       } catch {
         if (!cancelled) setError("Could not load account settings.");
       } finally {
@@ -163,6 +169,33 @@ export default function AccountSettingsPage() {
             </Button>
           </Link>
         </div>
+      </Card>
+
+      {authStatus?.hasPassword && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Email verification</CardTitle>
+            <CardDescription>Confirm your email address for this account.</CardDescription>
+          </CardHeader>
+          <EmailVerificationSettings
+            email={authStatus.email}
+            emailVerified={authStatus.emailVerified}
+            onStatusChange={() => {
+              void accountAuthApi.getStatus().then(setAuthStatus).catch(() => undefined);
+            }}
+          />
+        </Card>
+      )}
+
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Change password</CardTitle>
+          <CardDescription>Update the password you use to sign in with email.</CardDescription>
+        </CardHeader>
+        <ChangePasswordSettings
+          canChangePassword={authStatus?.canChangePassword ?? false}
+          authProvider={authStatus?.authProvider ?? authProvider}
+        />
       </Card>
 
       {session?.user?.id && <PasskeySettings userId={session.user.id} />}

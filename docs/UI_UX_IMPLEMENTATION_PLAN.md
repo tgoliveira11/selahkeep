@@ -123,6 +123,10 @@ Badges map to tokens, not hardcoded Tailwind palette classes.
 - [x] Account settings hierarchy
 - [x] Account two-factor authentication (TOTP setup, backup codes once, disable confirm)
 - [x] Login 2FA challenge page (`/login/2fa`)
+- [x] Email verification prompt (`/check-email`), verify page (`/verify-email`), resend action
+- [x] Forgot password (`/forgot-password`) — generic submitted state
+- [x] Reset password (`/reset-password`) — token states + vault separation copy
+- [x] Account settings — email verification status, change password (credentials only), `PasswordStrengthField`
 - [x] Form labels accessibility
 
 ### P2
@@ -143,6 +147,8 @@ Badges map to tokens, not hardcoded Tailwind palette classes.
 - [x] Trusted device identity: `clientDeviceId` only; no metadata auto-relink (`src/test/security/trusted-device-identity.test.ts`)
 - [x] No plaintext letter content stored in test fixtures outside crypto layer
 - [x] 2FA settings UI distinguishes account sign-in from vault recovery (`two-factor-settings.test.tsx`)
+- [x] Forgot/verify email page states (`forgot-password-page.test.tsx`, `verify-email-page.test.tsx`)
+- [x] Password strength feedback (`password-policy.test.ts`, `PasswordStrengthField`)
 
 ---
 

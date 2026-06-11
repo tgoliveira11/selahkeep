@@ -232,6 +232,131 @@ paths:
           description: Email already registered
         '429':
           description: Rate limited
+  /api/auth/verify-email/resend:
+    post:
+      tags: [Auth]
+      summary: Resend email verification link
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Generic success (no enumeration)
+        '429':
+          description: Rate limited
+  /api/auth/verify-email/confirm:
+    post:
+      tags: [Auth]
+      summary: Confirm email verification token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  minLength: 16
+      responses:
+        '200':
+          description: Email verified
+        '400':
+          description: Invalid or expired token
+        '429':
+          description: Rate limited
+  /api/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request password reset email (generic response)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Generic message regardless of account existence
+        '429':
+          description: Rate limited
+  /api/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Validate or consume password reset token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, token]
+              properties:
+                action:
+                  type: string
+                  enum: [validate, reset]
+                token:
+                  type: string
+                  minLength: 16
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Token valid or password reset
+        '400':
+          description: Invalid token or policy rejection
+        '429':
+          description: Rate limited
+  /api/account/change-password:
+    post:
+      tags: [Account]
+      summary: Change password for signed-in credentials account
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password updated
+        '400':
+          description: Validation or policy error
+        '401':
+          description: Wrong current password
+        '429':
+          description: Rate limited
+  /api/account/auth-status:
+    get:
+      tags: [Account]
+      summary: Email verification and password capability flags
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Auth status for account settings UI
   /api/auth/login/start:
     post:
       tags: [Auth]

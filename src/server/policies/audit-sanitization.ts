@@ -22,6 +22,16 @@ export const AUDIT_EVENT_TYPES = [
   "two_factor_backup_code_used",
   "two_factor_login_passed",
   "two_factor_login_failed",
+  "passkey_login_success",
+  "passkey_login_failed",
+  "email_verification_requested",
+  "email_verified",
+  "email_verification_failed",
+  "password_reset_requested",
+  "password_reset_completed",
+  "password_reset_failed",
+  "password_changed",
+  "password_change_failed",
 ] as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[number];

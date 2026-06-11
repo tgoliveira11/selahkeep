@@ -20,6 +20,12 @@ vi.mock("@/server/policies/password-hashing", () => ({
   ),
 }));
 
+vi.mock("@/server/services/account-auth-service", () => ({
+  accountAuthService: {
+    sendVerificationEmailForUser: vi.fn(async () => ({ alreadyVerified: false })),
+  },
+}));
+
 describe("register API route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -35,7 +41,11 @@ describe("register API route", () => {
       })
     );
     expect(res.status).toBe(201);
-    await expect(res.json()).resolves.toEqual({ id: "user-1", email: "new@example.com" });
+    await expect(res.json()).resolves.toEqual({
+      id: "user-1",
+      email: "new@example.com",
+      requiresEmailVerification: true,
+    });
     expect(hashPassword).toHaveBeenCalledWith("password123");
     expect(mocks.create).toHaveBeenCalledWith({
       email: "new@example.com",

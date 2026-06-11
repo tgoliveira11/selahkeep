@@ -43,6 +43,13 @@
       "when": 1781192079771,
       "tag": "0005_passkey_account_authentication",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781200000000,
+      "tag": "0006_account_email_verification_password_reset",
+      "breakpoints": true
     }
   ]
 }

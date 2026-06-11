@@ -155,6 +155,8 @@ Letter deletion (`DELETE /api/letters/:id`) physically removes encrypted letter 
 
 Rate limiting applies to account deletion attempts. Deletion is audited as `account_deletion_requested` without sensitive metadata.
 
+**Account verification and password emails:** transactional messages (email verification, password reset) contain account links only — never private letter title/body or vault keys. Tokens are stored hashed server-side; privacy policy must disclose email processing and retention of `account_tokens` metadata.
+
 ### 4.2 Retention after deletion
 
 | Data type | Retention | Content |

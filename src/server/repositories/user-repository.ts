@@ -38,15 +38,26 @@ export const userRepository = {
     return user;
   },
 
-  async updatePassword(id: string, passwordHash: string) {
+  async updatePassword(id: string, passwordHash: string, client: DbClient = db) {
     validateStoredPasswordHash(passwordHash);
+    const now = new Date();
 
-    const [user] = await db
+    const [user] = await client
       .update(users)
-      .set({ passwordHash, updatedAt: new Date() })
+      .set({ passwordHash, passwordUpdatedAt: now, updatedAt: now })
       .where(eq(users.id, id))
       .returning();
     return user;
+  },
+
+  async markEmailVerified(id: string, client: DbClient = db) {
+    const now = new Date();
+    const [user] = await client
+      .update(users)
+      .set({ emailVerifiedAt: now, updatedAt: now })
+      .where(eq(users.id, id))
+      .returning();
+    return user ?? null;
   },
 
   async deleteById(id: string, client: DbClient = db) {

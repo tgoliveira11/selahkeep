@@ -11,7 +11,12 @@ export type RateLimitOperation =
   | "passkey.login"
   | "vault.unlock"
   | "trusted_device.create"
-  | "account.delete";
+  | "account.delete"
+  | "auth.verify_email_resend"
+  | "auth.verify_email_confirm"
+  | "auth.forgot_password"
+  | "auth.reset_password"
+  | "account.password_change";
 
 export interface RateLimitScope {
   operation: RateLimitOperation;
@@ -53,6 +58,11 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitOperation, RateLimitPolicy> = 
   "vault.unlock": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
   "trusted_device.create": { maxAttempts: 10, windowMs: 60 * 60 * 1000 },
   "account.delete": { maxAttempts: 3, windowMs: 60 * 60 * 1000 },
+  "auth.verify_email_resend": { maxAttempts: 5, windowMs: 60 * 60 * 1000 },
+  "auth.verify_email_confirm": { maxAttempts: 20, windowMs: 15 * 60 * 1000 },
+  "auth.forgot_password": { maxAttempts: 5, windowMs: 60 * 60 * 1000 },
+  "auth.reset_password": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
+  "account.password_change": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
 };
 
 /** Builds a scoped bucket key — never use operation-only keys that could lock out all users. */
