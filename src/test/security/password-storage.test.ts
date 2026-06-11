@@ -45,14 +45,17 @@ describe("password storage security", () => {
   });
 
   it("login and account deletion verify against bcrypt digests only", () => {
-    const authOptions = readFileSync(join(process.cwd(), "src/lib/auth/auth-options.ts"), "utf8");
+    const authLoginService = readFileSync(
+      join(process.cwd(), "src/server/services/auth-login-service.ts"),
+      "utf8"
+    );
     const accountService = readFileSync(
       join(process.cwd(), "src/server/services/account-service.ts"),
       "utf8"
     );
 
-    expect(authOptions).toContain("verifyPassword");
-    expect(authOptions).not.toContain("bcrypt.compare");
+    expect(authLoginService).toContain("verifyPassword");
+    expect(authLoginService).not.toContain("bcrypt.compare");
     expect(accountService).toContain("verifyPassword");
     expect(accountService).not.toContain("bcrypt.compare");
   });

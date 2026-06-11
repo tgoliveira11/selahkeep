@@ -19,6 +19,7 @@ import { vaultApi, type VaultStatus } from "@/lib/api-client/vault";
 import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { formatAuthProvider } from "@/lib/ui/format-auth-provider";
 import { getRecoveryStateLabel } from "@/lib/ui/recovery-state-labels";
+import { TwoFactorSettings } from "@/components/settings/two-factor-settings";
 
 export default function AccountSettingsPage() {
   const { data: session, status } = useSession();
@@ -162,6 +163,8 @@ export default function AccountSettingsPage() {
           </Link>
         </div>
       </Card>
+
+      <TwoFactorSettings />
 
       <Card className="border-[var(--danger-muted)]">
         <CardHeader>

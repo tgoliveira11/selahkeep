@@ -121,6 +121,8 @@ Badges map to tokens, not hardcoded Tailwind palette classes.
 - [x] Recovery + passkey framing
 - [x] Trusted devices + confirm dialog (storage-profile identity; no metadata auto-relink)
 - [x] Account settings hierarchy
+- [x] Account two-factor authentication (TOTP setup, backup codes once, disable confirm)
+- [x] Login 2FA challenge page (`/login/2fa`)
 - [x] Form labels accessibility
 
 ### P2
@@ -140,6 +142,7 @@ Badges map to tokens, not hardcoded Tailwind palette classes.
 - [x] No DB access from UI tests
 - [x] Trusted device identity: `clientDeviceId` only; no metadata auto-relink (`src/test/security/trusted-device-identity.test.ts`)
 - [x] No plaintext letter content stored in test fixtures outside crypto layer
+- [x] 2FA settings UI distinguishes account sign-in from vault recovery (`two-factor-settings.test.tsx`)
 
 ---
 

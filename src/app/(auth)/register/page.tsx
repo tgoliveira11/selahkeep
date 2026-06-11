@@ -12,6 +12,7 @@ import { FormField } from "@/components/ui/form-field";
 import { PrivacyNotice } from "@/components/ui/privacy-notice";
 import { PageHeader } from "@/components/ui/page-header";
 import { SocialSignIn } from "@/components/auth/social-sign-in";
+import { authLoginApi } from "@/lib/api-client/two-factor";
 import { getErrorMessage } from "@/lib/api-client/parse-response";
 
 export default function RegisterPage() {
@@ -38,7 +39,17 @@ export default function RegisterPage() {
       return;
     }
 
-    const result = await signIn("credentials", { email, password, redirect: false });
+    const start = await authLoginApi.start({ email, password });
+    if (start.requiresTwoFactor) {
+      setError("Account created but two-factor sign-in is required. Please sign in.");
+      setLoading(false);
+      return;
+    }
+
+    const result = await signIn("login-token", {
+      loginToken: start.loginToken,
+      redirect: false,
+    });
     setLoading(false);
     if (result?.error) {
       setError("Account created but sign-in failed");

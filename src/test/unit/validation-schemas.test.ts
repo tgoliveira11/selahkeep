@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { vaultInitSchema, recoveryCodeSchema } from "@/lib/validation/vault";
 import { createTrustedDeviceSchema, updateTrustedDeviceSchema, touchTrustedDeviceSchema } from "@/lib/validation/trusted-devices";
+import {
+  twoFactorLoginVerifySchema,
+  twoFactorVerifySchema,
+  totpCodeSchema,
+} from "@/lib/validation/two-factor";
 import { createLetterInput, encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 describe("validation schemas", () => {
@@ -62,5 +67,29 @@ describe("validation schemas", () => {
   it("createLetterInput fixture matches createLetterSchema", async () => {
     const { createLetterSchema } = await import("@/lib/validation/letters");
     expect(createLetterSchema.safeParse(createLetterInput()).success).toBe(true);
+  });
+
+  it("twoFactorVerifySchema accepts TOTP or backup code", () => {
+    expect(twoFactorVerifySchema.safeParse({ code: "123456" }).success).toBe(true);
+    expect(twoFactorVerifySchema.safeParse({ backupCode: "AAAA-BBBB-CCCC" }).success).toBe(
+      true
+    );
+    expect(twoFactorVerifySchema.safeParse({}).success).toBe(false);
+    expect(totpCodeSchema.safeParse("12ab56").success).toBe(false);
+  });
+
+  it("twoFactorLoginVerifySchema requires challenge token and code", () => {
+    expect(
+      twoFactorLoginVerifySchema.safeParse({
+        challengeToken: "challenge-token-1234567890",
+        backupCode: "AAAA-BBBB-CCCC",
+      }).success
+    ).toBe(true);
+    expect(
+      twoFactorLoginVerifySchema.safeParse({
+        challengeToken: "short",
+        code: "123456",
+      }).success
+    ).toBe(false);
   });
 });

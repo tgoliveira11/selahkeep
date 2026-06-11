@@ -3,6 +3,7 @@ import { PlaintextRejectionError } from "@/server/policies/plaintext-rejection";
 import { AadValidationError } from "@/server/policies/aad-validation";
 import { UnauthorizedError } from "@/lib/auth/session";
 import { safeLogger } from "@/lib/logger";
+import { TwoFactorEncryptionKeyError } from "@/server/policies/two-factor-secret-crypto";
 
 export function apiError(error: unknown, endpoint: string) {
   if (error instanceof UnauthorizedError) {
@@ -13,6 +14,9 @@ export function apiError(error: unknown, endpoint: string) {
   }
   if (error instanceof AadValidationError) {
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof TwoFactorEncryptionKeyError) {
+    return NextResponse.json({ error: error.message }, { status: 503 });
   }
   if (error && typeof error === "object" && "name" in error) {
     const named = error as { name: string; message: string };

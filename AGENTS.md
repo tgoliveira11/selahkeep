@@ -42,6 +42,7 @@ React components must NOT import database clients, repositories, or ORM code.
 - Mock encryption, fake passkey flows, fake recovery flows
 - AI APIs processing private letter content
 - Admin access to private letter content
+- Using TOTP 2FA, backup codes, or account login secrets as vault keys, letter keys, recovery codes, or trusted-device unlock material
 
 ## Stop Conditions
 
@@ -102,7 +103,7 @@ Guidelines:
 - Prefer **service/API tests** for authorization, rate limits, and envelope storage.
 - Use **E2E** sparingly for critical user journeys; keep most coverage in Vitest.
 - New API routes, services, or crypto paths **must** include tests in the matching layer.
-- Security-sensitive paths (passkeys, recovery, vault unlock) need explicit tests; see `.cursor/rules/testing.md`.
+- Security-sensitive paths (passkeys, recovery, vault unlock, account 2FA) need explicit tests; see `.cursor/rules/testing.md`.
 
 Enforced coverage scope (see `vitest.config.ts`):
 

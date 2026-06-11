@@ -72,6 +72,8 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - `POST /api/recovery-code`, `POST /api/vault/unlock-with-recovery-code`
 - `POST /api/passkeys/register`, `POST /api/passkeys/authenticate`, `DELETE /api/passkeys`
 - `DELETE /api/account` — account deletion
+- `GET /api/account/2fa/status`, `POST /api/account/2fa/setup/start`, `POST /api/account/2fa/setup/verify`, `POST /api/account/2fa/disable`, `POST /api/account/2fa/backup-codes/regenerate`
+- `POST /api/auth/login/start`, `POST /api/auth/login/verify-2fa`, `POST /api/auth/login/verify-2fa-oauth`
 
 ## Envelope Encryption
 
@@ -116,6 +118,15 @@ Failures roll back all related writes.
 - Revoking a device revokes its envelope in the same transaction
 - Client checks `GET /api/trusted-devices/status?deviceId=` before unlock; clears IndexedDB on revoke
 - **Offline limitation:** cached local envelope may still decrypt until the next online status check
+
+## Account two-factor authentication
+
+TOTP 2FA is **account authentication only** — separate from vault envelopes, recovery codes, passkeys, and trusted devices.
+
+- Settings UI: `/settings/account` (`TwoFactorSettings`)
+- Login challenge: `/login/2fa` + middleware gate for OAuth partial sessions
+- Storage: `user_two_factor_settings`, `user_two_factor_backup_codes`, login challenge/token tables
+- NextAuth provider: `login-token` (one-time token after password + optional 2FA)
 
 ## Trusted device identity
 

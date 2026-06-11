@@ -3,6 +3,7 @@ import { lettersApi } from "@/lib/api-client/letters";
 import { vaultApi } from "@/lib/api-client/vault";
 import { trustedDevicesApi } from "@/lib/api-client/trusted-devices";
 import { passkeysApi } from "@/lib/api-client/passkeys";
+import { authLoginApi, twoFactorApi } from "@/lib/api-client/two-factor";
 import { createLetterInput, encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 describe("typed API client modules", () => {
@@ -71,6 +72,47 @@ describe("typed API client modules", () => {
         if (url === "/api/passkeys" && init?.method === "DELETE") {
           return new Response(JSON.stringify({ success: true }), { status: 200 });
         }
+        if (url === "/api/account/2fa/status") {
+          return new Response(
+            JSON.stringify({ enabled: false, enabledAt: null, hasPendingSetup: false }),
+            { status: 200 }
+          );
+        }
+        if (url === "/api/account/2fa/setup/start" && init?.method === "POST") {
+          return new Response(
+            JSON.stringify({
+              qrCodeDataUrl: "data:image/png;base64,abc",
+              manualSetupKey: "SECRET",
+              issuer: "Letters to God",
+              accountLabel: "user@example.com",
+            }),
+            { status: 200 }
+          );
+        }
+        if (url === "/api/account/2fa/setup/verify" && init?.method === "POST") {
+          return new Response(
+            JSON.stringify({ success: true, backupCodes: ["AAAA-BBBB-CCCC"] }),
+            { status: 200 }
+          );
+        }
+        if (url === "/api/account/2fa/disable" && init?.method === "POST") {
+          return new Response(JSON.stringify({ success: true }), { status: 200 });
+        }
+        if (url === "/api/account/2fa/backup-codes/regenerate" && init?.method === "POST") {
+          return new Response(JSON.stringify({ backupCodes: ["DDDD-EEEE-FFFF"] }), { status: 200 });
+        }
+        if (url === "/api/auth/login/start" && init?.method === "POST") {
+          return new Response(
+            JSON.stringify({ requiresTwoFactor: true, challengeToken: "challenge" }),
+            { status: 200 }
+          );
+        }
+        if (url === "/api/auth/login/verify-2fa" && init?.method === "POST") {
+          return new Response(JSON.stringify({ loginToken: "login-token" }), { status: 200 });
+        }
+        if (url === "/api/auth/login/verify-2fa-oauth" && init?.method === "POST") {
+          return new Response(JSON.stringify({ upgradeToken: "upgrade-token" }), { status: 200 });
+        }
         return new Response("{}", { status: 404 });
       })
     );
@@ -135,5 +177,26 @@ describe("typed API client modules", () => {
 
   it("passkeysApi covers removeAll", async () => {
     await expect(passkeysApi.removeAll()).resolves.toEqual({ success: true });
+  });
+
+  it("twoFactorApi and authLoginApi cover 2FA endpoints", async () => {
+    await expect(twoFactorApi.status()).resolves.toMatchObject({ enabled: false });
+    await expect(twoFactorApi.startSetup()).resolves.toHaveProperty("manualSetupKey");
+    await expect(twoFactorApi.verifySetup({ code: "123456" })).resolves.toMatchObject({
+      success: true,
+    });
+    await expect(twoFactorApi.disable({ code: "123456" })).resolves.toEqual({ success: true });
+    await expect(twoFactorApi.regenerateBackupCodes({ code: "123456" })).resolves.toHaveProperty(
+      "backupCodes"
+    );
+    await expect(
+      authLoginApi.start({ email: "user@example.com", password: "password123" })
+    ).resolves.toMatchObject({ requiresTwoFactor: true });
+    await expect(
+      authLoginApi.verifyTwoFactor({ challengeToken: "challenge", code: "123456" })
+    ).resolves.toEqual({ loginToken: "login-token" });
+    await expect(authLoginApi.verifyOAuthTwoFactor({ code: "123456" })).resolves.toEqual({
+      upgradeToken: "upgrade-token",
+    });
   });
 });

@@ -8,6 +8,8 @@ export async function getSessionUser() {
   return {
     id: session.user.id,
     email: session.user.email ?? "",
+    twoFactorVerified: session.twoFactorVerified !== false,
+    twoFactorPending: session.twoFactorPending === true,
   };
 }
 
@@ -17,6 +19,14 @@ export async function requireSessionUser() {
     throw new UnauthorizedError("Authentication required");
   }
   return user;
+}
+
+export async function requireFullyAuthenticatedUser() {
+  const user = await requireSessionUser();
+  if (!user.twoFactorVerified) {
+    throw new UnauthorizedError("Two-factor verification required");
+  }
+  return { id: user.id, email: user.email };
 }
 
 export class UnauthorizedError extends Error {

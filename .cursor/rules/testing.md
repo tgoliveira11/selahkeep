@@ -53,6 +53,16 @@ Use unit/service/API tests for most coverage. Reserve E2E for end-to-end smoke o
 - Recovery envelope storage uses KDF metadata, not plaintext code.
 - Recovery entropy: mathematical test in `recovery-code.test.ts` (not word-count only).
 
+### Account 2FA (when touching TOTP login or settings)
+
+- TOTP secret encryption round-trip: `two-factor-secret-crypto.test.ts`
+- TOTP verify/generate: `totp.test.ts`
+- Backup code hash and one-time use: `backup-code.test.ts`, `two-factor-service.test.ts`
+- API routes never return stored secrets after setup: `two-factor-routes.test.ts`
+- Vault/crypto boundary unchanged: `two-factor-boundary.test.ts`
+- Login flow: `auth-login-service.test.ts`, `auth-login-routes.test.ts`
+- UI copy distinguishes account 2FA from vault recovery: `two-factor-settings.test.tsx`
+
 ### P1 beta gates (required before real beta)
 
 - Runtime sentinel integration: `sentinel-runtime-integration.test.ts`

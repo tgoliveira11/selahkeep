@@ -48,6 +48,23 @@ After logging in via the browser, copy the cookie from DevTools → Application 
 
 Registration (`POST /api/auth/register`) and NextAuth OAuth/credentials flows are documented in ADR-003; interactive OAuth is easier through the web login page than Swagger.
 
+### Account two-factor authentication (TOTP)
+
+Optional account-level 2FA protects **sign-in only** — it does not decrypt private letters or replace the vault recovery code.
+
+| Method | Path | Auth |
+|--------|------|------|
+| `GET` | `/api/account/2fa/status` | Session |
+| `POST` | `/api/account/2fa/setup/start` | Session |
+| `POST` | `/api/account/2fa/setup/verify` | Session |
+| `POST` | `/api/account/2fa/disable` | Session + TOTP or backup code |
+| `POST` | `/api/account/2fa/backup-codes/regenerate` | Session + TOTP or backup code |
+| `POST` | `/api/auth/login/start` | Public (email/password) |
+| `POST` | `/api/auth/login/verify-2fa` | Public (challenge token + code) |
+| `POST` | `/api/auth/login/verify-2fa-oauth` | Partial OAuth session |
+
+Credentials login: `login/start` → optional `verify-2fa` → one-time `login-token` NextAuth provider. OAuth users with 2FA enabled receive a partial session until `verify-2fa-oauth` completes.
+
 ## Security notes
 
 - **Never** send plaintext `title`, `body`, or similar fields — only structured `encrypted*` payloads.

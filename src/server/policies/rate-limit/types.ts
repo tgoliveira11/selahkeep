@@ -1,6 +1,10 @@
 export type RateLimitOperation =
   | "auth.register"
   | "auth.login"
+  | "two_factor.setup_verify"
+  | "two_factor.disable"
+  | "two_factor.login_verify"
+  | "two_factor.backup_regenerate"
   | "recovery.attempt"
   | "passkey.register"
   | "passkey.authenticate"
@@ -37,6 +41,10 @@ export interface RateLimitPolicy {
 export const RATE_LIMIT_POLICIES: Record<RateLimitOperation, RateLimitPolicy> = {
   "auth.register": { maxAttempts: 10, windowMs: 60 * 60 * 1000 },
   "auth.login": { maxAttempts: 20, windowMs: 15 * 60 * 1000 },
+  "two_factor.setup_verify": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
+  "two_factor.disable": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
+  "two_factor.login_verify": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
+  "two_factor.backup_regenerate": { maxAttempts: 3, windowMs: 60 * 60 * 1000 },
   "recovery.attempt": { maxAttempts: 5, windowMs: 15 * 60 * 1000 },
   "passkey.register": { maxAttempts: 10, windowMs: 60 * 60 * 1000 },
   "passkey.authenticate": { maxAttempts: 20, windowMs: 15 * 60 * 1000 },

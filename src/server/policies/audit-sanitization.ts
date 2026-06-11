@@ -13,6 +13,15 @@ export const AUDIT_EVENT_TYPES = [
   "passkey_removed",
   "account_deletion_requested",
   "letter_deleted",
+  "two_factor_setup_started",
+  "two_factor_enabled",
+  "two_factor_setup_failed",
+  "two_factor_disabled",
+  "two_factor_disable_failed",
+  "two_factor_backup_codes_generated",
+  "two_factor_backup_code_used",
+  "two_factor_login_passed",
+  "two_factor_login_failed",
 ] as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[number];
@@ -37,6 +46,10 @@ const SENSITIVE_METADATA_PATTERNS = [
   /plaintext/i,
   /sentinel/i,
   /password/i,
+  /totp/i,
+  /otp/i,
+  /backup/i,
+  /two.?factor/i,
 ];
 
 export function sanitizeAuditMetadata(

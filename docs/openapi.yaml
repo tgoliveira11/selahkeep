@@ -167,6 +167,39 @@ components:
           type: string
           format: date-time
           nullable: true
+    TwoFactorStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        enabledAt:
+          type: string
+          format: date-time
+          nullable: true
+        hasPendingSetup:
+          type: boolean
+    TwoFactorSetupStartResponse:
+      type: object
+      properties:
+        qrCodeDataUrl:
+          type: string
+        manualSetupKey:
+          type: string
+          description: Shown only during setup; not returned after enable
+        issuer:
+          type: string
+        accountLabel:
+          type: string
+    TwoFactorVerifyRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: '^\\d{6}$'
+        backupCode:
+          type: string
+          minLength: 8
+          maxLength: 32
 paths:
   /api/auth/register:
     post:
@@ -197,6 +230,75 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Email already registered
+        '429':
+          description: Rate limited
+  /api/auth/login/start:
+    post:
+      tags: [Auth]
+      summary: Start credentials login (password verification; optional 2FA challenge)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Login token or 2FA challenge
+        '401':
+          description: Invalid credentials
+        '429':
+          description: Rate limited
+  /api/auth/login/verify-2fa:
+    post:
+      tags: [Auth]
+      summary: Complete credentials login after TOTP or backup code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [challengeToken]
+              allOf:
+                - $ref: '#/components/schemas/TwoFactorVerifyRequest'
+                - type: object
+                  properties:
+                    challengeToken:
+                      type: string
+                      minLength: 16
+      responses:
+        '200':
+          description: One-time login token for NextAuth
+        '401':
+          description: Invalid challenge or code
+        '429':
+          description: Rate limited
+  /api/auth/login/verify-2fa-oauth:
+    post:
+      tags: [Auth]
+      summary: Complete OAuth login when account 2FA is enabled
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TwoFactorVerifyRequest'
+      responses:
+        '200':
+          description: Session upgrade token
+        '401':
+          description: Invalid code
         '429':
           description: Rate limited
   /api/letters:
@@ -426,6 +528,98 @@ paths:
       responses:
         '200':
           description: Removed
+  /api/account/2fa/status:
+    get:
+      tags: [Account]
+      summary: Two-factor authentication status
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Current 2FA state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoFactorStatus'
+  /api/account/2fa/setup/start:
+    post:
+      tags: [Account]
+      summary: Start TOTP setup (pending until verified)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: QR code and manual setup key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoFactorSetupStartResponse'
+        '409':
+          description: Already enabled
+        '429':
+          description: Rate limited
+  /api/account/2fa/setup/verify:
+    post:
+      tags: [Account]
+      summary: Verify TOTP code and enable 2FA
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  pattern: '^\\d{6}$'
+      responses:
+        '200':
+          description: Enabled; backup codes returned once
+        '400':
+          description: Invalid code
+        '429':
+          description: Rate limited
+  /api/account/2fa/disable:
+    post:
+      tags: [Account]
+      summary: Disable 2FA (requires current TOTP or backup code)
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TwoFactorVerifyRequest'
+      responses:
+        '200':
+          description: Disabled
+        '400':
+          description: Invalid code
+        '429':
+          description: Rate limited
+  /api/account/2fa/backup-codes/regenerate:
+    post:
+      tags: [Account]
+      summary: Regenerate backup codes (requires TOTP or backup code)
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TwoFactorVerifyRequest'
+      responses:
+        '200':
+          description: New backup codes returned once
+        '400':
+          description: Invalid code
+        '429':
+          description: Rate limited
   /api/account:
     delete:
       tags: [Account]

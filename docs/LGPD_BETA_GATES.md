@@ -62,6 +62,7 @@ The product targets users writing private spiritual letters. Data sensitivity is
 | Category | Examples | Encrypted? | LGPD relevance |
 |----------|----------|------------|----------------|
 | Account data | Email, auth provider, password hash | Password hashed | Identification |
+| Account 2FA | Encrypted TOTP secret, hashed backup codes | TOTP secret encrypted (`tf-v1`); backup codes hashed | Sign-in security — not letter decryption |
 | Encrypted letter content | `encrypted_title`, `encrypted_body` | Yes (client-side) | Potentially sensitive personal content |
 | Cryptographic envelopes | Vault envelopes, letter keys (wrapped) | Yes | Security — not readable by operator |
 | Metadata | Timestamps, answered status, device names | Partially open | Profiling surface limited but present |
@@ -95,6 +96,7 @@ Document for legal review:
 - Trusted device revocation with documented offline limitation
 - Plaintext rejection, sentinel tests, and CI security gates
 - Autosave **disabled** for MVP — no background plaintext persistence
+- Optional account TOTP 2FA (sign-in only; does not decrypt letters); backup codes shown once and stored hashed
 
 ### 2.4 Data Protection Officer (DPO)
 

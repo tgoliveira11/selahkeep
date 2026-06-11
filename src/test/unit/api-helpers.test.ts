@@ -4,6 +4,7 @@ import { PlaintextRejectionError } from "@/server/policies/plaintext-rejection";
 import { UnauthorizedError } from "@/lib/auth/session";
 import { NotFoundError } from "@/server/services/letter-service";
 import { ConflictError, RateLimitError } from "@/server/services/vault-service";
+import { TwoFactorEncryptionKeyError } from "@/server/policies/two-factor-secret-crypto";
 
 describe("api helpers", () => {
   it("parseJsonBody returns parsed JSON", async () => {
@@ -46,6 +47,14 @@ describe("api helpers", () => {
   it("apiError maps RateLimitError to 429", async () => {
     const res = apiError(new RateLimitError("slow down"), "POST /test");
     expect(res.status).toBe(429);
+  });
+
+  it("apiError maps TwoFactorEncryptionKeyError to 503", async () => {
+    const res = apiError(new TwoFactorEncryptionKeyError(), "POST /api/account/2fa/setup/start");
+    expect(res.status).toBe(503);
+    await expect(res.json()).resolves.toMatchObject({
+      error: expect.stringContaining("TWO_FACTOR_SECRET_ENCRYPTION_KEY"),
+    });
   });
 
   it("apiError maps unknown errors to 500", async () => {

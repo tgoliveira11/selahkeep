@@ -12,6 +12,9 @@ import { FormField } from "@/components/ui/form-field";
 import { PrivacyNotice } from "@/components/ui/privacy-notice";
 import { PageHeader } from "@/components/ui/page-header";
 import { SocialSignIn } from "@/components/auth/social-sign-in";
+import { authLoginApi } from "@/lib/api-client/two-factor";
+
+const CHALLENGE_STORAGE_KEY = "letters-2fa-login-challenge";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,12 +27,28 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const result = await signIn("credentials", { email, password, redirect: false });
-    setLoading(false);
-    if (result?.error) {
+
+    try {
+      const start = await authLoginApi.start({ email, password });
+      if (start.requiresTwoFactor) {
+        sessionStorage.setItem(CHALLENGE_STORAGE_KEY, start.challengeToken);
+        router.push("/login/2fa?mode=credentials");
+        return;
+      }
+
+      const result = await signIn("login-token", {
+        loginToken: start.loginToken,
+        redirect: false,
+      });
+      if (result?.error) {
+        setError("Invalid email or password");
+      } else {
+        router.push("/letters");
+      }
+    } catch {
       setError("Invalid email or password");
-    } else {
-      router.push("/letters");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -44,7 +63,7 @@ export default function LoginPage() {
         <PrivacyNotice compact />
 
         <form onSubmit={handleCredentials} className="space-y-4">
-          <FormField id="login-email" label="Email" error={error ? undefined : undefined}>
+          <FormField id="login-email" label="Email">
             <Input
               id="login-email"
               type="email"

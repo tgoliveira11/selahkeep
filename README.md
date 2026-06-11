@@ -28,6 +28,7 @@ cp .env.example .env.local
 # Ensure DATABASE_URL is set in .env.local, e.g.:
 # DATABASE_URL=postgresql://letters:letters_dev@localhost:5432/letters_to_god
 # NEXTAUTH_URL=http://localhost:3001
+# TWO_FACTOR_SECRET_ENCRYPTION_KEY=<openssl rand -base64 32>  # required for account 2FA
 
 # Generate and run migrations (reads .env.local automatically)
 npm run db:generate   # after schema changes
@@ -59,6 +60,12 @@ Browse REST endpoints in Swagger UI during local development:
 OpenAPI spec: `docs/openapi.yaml` (JSON at `GET /api/openapi`). Full details: [docs/API_REFERENCE.md](./docs/API_REFERENCE.md).
 
 Production hides `/api-docs` unless `ENABLE_API_DOCS=true` in `.env.local`.
+
+## Two-factor authentication (optional)
+
+Account-level TOTP 2FA can be enabled from **Account settings**. It adds an extra sign-in code from an authenticator app and does **not** replace your private letter recovery code or vault unlock methods.
+
+Requires `TWO_FACTOR_SECRET_ENCRYPTION_KEY` in `.env.local` (see `.env.example`). Run `npm run db:migrate` after pulling 2FA schema updates.
 
 ## Trusted devices
 

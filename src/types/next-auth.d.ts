@@ -8,6 +8,9 @@ declare module "next-auth" {
       name?: string | null;
       image?: string | null;
     };
+    twoFactorVerified: boolean;
+    twoFactorPending: boolean;
+    twoFactorUpgradeToken?: string;
   }
 }
 
@@ -15,5 +18,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     sub?: string;
     provider?: string;
+    twoFactorVerified?: boolean;
+    twoFactorPending?: boolean;
   }
 }

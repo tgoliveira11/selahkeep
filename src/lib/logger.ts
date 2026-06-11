@@ -16,6 +16,13 @@ const SENSITIVE_KEYS = new Set([
   "password",
   "passwordHash",
   "password_hash",
+  "totpCode",
+  "backupCode",
+  "twoFactorSecret",
+  "otpauthUrl",
+  "loginToken",
+  "challengeToken",
+  "upgradeToken",
 ]);
 
 function redactValue(key: string, value: unknown): unknown {

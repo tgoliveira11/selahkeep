@@ -4,10 +4,8 @@ import AppleProvider from "next-auth/providers/apple";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { userRepository } from "@/server/repositories/user-repository";
 import { authService } from "@/server/services/auth-service";
-import { verifyPassword } from "@/server/policies/password-hashing";
-import { RateLimitError } from "@/server/policies/rate-limit";
-import { getLoginRequestIp } from "@/lib/auth/login-request-context";
-
+import { authLoginService } from "@/server/services/auth-login-service";
+import { twoFactorService } from "@/server/services/two-factor-service";
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: {
@@ -31,34 +29,15 @@ export const authOptions: NextAuthOptions = {
         ]
       : []),
     CredentialsProvider({
-      name: "Email",
+      id: "login-token",
+      name: "LoginToken",
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        loginToken: { label: "Login Token", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-
-        try {
-          await authService.assertLoginAllowed(credentials.email, getLoginRequestIp());
-        } catch (error) {
-          if (error instanceof RateLimitError) return null;
-          throw error;
-        }
-
-        const user = await userRepository.findByEmail(credentials.email);
-        if (!user?.passwordHash) {
-          await authService.recordLoginFailure(credentials.email);
-          return null;
-        }
-
-        const valid = await verifyPassword(credentials.password, user.passwordHash);
-        if (!valid) {
-          await authService.recordLoginFailure(credentials.email);
-          return null;
-        }
-
-        await authService.recordLoginSuccess(user.id, "credentials");
+        if (!credentials?.loginToken) return null;
+        const user = await authLoginService.consumeLoginToken(credentials.loginToken);
+        if (!user) return null;
         return { id: user.id, email: user.email };
       },
     }),
@@ -73,26 +52,54 @@ export const authOptions: NextAuthOptions = {
           authProvider: account.provider,
         });
       }
-      if (dbUser && account?.provider && account.provider !== "credentials") {
+      if (dbUser && account?.provider && account.provider !== "login-token") {
         await authService.recordLoginSuccess(dbUser.id, account.provider);
       }
       return true;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger, session }) {
       if (user?.email) {
         const dbUser = await userRepository.findByEmail(user.email);
-        if (dbUser) token.sub = dbUser.id;
+        if (dbUser) {
+          token.sub = dbUser.id;
+          if (account?.provider === "login-token") {
+            token.twoFactorVerified = true;
+            token.twoFactorPending = false;
+          } else if (account) {
+            const enabled = await twoFactorService.isEnabledForUser(dbUser.id);
+            token.twoFactorVerified = !enabled;
+            token.twoFactorPending = enabled;
+          }
+        }
       } else if (token.email && !token.sub) {
         const dbUser = await userRepository.findByEmail(token.email);
         if (dbUser) token.sub = dbUser.id;
       }
+
+      if (trigger === "update" && session?.twoFactorUpgradeToken && token.sub) {
+        const verified = await twoFactorService.consumeSessionUpgradeToken(
+          token.sub,
+          session.twoFactorUpgradeToken
+        );
+        if (verified) {
+          token.twoFactorVerified = true;
+          token.twoFactorPending = false;
+        }
+      }
+
       if (account) token.provider = account.provider;
+      if (token.twoFactorVerified === undefined) {
+        token.twoFactorVerified = true;
+      }
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.sub) {
         session.user.id = token.sub;
       }
+      session.twoFactorVerified = token.twoFactorVerified !== false;
+      session.twoFactorPending =
+        token.twoFactorPending === true && token.twoFactorVerified === false;
       return session;
     },
   },

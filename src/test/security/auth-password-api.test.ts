@@ -88,10 +88,13 @@ describe("auth password API boundaries", () => {
   });
 
   it("verifies credentials only on the server with bcrypt helpers", () => {
-    const authOptions = readFileSync(join(process.cwd(), "src/lib/auth/auth-options.ts"), "utf8");
-    expect(authOptions).toContain("verifyPassword");
-    expect(authOptions).not.toMatch(/passwordHash\s*===/);
-    expect(authOptions).not.toContain("bcrypt.compare");
+    const authLoginService = readFileSync(
+      join(process.cwd(), "src/server/services/auth-login-service.ts"),
+      "utf8"
+    );
+    expect(authLoginService).toContain("verifyPassword");
+    expect(authLoginService).not.toMatch(/passwordHash\s*===/);
+    expect(authLoginService).not.toContain("bcrypt.compare");
   });
 
   it("guards auth routes against URL password transport", () => {

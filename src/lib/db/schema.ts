@@ -133,6 +133,80 @@ export const rateLimitBuckets = pgTable("rate_limit_buckets", {
   resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
 });
 
+export const userTwoFactorSettings = pgTable("user_two_factor_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  enabled: boolean("enabled").notNull().default(false),
+  secretEncrypted: jsonb("secret_encrypted"),
+  pendingSecretEncrypted: jsonb("pending_secret_encrypted"),
+  enabledAt: timestamp("enabled_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const userTwoFactorBackupCodes = pgTable(
+  "user_two_factor_backup_codes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    codeHash: text("code_hash").notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("idx_user_two_factor_backup_codes_user_id").on(table.userId)]
+);
+
+export const userTwoFactorLoginChallenges = pgTable(
+  "user_two_factor_login_challenges",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    challengeTokenHash: text("challenge_token_hash").notNull(),
+    authProvider: text("auth_provider").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("idx_user_two_factor_login_challenges_user_id").on(table.userId)]
+);
+
+export const userTwoFactorLoginTokens = pgTable(
+  "user_two_factor_login_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("idx_user_two_factor_login_tokens_user_id").on(table.userId)]
+);
+
+export const userTwoFactorSessionUpgrades = pgTable(
+  "user_two_factor_session_upgrades",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("idx_user_two_factor_session_upgrades_user_id").on(table.userId)]
+);
+
 export type User = typeof users.$inferSelect;
 export type Letter = typeof letters.$inferSelect;
 export type TrustedDevice = typeof trustedDevices.$inferSelect;

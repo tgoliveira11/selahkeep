@@ -83,6 +83,19 @@ Error tracking must strip request/response bodies and sensitive headers.
 - LGPD / privacy beta gates: [`docs/LGPD_BETA_GATES.md`](./docs/LGPD_BETA_GATES.md)
 - Backup/restore draft: [`docs/BACKUP_RESTORE_POLICY.md`](./docs/BACKUP_RESTORE_POLICY.md)
 
+## Two-factor authentication (account sign-in)
+
+Optional TOTP 2FA protects **account sign-in only**. It does **not** decrypt private letters, replace the vault recovery code, unlock the vault, or wrap vault keys.
+
+- Off by default; enabled from `/settings/account`
+- Standard TOTP (Google Authenticator, Microsoft Authenticator, 1Password, Authy, etc.)
+- TOTP secrets encrypted at rest with AES-256-GCM (`TWO_FACTOR_SECRET_ENCRYPTION_KEY`, payload version `tf-v1`)
+- Backup codes generated on enable; hashed (SHA-256 + pepper) and one-time use; shown once
+- Credentials login: `POST /api/auth/login/start` → optional `POST /api/auth/login/verify-2fa` → one-time `login-token` NextAuth provider
+- OAuth login: partial session until `POST /api/auth/login/verify-2fa-oauth` + session upgrade token; middleware blocks app routes until verified
+- Rate limits: setup verify, login verify, disable, backup regeneration
+- Audit events never include TOTP secrets, codes, or backup codes
+
 ## Authentication passwords
 
 Credentials passwords are **never stored in plaintext** and are **not reversibly encrypted**. The server stores a **bcrypt one-way hash** in `users.password_hash` (cost factor **12** via `src/server/policies/password-hashing.ts`).
@@ -97,7 +110,7 @@ Credentials passwords are **never stored in plaintext** and are **not reversibly
 ### Verification (server-only)
 
 - Registration: `hashPassword()` on the server, then persist digest only
-- Login: NextAuth `authorize()` calls `verifyPassword()` → `bcrypt.compare()` against `password_hash` on the server only
+- Login: `POST /api/auth/login/start` verifies password via `verifyPassword()` → `bcrypt.compare()` against `password_hash`; optional 2FA before one-time `login-token` NextAuth provider
 - Account deletion: `verifyPassword()` for credentials accounts
 - The client must **not** compare passwords for authentication; it only collects the value and sends it over HTTPS
 
