@@ -1,12 +1,2 @@
-export function formatAuthProvider(provider: string): string {
-  switch (provider) {
-    case "credentials":
-      return "Email and password";
-    case "google":
-      return "Google";
-    case "apple":
-      return "Apple";
-    default:
-      return provider;
-  }
-}
+/** @deprecated Import from "@/modules/sessions/lib/format-auth-provider" — Phase 1 modular monolith shim */
+export * from "@/modules/sessions/lib/format-auth-provider";

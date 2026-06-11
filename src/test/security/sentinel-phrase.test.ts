@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { readModuleSource } from "@/test/helpers/module-source";
 
 export const SENTINEL_PHRASE = "SENTINEL-PRIVATE-LETTER-DO-NOT-STORE-PLAINTEXT-12345";
 
@@ -22,10 +23,7 @@ describe("sentinel phrase not in static artifacts", () => {
   });
 
   it("API letter responses use encrypted field names only in service layer", () => {
-    const letterRepo = readFileSync(
-      join(process.cwd(), "src/server/repositories/letter-repository.ts"),
-      "utf-8"
-    );
+    const letterRepo = readModuleSource("src/server/repositories/letter-repository.ts");
     expect(letterRepo).toContain("encryptedTitle");
     expect(letterRepo).not.toMatch(/\btitle:\s/);
     expect(letterRepo).not.toMatch(/\bbody:\s/);

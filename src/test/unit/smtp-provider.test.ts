@@ -83,6 +83,23 @@ describe("smtp provider", () => {
     });
   });
 
+  it("reuses cached transport when no explicit transport is passed", async () => {
+    await sendSmtpEmail("noreply@localhost", {
+      to: "a@example.com",
+      subject: "One",
+      html: "<p>1</p>",
+      text: "1",
+    });
+    await sendSmtpEmail("noreply@localhost", {
+      to: "b@example.com",
+      subject: "Two",
+      html: "<p>2</p>",
+      text: "2",
+    });
+    expect(createTransport).toHaveBeenCalledTimes(1);
+    expect(sendMail).toHaveBeenCalledTimes(2);
+  });
+
   it("logs only domain and subject, not body or token", async () => {
     vi.stubEnv("NODE_ENV", "production");
     const transport = { sendMail } as never;

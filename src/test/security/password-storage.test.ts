@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readModuleSource } from "@/test/helpers/module-source";
 import { userRepository } from "@/server/repositories/user-repository";
 
 const SAMPLE_BCRYPT_HASH =
@@ -27,10 +28,7 @@ describe("password storage security", () => {
   });
 
   it("allows null password_hash for OAuth-only accounts", () => {
-    const repoSource = readFileSync(
-      join(process.cwd(), "src/server/repositories/user-repository.ts"),
-      "utf8"
-    );
+    const repoSource = readModuleSource("src/server/repositories/user-repository.ts");
     expect(repoSource).toContain("validateStoredPasswordHash");
   });
 
@@ -45,14 +43,8 @@ describe("password storage security", () => {
   });
 
   it("login and account deletion verify against bcrypt digests only", () => {
-    const authLoginService = readFileSync(
-      join(process.cwd(), "src/server/services/auth-login-service.ts"),
-      "utf8"
-    );
-    const accountService = readFileSync(
-      join(process.cwd(), "src/server/services/account-service.ts"),
-      "utf8"
-    );
+    const authLoginService = readModuleSource("src/server/services/auth-login-service.ts");
+    const accountService = readModuleSource("src/server/services/account-service.ts");
 
     expect(authLoginService).toContain("verifyPassword");
     expect(authLoginService).not.toContain("bcrypt.compare");
@@ -62,10 +54,7 @@ describe("password storage security", () => {
 
   it("accepts bcrypt digests at repository updatePassword", async () => {
     // Format guard is synchronous; DB call may fail without PostgreSQL.
-    const repoSource = readFileSync(
-      join(process.cwd(), "src/server/repositories/user-repository.ts"),
-      "utf8"
-    );
+    const repoSource = readModuleSource("src/server/repositories/user-repository.ts");
     expect(repoSource).toContain("assertPasswordHashFormat");
     expect(SAMPLE_BCRYPT_HASH).toMatch(/^\$2[aby]\$\d{2}\$/);
   });

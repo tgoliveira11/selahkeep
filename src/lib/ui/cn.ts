@@ -1,3 +1,2 @@
-export function cn(...classes: Array<string | false | null | undefined>): string {
-  return classes.filter(Boolean).join(" ");
-}
+/** @deprecated Import from "@/modules/ui/lib/cn" — Phase 1 modular monolith shim */
+export * from "@/modules/ui/lib/cn";

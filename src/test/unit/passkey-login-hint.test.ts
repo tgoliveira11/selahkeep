@@ -56,4 +56,15 @@ describe("passkey login hint", () => {
     localStorage.removeItem("letters-passkey-login-user-id");
     expect(getPasskeyLoginHint()).toEqual({ userId: USER_ID });
   });
+
+  it("clears userId when updating hint without userId", () => {
+    setPasskeyLoginHint({ userId: USER_ID, credentialId: "cred-id" });
+    setPasskeyLoginHint({ credentialId: "cred-only" });
+    expect(getPasskeyLoginHint()).toEqual({ credentialId: "cred-only" });
+  });
+
+  it("ignores empty cookie values", () => {
+    document.cookie = "letters-passkey-login-user-id=; path=/";
+    expect(getPasskeyLoginHint()).toBeNull();
+  });
 });

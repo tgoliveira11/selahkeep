@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readModuleSource } from "@/test/helpers/module-source";
 import { POST as registerPost } from "@/app/api/auth/register/route";
 import { GET as accountGet } from "@/app/api/account/route";
 
@@ -98,10 +99,7 @@ describe("auth password API boundaries", () => {
   });
 
   it("verifies credentials only on the server with bcrypt helpers", () => {
-    const authLoginService = readFileSync(
-      join(process.cwd(), "src/server/services/auth-login-service.ts"),
-      "utf8"
-    );
+    const authLoginService = readModuleSource("src/server/services/auth-login-service.ts");
     expect(authLoginService).toContain("verifyPassword");
     expect(authLoginService).not.toMatch(/passwordHash\s*===/);
     expect(authLoginService).not.toContain("bcrypt.compare");

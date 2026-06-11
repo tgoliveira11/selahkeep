@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readModuleSource } from "@/test/helpers/module-source";
 
 describe("two-factor security boundaries", () => {
   it("keeps TOTP outside vault crypto paths", () => {
@@ -8,7 +9,7 @@ describe("two-factor security boundaries", () => {
       join(process.cwd(), "src/lib/crypto-client/vault-unlock.ts"),
       "utf8"
     );
-    const totpPolicy = readFileSync(join(process.cwd(), "src/server/policies/totp.ts"), "utf8");
+    const totpPolicy = readModuleSource("src/server/policies/totp.ts");
     expect(vaultUnlock).not.toContain("otplib");
     expect(totpPolicy).not.toContain("User Vault Key");
     expect(totpPolicy).not.toContain("encryptedVaultKey");
@@ -23,7 +24,7 @@ describe("two-factor security boundaries", () => {
   });
 
   it("redacts TOTP-related fields from logger", () => {
-    const logger = readFileSync(join(process.cwd(), "src/lib/logger.ts"), "utf8");
+    const logger = readModuleSource("src/lib/logger.ts");
     expect(logger).toContain("totpCode");
     expect(logger).toContain("backupCode");
     expect(logger).toContain("twoFactorSecret");

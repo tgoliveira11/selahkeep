@@ -8,6 +8,8 @@ Read and follow these documents before implementing:
 - `docs/ADR-001_Cryptographic_Payload_Format_and_Envelope_Encryption.md`
 - `docs/ADR-002_Vault_Unlocking_Passkeys_Trusted_Devices_Recovery_Code.md`
 - `docs/ADR-003_API_Contract_Database_Schema_No_Plaintext_Enforcement.md`
+- `docs/ADR-004_Modularization_and_Reusability_Strategy.md`
+- `docs/MODULE_BOUNDARIES.md`
 
 ## Core Rule
 
@@ -63,7 +65,7 @@ Keep docs accurate with the code. **Do not merge behavior changes without updati
 | When you change… | Update… |
 |------------------|---------|
 | Setup, commands, ports, env vars | `README.md` |
-| Layers, directories, data flow | `ARCHITECTURE.md` |
+| Layers, directories, data flow | `ARCHITECTURE.md`, `docs/MODULE_BOUNDARIES.md` |
 | Crypto, vault, passkeys, recovery | `SECURITY.md` and/or ADRs (or add `TODO_SECURITY_REVIEW`) |
 | Agent workflow, testing, boundaries | `AGENTS.md`, `.cursor/rules/*.md` |
 | New API routes or contracts | ADR-003 alignment; note in `ARCHITECTURE.md` if structural |

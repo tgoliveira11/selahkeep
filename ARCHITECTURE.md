@@ -7,47 +7,52 @@
 - **Database:** PostgreSQL
 - **ORM:** Drizzle
 
+## Modular monolith (Phase 1)
+
+This project uses an **internal modular monolith** per `docs/ADR-004_Modularization_and_Reusability_Strategy.md`.
+
+- Business logic lives under `src/modules/{auth,account,sessions,two-factor,passkeys,email,audit,rate-limit,security,vault,letters,ui}`.
+- Next.js routes stay in `src/app/api` and delegate to module services.
+- Legacy paths (`src/server/services`, `src/lib/auth`, …) may re-export from `src/modules/*` during migration.
+- **No external packages** or monorepo in Phase 1.
+
+See `docs/MODULE_BOUNDARIES.md` for responsibilities and forbidden cross-module imports.
+
 ## Layers
 
 ```text
 React UI (src/app, src/components, src/features)
-  -> Crypto Client Layer (src/lib/crypto-client)
+  -> Crypto Client Layer (src/lib/crypto-client, vault module API)
   -> API Client (src/lib/api-client)
-  -> API Route Layer (src/app/api)
-  -> Service Layer (src/server/services)
-  -> Repository Layer (src/server/repositories)
-  -> Database (PostgreSQL via Drizzle)
+  -> API Route Layer (src/app/api) — thin handlers
+  -> Module services (src/modules/*/services)
+  -> Module repositories (src/modules/*/repositories)
+  -> Database (PostgreSQL via Drizzle — src/lib/db)
 ```
 
 ## Directory Structure
 
 ```text
 src/
+  modules/             # Phase 1 domain modules (see MODULE_BOUNDARIES.md)
+    auth/ account/ sessions/ two-factor/ passkeys/
+    email/ audit/ rate-limit/ security/ vault/ letters/ ui/
   app/
     (public)/          # Landing, marketing
     (auth)/            # Login, signup
     (vault)/           # Letters, devices, recovery
-    api/               # REST API routes
-  components/          # Shared UI
-    ui/                # Design system (Button, Card, Alert, FormField, …)
+    api/               # REST API routes (thin; delegate to modules)
+  components/          # App shell + domain components (migrating to modules)
+    ui/                # Re-exports from modules/ui
     layout/            # Nav, PageLayout
     letters/           # LetterCard
-  features/            # Feature modules
-    letters/
-    vault/
-    trusted-devices/
-    recovery/
-    auth/
+  features/            # Client feature flows (passkey, vault)
   lib/
-    crypto-client/     # Client-side encryption ONLY
+    crypto-client/     # Client-side encryption ONLY (vault boundary)
     api-client/        # HTTP client for API
     validation/        # Shared Zod schemas
-    auth/              # Auth helpers
     db/                # Drizzle client (server-only)
-  server/
-    repositories/      # Data access
-    services/          # Business logic
-    policies/          # Authorization, plaintext rejection
+  server/              # Legacy shims re-exporting modules (Phase 1)
 ```
 
 ## API Routes

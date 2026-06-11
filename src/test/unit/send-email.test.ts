@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { safeLogger } from "@/lib/logger";
 import { sendEmail } from "@/server/email/send-email";
-import * as smtpProvider from "@/server/email/smtp-provider";
+import * as smtpProvider from "@/modules/email/smtp-provider";
 
 vi.mock("@/lib/logger", () => ({
   safeLogger: {
@@ -11,7 +11,7 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
-vi.mock("@/server/email/smtp-provider", () => ({
+vi.mock("@/modules/email/smtp-provider", () => ({
   sendSmtpEmail: vi.fn().mockResolvedValue(undefined),
   resetSmtpTransportCache: vi.fn(),
   createSmtpTransport: vi.fn(),

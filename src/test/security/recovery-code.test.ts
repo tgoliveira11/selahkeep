@@ -8,6 +8,7 @@ import {
 } from "@/lib/crypto-client/recovery-code";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { readModuleSource } from "@/test/helpers/module-source";
 
 describe("recovery code security", () => {
   it("meets minimum 128-bit entropy mathematically", () => {
@@ -35,10 +36,7 @@ describe("recovery code security", () => {
   });
 
   it("vault repository stores kdf metadata not plaintext recovery code", () => {
-    const vaultRepo = readFileSync(
-      join(process.cwd(), "src/server/repositories/vault-repository.ts"),
-      "utf-8"
-    );
+    const vaultRepo = readModuleSource("src/server/repositories/vault-repository.ts");
     expect(vaultRepo).toContain("kdfMetadata");
     expect(vaultRepo).not.toContain("recoveryCode");
     expect(vaultRepo).not.toContain("recovery_code_plaintext");
