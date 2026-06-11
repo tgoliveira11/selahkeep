@@ -3,7 +3,7 @@
 ## Coverage gate (required)
 
 - Run `npm run test:coverage` before completing any code change.
-- **Minimum: 90%** lines, statements, and functions on the scope defined in `vitest.config.ts`.
+- **Minimum: 90%** lines, statements, functions, and branches on the scope defined in `vitest.config.ts`.
 - Do not merge if thresholds fail. Add tests instead of lowering thresholds.
 
 ## Test layers

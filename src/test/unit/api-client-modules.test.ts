@@ -4,6 +4,7 @@ import { vaultApi } from "@/lib/api-client/vault";
 import { trustedDevicesApi } from "@/lib/api-client/trusted-devices";
 import { passkeysApi } from "@/lib/api-client/passkeys";
 import { authLoginApi, twoFactorApi } from "@/lib/api-client/two-factor";
+import { accountApi } from "@/lib/api-client/account";
 import { createLetterInput, encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 describe("typed API client modules", () => {
@@ -113,6 +114,19 @@ describe("typed API client modules", () => {
         if (url === "/api/auth/login/verify-2fa-oauth" && init?.method === "POST") {
           return new Response(JSON.stringify({ upgradeToken: "upgrade-token" }), { status: 200 });
         }
+        if (url === "/api/account" && !init?.method) {
+          return new Response(
+            JSON.stringify({
+              requiresPassword: true,
+              authProvider: "credentials",
+              confirmationPhrase: "DELETE MY ACCOUNT",
+            }),
+            { status: 200 }
+          );
+        }
+        if (url === "/api/account" && init?.method === "DELETE") {
+          return new Response(JSON.stringify({ success: true }), { status: 200 });
+        }
         return new Response("{}", { status: 404 });
       })
     );
@@ -177,6 +191,15 @@ describe("typed API client modules", () => {
 
   it("passkeysApi covers removeAll", async () => {
     await expect(passkeysApi.removeAll()).resolves.toEqual({ success: true });
+  });
+
+  it("accountApi covers deletion requirements and delete", async () => {
+    await expect(accountApi.getDeletionRequirements()).resolves.toMatchObject({
+      requiresPassword: true,
+    });
+    await expect(
+      accountApi.deleteAccount({ confirmationPhrase: "DELETE MY ACCOUNT", password: "secret" })
+    ).resolves.toEqual({ success: true });
   });
 
   it("twoFactorApi and authLoginApi cover 2FA endpoints", async () => {

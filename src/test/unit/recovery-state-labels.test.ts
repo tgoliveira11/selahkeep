@@ -7,4 +7,9 @@ describe("recovery state labels", () => {
     expect(getRecoveryStateLabel("Basic").label).not.toBe("Basic");
     expect(getRecoveryStateLabel("At Risk").label).not.toBe("At Risk");
   });
+
+  it("returns warning copy for unknown recovery states", () => {
+    expect(getRecoveryStateLabel("Unexpected" as "Protected").label).toBe("Unknown");
+    expect(getRecoveryStateLabel("Unexpected" as "Protected").variant).toBe("warning");
+  });
 });

@@ -5,6 +5,7 @@ import { hashBackupCode } from "@/server/policies/backup-code";
 import {
   twoFactorService,
   ConflictError,
+  NotFoundError,
   ValidationError,
 } from "@/server/services/two-factor-service";
 import { USER_ID } from "@/test/helpers/fixtures";
@@ -172,6 +173,57 @@ describe("two-factor service", () => {
     await expect(twoFactorService.disable(USER_ID, { code: "000000" })).rejects.toBeInstanceOf(
       ValidationError
     );
+  });
+
+  it("rejects setup verify when pending secret is missing", async () => {
+    mocks.findSettingsByUserId.mockResolvedValue({ enabled: false, pendingSecretEncrypted: null });
+    await expect(twoFactorService.verifySetup(USER_ID, "123456")).rejects.toBeInstanceOf(
+      ValidationError
+    );
+  });
+
+  it("rejects setup start when user is missing", async () => {
+    mocks.findById.mockResolvedValue(null);
+    await expect(twoFactorService.startSetup(USER_ID)).rejects.toMatchObject({
+      name: "NotFoundError",
+    });
+  });
+
+  it("rejects backup regeneration when 2FA is disabled", async () => {
+    mocks.findSettingsByUserId.mockResolvedValue({ enabled: false });
+    await expect(
+      twoFactorService.regenerateBackupCodes(USER_ID, { code: "123456" })
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("rejects backup regeneration with invalid code", async () => {
+    const secret = generateSecret();
+    mocks.findSettingsByUserId.mockResolvedValue({
+      enabled: true,
+      secretEncrypted: encryptTwoFactorSecret(secret),
+    });
+    await expect(
+      twoFactorService.regenerateBackupCodes(USER_ID, { code: "000000" })
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("returns null verifyUserCode for invalid TOTP without backup", async () => {
+    const secret = generateSecret();
+    mocks.findSettingsByUserId.mockResolvedValue({
+      secretEncrypted: encryptTwoFactorSecret(secret),
+    });
+    await expect(twoFactorService.verifyUserCode(USER_ID, { code: "000000" })).resolves.toBeNull();
+    mocks.findUnusedBackupCodeByHash.mockResolvedValue(null);
+    await expect(
+      twoFactorService.verifyUserCode(USER_ID, { backupCode: "AAAA-BBBB-CCCC" })
+    ).resolves.toBeNull();
+  });
+
+  it("returns false when session upgrade token is invalid", async () => {
+    mocks.consumeSessionUpgrade.mockResolvedValue(null);
+    await expect(
+      twoFactorService.consumeSessionUpgradeToken(USER_ID, "missing-token")
+    ).resolves.toBe(false);
   });
 
   it("creates and consumes session upgrade tokens", async () => {

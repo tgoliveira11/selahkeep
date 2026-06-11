@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { letterService, NotFoundError } from "@/server/services/letter-service";
+import { letterService, NotFoundError, AadValidationError } from "@/server/services/letter-service";
 import { createLetterInput, LETTER_ID, USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
@@ -108,5 +108,50 @@ describe("letter service", () => {
     mocks.delete.mockResolvedValue(true);
     await letterService.delete(LETTER_ID, USER_ID);
     expect(mocks.record).toHaveBeenCalledWith("letter_deleted", USER_ID, expect.any(Object));
+  });
+
+  it("delete throws when letter is missing", async () => {
+    mocks.delete.mockResolvedValue(false);
+    await expect(letterService.delete(LETTER_ID, USER_ID)).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("rejects oversized encrypted body on update", async () => {
+    mocks.findByIdForUser.mockResolvedValue({ id: LETTER_ID });
+    const input = createLetterInput();
+    input.encryptedBody.ciphertext = "x".repeat(120_000);
+    await expect(letterService.update(LETTER_ID, USER_ID, { encryptedBody: input.encryptedBody })).rejects.toThrow(
+      "size limit"
+    );
+  });
+
+  it("rejects create when AAD userId mismatches", async () => {
+    const input = createLetterInput();
+    input.encryptedTitle.aad.userId = "00000000-0000-0000-0000-000000000099";
+    await expect(letterService.create(USER_ID, input)).rejects.toBeInstanceOf(AadValidationError);
+  });
+
+  it("updates encrypted letter key only", async () => {
+    mocks.findByIdForUser.mockResolvedValue({ id: LETTER_ID });
+    mocks.update.mockResolvedValue({ id: LETTER_ID });
+    const input = createLetterInput();
+    await letterService.update(LETTER_ID, USER_ID, {
+      encryptedLetterKey: input.encryptedLetterKey,
+    });
+    expect(mocks.update).toHaveBeenCalledWith(
+      LETTER_ID,
+      USER_ID,
+      expect.objectContaining({ encryptedLetterKey: input.encryptedLetterKey })
+    );
+  });
+
+  it("clears answeredAt when marking unanswered", async () => {
+    mocks.findByIdForUser.mockResolvedValue({ id: LETTER_ID, answered: true });
+    mocks.update.mockResolvedValue({ id: LETTER_ID, answered: false });
+    await letterService.update(LETTER_ID, USER_ID, { answered: false });
+    expect(mocks.update).toHaveBeenCalledWith(
+      LETTER_ID,
+      USER_ID,
+      expect.objectContaining({ answered: false, answeredAt: null })
+    );
   });
 });

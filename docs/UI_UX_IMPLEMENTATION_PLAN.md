@@ -192,5 +192,4 @@ When uncertain → `TODO_SECURITY_REVIEW_REQUIRED` in code/docs.
 
 ## Beta readiness blockers (unchanged)
 
-- **Branch coverage ~82%** vs 90% target in `vitest.config.ts` enforced scope — threshold remains at 82% for CI, but **90% branches is still a beta-readiness blocker** until addressed.
 - LGPD / legal gates and OAuth-only account deletion re-auth (`TODO_SECURITY_REVIEW_REQUIRED`)

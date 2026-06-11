@@ -50,6 +50,12 @@ describe("trusted device utils", () => {
     expect(isDeviceAlreadyRegistered([baseDevice], "other-id")).toBe(false);
   });
 
+  it("returns null when no client id is available", () => {
+    expect(getTrustedDeviceClientId({ clientDeviceId: null, devicePublicKey: null })).toBeNull();
+    expect(isCurrentTrustedDevice(baseDevice, null)).toBe(false);
+    expect(isDeviceAlreadyRegistered([baseDevice], null)).toBe(false);
+  });
+
   it("does not treat same metadata with different clientDeviceId as current", () => {
     const otherProfile: TrustedDeviceResponse = {
       ...baseDevice,

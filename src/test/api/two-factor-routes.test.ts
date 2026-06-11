@@ -124,6 +124,18 @@ describe("two-factor API routes", () => {
     await expect(res.json()).resolves.toEqual({ success: true });
   });
 
+  it("setup verify and disable reject invalid payloads", async () => {
+    const badVerify = await setupVerifyPost(
+      new Request("http://localhost", { method: "POST", body: JSON.stringify({ code: "12" }) })
+    );
+    expect(badVerify.status).toBe(400);
+
+    const badDisable = await disablePost(
+      new Request("http://localhost", { method: "POST", body: JSON.stringify({}) })
+    );
+    expect(badDisable.status).toBe(400);
+  });
+
   it("verify-2fa returns login token on success", async () => {
     mocks.verifyTwoFactorLogin.mockResolvedValue({ loginToken: "login-token" });
     const res = await verify2faPost(

@@ -243,6 +243,47 @@ describe("passkey service", () => {
     });
   });
 
+  it("returns authentication options without user credentials", async () => {
+    const options = await passkeyService.getAuthenticationOptions();
+    expect(options.challenge).toBe("auth-challenge");
+    expect(mocks.generateAuthenticationOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ allowCredentials: undefined })
+    );
+  });
+
+  it("verifyAuthentication rejects invalid challenge and failed verification", async () => {
+    mocks.consumeValidChallenge.mockRejectedValue(new Error("expired"));
+    const clientDataJSON = Buffer.from(
+      JSON.stringify({ type: "webauthn.get", challenge: "bad", origin: "http://localhost:3001" })
+    ).toString("base64url");
+    const response = {
+      id: "cred-id",
+      rawId: "cred-id",
+      type: "public-key" as const,
+      response: { clientDataJSON, authenticatorData: "aa", signature: "sig" },
+      clientExtensionResults: {},
+    };
+    await expect(passkeyService.verifyAuthentication(USER_ID, response)).rejects.toThrow(
+      "Invalid or expired challenge"
+    );
+
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
+    mocks.findByCredentialId.mockResolvedValue({
+      userId: USER_ID,
+      credentialId: "cred-id",
+      publicKey: Buffer.from(new Uint8Array(32)).toString("base64url"),
+      counter: "0",
+      transports: ["internal"],
+    });
+    mocks.verifyAuthenticationResponse.mockResolvedValue({
+      verified: false,
+      authenticationInfo: { newCounter: 1 },
+    });
+    await expect(passkeyService.verifyAuthentication(USER_ID, response)).rejects.toThrow(
+      "Passkey authentication failed"
+    );
+  });
+
   it("rate limits registration", async () => {
     for (let i = 0; i < 10; i++) {
       await passkeyService.getRegistrationOptions(USER_ID, "user@example.com");

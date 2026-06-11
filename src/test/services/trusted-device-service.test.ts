@@ -62,6 +62,27 @@ describe("trusted device service", () => {
     mocks.findActiveByClientDeviceId.mockResolvedValue(null);
   });
 
+  it("reports client device states", async () => {
+    mocks.findActiveByClientDeviceId.mockResolvedValueOnce({ id: "device-1" });
+    await expect(trustedDeviceService.getClientDeviceState(USER_ID, "client-1")).resolves.toEqual({
+      state: "active",
+      trustedDeviceId: "device-1",
+    });
+
+    mocks.findActiveByClientDeviceId.mockResolvedValueOnce(null);
+    mocks.findRevokedByClientDeviceId.mockResolvedValueOnce({ id: "device-2" });
+    await expect(trustedDeviceService.getClientDeviceState(USER_ID, "client-2")).resolves.toEqual({
+      state: "revoked",
+      trustedDeviceId: "device-2",
+    });
+
+    mocks.findActiveByClientDeviceId.mockResolvedValueOnce(null);
+    mocks.findRevokedByClientDeviceId.mockResolvedValueOnce(null);
+    await expect(trustedDeviceService.getClientDeviceState(USER_ID, "client-3")).resolves.toEqual({
+      state: "not_registered",
+    });
+  });
+
   it("lists trusted devices", async () => {
     mocks.findByUserId.mockResolvedValue([{ id: "device-1" }]);
     await expect(trustedDeviceService.list(USER_ID)).resolves.toEqual([{ id: "device-1" }]);
@@ -88,6 +109,26 @@ describe("trusted device service", () => {
     });
     expect(result).toEqual(existing);
     expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("rename throws when device is missing", async () => {
+    mocks.findByIdForUser.mockResolvedValue(null);
+    await expect(trustedDeviceService.rename("missing", USER_ID, "Name")).rejects.toBeInstanceOf(
+      NotFoundError
+    );
+  });
+
+  it("rename rejects revoked devices and missing updates", async () => {
+    mocks.findByIdForUser.mockResolvedValue({ id: "device-1", revokedAt: new Date() });
+    await expect(trustedDeviceService.rename("device-1", USER_ID, "Name")).rejects.toBeInstanceOf(
+      ConflictError
+    );
+
+    mocks.findByIdForUser.mockResolvedValue({ id: "device-1", revokedAt: null });
+    mocks.updateDeviceName.mockResolvedValue(null);
+    await expect(trustedDeviceService.rename("device-1", USER_ID, "Name")).rejects.toBeInstanceOf(
+      NotFoundError
+    );
   });
 
   it("renames active device", async () => {
@@ -209,6 +250,13 @@ describe("trusted device service", () => {
     expect(mocks.record).toHaveBeenCalledWith("trusted_device_removed", USER_ID, {
       deviceId: "device-1",
     });
+  });
+
+  it("removeRevoked throws when device is missing", async () => {
+    mocks.findByIdForUser.mockResolvedValue(null);
+    await expect(trustedDeviceService.removeRevoked("missing", USER_ID)).rejects.toBeInstanceOf(
+      NotFoundError
+    );
   });
 
   it("removeRevoked rejects active devices", async () => {

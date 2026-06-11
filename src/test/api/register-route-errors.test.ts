@@ -35,6 +35,48 @@ describe("register route error mapping", () => {
     });
   });
 
+  it("maps missing DATABASE_URL configuration", async () => {
+    const { userRepository } = await import("@/server/repositories/user-repository");
+    vi.mocked(userRepository.create).mockRejectedValue(new Error("DATABASE_URL is not set"));
+    const res = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({ email: "user@example.com", password: "password123" }),
+      })
+    );
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toMatchObject({
+      error: expect.stringContaining("DATABASE_URL"),
+    });
+  });
+
+  it("maps missing schema errors", async () => {
+    const { userRepository } = await import("@/server/repositories/user-repository");
+    vi.mocked(userRepository.create).mockRejectedValue(
+      new Error('relation "users" does not exist')
+    );
+    const res = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({ email: "user@example.com", password: "password123" }),
+      })
+    );
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toMatchObject({
+      error: expect.stringContaining("Run migrations"),
+    });
+  });
+
+  it("rejects password in query string", async () => {
+    const res = await POST(
+      new Request("http://localhost/api/auth/register?password=secret", {
+        method: "POST",
+        body: JSON.stringify({ email: "user@example.com", password: "password123" }),
+      })
+    );
+    expect(res.status).toBe(400);
+  });
+
   it("rate limits registration attempts", async () => {
     for (let i = 0; i < 10; i++) {
       await POST(

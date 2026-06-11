@@ -73,7 +73,7 @@ Rules:
 
 ## Testing (required on every change)
 
-**Minimum coverage: 90%** for lines, statements, and functions on enforced scope (see `vitest.config.ts`).
+**Minimum coverage: 90%** for lines, statements, functions, and branches on enforced scope (see `vitest.config.ts`).
 
 Before finishing any task:
 

@@ -69,4 +69,14 @@ describe("letter by id API route", () => {
     const res = await DELETE(new Request("http://localhost"), { params });
     expect(res.status).toBe(200);
   });
+
+  it("maps not found and unauthorized errors", async () => {
+    const { NotFoundError } = await import("@/server/services/letter-service");
+    const { UnauthorizedError } = await import("@/lib/auth/session");
+    mocks.getById.mockRejectedValue(new NotFoundError("Letter not found"));
+    expect((await GET(new Request("http://localhost"), { params })).status).toBe(404);
+
+    mocks.requireSessionUser.mockRejectedValue(new UnauthorizedError("Authentication required"));
+    expect((await DELETE(new Request("http://localhost"), { params })).status).toBe(401);
+  });
 });

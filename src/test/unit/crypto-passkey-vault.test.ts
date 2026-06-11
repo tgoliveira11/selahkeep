@@ -37,6 +37,12 @@ describe("passkey vault crypto", () => {
     vi.unstubAllGlobals();
   });
 
+  it("reports passkeys unsupported when WebAuthn is unavailable", () => {
+    vi.stubGlobal("window", undefined);
+    expect(isPasskeySupported()).toBe(false);
+    vi.unstubAllGlobals();
+  });
+
   it("extractPasskeyPrfOutput reads PRF extension output", () => {
     const bytes = new Uint8Array(32).fill(7);
     expect(
@@ -44,6 +50,12 @@ describe("passkey vault crypto", () => {
         prf: { results: { first: bytes.buffer } },
       } as never)
     ).toEqual(bytes);
+    expect(extractPasskeyPrfOutput({} as never)).toBeNull();
+    expect(
+      extractPasskeyPrfOutput({
+        prf: { results: { first: new Uint8Array(8).buffer } },
+      } as never)
+    ).toBeNull();
   });
 
   it("wraps and unwraps vault key with PRF output", async () => {

@@ -25,6 +25,17 @@ describe("loadEnvFiles", () => {
     expect(process.env.TEST_LOAD_ENV_KEY).toBe("from-file");
   });
 
+  it("loads single-quoted values and skips comments", async () => {
+    writeFileSync(
+      join(cwd, ".env.local"),
+      "# comment\nTEST_LOAD_ENV_KEY='single-quoted'\n",
+      "utf-8"
+    );
+    const { loadEnvFiles } = await import("@/lib/load-env");
+    loadEnvFiles();
+    expect(process.env.TEST_LOAD_ENV_KEY).toBe("single-quoted");
+  });
+
   it("does not override existing environment variables", async () => {
     process.env.TEST_LOAD_ENV_KEY = "existing";
     writeFileSync(join(cwd, ".env"), "TEST_LOAD_ENV_KEY=from-file\n", "utf-8");

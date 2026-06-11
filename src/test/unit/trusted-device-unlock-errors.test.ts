@@ -34,8 +34,17 @@ describe("trusted device unlock errors", () => {
     expect(getTrustedDeviceUnlockErrorMessage(new RevokedTrustedDeviceError())).toContain(
       "revoked"
     );
+    expect(
+      getTrustedDeviceUnlockErrorMessage(new TrustedDeviceNetworkUnavailableError("offline"))
+    ).toBe("offline");
+    expect(getTrustedDeviceUnlockErrorMessage(new Error("custom failure"))).toBe("custom failure");
     expect(getTrustedDeviceUnlockErrorMessage("unknown")).toBe(
       "Could not unlock your vault on this device."
     );
+  });
+
+  it("detects network error message variants", () => {
+    expect(isNetworkUnavailableError(new Error("networkerror when requesting"))).toBe(true);
+    expect(isNetworkUnavailableError({})).toBe(false);
   });
 });

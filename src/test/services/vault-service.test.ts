@@ -199,6 +199,40 @@ describe("vault service", () => {
     );
   });
 
+  it("classifies Basic recovery state with only trusted device", async () => {
+    mocks.findVaultByUserId.mockResolvedValue({ vaultVersion: "vault-v1" });
+    mocks.findActiveEnvelopesByUserId.mockResolvedValue([{ method: "trusted_device" }]);
+    mocks.findActiveByUserId.mockResolvedValue([{ id: "d1" }]);
+    await expect(vaultService.getStatus(USER_ID)).resolves.toMatchObject({
+      recoveryState: "Basic",
+      hasPasskey: false,
+    });
+  });
+
+  it("stores first recovery code without revoking previous envelope", async () => {
+    mocks.findVaultByUserId.mockResolvedValue({ id: "vault-1" });
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue(null);
+    mocks.createEnvelope.mockResolvedValue({ id: "env-new" });
+    await vaultService.storeRecoveryCode(USER_ID, {
+      encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+      kdfMetadata: {
+        kdf: "argon2id",
+        version: "kdf-v1",
+        salt: "c2FsdA",
+        memory: 65536,
+        iterations: 3,
+        parallelism: 1,
+      },
+    });
+    expect(mocks.revokeEnvelope).not.toHaveBeenCalled();
+    expect(mocks.record).toHaveBeenCalledWith(
+      "recovery_code_generated",
+      USER_ID,
+      undefined,
+      expect.anything()
+    );
+  });
+
   it("unlockWithRecoveryCode fails when no envelope", async () => {
     mocks.findActiveEnvelopeByMethod.mockResolvedValue(null);
     await expect(vaultService.unlockWithRecoveryCode(USER_ID)).rejects.toBeInstanceOf(

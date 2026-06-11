@@ -77,6 +77,25 @@ describe("vault key lifecycle", () => {
     );
   });
 
+  it("unwraps recovery envelope without explicit session unlock", async () => {
+    const vaultKey = await generateUserVaultKey();
+    const code = generateRecoveryCode();
+    const { encryptedVaultKey, kdfMetadata } = await wrapVaultKeyForRecovery(
+      vaultKey,
+      code,
+      USER_ID,
+      USER_ID
+    );
+    setSessionVaultKey(null);
+    const restored = await unwrapVaultKeyFromRecovery(code, encryptedVaultKey, kdfMetadata, {
+      explicit: false,
+    });
+    expect(await crypto.subtle.exportKey("raw", restored)).toEqual(
+      await crypto.subtle.exportKey("raw", vaultKey)
+    );
+    expect(isVaultUnlocked()).toBe(true);
+  });
+
   it("wrapVaultKeyForDevice stores local envelope", async () => {
     const { storeLocalVaultEnvelope } = await import("@/lib/crypto-client/device-storage");
     const vaultKey = await generateUserVaultKey();

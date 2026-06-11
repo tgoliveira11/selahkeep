@@ -88,7 +88,7 @@ When the current profile is not registered and the vault is unlocked, the primar
 | `npm run build` | Production build |
 | `npm run lint` | ESLint (`eslint .`) |
 | `npm run test` | Run all Vitest tests |
-| `npm run test:coverage` | Vitest with coverage thresholds (≥90% lines/statements/functions) |
+| `npm run test:coverage` | Vitest with coverage thresholds (≥90% lines/statements/functions/branches) |
 | `npm run test:all` | Coverage tests, then Playwright E2E |
 | `npm run test:e2e` | Browser E2E tests (Playwright; needs PostgreSQL + dev server) |
 | `npm run db:generate` | Generate Drizzle migrations |
@@ -132,7 +132,7 @@ Coverage is enforced on core application code (`src/lib`, `src/server/services`,
 ```bash
 npm ci                  # clean install
 npm run lint            # ESLint
-npm run test:coverage   # must pass before merge (≥90% lines/statements/functions)
+npm run test:coverage   # must pass before merge (≥90% lines/statements/functions/branches)
 npm run build           # production build
 npm run db:migrate      # apply migrations (requires PostgreSQL)
 npm run test:all        # coverage + E2E smoke

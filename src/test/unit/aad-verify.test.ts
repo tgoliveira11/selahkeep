@@ -22,4 +22,21 @@ describe("client AAD verification", () => {
       })
     ).toThrow(ClientAadMismatchError);
   });
+
+  it("rejects user and resource binding mismatches", () => {
+    expect(() =>
+      verifyPayloadAad(encryptedPayload("title"), {
+        userId: "00000000-0000-0000-0000-000000000099",
+        resourceId: LETTER_ID,
+        field: "title",
+      })
+    ).toThrow(/user binding mismatch/);
+    expect(() =>
+      verifyPayloadAad(encryptedPayload("title"), {
+        userId: USER_ID,
+        resourceId: "00000000-0000-0000-0000-000000000099",
+        field: "title",
+      })
+    ).toThrow(/resource binding mismatch/);
+  });
 });
