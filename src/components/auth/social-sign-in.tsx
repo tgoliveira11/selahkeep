@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { OAuthProviderLogo } from "@/components/auth/oauth-provider-logos";
 import { MICROSOFT_OAUTH_PROVIDER_ID } from "@/modules/auth/lib/microsoft-provider-config";
 
 interface SocialSignInProps {
@@ -65,7 +66,10 @@ export function SocialSignIn({ dividerLabel = "or continue with" }: SocialSignIn
             className="w-full"
             onClick={() => signIn(provider.id, { callbackUrl: OAUTH_CALLBACK_URL })}
           >
-            {provider.label}
+            <span className="inline-flex w-full items-center justify-center gap-2.5">
+              <OAuthProviderLogo providerId={provider.id} />
+              <span>{provider.label}</span>
+            </span>
           </Button>
         ))}
       </div>

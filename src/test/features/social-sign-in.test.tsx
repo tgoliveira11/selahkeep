@@ -27,12 +27,13 @@ describe("SocialSignIn", () => {
   });
 
   it("renders only providers returned by NextAuth", async () => {
-    render(<SocialSignIn />);
+    const { container } = render(<SocialSignIn />);
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /continue with google/i })).toBeTruthy();
       expect(screen.getByRole("button", { name: /continue with apple/i })).toBeTruthy();
       expect(screen.getByRole("button", { name: /continue with microsoft/i })).toBeTruthy();
     });
+    expect(container.querySelectorAll('svg[aria-hidden="true"]').length).toBeGreaterThanOrEqual(3);
   });
 
   it("hides Microsoft when azure-ad is not registered", async () => {
