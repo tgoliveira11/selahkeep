@@ -29,9 +29,16 @@ The Private Letters Vault uses **client-side encryption**. Private letter title 
 | Vault auto-lock | 15-minute inactivity timeout (`VAULT_INACTIVITY_MS`) |
 | Autosave | **Disabled for MVP** — no autosave implementation; plaintext autosave forbidden |
 | Trusted device revocation | Server-side envelope revoke; online status check before unlock |
+| Trusted device identity | Match by `clientDeviceId` only; metadata is display-only; no auto-relink |
 | Offline revocation gap | Documented limitation — cached local envelope may decrypt until next online check |
 | CSP | Production `script-src 'self'`; no third-party scripts on vault pages |
 | IndexedDB | Non-extractable device `CryptoKey`; encrypted vault envelope only |
+
+### Trusted device identity
+
+A trusted device means a trusted **browser storage profile**, not a physical computer. Normal and incognito/private windows are different storage profiles and are treated as different trusted devices when they have different `clientDeviceId` values. The app does **not** silently relink trusted devices based on browser/platform/deviceType metadata.
+
+Coarse metadata such as browser, platform, and device type is **display information only**. It must not be used as proof that two profiles are the same trusted device. Prior auto-relink behavior (matching metadata to overwrite `clientDeviceId`) was removed for MVP because it allowed one storage profile to take over another's server row (e.g. incognito Chrome replacing normal Chrome's trusted device).
 
 ---
 

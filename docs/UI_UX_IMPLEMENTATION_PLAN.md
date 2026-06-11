@@ -118,7 +118,7 @@ Badges map to tokens, not hardcoded Tailwind palette classes.
 - [x] Design tokens + components
 - [x] Landing, auth, letters, editor, detail
 - [x] Recovery + passkey framing
-- [x] Trusted devices + confirm dialog
+- [x] Trusted devices + confirm dialog (storage-profile identity; no metadata auto-relink)
 - [x] Account settings hierarchy
 - [x] Form labels accessibility
 
@@ -137,6 +137,7 @@ Badges map to tokens, not hardcoded Tailwind palette classes.
 - [x] Account deletion phrase gating (existing)
 - [x] ConfirmDialog accessible pattern
 - [x] No DB access from UI tests
+- [x] Trusted device identity: `clientDeviceId` only; no metadata auto-relink (`src/test/security/trusted-device-identity.test.ts`)
 - [x] No plaintext letter content stored in test fixtures outside crypto layer
 
 ---

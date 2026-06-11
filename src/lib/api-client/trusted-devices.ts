@@ -34,16 +34,6 @@ export const trustedDevicesApi = {
   }) => apiClient.post<TrustedDeviceResponse>("/api/trusted-devices", payload),
   rename: (id: string, payload: { deviceName: string }) =>
     apiClient.patch<TrustedDeviceResponse>(`/api/trusted-devices/${id}`, payload),
-  relink: (
-    id: string,
-    payload: {
-      devicePublicKey: Record<string, unknown>;
-      browser?: string;
-      platform?: string;
-      deviceType?: string;
-      encryptedVaultKey: EncryptedPayload;
-    }
-  ) => apiClient.post<TrustedDeviceResponse>(`/api/trusted-devices/${id}/relink`, payload),
   touch: (payload: { deviceId: string }) =>
     apiClient.post<{ updated: boolean; state: ClientDeviceState }>(
       "/api/trusted-devices/touch",

@@ -13,7 +13,6 @@ const mocks = vi.hoisted(() => ({
   findActiveByClientDeviceId: vi.fn(),
   findRevokedByClientDeviceId: vi.fn(),
   create: vi.fn(),
-  updateClientIdentity: vi.fn(),
   findByIdForUser: vi.fn(),
   updateDeviceName: vi.fn(),
   updateLastUsed: vi.fn(),
@@ -32,7 +31,6 @@ vi.mock("@/server/repositories/trusted-device-repository", () => ({
     findActiveByClientDeviceId: mocks.findActiveByClientDeviceId,
     findRevokedByClientDeviceId: mocks.findRevokedByClientDeviceId,
     create: mocks.create,
-    updateClientIdentity: mocks.updateClientIdentity,
     findByIdForUser: mocks.findByIdForUser,
     updateDeviceName: mocks.updateDeviceName,
     updateLastUsed: mocks.updateLastUsed,
@@ -80,44 +78,16 @@ describe("trusted device service", () => {
     expect(mocks.createEnvelope).toHaveBeenCalled();
   });
 
-  it("rejects duplicate client device registration", async () => {
-    mocks.findActiveByClientDeviceId.mockResolvedValue({ id: "device-existing" });
-    await expect(
-      trustedDeviceService.create(USER_ID, {
-        deviceName: "Chrome",
-        devicePublicKey: { deviceId: "same-id" },
-        encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
-      })
-    ).rejects.toBeInstanceOf(ConflictError);
-  });
-
-  it("relinks current browser identity to an existing trusted device", async () => {
-    mocks.findByIdForUser.mockResolvedValue({ id: "device-1", revokedAt: null });
-    mocks.findActiveByClientDeviceId.mockResolvedValue(null);
-    mocks.updateClientIdentity.mockResolvedValue({ id: "device-1", clientDeviceId: "new-id" });
-    mocks.findActiveEnvelopesByUserId.mockResolvedValue([
-      {
-        id: "env-1",
-        method: "trusted_device",
-        publicMetadata: { trustedDeviceId: "device-1" },
-      },
-    ]);
-
-    const device = await trustedDeviceService.relinkClientDevice("device-1", USER_ID, {
-      devicePublicKey: { deviceId: "new-id" },
+  it("returns existing active device idempotently for same clientDeviceId", async () => {
+    const existing = { id: "device-existing", clientDeviceId: "same-id" };
+    mocks.findActiveByClientDeviceId.mockResolvedValue(existing);
+    const result = await trustedDeviceService.create(USER_ID, {
+      deviceName: "Chrome",
+      devicePublicKey: { deviceId: "same-id" },
       encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
     });
-
-    expect(device.id).toBe("device-1");
-    expect(mocks.updateClientIdentity).toHaveBeenCalled();
-    expect(mocks.revokeEnvelope).toHaveBeenCalledWith("env-1", USER_ID, expect.anything());
-    expect(mocks.createEnvelope).toHaveBeenCalled();
-    expect(mocks.record).toHaveBeenCalledWith(
-      "trusted_device_relinked",
-      USER_ID,
-      { deviceId: "device-1" },
-      expect.anything()
-    );
+    expect(result).toEqual(existing);
+    expect(mocks.create).not.toHaveBeenCalled();
   });
 
   it("renames active device", async () => {

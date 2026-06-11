@@ -68,7 +68,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 
 - `POST/GET /api/letters`, `GET/PUT/DELETE /api/letters/:id`
 - `POST /api/vault/init`, `GET /api/vault/status`
-- `GET/POST /api/trusted-devices`, `POST /api/trusted-devices/:id/relink`, `POST /api/trusted-devices/:id/remove`, `DELETE /api/trusted-devices/:id`
+- `GET/POST /api/trusted-devices`, `POST /api/trusted-devices/:id/remove`, `DELETE /api/trusted-devices/:id`
 - `POST /api/recovery-code`, `POST /api/vault/unlock-with-recovery-code`
 - `POST /api/passkeys/register`, `POST /api/passkeys/authenticate`, `DELETE /api/passkeys`
 - `DELETE /api/account` — account deletion
@@ -116,6 +116,16 @@ Failures roll back all related writes.
 - Revoking a device revokes its envelope in the same transaction
 - Client checks `GET /api/trusted-devices/status?deviceId=` before unlock; clears IndexedDB on revoke
 - **Offline limitation:** cached local envelope may still decrypt until the next online status check
+
+## Trusted device identity
+
+A trusted device is one browser storage profile: local `clientDeviceId` + local device key + one active `trusted_devices` row + compatible vault envelope.
+
+- Normal and incognito/private windows are different storage profiles when IndexedDB is isolated (different `clientDeviceId`).
+- `/vault/devices` marks **This device** only when the local `clientDeviceId` matches an active server row.
+- Unregistered profiles show **Trust this browser** when the vault is unlocked; registration creates a new row and envelope.
+- Coarse metadata (`browser`, `platform`, `deviceType`) is display-only and must not prove identity.
+- MVP does **not** auto-relink or mutate existing rows based on metadata matches.
 
 ## API Routes (additional)
 

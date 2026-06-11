@@ -6,7 +6,6 @@ export type RateLimitOperation =
   | "passkey.authenticate"
   | "vault.unlock"
   | "trusted_device.create"
-  | "trusted_device.relink"
   | "account.delete";
 
 export interface RateLimitScope {
@@ -43,7 +42,6 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitOperation, RateLimitPolicy> = 
   "passkey.authenticate": { maxAttempts: 20, windowMs: 15 * 60 * 1000 },
   "vault.unlock": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
   "trusted_device.create": { maxAttempts: 10, windowMs: 60 * 60 * 1000 },
-  "trusted_device.relink": { maxAttempts: 10, windowMs: 60 * 60 * 1000 },
   "account.delete": { maxAttempts: 3, windowMs: 60 * 60 * 1000 },
 };
 

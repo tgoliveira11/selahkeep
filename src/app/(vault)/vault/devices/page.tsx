@@ -23,32 +23,7 @@ import { getOrCreateDeviceSecret } from "@/lib/crypto-client/device-storage";
 import { getSessionVaultKey, wrapVaultKeyForDevice, clearVaultClientState } from "@/lib/crypto-client/vault";
 import { isVaultUnlocked } from "@/lib/crypto-client/vault";
 import { getDeviceDisplayInfo, formatDeviceMetadataSubtitle } from "@/lib/device-display-info";
-import {
-  findActiveDeviceWithMatchingMetadata,
-  isCurrentTrustedDevice,
-} from "@/lib/trusted-device-utils";
-
-async function relinkBrowserToDevice(
-  userId: string,
-  device: TrustedDeviceResponse,
-  displayInfo: ReturnType<typeof getDeviceDisplayInfo>
-): Promise<{ device: TrustedDeviceResponse; deviceId: string }> {
-  const vaultKey = getSessionVaultKey();
-  if (!vaultKey) {
-    throw new Error("Unlock your vault before linking this browser.");
-  }
-
-  const { encryptedVaultKey, deviceId } = await wrapVaultKeyForDevice(vaultKey, userId, userId);
-  const updated = await trustedDevicesApi.relink(device.id, {
-    devicePublicKey: { deviceId },
-    browser: displayInfo.browser,
-    platform: displayInfo.platform,
-    deviceType: displayInfo.deviceType,
-    encryptedVaultKey,
-  });
-
-  return { device: updated, deviceId };
-}
+import { isCurrentTrustedDevice } from "@/lib/trusted-device-utils";
 
 export default function TrustedDevicesPage() {
   const { data: session, status } = useSession();
@@ -58,7 +33,6 @@ export default function TrustedDevicesPage() {
   const [currentTrustedDeviceId, setCurrentTrustedDeviceId] = useState<string | null>(null);
   const [currentDeviceState, setCurrentDeviceState] = useState<ClientDeviceState | null>(null);
   const [loading, setLoading] = useState(true);
-  const [relinking, setRelinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registerName, setRegisterName] = useState("");
   const [registering, setRegistering] = useState(false);
@@ -72,7 +46,6 @@ export default function TrustedDevicesPage() {
 
   const displayInfo = useMemo(() => getDeviceDisplayInfo(), []);
   const currentDeviceRegistered = currentDeviceState === "active";
-  const similarActiveDevice = findActiveDeviceWithMatchingMetadata(devices, displayInfo);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -91,34 +64,10 @@ export default function TrustedDevicesPage() {
 
         if (!session?.user?.id) return;
 
-        const userId = session.user.id;
-        const display = getDeviceDisplayInfo();
-        const { deviceId } = await getOrCreateDeviceSecret(userId);
+        const { deviceId } = await getOrCreateDeviceSecret(session.user.id);
         setCurrentDeviceId(deviceId);
 
-        let deviceState = await trustedDevicesApi.deviceState(deviceId);
-        const matchingDevice = findActiveDeviceWithMatchingMetadata(list, display);
-
-        if (deviceState.state === "not_registered" && matchingDevice && getSessionVaultKey()) {
-          setRelinking(true);
-          try {
-            const relinked = await relinkBrowserToDevice(userId, matchingDevice, display);
-            setDevices((prev) =>
-              prev.map((device) => (device.id === relinked.device.id ? relinked.device : device))
-            );
-            setCurrentDeviceId(relinked.deviceId);
-            deviceState = { state: "active", trustedDeviceId: relinked.device.id };
-          } catch (relinkError) {
-            setError(
-              relinkError instanceof Error
-                ? relinkError.message
-                : "Could not link this browser to your trusted device."
-            );
-          } finally {
-            setRelinking(false);
-          }
-        }
-
+        const deviceState = await trustedDevicesApi.deviceState(deviceId);
         setCurrentDeviceState(deviceState.state);
         setCurrentTrustedDeviceId(deviceState.trustedDeviceId ?? null);
       } catch (e) {
@@ -179,29 +128,13 @@ export default function TrustedDevicesPage() {
     }
   }
 
-  async function handleRegisterCurrent() {
+  async function handleTrustCurrentBrowser() {
     const vaultKey = getSessionVaultKey();
     if (!vaultKey || !session?.user?.id || currentDeviceRegistered) return;
 
     setRegistering(true);
     setError(null);
     try {
-      if (similarActiveDevice) {
-        const relinked = await relinkBrowserToDevice(
-          session.user.id,
-          similarActiveDevice,
-          displayInfo
-        );
-        setDevices((prev) =>
-          prev.map((device) => (device.id === relinked.device.id ? relinked.device : device))
-        );
-        setCurrentDeviceId(relinked.deviceId);
-        setCurrentDeviceState("active");
-        setCurrentTrustedDeviceId(relinked.device.id);
-        setRegisterName("");
-        return;
-      }
-
       const { encryptedVaultKey, deviceId } = await wrapVaultKeyForDevice(
         vaultKey,
         session.user.id,
@@ -216,13 +149,16 @@ export default function TrustedDevicesPage() {
         deviceType: displayInfo.deviceType,
         encryptedVaultKey,
       });
-      setDevices((prev) => [...prev, device]);
+      setDevices((prev) => {
+        const withoutDuplicate = prev.filter((entry) => entry.id !== device.id);
+        return [...withoutDuplicate, device];
+      });
       setCurrentDeviceId(deviceId);
       setCurrentDeviceState("active");
       setCurrentTrustedDeviceId(device.id);
       setRegisterName("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to register device");
+      setError(e instanceof Error ? e.message : "Failed to trust this browser");
     } finally {
       setRegistering(false);
     }
@@ -258,12 +194,10 @@ export default function TrustedDevicesPage() {
     }
   }
 
-  if (loading || relinking) {
+  if (loading) {
     return (
       <PageLayout>
-        <LoadingState
-          label={relinking ? "Linking this browser to your trusted device" : "Loading trusted devices"}
-        />
+        <LoadingState label="Loading trusted devices" />
       </PageLayout>
     );
   }
@@ -272,7 +206,7 @@ export default function TrustedDevicesPage() {
     <PageLayout>
       <PageHeader
         title="Trusted devices"
-        description="Browsers you trust to unlock your private letters on this account."
+        description="Each trusted browser storage profile is separate. Normal and private/incognito windows are different profiles when they have different local identities."
       />
 
       {error && (
@@ -281,57 +215,42 @@ export default function TrustedDevicesPage() {
         </div>
       )}
 
-      {!currentDeviceRegistered && (
+      {currentDeviceRegistered ? (
+        <Alert variant="success" className="mb-6">
+          This browser is already trusted.
+        </Alert>
+      ) : (
         <Card className="mb-8 space-y-4">
           <CardHeader>
-            <CardTitle>
-              {similarActiveDevice ? "Link this browser" : "Register this browser"}
-            </CardTitle>
+            <CardTitle>Trust this browser</CardTitle>
             <CardDescription>
-              Detected as {formatDeviceMetadataSubtitle(displayInfo)}.
-              {similarActiveDevice
-                ? ` Link to your existing trusted device "${similarActiveDevice.deviceName}".`
-                : " Add a friendly name if you like."}
+              This browser is not registered as a trusted device. Detected as{" "}
+              {formatDeviceMetadataSubtitle(displayInfo)} — display metadata only; it does not prove
+              this profile matches another trusted device.
             </CardDescription>
           </CardHeader>
-          {!similarActiveDevice && (
-            <Input
-              value={registerName}
-              onChange={(e) => setRegisterName(e.target.value)}
-              placeholder={displayInfo.defaultDeviceName}
-              maxLength={200}
-              aria-label="Device name"
-            />
-          )}
-          <Button onClick={handleRegisterCurrent} disabled={registering}>
-            {registering
-              ? similarActiveDevice
-                ? "Linking…"
-                : "Registering…"
-              : similarActiveDevice
-                ? `Link to ${similarActiveDevice.deviceName}`
-                : "Register this device"}
+          <Input
+            value={registerName}
+            onChange={(e) => setRegisterName(e.target.value)}
+            placeholder={displayInfo.defaultDeviceName}
+            maxLength={200}
+            aria-label="Device name"
+          />
+          <Button onClick={handleTrustCurrentBrowser} disabled={registering}>
+            {registering ? "Trusting…" : "Trust this browser"}
           </Button>
         </Card>
-      )}
-
-      {currentDeviceRegistered && (
-        <Alert variant="success" className="mb-6">
-          This browser is registered as a trusted device.
-        </Alert>
       )}
 
       {devices.length === 0 ? (
         <EmptyState
           title="No trusted devices yet"
-          description="Register this browser to unlock your letters here without a recovery code each time."
+          description="Trust this browser to unlock your letters here without a recovery code each time."
         />
       ) : (
         <ul className="space-y-3">
           {devices.map((device) => {
-            const isCurrent =
-              device.id === currentTrustedDeviceId ||
-              isCurrentTrustedDevice(device, currentDeviceId);
+            const isCurrent = isCurrentTrustedDevice(device, currentDeviceId);
             const isRevoked = !!device.revokedAt;
             const isEditing = editingId === device.id;
 
@@ -401,7 +320,7 @@ export default function TrustedDevicesPage() {
       <ConfirmDialog
         open={Boolean(revokeTarget)}
         title="Revoke this device?"
-        description="This device will no longer be able to unlock your vault. You can register it again later if needed."
+        description="This browser storage profile will no longer be able to unlock your vault. You can trust it again later as a new profile if needed."
         confirmLabel="Revoke device"
         loading={revoking}
         onConfirm={handleRevokeConfirm}

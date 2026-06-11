@@ -3,7 +3,6 @@ import {
   getTrustedDeviceClientId,
   isCurrentTrustedDevice,
   isDeviceAlreadyRegistered,
-  findActiveDeviceWithMatchingMetadata,
 } from "@/lib/trusted-device-utils";
 import type { TrustedDeviceResponse } from "@/lib/api-client/trusted-devices";
 
@@ -35,7 +34,7 @@ describe("trusted device utils", () => {
     expect(getTrustedDeviceClientId(baseDevice)).toBe("client-device-1");
   });
 
-  it("detects current active device", () => {
+  it("detects current active device by clientDeviceId only", () => {
     expect(isCurrentTrustedDevice(baseDevice, "client-device-1")).toBe(true);
     expect(isCurrentTrustedDevice(baseDevice, "other-id")).toBe(false);
   });
@@ -51,20 +50,16 @@ describe("trusted device utils", () => {
     expect(isDeviceAlreadyRegistered([baseDevice], "other-id")).toBe(false);
   });
 
-  it("finds active devices with matching metadata", () => {
-    expect(
-      findActiveDeviceWithMatchingMetadata([baseDevice], {
-        browser: "Chrome",
-        platform: "macOS",
-        deviceType: "desktop",
-      })?.id
-    ).toBe("server-1");
-    expect(
-      findActiveDeviceWithMatchingMetadata([baseDevice], {
-        browser: "Firefox",
-        platform: "macOS",
-        deviceType: "desktop",
-      })
-    ).toBeNull();
+  it("does not treat same metadata with different clientDeviceId as current", () => {
+    const otherProfile: TrustedDeviceResponse = {
+      ...baseDevice,
+      id: "server-2",
+      clientDeviceId: "incognito-uuid",
+      devicePublicKey: { deviceId: "incognito-uuid" },
+    };
+
+    expect(isCurrentTrustedDevice(baseDevice, "incognito-uuid")).toBe(false);
+    expect(isCurrentTrustedDevice(otherProfile, "incognito-uuid")).toBe(true);
+    expect(isDeviceAlreadyRegistered([baseDevice, otherProfile], "incognito-uuid")).toBe(true);
   });
 });

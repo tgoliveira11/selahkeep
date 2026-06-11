@@ -95,14 +95,37 @@ Initial default:
 The UI must allow the user to:
 
 - list trusted devices;
-- identify current device (match client `deviceId` in `devicePublicKey`, show **This device** badge);
-- register the current browser only when it is not already registered (server rejects duplicate `deviceId`);
+- identify current device (match client `clientDeviceId` only; show **This device** badge);
+- register the current browser storage profile when it is not already registered (`POST /api/trusted-devices` is idempotent for the same active `clientDeviceId`);
 - optionally set a friendly name on registration, or rename later;
 - see browser, OS platform, and form factor (`desktop` / `mobile` / `tablet`) from `getDeviceDisplayInfo()`;
 - see creation date;
 - see last used date (updated on each successful vault unlock when the browser is registered);
 - revoke device;
 - remove revoked device entries from the list (permanent delete of revoked rows only; does not restore vault access).
+
+### Trusted device identity (MVP)
+
+A trusted device means a trusted **browser storage profile**, not a physical computer.
+
+```text
+one browser storage profile
+  + one local clientDeviceId
+  + one local device key
+  + one active trusted_devices row
+  + one compatible vault envelope
+```
+
+Normal and incognito/private windows are different storage profiles and are treated as different trusted devices when they have different `clientDeviceId` values. The app does **not** silently relink trusted devices based on browser/platform/deviceType metadata.
+
+Coarse metadata such as browser, platform, and device type is **display information only**. It must not be used as proof that two profiles are the same trusted device.
+
+MVP does not support automatic relink/repair of trusted-device rows. Registering a new storage profile always creates a new trusted device row and envelope, even when display metadata matches an existing device.
+
+Suggested UI copy:
+
+- Registered current profile: *This browser is already trusted.*
+- Unregistered current profile (vault unlocked): *This browser is not registered as a trusted device.* Primary action: **Trust this browser**
 
 Stored server metadata per trusted device:
 

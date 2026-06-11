@@ -62,7 +62,15 @@ Production hides `/api-docs` unless `ENABLE_API_DOCS=true` in `.env.local`.
 
 ## Trusted devices
 
-On `/vault/devices`, users can register the current browser (with an optional friendly name), rename devices, revoke access, and see **This device** when the local device id matches a registered entry. Display metadata comes from `src/lib/device-display-info.ts` (browser, OS, form factor). `last_used_at` updates automatically after each successful vault unlock.
+On `/vault/devices`, users can register the current browser storage profile (with an optional friendly name), rename devices, revoke access, and see **This device** when the local `clientDeviceId` matches an active registered entry.
+
+A trusted device means a trusted browser storage profile, not a physical computer. Normal and incognito/private windows are different storage profiles and are treated as different trusted devices when they have different `clientDeviceId` values. The app does not silently relink trusted devices based on browser/platform/deviceType metadata.
+
+Display metadata comes from `src/lib/device-display-info.ts` (browser, OS, form factor). Coarse metadata is display information only and must not be used as proof that two profiles are the same trusted device.
+
+When the current profile is not registered and the vault is unlocked, the primary action is **Trust this browser** (creates a new server row and vault envelope). Re-registering the same active `clientDeviceId` is idempotent.
+
+`last_used_at` updates automatically after each successful vault unlock.
 
 ## Commands
 
