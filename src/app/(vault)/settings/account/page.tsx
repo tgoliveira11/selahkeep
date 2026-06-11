@@ -20,6 +20,7 @@ import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { formatAuthProvider } from "@/lib/ui/format-auth-provider";
 import { getRecoveryStateLabel } from "@/lib/ui/recovery-state-labels";
 import { TwoFactorSettings } from "@/components/settings/two-factor-settings";
+import { PasskeySettings } from "@/components/settings/passkey-settings";
 
 export default function AccountSettingsPage() {
   const { data: session, status } = useSession();
@@ -163,6 +164,8 @@ export default function AccountSettingsPage() {
           </Link>
         </div>
       </Card>
+
+      {session?.user?.id && <PasskeySettings userId={session.user.id} />}
 
       <TwoFactorSettings />
 

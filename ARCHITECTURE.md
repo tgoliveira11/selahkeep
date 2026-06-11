@@ -70,7 +70,9 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - `POST /api/vault/init`, `GET /api/vault/status`
 - `GET/POST /api/trusted-devices`, `POST /api/trusted-devices/:id/remove`, `DELETE /api/trusted-devices/:id`
 - `POST /api/recovery-code`, `POST /api/vault/unlock-with-recovery-code`
-- `POST /api/passkeys/register`, `POST /api/passkeys/authenticate`, `DELETE /api/passkeys`
+- `POST /api/passkeys/register`, `POST /api/passkeys/authenticate`, `DELETE /api/passkeys` — vault recovery passkey flows (authenticated)
+- `POST /api/auth/passkey/login/options`, `POST /api/auth/passkey/login/verify` — passkey account sign-in (unauthenticated; bypasses TOTP)
+- `GET /api/account/passkeys`, `POST /api/account/passkeys/register`, `DELETE /api/account/passkeys/:id`, `POST /api/account/passkeys/:id/enable-vault-unlock`
 - `DELETE /api/account` — account deletion
 - `GET /api/account/2fa/status`, `POST /api/account/2fa/setup/start`, `POST /api/account/2fa/setup/verify`, `POST /api/account/2fa/disable`, `POST /api/account/2fa/backup-codes/regenerate`
 - `POST /api/auth/login/start`, `POST /api/auth/login/verify-2fa`, `POST /api/auth/login/verify-2fa-oauth`
@@ -119,9 +121,22 @@ Failures roll back all related writes.
 - Client checks `GET /api/trusted-devices/status?deviceId=` before unlock; clears IndexedDB on revoke
 - **Offline limitation:** cached local envelope may still decrypt until the next online status check
 
+## Passkey account sign-in
+
+Passkeys authenticate the account separately from vault decryption.
+
+- Login UI: **Sign in with passkey** on `/login`
+- Challenge type `login` (atomic consumption; distinct from vault `authentication`)
+- Successful verify issues one-time `login-token` with `twoFactorVerified: true` (no TOTP step)
+- Optional automatic vault unlock when the credential has a valid PRF-based envelope and PRF output is available client-side
+- Otherwise: signed in, vault locked → `/vault/unlock`
+- Account settings list passkeys with **Sign-in only** vs **Sign-in + vault unlock** labels
+
 ## Account two-factor authentication
 
 TOTP 2FA is **account authentication only** — separate from vault envelopes, recovery codes, passkeys, and trusted devices.
+
+Passkey sign-in does **not** require TOTP when 2FA is enabled. Email/password sign-in still does.
 
 - Settings UI: `/settings/account` (`TwoFactorSettings`)
 - Login challenge: `/login/2fa` + middleware gate for OAuth partial sessions

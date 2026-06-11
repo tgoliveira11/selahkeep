@@ -118,18 +118,14 @@ export const passkeyService = {
           publicKey: Buffer.from(credential.publicKey).toString("base64url"),
           counter: String(credential.counter),
           transports: credential.transports,
+          signInEnabled: true,
+          vaultUnlockEnabled: Boolean(encryptedVaultKey && options?.prfVaultEnvelope),
+          prfSupported: encryptedVaultKey && options?.prfVaultEnvelope ? true : null,
         },
         tx
       );
 
       if (encryptedVaultKey && options?.prfVaultEnvelope) {
-        const existingEnvelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
-        for (const envelope of existingEnvelopes) {
-          if (envelope.method === "passkey_authorized_device") {
-            await vaultRepository.revokeEnvelope(envelope.id, userId, tx);
-          }
-        }
-
         await vaultRepository.createEnvelope(
           {
             userId,
@@ -241,10 +237,14 @@ export const passkeyService = {
       String(verification.authenticationInfo.newCounter)
     );
 
-    const envelope = await vaultRepository.findActiveEnvelopeByMethod(
-      userId,
-      "passkey_authorized_device"
-    );
+    await passkeyRepository.updateLastUsedAt(credential.credentialId);
+
+    const envelope = credential.vaultUnlockEnabled
+      ? await vaultRepository.findActivePasskeyEnvelopeByCredentialId(
+          userId,
+          credential.credentialId
+        )
+      : null;
 
     return {
       verified: true,

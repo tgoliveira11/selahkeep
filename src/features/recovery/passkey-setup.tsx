@@ -18,6 +18,7 @@ import { apiClient } from "@/lib/api-client/client";
 import { passkeysApi } from "@/lib/api-client/passkeys";
 import { prepareRegistrationOptions } from "@/lib/passkey/prepare-webauthn-options";
 import { detectPasskeyPrfSupport } from "@/lib/passkey/prf-support";
+import { setPasskeyLoginHint } from "@/lib/passkey/login-hint";
 import {
   PASSKEY_ORPHAN_CREDENTIAL_NOTE,
   PASSKEY_PRF_UNAVAILABLE_HEADLINE,
@@ -90,14 +91,21 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         userId
       );
 
-      const result = await apiClient.post<{ verified: boolean }>("/api/passkeys/register", {
-        action: "verify",
-        response: attestation,
-        encryptedVaultKey,
-        prfVaultEnvelope: true,
-      });
+      const result = await apiClient.post<{ verified: boolean; credentialId?: string }>(
+        "/api/passkeys/register",
+        {
+          action: "verify",
+          response: attestation,
+          encryptedVaultKey,
+          prfVaultEnvelope: true,
+        }
+      );
 
       if (result.verified) {
+        setPasskeyLoginHint({
+          userId,
+          credentialId: result.credentialId,
+        });
         setOutcome("vault-registered");
         setMessage(PASSKEY_VAULT_REGISTERED_MESSAGE);
         onStatusChange();

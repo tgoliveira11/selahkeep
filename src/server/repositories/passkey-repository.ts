@@ -18,6 +18,10 @@ export const passkeyRepository = {
       publicKey: string;
       counter: string;
       transports?: string[] | null;
+      friendlyName?: string | null;
+      signInEnabled?: boolean;
+      vaultUnlockEnabled?: boolean;
+      prfSupported?: boolean | null;
     },
     client: DbClient = db
   ) {
@@ -29,9 +33,59 @@ export const passkeyRepository = {
         publicKey: data.publicKey,
         counter: data.counter,
         transports: data.transports ?? null,
+        friendlyName: data.friendlyName ?? null,
+        signInEnabled: data.signInEnabled ?? true,
+        vaultUnlockEnabled: data.vaultUnlockEnabled ?? false,
+        prfSupported: data.prfSupported ?? null,
       })
       .returning();
     return cred;
+  },
+
+  async findByIdForUser(id: string, userId: string) {
+    const [cred] = await db
+      .select()
+      .from(passkeyCredentials)
+      .where(
+        and(
+          eq(passkeyCredentials.id, id),
+          eq(passkeyCredentials.userId, userId),
+          isNull(passkeyCredentials.revokedAt)
+        )
+      )
+      .limit(1);
+    return cred ?? null;
+  },
+
+  async updateCredentialFlags(
+    id: string,
+    userId: string,
+    data: {
+      vaultUnlockEnabled?: boolean;
+      prfSupported?: boolean | null;
+      friendlyName?: string | null;
+    },
+    client: DbClient = db
+  ) {
+    const [cred] = await client
+      .update(passkeyCredentials)
+      .set(data)
+      .where(
+        and(
+          eq(passkeyCredentials.id, id),
+          eq(passkeyCredentials.userId, userId),
+          isNull(passkeyCredentials.revokedAt)
+        )
+      )
+      .returning();
+    return cred ?? null;
+  },
+
+  async updateLastUsedAt(credentialId: string, client: DbClient = db) {
+    await client
+      .update(passkeyCredentials)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(passkeyCredentials.credentialId, credentialId));
   },
 
   async findByCredentialId(credentialId: string) {
@@ -52,15 +106,15 @@ export const passkeyRepository = {
       .where(and(eq(passkeyCredentials.userId, userId), isNull(passkeyCredentials.revokedAt)));
   },
 
-  async updateCounter(credentialId: string, counter: string) {
-    await db
+  async updateCounter(credentialId: string, counter: string, client: DbClient = db) {
+    await client
       .update(passkeyCredentials)
       .set({ counter })
       .where(eq(passkeyCredentials.credentialId, credentialId));
   },
 
-  async revoke(id: string, userId: string) {
-    const [cred] = await db
+  async revoke(id: string, userId: string, client: DbClient = db) {
+    const [cred] = await client
       .update(passkeyCredentials)
       .set({ revokedAt: new Date() })
       .where(and(eq(passkeyCredentials.id, id), eq(passkeyCredentials.userId, userId)))

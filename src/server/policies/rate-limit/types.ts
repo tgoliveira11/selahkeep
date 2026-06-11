@@ -8,6 +8,7 @@ export type RateLimitOperation =
   | "recovery.attempt"
   | "passkey.register"
   | "passkey.authenticate"
+  | "passkey.login"
   | "vault.unlock"
   | "trusted_device.create"
   | "account.delete";
@@ -48,6 +49,7 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitOperation, RateLimitPolicy> = 
   "recovery.attempt": { maxAttempts: 5, windowMs: 15 * 60 * 1000 },
   "passkey.register": { maxAttempts: 10, windowMs: 60 * 60 * 1000 },
   "passkey.authenticate": { maxAttempts: 20, windowMs: 15 * 60 * 1000 },
+  "passkey.login": { maxAttempts: 20, windowMs: 15 * 60 * 1000 },
   "vault.unlock": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
   "trusted_device.create": { maxAttempts: 10, windowMs: 60 * 60 * 1000 },
   "account.delete": { maxAttempts: 3, windowMs: 60 * 60 * 1000 },

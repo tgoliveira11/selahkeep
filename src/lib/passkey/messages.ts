@@ -13,3 +13,17 @@ export type PasskeySetupOutcome =
   | "prf-unavailable"
   | "cancelled"
   | "failed";
+
+export const PASSKEY_LOGIN_VAULT_UNLOCKED_MESSAGE =
+  "Signed in with passkey. Your private letters are unlocked on this device.";
+
+export const PASSKEY_LOGIN_VAULT_LOCKED_MESSAGE =
+  "You are signed in. Your private letters are still locked because this passkey is not set up to unlock your vault.";
+
+export const PASSKEY_LOGIN_PRF_UNAVAILABLE_MESSAGE =
+  "This passkey signed you in, but this browser or passkey provider does not support unlocking your private letters with it.";
+
+export const PASSKEY_LOGIN_CANCELLED_MESSAGE = "Passkey sign-in was cancelled.";
+
+export const PASSKEY_LOGIN_UNSUPPORTED_MESSAGE =
+  "This browser does not support passkey sign-in.";

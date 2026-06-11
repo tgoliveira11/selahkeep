@@ -33,7 +33,8 @@ The Private Letters Vault uses **client-side encryption**. Private letter title 
 | Offline revocation gap | Documented limitation — cached local envelope may decrypt until next online check |
 | CSP | Production `script-src 'self'`; no third-party scripts on vault pages |
 | IndexedDB | Non-extractable device `CryptoKey`; encrypted vault envelope only |
-| Account 2FA (TOTP) | Optional sign-in protection only; secrets encrypted at rest (`TWO_FACTOR_SECRET_ENCRYPTION_KEY`); backup codes hashed; separate from vault crypto |
+| Account 2FA (TOTP) | Optional sign-in protection for email/password (and OAuth partial session) only; passkey sign-in bypasses TOTP by design; secrets encrypted at rest (`TWO_FACTOR_SECRET_ENCRYPTION_KEY`); backup codes hashed; separate from vault crypto |
+| Passkey account sign-in | WebAuthn `login` challenges; issues `login-token` session; vault unlock only with PRF envelope client-side; sign-in-only passkeys must not be shown as vault recovery |
 
 ### Trusted device identity
 

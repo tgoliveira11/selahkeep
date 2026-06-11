@@ -66,6 +66,17 @@ export const vaultRepository = {
     return envelope ?? null;
   },
 
+  async findActivePasskeyEnvelopeByCredentialId(userId: string, credentialId: string) {
+    const envelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
+    return (
+      envelopes.find((envelope) => {
+        if (envelope.method !== "passkey_authorized_device") return false;
+        const metadata = envelope.publicMetadata as { credentialId?: string } | null;
+        return metadata?.credentialId === credentialId;
+      }) ?? null
+    );
+  },
+
   async revokeEnvelope(id: string, userId: string, client: DbClient = db) {
     const [envelope] = await client
       .update(vaultEnvelopes)

@@ -14,11 +14,27 @@ export function passkeyPrfSaltBase64Url(userId: string): string {
 }
 
 export function passkeyPrfExtensions(userId: string): AuthenticationExtensionsClientInputs {
+  return passkeyPrfAuthExtensions(userId);
+}
+
+/** PRF inputs for WebAuthn authentication (get). Uses evalByCredential when multiple passkeys are allowed. */
+export function passkeyPrfAuthExtensions(
+  userId: string,
+  credentialIds?: string[]
+): AuthenticationExtensionsClientInputs {
+  const salt = passkeyPrfSaltBase64Url(userId);
+  if (credentialIds && credentialIds.length > 1) {
+    return {
+      prf: {
+        evalByCredential: Object.fromEntries(
+          credentialIds.map((id) => [id, { first: salt }])
+        ),
+      },
+    } as AuthenticationExtensionsClientInputs;
+  }
   return {
     prf: {
-      eval: {
-        first: passkeyPrfSaltBase64Url(userId),
-      },
+      eval: { first: salt },
     },
   } as AuthenticationExtensionsClientInputs;
 }

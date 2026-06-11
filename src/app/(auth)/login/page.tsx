@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -13,6 +13,16 @@ import { PrivacyNotice } from "@/components/ui/privacy-notice";
 import { PageHeader } from "@/components/ui/page-header";
 import { SocialSignIn } from "@/components/auth/social-sign-in";
 import { authLoginApi } from "@/lib/api-client/two-factor";
+import {
+  getPasskeyLoginUnsupportedMessage,
+  isPasskeyLoginSupported,
+  signInWithPasskey,
+} from "@/features/passkey/sign-in-with-passkey";
+import { getPasskeyLoginHint } from "@/lib/passkey/login-hint";
+import {
+  PASSKEY_LOGIN_CANCELLED_MESSAGE,
+  PASSKEY_LOGIN_UNSUPPORTED_MESSAGE,
+} from "@/lib/passkey/messages";
 
 const CHALLENGE_STORAGE_KEY = "letters-2fa-login-challenge";
 
@@ -22,6 +32,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  const [passkeySupportChecked, setPasskeySupportChecked] = useState(false);
+
+  useEffect(() => {
+    setPasskeySupported(isPasskeyLoginSupported());
+    setPasskeySupportChecked(true);
+  }, []);
 
   async function handleCredentials(e: React.FormEvent) {
     e.preventDefault();
@@ -49,6 +67,42 @@ export default function LoginPage() {
       setError("Invalid email or password");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handlePasskeySignIn() {
+    if (!passkeySupported) {
+      setError(PASSKEY_LOGIN_UNSUPPORTED_MESSAGE);
+      return;
+    }
+
+    setPasskeyLoading(true);
+    setError("");
+
+    try {
+      const trimmedEmail = email.trim();
+      const hint = getPasskeyLoginHint();
+      if (!trimmedEmail && !hint?.credentialId && !hint?.userId) {
+        setError("Enter your email above to sign in with your passkey.");
+        return;
+      }
+
+      const result = await signInWithPasskey(
+        trimmedEmail ? { email: trimmedEmail } : undefined
+      );
+      if (result.outcome === "cancelled") {
+        setError(PASSKEY_LOGIN_CANCELLED_MESSAGE);
+        return;
+      }
+      if (result.outcome === "unsupported") {
+        setError(getPasskeyLoginUnsupportedMessage());
+        return;
+      }
+      router.push(result.redirectTo);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Passkey sign-in failed");
+    } finally {
+      setPasskeyLoading(false);
     }
   }
 
@@ -92,6 +146,28 @@ export default function LoginPage() {
             {loading ? "Signing in…" : "Sign in with email"}
           </Button>
         </form>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center" aria-hidden="true">
+            <div className="w-full border-t border-[var(--border)]" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase tracking-wide">
+            <span className="bg-[var(--card)] px-2 text-[var(--muted)]">or</span>
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full"
+          disabled={passkeyLoading || loading || !passkeySupported}
+          onClick={() => void handlePasskeySignIn()}
+        >
+          {passkeyLoading ? "Signing in…" : "Sign in with passkey"}
+        </Button>
+        {passkeySupportChecked && !passkeySupported && (
+          <p className="text-sm text-[var(--muted)]">{PASSKEY_LOGIN_UNSUPPORTED_MESSAGE}</p>
+        )}
 
         <SocialSignIn />
       </Card>

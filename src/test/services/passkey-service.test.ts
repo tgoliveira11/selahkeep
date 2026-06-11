@@ -9,10 +9,12 @@ const mocks = vi.hoisted(() => ({
   createCredential: vi.fn(),
   findByCredentialId: vi.fn(),
   updateCounter: vi.fn(),
+  updateLastUsedAt: vi.fn(),
   createEnvelope: vi.fn(),
   revokeEnvelope: vi.fn(),
   findActiveEnvelopesByUserId: vi.fn(),
   findActiveEnvelopeByMethod: vi.fn(),
+  findActivePasskeyEnvelopeByCredentialId: vi.fn(),
   record: vi.fn(),
   generateRegistrationOptions: vi.fn(),
   verifyRegistrationResponse: vi.fn(),
@@ -35,6 +37,7 @@ vi.mock("@/server/repositories/passkey-repository", () => ({
     createCredential: mocks.createCredential,
     findByCredentialId: mocks.findByCredentialId,
     updateCounter: mocks.updateCounter,
+    updateLastUsedAt: mocks.updateLastUsedAt,
   },
 }));
 
@@ -44,6 +47,7 @@ vi.mock("@/server/repositories/vault-repository", () => ({
     revokeEnvelope: mocks.revokeEnvelope,
     findActiveEnvelopesByUserId: mocks.findActiveEnvelopesByUserId,
     findActiveEnvelopeByMethod: mocks.findActiveEnvelopeByMethod,
+    findActivePasskeyEnvelopeByCredentialId: mocks.findActivePasskeyEnvelopeByCredentialId,
     findActiveEnvelopesByUserId: mocks.findActiveEnvelopesByUserId,
     revokeEnvelope: mocks.revokeEnvelope,
   },
@@ -114,7 +118,7 @@ describe("passkey service", () => {
     expect(result.verified).toBe(true);
     expect(mocks.createCredential).toHaveBeenCalled();
     expect(mocks.createEnvelope).toHaveBeenCalled();
-    expect(mocks.revokeEnvelope).toHaveBeenCalledWith("old-env", USER_ID, expect.anything());
+    expect(mocks.revokeEnvelope).not.toHaveBeenCalled();
     expect(mocks.record).toHaveBeenCalledWith(
       "passkey_added",
       USER_ID,
@@ -198,12 +202,13 @@ describe("passkey service", () => {
       publicKey: Buffer.from(new Uint8Array(32)).toString("base64url"),
       counter: "0",
       transports: ["internal"],
+      vaultUnlockEnabled: true,
     });
     mocks.verifyAuthenticationResponse.mockResolvedValue({
       verified: true,
       authenticationInfo: { newCounter: 1 },
     });
-    mocks.findActiveEnvelopeByMethod.mockResolvedValue({
+    mocks.findActivePasskeyEnvelopeByCredentialId.mockResolvedValue({
       encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
     });
 

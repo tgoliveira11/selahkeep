@@ -138,8 +138,9 @@ export function TwoFactorSettings() {
           <Badge variant={enabled ? "success" : "muted"}>{enabled ? "On" : "Off"}</Badge>
         </div>
         <CardDescription>
-          Two-factor authentication adds an extra code when signing in. It protects your account
-          access, but it does not replace your private letter recovery code.
+          Two-factor authentication is required when signing in with email and password. Passkeys
+          use your device&apos;s built-in verification and do not require a separate one-time code.
+          TOTP protects account access only — it does not replace your private letter recovery code.
         </CardDescription>
       </CardHeader>
 

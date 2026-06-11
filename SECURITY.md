@@ -92,6 +92,7 @@ Optional TOTP 2FA protects **account sign-in only**. It does **not** decrypt pri
 - TOTP secrets encrypted at rest with AES-256-GCM (`TWO_FACTOR_SECRET_ENCRYPTION_KEY`, payload version `tf-v1`)
 - Backup codes generated on enable; hashed (SHA-256 + pepper) and one-time use; shown once
 - Credentials login: `POST /api/auth/login/start` → optional `POST /api/auth/login/verify-2fa` → one-time `login-token` NextAuth provider
+- Passkey login: `POST /api/auth/passkey/login/options` → `POST /api/auth/passkey/login/verify` → one-time `login-token` NextAuth provider (**TOTP not required**, even when 2FA is enabled)
 - OAuth login: partial session until `POST /api/auth/login/verify-2fa-oauth` + session upgrade token; middleware blocks app routes until verified
 - Rate limits: setup verify, login verify, disable, backup regeneration
 - Audit events never include TOTP secrets, codes, or backup codes
@@ -136,6 +137,18 @@ Plaintext passwords are redacted from logs (`safeLogger`) and blocked from audit
 ## Audit logging
 
 Safe audit events only (no plaintext letters, recovery codes, keys, or ciphertext). Sanitized metadata allowlist in `audit-sanitization.ts`.
+
+## Passkey account sign-in
+
+- Passkeys can authenticate the account via discoverable WebAuthn (`challenge` type `login`, consumed atomically)
+- Passkey sign-in does **not** require a separate TOTP code when account 2FA is enabled
+- Email/password sign-in still requires TOTP when 2FA is enabled
+- OAuth + TOTP behavior is unchanged (partial session until `/login/2fa`)
+- Successful passkey login issues the same one-time `login-token` session as post-TOTP credentials login (`twoFactorVerified: true`)
+- Vault unlock after passkey login happens **client-side only** when a valid PRF-based envelope exists for that credential and PRF output is available
+- Discoverable passkey sign-in may prompt a **second WebAuthn step** with PRF (`POST /api/auth/passkey/login/vault-unlock/options`) before the session is completed
+- If the passkey signs in but has no vault envelope (or PRF is unavailable), the vault remains locked and the user is routed to the vault unlock flow
+- Account passkey management: `GET /api/account/passkeys`, register/remove, and optional upgrade to vault unlock while vault is unlocked
 
 ## Passkey vault unlock (PRF)
 

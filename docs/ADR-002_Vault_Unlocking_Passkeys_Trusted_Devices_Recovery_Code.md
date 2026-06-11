@@ -149,8 +149,8 @@ Passkeys are included in the MVP.
 
 Passkeys may be used for:
 
-- authentication;
-- authorizing vault unlock;
+- **account sign-in** (`POST /api/auth/passkey/login/*` — issues one-time `login-token`; does not require TOTP when account 2FA is enabled);
+- authorizing vault unlock (PRF-based envelope only — separate from authentication);
 - protecting access to a local encrypted vault envelope;
 - adding a new trusted device when supported.
 

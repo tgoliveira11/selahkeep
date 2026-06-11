@@ -27,6 +27,10 @@ vi.mock("@/lib/passkey/prf-support", () => ({
   detectPasskeyPrfSupport: mocks.detectPasskeyPrfSupport,
 }));
 
+vi.mock("@/lib/passkey/login-hint", () => ({
+  setPasskeyLoginHint: vi.fn(),
+}));
+
 vi.mock("@/lib/api-client/client", () => ({
   apiClient: {
     post: mocks.apiPost,
@@ -59,7 +63,7 @@ describe("PasskeySetup", () => {
     mocks.detectPasskeyPrfSupport.mockResolvedValue("supported");
     mocks.apiPost
       .mockResolvedValueOnce({ challenge: "reg-challenge" })
-      .mockResolvedValueOnce({ verified: true });
+      .mockResolvedValueOnce({ verified: true, credentialId: "cred-id" });
     mocks.startRegistration.mockResolvedValue({
       id: "cred-id",
       clientExtensionResults: { prf: { results: { first: new ArrayBuffer(32) } } },

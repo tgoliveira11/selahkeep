@@ -65,6 +65,23 @@ Optional account-level 2FA protects **sign-in only** — it does not decrypt pri
 
 Credentials login: `login/start` → optional `verify-2fa` → one-time `login-token` NextAuth provider. OAuth users with 2FA enabled receive a partial session until `verify-2fa-oauth` completes.
 
+**Passkey sign-in bypasses TOTP** when account 2FA is enabled (passkey user verification is sufficient for account authentication).
+
+### Passkey account sign-in and management
+
+Passkeys authenticate the account separately from vault decryption. A passkey unlocks private letters only when it has a valid PRF-based vault envelope.
+
+| Method | Path | Auth |
+|--------|------|------|
+| `POST` | `/api/auth/passkey/login/options` | Public |
+| `POST` | `/api/auth/passkey/login/verify` | Public |
+| `GET` | `/api/account/passkeys` | Session |
+| `POST` | `/api/account/passkeys/register` | Session |
+| `DELETE` | `/api/account/passkeys/:id` | Session |
+| `POST` | `/api/account/passkeys/:id/enable-vault-unlock` | Session (vault unlocked client-side) |
+
+Vault recovery passkeys (PRF envelope while vault unlocked) also use `POST /api/passkeys/register` and `POST /api/passkeys/authenticate` on `/vault/recovery`.
+
 ## Security notes
 
 - **Never** send plaintext `title`, `body`, or similar fields — only structured `encrypted*` payloads.

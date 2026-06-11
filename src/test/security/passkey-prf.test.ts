@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  passkeyPrfAuthExtensions,
   passkeyPrfExtensions,
   passkeyPrfSaltBase64Url,
   passkeyPrfSaltBytes,
@@ -25,5 +26,10 @@ describe("passkey PRF salt", () => {
   it("builds WebAuthn PRF extension payload", () => {
     const extensions = passkeyPrfExtensions(userId);
     expect(extensions).toHaveProperty("prf");
+  });
+
+  it("uses evalByCredential when multiple passkeys are allowed", () => {
+    const extensions = passkeyPrfAuthExtensions(userId, ["cred-a", "cred-b"]);
+    expect(extensions).toHaveProperty("prf.evalByCredential");
   });
 });
