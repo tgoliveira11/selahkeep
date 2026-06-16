@@ -12,7 +12,7 @@ export function buildContentSecurityPolicy(nonce: string): string {
     "default-src 'self'",
     isDev
       ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
-      : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+      : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'`,
     isDev ? "style-src 'self' 'unsafe-inline'" : `style-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
     isDev ? "connect-src 'self' ws:" : "connect-src 'self'",
     "img-src 'self' data:",

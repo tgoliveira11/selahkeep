@@ -6,7 +6,6 @@ import {
   encryptField,
   decryptField,
 } from "./aes-gcm";
-import { deriveRecoveryKey, deriveRecoveryKeyFromMetadata } from "./recovery-code";
 import {
   getOrCreateDeviceSecret,
   storeLocalVaultEnvelope,
@@ -116,6 +115,7 @@ export async function wrapVaultKeyForRecovery(
   userId: string,
   resourceId: string
 ): Promise<{ encryptedVaultKey: EncryptedPayload; kdfMetadata: KdfMetadata }> {
+  const { deriveRecoveryKey } = await import("./recovery-code");
   const { key: derivedKey, metadata } = await deriveRecoveryKey(recoveryCode);
   const encryptedVaultKey = await encryptField(
     bytesToBase64Url(await exportAesKey(vaultKey)),
@@ -131,6 +131,7 @@ export async function unwrapVaultKeyFromRecovery(
   kdfMetadata: KdfMetadata,
   options?: { explicit?: boolean }
 ): Promise<CryptoKey> {
+  const { deriveRecoveryKeyFromMetadata } = await import("./recovery-code");
   const derivedKey = await deriveRecoveryKeyFromMetadata(recoveryCode, kdfMetadata);
   const keyBytes = base64UrlToBytes(
     await decryptField(encryptedVaultKey, derivedKey)

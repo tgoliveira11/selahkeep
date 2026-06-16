@@ -51,6 +51,7 @@ describe("CSP headers", () => {
     expect(policy).toContain("script-src 'self'");
     expect(policy).toMatch(/'nonce-[^']+'/);
     expect(policy).toContain("'strict-dynamic'");
+    expect(policy).toContain("'wasm-unsafe-eval'");
     expect(policy).toContain("object-src 'none'");
     expect(policy).toContain("frame-ancestors 'none'");
   });

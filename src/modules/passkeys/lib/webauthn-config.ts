@@ -1,48 +1,23 @@
-const DEFAULT_ORIGIN = "http://localhost:3001";
-
-function normalizeOrigin(origin: string): string {
-  return origin.replace(/\/$/, "");
-}
+import {
+  resolveWebAuthnOrigins,
+  resolveWebAuthnSettings,
+} from "@/lib/env/webauthn-from-env";
 
 /** Allowed WebAuthn origins for registration and authentication verification. */
 export function getWebAuthnOrigins(): string[] {
-  const configured = [
-    process.env.WEBAUTHN_ORIGIN,
-    process.env.NEXTAUTH_URL,
-    DEFAULT_ORIGIN,
-  ]
-    .filter((value): value is string => Boolean(value))
-    .map(normalizeOrigin);
-
-  const origins = new Set<string>(configured);
-
-  for (const origin of configured) {
-    try {
-      const url = new URL(origin);
-      if (url.hostname === "localhost") {
-        origins.add(normalizeOrigin(origin.replace("localhost", "127.0.0.1")));
-      }
-      if (url.hostname === "127.0.0.1") {
-        origins.add(normalizeOrigin(origin.replace("127.0.0.1", "localhost")));
-      }
-    } catch {
-      // Ignore invalid URL entries in env.
-    }
-  }
-
-  return [...origins];
+  return resolveWebAuthnOrigins();
 }
 
 export function getWebAuthnRpId(): string {
-  return process.env.WEBAUTHN_RP_ID ?? "localhost";
+  return resolveWebAuthnSettings().rpId;
 }
 
 export function getWebAuthnRpName(): string {
-  return process.env.WEBAUTHN_RP_NAME ?? "Letters to God";
+  return resolveWebAuthnSettings().rpName;
 }
 
 export function getPrimaryWebAuthnOrigin(): string {
-  return normalizeOrigin(process.env.WEBAUTHN_ORIGIN ?? process.env.NEXTAUTH_URL ?? DEFAULT_ORIGIN);
+  return resolveWebAuthnSettings().origin;
 }
 
 /**
@@ -54,6 +29,15 @@ export function toPasskeyVerificationErrorMessage(error: unknown): string {
   }
 
   const message = error.message;
+
+  if (
+    message.includes("RP ID") ||
+    message.includes("invalid for this domain") ||
+    message.includes("rpId")
+  ) {
+    const { rpId, origin } = resolveWebAuthnSettings();
+    return `Passkey setup failed because the site address does not match the configured relying party ID (${rpId}). Open ${origin} in your browser and set APP_BASE_URL, WEBAUTHN_ORIGIN, and WEBAUTHN_RP_ID in Vercel to that same host.`;
+  }
 
   if (message.includes("origin")) {
     return `Passkey verification failed because this browser address does not match your app URL. Use ${getPrimaryWebAuthnOrigin()} (same host you used when setting up your passkey).`;

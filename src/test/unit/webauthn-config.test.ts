@@ -31,6 +31,17 @@ describe("webauthn config", () => {
     expect(message).not.toContain("Internal server error");
   });
 
+  it("maps invalid RP ID errors to deployment guidance", () => {
+    process.env.APP_BASE_URL = "https://ltg.tgoliveira11.tech";
+    process.env.WEBAUTHN_RP_ID = "letter-to-god.vercel.app";
+    const message = toPasskeyVerificationErrorMessage(
+      new Error('The RP ID "letter-to-god.vercel.app" is invalid for this domain')
+    );
+    expect(message).toContain("relying party ID");
+    expect(message).toContain("letter-to-god.vercel.app");
+    expect(message).toContain("APP_BASE_URL");
+  });
+
   it("adds localhost and 127.0.0.1 aliases bidirectionally", () => {
     process.env.WEBAUTHN_ORIGIN = "http://127.0.0.1:3001";
     const origins = getWebAuthnOrigins();

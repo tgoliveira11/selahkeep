@@ -8,6 +8,7 @@ import {
   readEnvWithLegacy,
   readIntEnv,
 } from "@/lib/env/parse";
+import { resolveWebAuthnSettings } from "@/lib/env/webauthn-from-env";
 
 export type SecureAuthEnvSlice = Pick<
   SecureAuthConfig,
@@ -321,11 +322,14 @@ export function buildSecureAuthConfigFromEnv(
             }
           : undefined,
     },
-    webauthn: {
-      rpId: readEnv(env, "WEBAUTHN_RP_ID") ?? "localhost",
-      rpName: readEnv(env, "WEBAUTHN_RP_NAME") ?? appName,
-      origin: readEnv(env, "WEBAUTHN_ORIGIN") ?? baseUrl,
-    },
+    webauthn: (() => {
+      const webauthn = resolveWebAuthnSettings(env, { appName, baseUrl });
+      return {
+        rpId: webauthn.rpId,
+        rpName: webauthn.rpName,
+        origin: webauthn.origin,
+      };
+    })(),
     ui: {
       paths: uiPaths,
       messages: { ...authPageMessages },

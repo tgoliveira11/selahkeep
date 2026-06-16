@@ -92,9 +92,28 @@ Register as a **Web** platform redirect URI in Microsoft Entra (not SPA-only).
 
 | Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
 |----------|-----------|--------------|---------------|---------|---------|-------|
-| `WEBAUTHN_RP_ID` | **Required** for passkeys in prod | Production | `ltg.tgoliveira11.tech` | `webauthn-config.ts`, secure-auth | Relying party ID | Default `localhost` — passkeys fail on production domain if unset. Use registrable domain without scheme/port. |
-| `WEBAUTHN_ORIGIN` | **Required** for passkeys in prod | Production | `https://ltg.tgoliveira11.tech` | `webauthn-config.ts`, secure-auth | WebAuthn origin | Must match browser URL exactly (`localhost` ≠ `127.0.0.1`). Defaults to `APP_BASE_URL` / `NEXTAUTH_URL`. |
-| `WEBAUTHN_RP_NAME` | Optional | Production, Preview | `Letters to God` | secure-auth, passkey UI | Human-readable RP name | Defaults to `APP_NAME`. |
+| `APP_BASE_URL` | **Required** | Production, Preview | `https://letter-to-god.vercel.app` | WebAuthn origin fallback | Canonical site URL | **Must match the hostname in your browser address bar.** If you open a custom domain, all WebAuthn vars must use that domain — not the `.vercel.app` hostname. |
+| `WEBAUTHN_RP_ID` | Optional | Production, Preview | `letter-to-god.vercel.app` | secure-auth, passkeys | Relying party ID | Hostname only (no `https://`). When unset, derived from `WEBAUTHN_ORIGIN` / `APP_BASE_URL`. **Must match the site you visit** (or be a parent domain, e.g. `example.com` for `www.example.com`). |
+| `WEBAUTHN_ORIGIN` | Optional | Production, Preview | `https://letter-to-god.vercel.app` | secure-auth, passkeys | WebAuthn origin | Full origin with scheme, no trailing slash. Defaults to `APP_BASE_URL`. |
+| `WEBAUTHN_RP_NAME` | Optional | Production, Preview | `Letters to God` | passkey UI | Display name | Default `APP_NAME`. |
+
+**Common mistake:** `WEBAUTHN_RP_ID=letter-to-god.vercel.app` while browsing `https://ltg.tgoliveira11.tech` (or a Vercel preview URL like `https://letter-to-god-git-main-….vercel.app`). WebAuthn rejects that with *“The RP ID … is invalid for this domain”*.
+
+**Fix:** Set all of these to the **same host you actually use**:
+
+```text
+# Custom domain example
+APP_BASE_URL=https://ltg.tgoliveira11.tech
+WEBAUTHN_ORIGIN=https://ltg.tgoliveira11.tech
+WEBAUTHN_RP_ID=ltg.tgoliveira11.tech
+
+# Default Vercel domain example (only if users open this URL)
+APP_BASE_URL=https://letter-to-god.vercel.app
+WEBAUTHN_ORIGIN=https://letter-to-god.vercel.app
+WEBAUTHN_RP_ID=letter-to-god.vercel.app
+```
+
+Preview deployments each have a unique `*.vercel.app` hostname unless you use a fixed staging domain. Passkeys registered on production will not work on a different preview URL.
 
 ### Email verification gate
 

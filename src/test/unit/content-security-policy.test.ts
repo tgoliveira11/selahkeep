@@ -20,6 +20,7 @@ describe("content-security-policy", () => {
     vi.stubEnv("NODE_ENV", "production");
     const policy = buildContentSecurityPolicy("test-nonce");
     expect(policy).toContain("script-src 'self' 'nonce-test-nonce' 'strict-dynamic'");
+    expect(policy).toContain("'wasm-unsafe-eval'");
     expect(policy).toContain("object-src 'none'");
     expect(policy).toContain("frame-ancestors 'none'");
     expect(policy).toContain("upgrade-insecure-requests");
