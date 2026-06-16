@@ -68,7 +68,8 @@
     "esbuild": "^0.28.1",
     "postcss": "^8.5.10",
     "next-auth": {
-      "uuid": "$uuid"
+      "uuid": "$uuid",
+      "nodemailer": "$nodemailer"
     }
   }
 }
