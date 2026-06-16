@@ -28,14 +28,14 @@
     "idb": "^8.0.2",
     "next": "^16.2.9",
     "next-auth": "^4.24.11",
-    "nodemailer": "^7.0.13",
+    "nodemailer": "^9.0.0",
     "otplib": "^13.4.1",
     "postgres": "^3.4.7",
     "qrcode": "^1.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "swagger-ui-dist": "^5.11.0",
-    "uuid": "^11.1.0",
+    "uuid": "^11.1.1",
     "yaml": "^2.9.0",
     "zod": "^3.25.56"
   },
@@ -57,11 +57,18 @@
     "drizzle-kit": "^0.31.1",
     "eslint": "^9.28.0",
     "eslint-config-next": "^16.2.9",
-    "happy-dom": "^17.4.4",
+    "happy-dom": "^20.10.4",
     "jest-axe": "^10.0.0",
     "server-only": "^0.0.1",
     "tailwindcss": "^4.1.8",
     "typescript": "^5.8.3",
     "vitest": "^3.2.2"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1",
+    "postcss": "^8.5.10",
+    "next-auth": {
+      "uuid": "$uuid"
+    }
   }
 }
