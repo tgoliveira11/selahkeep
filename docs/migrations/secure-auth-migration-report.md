@@ -22,7 +22,8 @@
 
 - `SecureAuthUIProvider` + `SessionProvider` with `refetchInterval` from `uiConfig.sessionPolicy`.
 - Package pages for register, forgot/reset, verify/check email, login complete.
-- Custom login/2FA screens (`LettersLoginScreen`) — **documented exception** because form POST targets `/api/auth/login/*` (Next.js cannot colocate `page.tsx` + `route.ts` on `/login`).
+- Package pages for login, 2FA, register, forgot/reset, verify/check email, login complete.
+- `LettersAuthChrome` on auth pages via package `header` prop.
 
 ### Session alignment
 
@@ -47,7 +48,7 @@
 | Item | Status |
 |------|--------|
 | Delete local auth services/schema | **Done** — see below |
-| Thin re-export login pages only | Form-action API paths require custom wrappers |
+| Thin re-export login pages only | Resolved — package pages + middleware POST rewrites |
 
 ## Phase 10 removals (completed)
 

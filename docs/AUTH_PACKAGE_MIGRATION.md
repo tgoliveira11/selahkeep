@@ -57,19 +57,21 @@ Supported public entry points (from package README):
 Auth/account **pages** now delegate to `@tgoliveira/secure-auth/react` with only small app customizations:
 
 - `SecureAuthUIProvider` in root layout (`secureAuth.uiConfig`)
-- `LettersAuthChrome` (`PrivacyNotice`) on login/register/2FA wrappers
+- `LettersAuthChrome` (`PrivacyNotice`) via `header` prop on package auth pages
 - `afterLoginPath="/letters"` on sign-in completion pages
 
-Package-owned credential login flow (form POST, not client JSON):
+Account passkey **sign-in** API routes delegate to the package; vault-unlock passkey routes remain product-specific.
 
-| App route | Handler |
-|-----------|---------|
-| `POST /api/auth/login/start-form` | `secureAuth.routes.loginStartForm.POST` |
-| `POST /api/auth/login/verify-2fa-form` | `secureAuth.routes.loginVerify2faForm.POST` |
+Package-owned credential login flow (form POST to page paths; middleware rewrites to API handlers):
+
+| Browser POST | Rewritten handler |
+|--------------|-------------------|
+| `POST /login` | `secureAuth.routes.loginStartForm.POST` at `/api/auth/login/start-form` |
+| `POST /login/2fa` | `secureAuth.routes.loginVerify2faForm.POST` at `/api/auth/login/verify-2fa-form` |
 | `GET /login/complete` | package `LoginCompletePage` |
 | `POST /api/auth/login/complete` | `secureAuth.routes.loginComplete.POST` |
 
-Account passkey **sign-in** API routes delegate to the package; vault-unlock passkey routes remain product-specific.
+Login and 2FA **pages** are thin wrappers around `LoginPage` / `LoginTwoFactorPage` from `@tgoliveira/secure-auth/react` (same pattern as register), with `LettersAuthChrome` as the only app customization.
 
 ### Replace with package (API routes + NextAuth)
 

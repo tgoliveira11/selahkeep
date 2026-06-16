@@ -42,7 +42,7 @@ describe("login 2FA page (package UI)", () => {
     renderTwoFactorPage();
     await screen.findByRole("heading", { name: /two-factor authentication/i });
     const form = screen.getByLabelText("Authenticator code").closest("form");
-    expect(form?.getAttribute("action")).toBe("/api/auth/login/verify-2fa-form");
+    expect(form?.getAttribute("action")).toBe("/login/2fa");
     expect(form?.getAttribute("method")).toBe("post");
   });
 });

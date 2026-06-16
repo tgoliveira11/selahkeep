@@ -1,7 +1,10 @@
 "use client";
 
-import { LettersLoginScreen } from "@/components/auth/letters-login-screen";
+import { LoginPage } from "@tgoliveira/secure-auth/react";
+import { LettersAuthChrome } from "@/components/auth/letters-auth-chrome";
 
 export default function Page() {
-  return <LettersLoginScreen afterLoginPath="/letters" />;
+  return (
+    <LoginPage header={<LettersAuthChrome />} afterLoginPath="/letters" />
+  );
 }

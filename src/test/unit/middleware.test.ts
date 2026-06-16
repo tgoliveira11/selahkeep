@@ -7,6 +7,32 @@ vi.mock("next-auth/jwt", () => ({
   getToken,
 }));
 
+describe("middleware", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("rewrites credential login POST to the package start-form handler", async () => {
+    const { middleware } = await import("@/middleware");
+    const response = await middleware(
+      new NextRequest("http://localhost:3001/login", { method: "POST" })
+    );
+    expect(response.headers.get("x-middleware-rewrite")).toContain("/api/auth/login/start-form");
+    expect(getToken).not.toHaveBeenCalled();
+  });
+
+  it("rewrites credentials 2FA POST to the package verify-2fa-form handler", async () => {
+    const { middleware } = await import("@/middleware");
+    const response = await middleware(
+      new NextRequest("http://localhost:3001/login/2fa", { method: "POST" })
+    );
+    expect(response.headers.get("x-middleware-rewrite")).toContain(
+      "/api/auth/login/verify-2fa-form"
+    );
+    expect(getToken).not.toHaveBeenCalled();
+  });
+});
+
 describe("middleware two-factor gating", () => {
   beforeEach(() => {
     vi.clearAllMocks();

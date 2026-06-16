@@ -46,7 +46,7 @@ Package: `@tgoliveira/secure-auth@0.1.11-internal` (experimental; security revie
 
 | Path | Replacement |
 |------|-------------|
-| Login / 2FA | Custom wrappers — form POST to `/api/auth/login/*` |
+| Login / 2FA | Package `LoginPage` / `LoginTwoFactorPage` + middleware POST rewrites |
 | Register, forgot, reset, verify, check-email, login/complete | Package pages |
 | `settings/account` | App vault shell + package security UI |
 | Vault / letters routes | App-owned |

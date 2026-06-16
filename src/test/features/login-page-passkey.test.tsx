@@ -49,7 +49,7 @@ describe("login page (package UI)", () => {
     renderLoginPage();
     const form = document.getElementById("login-credentials-form");
     expect(form).toBeTruthy();
-    expect(form?.getAttribute("action")).toBe("/api/auth/login/start-form");
+    expect(form?.getAttribute("action")).toBe("/login");
     expect(form?.getAttribute("method")).toBe("post");
   });
 });

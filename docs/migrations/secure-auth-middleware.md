@@ -12,6 +12,8 @@
 
 | Rule | Purpose |
 |------|---------|
+| `POST /login` rewrite | Package `LoginPage` form action → `/api/auth/login/start-form` |
+| `POST /login/2fa` rewrite | Package `LoginTwoFactorPage` form action → `/api/auth/login/verify-2fa-form` |
 | `twoFactorPending` JWT redirect | If NextAuth JWT has `twoFactorPending` and user navigates outside auth paths, redirect to `/login/2fa` |
 
 Allowed paths while 2FA is pending: `/login`, `/api/auth`, static assets, `/account-deleted`.

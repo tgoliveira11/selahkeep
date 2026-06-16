@@ -1,7 +1,10 @@
 "use client";
 
-import { LettersLoginTwoFactorScreen } from "@/components/auth/letters-login-two-factor-screen";
+import { LoginTwoFactorPage } from "@tgoliveira/secure-auth/react";
+import { LettersAuthChrome } from "@/components/auth/letters-auth-chrome";
 
 export default function Page() {
-  return <LettersLoginTwoFactorScreen afterLoginPath="/letters" />;
+  return (
+    <LoginTwoFactorPage header={<LettersAuthChrome />} afterLoginPath="/letters" />
+  );
 }
