@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { secureAuth } from "@/lib/secure-auth";
 import {
   optionsIncludePrf,
-  passkeyLoginService,
-} from "@/server/services/passkey-login-service";
+  passkeyLoginVaultService,
+} from "@/server/services/passkey-login-vault-service";
 
 type PasskeyLoginOptionsPost = (request: Request) => Promise<Response>;
 
@@ -27,9 +27,12 @@ export async function POST(request: Request) {
   if (!response.ok) return response;
 
   const body = (await response.json()) as {
-    options: Parameters<typeof passkeyLoginService.enrichLoginOptionsWithVaultPrf>[1];
+    options: Parameters<typeof passkeyLoginVaultService.enrichLoginOptionsWithVaultPrf>[1];
   };
-  const options = await passkeyLoginService.enrichLoginOptionsWithVaultPrf(payload, body.options);
+  const options = await passkeyLoginVaultService.enrichLoginOptionsWithVaultPrf(
+    payload,
+    body.options
+  );
 
   return NextResponse.json({
     ...body,

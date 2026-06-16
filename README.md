@@ -20,7 +20,7 @@ Account auth env vars are documented in `.env.example` (`AUTH_*` names). **Verce
 curl http://localhost:3001/api/auth/package-health
 ```
 
-Migration docs: [`docs/migrations/secure-auth-migration-report.md`](./docs/migrations/secure-auth-migration-report.md).
+Migration docs: [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md), [`docs/migrations/secure-auth-migration-report.md`](./docs/migrations/secure-auth-migration-report.md).
 
 ## Quick Start
 

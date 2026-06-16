@@ -11,27 +11,6 @@ const MODULE_ROOT = join(process.cwd(), "src/modules");
 
 const RULES: BoundaryRule[] = [
   {
-    module: "auth",
-    forbidden: [/@\/modules\/vault/, /@\/modules\/letters/, /crypto-client\/letters/],
-  },
-  {
-    module: "account",
-    forbidden: [/@\/modules\/letters/, /letter-service/, /letter-repository/],
-  },
-  {
-    module: "sessions",
-    forbidden: [
-      /@\/modules\/vault/,
-      /crypto-client/,
-      /trusted-device-repository/,
-      /trusted-device-service/,
-    ],
-  },
-  {
-    module: "two-factor",
-    forbidden: [/@\/modules\/vault/, /crypto-client/, /User Vault Key/i],
-  },
-  {
     module: "email",
     forbidden: [/@\/modules\/vault/, /@\/modules\/letters/, /encryptedTitle|encryptedBody/],
   },
@@ -73,11 +52,6 @@ const UI_PRIMITIVE_RULE: BoundaryRule = {
   forbidden: [
     /@\/modules\/letters/,
     /@\/modules\/vault/,
-    /@\/modules\/auth/,
-    /@\/modules\/account/,
-    /@\/modules\/sessions/,
-    /@\/modules\/two-factor/,
-    /@\/modules\/passkeys/,
     /@\/lib\/db/,
   ],
 };

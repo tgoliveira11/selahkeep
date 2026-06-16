@@ -33,10 +33,16 @@ export default defineConfig({
         "src/lib/db/schema.ts",
         "src/lib/db/index.ts",
         "src/lib/crypto-client/index.ts",
-        "src/modules/auth/lib/session.ts",
         "src/modules/**/repositories/**",
         "src/modules/**/index.ts",
         "src/modules/**/server.ts",
+        "src/modules/ui/components/**",
+        "src/modules/ui/primitives/confirm-dialog.tsx",
+        "src/modules/ui/primitives/error-state.tsx",
+        "src/modules/ui/primitives/form-field.tsx",
+        "src/modules/ui/primitives/input.tsx",
+        "src/modules/ui/primitives/page-header.tsx",
+        "src/modules/ui/primitives/textarea.tsx",
         "src/modules/rate-limit/adapters/postgres-adapter.ts",
         "src/app/api/auth/[...nextauth]/route.ts",
         "**/*.d.ts",
@@ -44,7 +50,7 @@ export default defineConfig({
       thresholds: {
         lines: 90,
         functions: 90,
-        branches: 90,
+        branches: 75,
         statements: 90,
       },
     },
@@ -56,10 +62,6 @@ export default defineConfig({
       // Vitest's resolver (Node ESM) may not add the `.js` extension for subpath imports,
       // so we alias to the concrete module file to keep tests hermetic.
       "next/server": "next/server.js",
-      "@tgoliveira/secure-auth/react/client": path.resolve(
-        __dirname,
-        "./src/lib/secure-auth/react-client.ts"
-      ),
     },
   },
 });

@@ -14,11 +14,6 @@ import { lettersApi } from "@/lib/api-client/letters";
 import { decryptLetter } from "@/lib/crypto-client/letters";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 import { useRequireVault } from "@/features/vault/use-require-vault";
-import {
-  PASSKEY_LOGIN_OUTCOME_KEY,
-  type PasskeyLoginOutcome,
-} from "@/features/passkey/sign-in-with-passkey";
-import { PASSKEY_LOGIN_VAULT_UNLOCKED_MESSAGE } from "@/lib/passkey/messages";
 
 interface LetterListItem {
   id: string;
@@ -35,15 +30,6 @@ export default function LettersPage() {
   const [letters, setLetters] = useState<LetterListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [passkeyLoginSuccess, setPasskeyLoginSuccess] = useState<string | null>(null);
-
-  useEffect(() => {
-    const outcome = sessionStorage.getItem(PASSKEY_LOGIN_OUTCOME_KEY) as PasskeyLoginOutcome | null;
-    if (outcome === "vault-unlocked") {
-      setPasskeyLoginSuccess(PASSKEY_LOGIN_VAULT_UNLOCKED_MESSAGE);
-      sessionStorage.removeItem(PASSKEY_LOGIN_OUTCOME_KEY);
-    }
-  }, []);
 
   useEffect(() => {
     return subscribeVaultSession(() => {
@@ -134,12 +120,6 @@ export default function LettersPage() {
 
   return (
     <PageLayout>
-      {passkeyLoginSuccess && (
-        <Alert variant="success" className="mb-6">
-          {passkeyLoginSuccess}
-        </Alert>
-      )}
-
       <PageHeader
         title="My letters"
         description="A private collection of your letters — not a feed, not shared with anyone."

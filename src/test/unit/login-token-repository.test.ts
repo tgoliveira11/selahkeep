@@ -23,18 +23,14 @@ describe("loginTokenRepository", () => {
 
   it("returns a valid login token row", async () => {
     mocks.limit.mockResolvedValue([{ userId: "user-1", tokenHash: "abc" }]);
-    const { loginTokenRepository } = await import(
-      "@/modules/auth/repositories/login-token-repository"
-    );
+    const { loginTokenRepository } = await import("@/server/repositories/login-token-repository");
     const row = await loginTokenRepository.findValidLoginToken("abc");
     expect(row?.userId).toBe("user-1");
   });
 
   it("returns null when no valid token exists", async () => {
     mocks.limit.mockResolvedValue([]);
-    const { loginTokenRepository } = await import(
-      "@/modules/auth/repositories/login-token-repository"
-    );
+    const { loginTokenRepository } = await import("@/server/repositories/login-token-repository");
     await expect(loginTokenRepository.findValidLoginToken("missing")).resolves.toBeNull();
   });
 });

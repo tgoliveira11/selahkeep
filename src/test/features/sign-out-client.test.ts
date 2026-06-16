@@ -3,36 +3,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { signOutAccount } from "@/lib/auth/sign-out-client";
 
 const mocks = vi.hoisted(() => ({
-  revokeCurrent: vi.fn(),
-  signOut: vi.fn(),
+  defaultSignOutAccount: vi.fn(),
 }));
 
-vi.mock("@/lib/api-client/account-sessions", () => ({
-  accountSessionsApi: {
-    revokeCurrent: mocks.revokeCurrent,
-  },
-}));
-
-vi.mock("next-auth/react", () => ({
-  signOut: mocks.signOut,
+vi.mock("@tgoliveira/secure-auth/react/client", () => ({
+  defaultSignOutAccount: mocks.defaultSignOutAccount,
 }));
 
 describe("signOutAccount", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.signOut.mockResolvedValue(undefined);
+    mocks.defaultSignOutAccount.mockResolvedValue(undefined);
   });
 
-  it("revokes the current session before clearing auth", async () => {
-    mocks.revokeCurrent.mockResolvedValue({ revoked: true });
+  it("delegates sign-out to the secure-auth package helper", async () => {
     await signOutAccount();
-    expect(mocks.revokeCurrent).toHaveBeenCalled();
-    expect(mocks.signOut).toHaveBeenCalledWith({ redirect: false });
-  });
-
-  it("still signs out when revoke-current fails", async () => {
-    mocks.revokeCurrent.mockRejectedValue(new Error("network"));
-    await signOutAccount();
-    expect(mocks.signOut).toHaveBeenCalledWith({ redirect: false });
+    expect(mocks.defaultSignOutAccount).toHaveBeenCalledTimes(1);
   });
 });

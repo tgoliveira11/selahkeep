@@ -1,0 +1,176 @@
+import { runInTransaction } from "@/lib/db/transaction";
+import {
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
+} from "@simplewebauthn/server";
+import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
+import { passkeyRepository } from "@/server/repositories/passkey-repository";
+import { vaultRepository } from "@/server/repositories/vault-repository";
+import { auditRepository } from "@/server/repositories/audit-repository";
+import { enforceRateLimit } from "@/server/policies/rate-limit";
+import { passkeyPrfExtensions } from "@/lib/passkey/prf";
+import {
+  getWebAuthnOrigins,
+  getWebAuthnRpId,
+  toPasskeyVerificationErrorMessage,
+} from "@/lib/passkey/webauthn-config";
+import { assertVaultKeyAad } from "@/server/policies/aad-validation";
+import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
+import { ChallengeError, NotFoundError } from "@/server/services/passkey-service";
+
+const rpID = getWebAuthnRpId();
+const origins = getWebAuthnOrigins();
+
+/** Product-only: enable vault unlock on an account passkey registered via @tgoliveira/secure-auth. */
+export const passkeyVaultEnvelopeService = {
+  async getVaultUnlockAuthOptions(userId: string, credentialDbId: string, ip?: string) {
+    const credential = await passkeyRepository.findByIdForUser(credentialDbId, userId);
+    if (!credential) {
+      throw new NotFoundError("Passkey not found");
+    }
+    if (credential.vaultUnlockEnabled) {
+      throw new ChallengeError("This passkey already unlocks your private letters.");
+    }
+
+    await enforceRateLimit({
+      operation: "passkey.authenticate",
+      userId,
+      ip,
+      endpoint: "/api/account/passkeys/enable-vault-unlock",
+    });
+
+    const options = await generateAuthenticationOptions({
+      rpID,
+      allowCredentials: [
+        {
+          id: credential.credentialId,
+          transports: (credential.transports as AuthenticatorTransport[]) ?? undefined,
+        },
+      ],
+      userVerification: "required",
+      extensions: passkeyPrfExtensions(userId),
+    });
+
+    await passkeyRepository.storeChallenge({
+      userId,
+      challenge: options.challenge,
+      type: "authentication",
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+
+    return options;
+  },
+
+  async enableVaultUnlock(
+    userId: string,
+    credentialDbId: string,
+    response: AuthenticationResponseJSON,
+    encryptedVaultKey: EncryptedPayload,
+    options?: { prfVaultEnvelope?: boolean; prfSupported?: boolean | null }
+  ) {
+    if (!options?.prfVaultEnvelope) {
+      throw new ChallengeError(
+        "Passkey vault unlock requires PRF support. Use a recovery code or trusted device."
+      );
+    }
+
+    assertVaultKeyAad(userId, encryptedVaultKey);
+
+    const credential = await passkeyRepository.findByIdForUser(credentialDbId, userId);
+    if (!credential) {
+      throw new NotFoundError("Passkey not found");
+    }
+    if (credential.vaultUnlockEnabled) {
+      throw new ChallengeError("This passkey already unlocks your private letters.");
+    }
+
+    const clientData = JSON.parse(
+      Buffer.from(response.response.clientDataJSON, "base64url").toString()
+    );
+
+    let challengeRecord;
+    try {
+      challengeRecord = await passkeyRepository.consumeValidChallenge(
+        clientData.challenge,
+        "authentication",
+        userId
+      );
+    } catch {
+      throw new ChallengeError("Invalid or expired challenge");
+    }
+
+    if (response.id !== credential.credentialId) {
+      throw new ChallengeError("Passkey mismatch. Try again with the selected passkey.");
+    }
+
+    let verification;
+    try {
+      verification = await verifyAuthenticationResponse({
+        response,
+        expectedChallenge: challengeRecord.challenge,
+        expectedOrigin: origins,
+        expectedRPID: rpID,
+        credential: {
+          id: credential.credentialId,
+          publicKey: new Uint8Array(Buffer.from(credential.publicKey, "base64url")),
+          counter: Number.parseInt(credential.counter, 10) || 0,
+          transports: (credential.transports as AuthenticatorTransport[]) ?? undefined,
+        },
+      });
+    } catch (error) {
+      throw new ChallengeError(toPasskeyVerificationErrorMessage(error));
+    }
+
+    if (!verification.verified) {
+      throw new ChallengeError("Passkey verification failed. Try again.");
+    }
+
+    await runInTransaction(async (tx) => {
+      await passkeyRepository.updateCounter(
+        credential.credentialId,
+        String(verification.authenticationInfo.newCounter),
+        tx
+      );
+
+      const existingEnvelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
+      for (const envelope of existingEnvelopes) {
+        const metadata = envelope.publicMetadata as { credentialId?: string } | null;
+        if (
+          envelope.method === "passkey_authorized_device" &&
+          metadata?.credentialId === credential.credentialId
+        ) {
+          await vaultRepository.revokeEnvelope(envelope.id, userId, tx);
+        }
+      }
+
+      await vaultRepository.createEnvelope(
+        {
+          userId,
+          method: "passkey_authorized_device",
+          encryptedVaultKey,
+          publicMetadata: { credentialId: credential.credentialId, prfRequired: true },
+        },
+        tx
+      );
+
+      await passkeyRepository.updateCredentialFlags(
+        credential.id,
+        userId,
+        {
+          vaultUnlockEnabled: true,
+          prfSupported: options.prfSupported ?? true,
+        },
+        tx
+      );
+
+      await auditRepository.record(
+        "passkey_vault_unlock_enabled",
+        userId,
+        { credentialId: credential.credentialId },
+        tx
+      );
+    });
+
+    return { success: true };
+  },
+};

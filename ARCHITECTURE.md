@@ -155,22 +155,19 @@ Failures roll back all related writes.
 
 ## Passkey account sign-in
 
-Passkeys authenticate the account separately from vault decryption.
+Account passkey sign-in is owned by `@tgoliveira/secure-auth` (`LoginPage`, `signInWithPasskey` from `@tgoliveira/secure-auth/react/client`).
 
-- Login UI: **Sign in with passkey** on `/login` (`@tgoliveira/secure-auth/react` `LoginPage`, wired through `src/lib/secure-auth/react-client.ts` shim)
-- Challenge type `login` (atomic consumption; distinct from vault `authentication`)
-- Successful verify issues one-time `login-token` with `twoFactorVerified: true` (no TOTP step)
-- Optional automatic vault unlock when the credential has a valid PRF-based envelope and PRF output is available client-side (`src/features/passkey/sign-in-with-passkey.ts`; see `docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`)
-- Otherwise: signed in, vault locked → `/vault/unlock`
-- Account settings list passkeys with **Sign-in only** vs **Sign-in + vault unlock** labels
+Product-specific vault PRF enrichment remains on `POST /api/auth/passkey/login/options` via `passkeyLoginVaultService`. Verify delegates to `secureAuth.routes.passkeyLoginVerify` (no local verify enrichment). Post-login vault unlock uses `/vault/unlock` or `POST /api/auth/passkey/login/vault-unlock/options`.
+
+See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md) and [`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`](./docs/PASSKEY_LOGIN_VAULT_UNLOCK.md).
 
 ## Account two-factor authentication
 
-TOTP 2FA is **account authentication only** — separate from vault envelopes, recovery codes, passkeys, and trusted devices.
+TOTP 2FA is **account authentication only** — provided by `@tgoliveira/secure-auth` (settings UI, API routes, login `/login/2fa` flow).
 
-Passkey sign-in does **not** require TOTP when 2FA is enabled. Email/password sign-in still does.
+Passkey sign-in follows package rules when 2FA is enabled (pending challenge until TOTP verified).
 
-- Settings UI: `/settings/account` (`TwoFactorSettings`)
+- Settings UI: `/settings/account` (`AccountSettingsPage` from package + product recovery links)
 - Login challenge: `/login/2fa` + `src/proxy.ts` gate for OAuth partial sessions
 - Storage: `user_two_factor_settings`, `user_two_factor_backup_codes`, login challenge/token tables
 - NextAuth provider: `login-token` (one-time token after password + optional 2FA)

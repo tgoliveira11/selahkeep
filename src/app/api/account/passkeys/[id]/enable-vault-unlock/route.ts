@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSessionUser } from "@/lib/auth/session";
-import { passkeyAccountService } from "@/server/services/passkey-account-service";
+import { passkeyVaultEnvelopeService } from "@/server/services/passkey-vault-envelope-service";
 import { encryptedPayloadSchema } from "@/lib/validation/encrypted-payload";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
 import { getClientIp } from "@/lib/request-ip";
@@ -30,7 +30,7 @@ export async function POST(request: Request, context: RouteContext) {
     const ip = getClientIp(request);
 
     if (parsed.data.action === "options") {
-      const options = await passkeyAccountService.getVaultUnlockAuthOptions(user.id, id, ip);
+      const options = await passkeyVaultEnvelopeService.getVaultUnlockAuthOptions(user.id, id, ip);
       return NextResponse.json(options);
     }
 
@@ -38,10 +38,10 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    const result = await passkeyAccountService.enableVaultUnlock(
+    const result = await passkeyVaultEnvelopeService.enableVaultUnlock(
       user.id,
       id,
-      parsed.data.response as Parameters<typeof passkeyAccountService.enableVaultUnlock>[2],
+      parsed.data.response as Parameters<typeof passkeyVaultEnvelopeService.enableVaultUnlock>[2],
       parsed.data.encryptedVaultKey,
       {
         prfVaultEnvelope: parsed.data.prfVaultEnvelope,

@@ -10,15 +10,6 @@ import { useVault } from "@/features/vault/use-vault";
 import { vaultApi } from "@/lib/api-client/vault";
 import { isVaultUnlocked } from "@/lib/crypto-client/vault";
 import { VaultUnlockPanel, type VaultUnlockPanelMode } from "@/features/vault/vault-unlock-panel";
-import { Alert } from "@/components/ui/alert";
-import {
-  PASSKEY_LOGIN_OUTCOME_KEY,
-  type PasskeyLoginOutcome,
-} from "@/features/passkey/sign-in-with-passkey";
-import {
-  PASSKEY_LOGIN_PRF_UNAVAILABLE_MESSAGE,
-  PASSKEY_LOGIN_VAULT_LOCKED_MESSAGE,
-} from "@/lib/passkey/messages";
 
 export default function VaultUnlockPage() {
   const { status } = useSession();
@@ -35,7 +26,6 @@ export default function VaultUnlockPage() {
   const [vaultStatus, setVaultStatus] = useState<Awaited<ReturnType<typeof vaultApi.status>> | null>(null);
   const [recoveryCode, setRecoveryCode] = useState("");
   const [mode, setMode] = useState<VaultUnlockPanelMode | "loading">("loading");
-  const [passkeyLoginNotice, setPasskeyLoginNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -47,15 +37,6 @@ export default function VaultUnlockPage() {
     if (isVaultUnlocked()) {
       router.push("/letters");
       return;
-    }
-
-    const outcome = sessionStorage.getItem(PASSKEY_LOGIN_OUTCOME_KEY) as PasskeyLoginOutcome | null;
-    if (outcome === "vault-locked") {
-      setPasskeyLoginNotice(PASSKEY_LOGIN_VAULT_LOCKED_MESSAGE);
-      sessionStorage.removeItem(PASSKEY_LOGIN_OUTCOME_KEY);
-    } else if (outcome === "prf-unavailable") {
-      setPasskeyLoginNotice(PASSKEY_LOGIN_PRF_UNAVAILABLE_MESSAGE);
-      sessionStorage.removeItem(PASSKEY_LOGIN_OUTCOME_KEY);
     }
 
     vaultApi
@@ -105,12 +86,6 @@ export default function VaultUnlockPage() {
         title="Your private vault"
         description="Your letters stay protected on your device. Our team cannot read or unlock them for you."
       />
-      {passkeyLoginNotice && (
-        <Alert variant="muted" className="mb-6">
-          You are signed in, but your private letters are still locked.
-          <span className="mt-2 block">{passkeyLoginNotice}</span>
-        </Alert>
-      )}
       <VaultUnlockPanel
         mode={mode}
         loading={loading}

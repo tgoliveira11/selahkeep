@@ -8,7 +8,7 @@ import { vaultRepository } from "@/server/repositories/vault-repository";
 import { enforceRateLimit } from "@/server/policies/rate-limit";
 import { passkeyPrfAuthExtensions, passkeyPrfExtensions } from "@/lib/passkey/prf";
 import { getWebAuthnOrigins, getWebAuthnRpId } from "@/lib/passkey/webauthn-config";
-import { loginTokenRepository } from "@/modules/auth/repositories/login-token-repository";
+import { loginTokenRepository } from "@/server/repositories/login-token-repository";
 import { hashOpaqueToken } from "@/server/policies/login-token";
 import { ChallengeError, NotFoundError } from "@/server/services/passkey-service";
 
@@ -121,7 +121,7 @@ async function resolveVaultPrfLoginContext(input: PasskeyLoginOptionsInput) {
 }
 
 /** Vault-only passkey helpers; account sign-in passkeys are handled by @tgoliveira/secure-auth. */
-export const passkeyLoginService = {
+export const passkeyLoginVaultService = {
   async enrichLoginOptionsWithVaultPrf(
     input: PasskeyLoginOptionsInput,
     options: PublicKeyCredentialRequestOptionsJSON

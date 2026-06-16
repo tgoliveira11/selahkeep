@@ -8,18 +8,15 @@ This project uses a **modular monolith** under `src/modules/`. No external packa
 
 | Module | Responsibility |
 |--------|----------------|
-| `auth` | Email/password, OAuth, passkey login, auth callbacks, login rate limits |
-| `account` | Settings, email verification, password reset/change, account deletion |
-| `sessions` | Account sessions (sign-in state), revocation, session metadata |
-| `two-factor` | TOTP setup/verify, backup codes, login 2FA challenge |
-| `passkeys` | WebAuthn registration, passkey account authentication |
-| `email` | `core/` provider abstraction (SMTP/console); `templates/` account-auth emails only |
+| `vault` | User Vault Key, unlock, trusted devices, recovery, passkey PRF envelopes, vault passkey login PRF enrichment |
+| `letters` | Private letter CRUD (encrypted payloads only) |
+| `email` | SMTP/console provider core (account emails via `@tgoliveira/secure-auth`) |
 | `audit` | Audit events, persistence, sanitization |
 | `rate-limit` | Rate limit adapters and policies |
-| `security` | Logger/redaction, password policy, token hashing, IP mask/hash, user-agent parse/hash, email scope hashing (`logger/`, `env/`, `ip/`, `user-agent/`, `scopes/`) |
-| `vault` | User Vault Key, unlock, trusted devices, recovery, passkey PRF envelopes |
-| `letters` | Private letter CRUD (encrypted payloads only) |
-| `ui` | `primitives/` domain-neutral UI only; product copy (`PrivacyNotice`, `RecoveryNotice`) in `vault/components` |
+| `security` | Logger/redaction, token hashing, IP mask/hash, user-agent parse/hash |
+| `ui` | Domain-neutral primitives only |
+
+**Account auth** (login, register, OAuth, 2FA, sessions, account passkeys, password flows) is **not** a local module — see `src/lib/secure-auth.ts` and [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md).
 
 ## Critical distinctions
 
