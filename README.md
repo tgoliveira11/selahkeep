@@ -126,6 +126,7 @@ Email/password accounts are **unverified by default** until the user opens the l
 | Forgot password | `/forgot-password`, `POST /api/auth/forgot-password` |
 | Reset password | `/reset-password?token=…`, `POST /api/auth/reset-password` |
 | Change password | `/settings/account`, `POST /api/account/change-password` |
+| Passkeys & TOTP 2FA | `/settings/account#security` (package `PasskeySettings`, `TwoFactorSettings`) |
 
 **Vault separation:** changing or resetting the account password does **not** unlock, recover, or rotate the private letters vault. Users still need a trusted device, passkey, or recovery code for vault access.
 

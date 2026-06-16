@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { AccountSettingsPage } from "@tgoliveira/secure-auth/react";
+import { AccountSettingsPage, SecuritySettingsPage } from "@tgoliveira/secure-auth/react";
 import { defaultSignOutAccount } from "@tgoliveira/secure-auth/react/client";
 import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/page-layout";
@@ -28,7 +28,7 @@ export default function AccountSettingsPageWrapper() {
           await defaultSignOutAccount();
         }}
         footer={
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link href="/vault/devices">
               <Button variant="secondary" className="w-full sm:w-auto">
                 Trusted devices
@@ -42,6 +42,9 @@ export default function AccountSettingsPageWrapper() {
           </div>
         }
       />
+      <div id="security" className="mt-10 scroll-mt-8">
+        <SecuritySettingsPage appSlug={APP_PASSKEY_SLUG} />
+      </div>
     </PageLayout>
   );
 }

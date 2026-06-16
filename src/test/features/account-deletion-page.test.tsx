@@ -22,6 +22,13 @@ vi.mock("@tgoliveira/secure-auth/react", () => ({
       {footer}
     </div>
   ),
+  SecuritySettingsPage: () => (
+    <section id="security">
+      <h2>Security settings</h2>
+      <h3>Passkeys</h3>
+      <h3>Two-factor authentication</h3>
+    </section>
+  ),
 }));
 
 vi.mock("@/lib/crypto-client/vault", () => ({
@@ -29,9 +36,13 @@ vi.mock("@/lib/crypto-client/vault", () => ({
 }));
 
 describe("account settings page wrapper", () => {
-  it("renders package account settings with product recovery links", () => {
+  it("renders package account settings with security and product recovery links", () => {
     render(<AccountSettingsPage />);
     expect(screen.getByRole("heading", { name: /account settings/i })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /security settings/i })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /passkeys/i })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /two-factor authentication/i })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /security settings/i })).toBeNull();
     expect(screen.getByRole("link", { name: /trusted devices/i })).toBeTruthy();
     expect(screen.getByRole("link", { name: /recovery code/i })).toBeTruthy();
   });

@@ -21,6 +21,8 @@ export const authPageMessages = {
   loginCompleteDescription: "Finishing your sign-in securely.",
   registerLinkLabel: "Create one",
   securitySettingsTitle: "Security settings",
+  securitySettingsDescription:
+    "Manage passkeys and two-factor authentication for signing in to your account.",
   sessionsSettingsTitle: "Active sessions",
   dashboardTitle: "My letters",
 } as const;

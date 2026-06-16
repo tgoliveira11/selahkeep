@@ -21,6 +21,18 @@ const navLinks = [
   { href: "/settings/account", label: "Account" },
 ] as const;
 
+function isNavLinkActive(pathname: string, href: string): boolean {
+  if (href === "/settings/account") {
+    return (
+      pathname === href ||
+      pathname.startsWith(`${href}/`) ||
+      pathname === "/settings/security" ||
+      pathname.startsWith("/settings/security/")
+    );
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function Nav() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -71,7 +83,7 @@ export function Nav() {
                   href={link.href}
                   className={cn(
                     "rounded-[var(--radius)] px-3 py-2 text-sm transition-colors hover:bg-[var(--card-muted)]",
-                    pathname === link.href || pathname.startsWith(`${link.href}/`)
+                    isNavLinkActive(pathname, link.href)
                       ? "font-medium text-[var(--primary)]"
                       : "text-[var(--foreground)]"
                   )}
@@ -82,19 +94,10 @@ export function Nav() {
               {!vaultUnlocked && (
                 <Link
                   href="/vault/unlock"
-                  className="rounded-[var(--radius)] px-3 py-2 text-sm text-[var(--warning)] hover:bg-[var(--warning-muted)]"
+                  className="rounded-[var(--radius)] px-3 py-2 text-sm text-[var(--warning)] hover:bg-[var(--card-muted)]"
                 >
                   Unlock
                 </Link>
-              )}
-              {vaultUnlocked ? (
-                <Badge variant="success" className="ml-1">
-                  Unlocked
-                </Badge>
-              ) : (
-                <Badge variant="muted" className="ml-1">
-                  Locked
-                </Badge>
               )}
             </div>
 
@@ -107,6 +110,11 @@ export function Nav() {
               <Button variant="secondary" onClick={handleSignOut}>
                 Sign out
               </Button>
+              {vaultUnlocked ? (
+                <Badge variant="success">Unlocked</Badge>
+              ) : (
+                <Badge variant="muted">Locked</Badge>
+              )}
             </div>
 
             <button
@@ -146,7 +154,7 @@ export function Nav() {
                   onClick={closeMenu}
                   className={cn(
                     "block rounded-[var(--radius)] px-3 py-3 text-sm",
-                    pathname === link.href ? "bg-[var(--card-muted)] font-medium" : ""
+                    isNavLinkActive(pathname, link.href) ? "bg-[var(--card-muted)] font-medium" : ""
                   )}
                 >
                   {link.label}
@@ -162,9 +170,6 @@ export function Nav() {
             )}
           </ul>
           <div className="mt-4 space-y-2 border-t border-[var(--border)] pt-4">
-            <p className="px-1 text-xs text-[var(--muted)]">
-              Vault status: {vaultUnlocked ? "Unlocked on this browser" : "Locked"}
-            </p>
             {vaultUnlocked && (
               <Button variant="secondary" className="w-full" onClick={handleLockVault}>
                 Lock vault
@@ -173,6 +178,9 @@ export function Nav() {
             <Button variant="secondary" className="w-full" onClick={handleSignOut}>
               Sign out
             </Button>
+            <p className="px-1 text-xs text-[var(--muted)]">
+              Vault status: {vaultUnlocked ? "Unlocked on this browser" : "Locked"}
+            </p>
           </div>
         </nav>
       )}
