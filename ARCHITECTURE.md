@@ -45,7 +45,7 @@ src/
     api/               # REST API routes (thin; delegate to modules)
   components/          # App shell + domain components (migrating to modules)
     ui/                # Re-exports from modules/ui
-    layout/            # Nav, PageLayout
+    layout/            # SiteShell, Nav, SiteFooter, PageLayout
     letters/           # LetterCard
   features/            # Client feature flows (passkey, vault)
   lib/
@@ -63,7 +63,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - Local Swagger UI: [http://localhost:3001/api-docs](http://localhost:3001/api-docs)
 - OpenAPI JSON: `GET /api/openapi`
 
-**`/api-docs` layout:** Swagger UI intentionally renders **without** the app navigation shell (`PageLayout` / `Nav`) so the vendor UI can use the full viewport. The page still includes the global skip link from the root layout and sets `id="main-content"` on its `<main>`. In production the route returns 404 unless `ENABLE_API_DOCS=true` (see `.env.example` and `docs/API_REFERENCE.md`).
+**`/api-docs` layout:** Swagger UI intentionally renders **without** `SiteShell` (`Nav` / `SiteFooter`) so the vendor UI can use the full viewport. The page still includes the global skip link from the root layout and sets `id="main-content"` on its `<main>`. In production the route returns 404 unless `ENABLE_API_DOCS=true` (see `.env.example` and `docs/API_REFERENCE.md`).
 
 - Passkey registration without PRF does **not** create `passkey_authorized_device` envelopes and does **not** revoke existing passkey envelopes
 - Passkey-based vault unlock requires PRF support. If PRF is unavailable, the app must not create a passkey vault envelope and must not present that passkey as a recovery method.
@@ -119,7 +119,7 @@ Vault envelope methods: `trusted_device`, `passkey_authorized_device`, `recovery
 ## UI layer
 
 - **Design docs:** `docs/UI_UX_AUDIT.md`, `docs/UI_UX_IMPLEMENTATION_PLAN.md`
-- **Layout:** `PageLayout` + responsive `Nav` (mobile menu below `md`)
+- **Layout:** `SiteShell` (`Nav` + `SiteFooter`) on `(public)`, `(auth)`, and `(vault)` route groups; `PageLayout` for content width; responsive mobile menu in `Nav`. Auth pages use package UI inside the shell. See `docs/LAYOUT_NAVIGATION_AUDIT.md`.
 - **Vault unlock:** shared `VaultUnlockPanel` used by `/vault/unlock` and `VaultAccessGate`
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + sage primary)
 - **Security UX:** no plaintext letters in URLs/titles; recovery code cleared after confirm; `ConfirmDialog` for destructive actions

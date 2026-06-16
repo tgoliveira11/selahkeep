@@ -100,14 +100,13 @@ If coverage drops below 90%, add or extend tests until `npm run test:coverage` p
 | Security | `src/test/security/` | Plaintext rejection, boundaries, sentinel phrase, redaction |
 | Services | `src/test/services/` | Business logic with mocked repositories |
 | API routes | `src/test/api/` | Route handlers with mocked auth + services |
-| Features | `src/test/features/` | Client feature flows (e.g. passkey unlock) |
-| E2E | `e2e/` | Full browser lifecycle (Playwright) |
+| Features | `src/test/features/` | Client feature flows (e.g. passkey unlock, site layout) |
 
 Guidelines:
 
 - Prefer **unit tests** for deterministic logic (crypto, parsing, validation).
 - Prefer **service/API tests** for authorization, rate limits, and envelope storage.
-- Use **E2E** sparingly for critical user journeys; keep most coverage in Vitest.
+- Browser E2E (Playwright) was removed; see `docs/TESTING_STRATEGY.md`.
 - New API routes, services, or crypto paths **must** include tests in the matching layer.
 - Security-sensitive paths (passkeys, recovery, vault unlock, account 2FA) need explicit tests; see `.cursor/rules/testing.md`.
 
@@ -118,7 +117,7 @@ Enforced coverage scope (see `vitest.config.ts`):
 - `src/app/api/**` (except NextAuth catch-all route)
 - `src/features/passkey/**`
 
-Repository adapters and UI pages are covered indirectly via service/API/E2E tests unless a change adds testable logic there—in that case extend the appropriate layer.
+Repository adapters and UI pages are covered indirectly via service/API/feature tests unless a change adds testable logic there—in that case extend the appropriate layer.
 
 ### Security tests (always required)
 

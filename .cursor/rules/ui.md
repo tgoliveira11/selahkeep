@@ -11,7 +11,7 @@
 ## Component conventions
 
 - Use shared components under `src/components/ui/` — avoid one-off card/button styles on pages.
-- Use `PageLayout` for authenticated/public pages with nav.
+- Route groups `(public)`, `(auth)`, and `(vault)` use `SiteShell` (header + footer). Use `PageLayout` inside the shell for content width.
 - Use `FormField` for labeled inputs (not placeholder-only).
 - Use `ConfirmDialog` instead of `window.confirm` for in-app destructive actions.
 - Use `LoadingState`, `EmptyState`, `ErrorState`, `Alert` for async UX.

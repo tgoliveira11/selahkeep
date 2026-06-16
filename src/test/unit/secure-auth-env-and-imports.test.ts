@@ -113,4 +113,17 @@ describe("buildSecureAuthConfigFromEnv", () => {
     expect(config.passwordPolicy?.minLength).toBe(12);
     expect(config.sessions?.revocationPollIntervalSeconds).toBe(3600);
   });
+
+  it("maps product auth page messages into ui config", () => {
+    const config = buildSecureAuthConfigFromEnv(baseEnv, {
+      appName: "Letters to God",
+      appSlug: "letters-to-god",
+      baseUrl: "http://localhost:3001",
+    });
+
+    expect(config.ui?.messages?.loginDescription).toBe("Sign in to continue to your account.");
+    expect(config.ui?.messages?.registerDescription).toBe(
+      "Start writing your private letters in a protected space."
+    );
+  });
 });

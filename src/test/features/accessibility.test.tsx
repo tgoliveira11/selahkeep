@@ -3,11 +3,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render } from "@testing-library/react";
 import { axe } from "jest-axe";
 import { SecureAuthUIProvider } from "@tgoliveira/secure-auth/react";
-import HomePage from "@/app/page";
+import HomePage from "@/app/(public)/page";
 import LoginPage from "@/app/(auth)/login/page";
 import RegisterPage from "@/app/(auth)/register/page";
 import AccountDeletedPage from "@/app/(public)/account-deleted/page";
 import { SkipLink } from "@/components/layout/skip-link";
+import { SiteShell } from "@/components/layout/site-shell";
 import { MAIN_CONTENT_ID } from "@/lib/ui/main-content";
 import { testSecureAuthUiConfig } from "@/test/helpers/secure-auth-ui-config";
 
@@ -40,7 +41,11 @@ describe("accessibility", () => {
   });
 
   it("landing page has no obvious axe violations", async () => {
-    const { container } = render(<HomePage />);
+    const { container } = render(
+      <SiteShell>
+        <HomePage />
+      </SiteShell>
+    );
     expect(await axe(container)).toHaveNoViolations();
   });
 

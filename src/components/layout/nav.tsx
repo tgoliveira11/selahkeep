@@ -114,6 +114,7 @@ export function Nav() {
               className="inline-flex min-h-11 items-center rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium md:hidden"
               aria-expanded={menuOpen}
               aria-controls={menuId}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
               onClick={() => setMenuOpen((open) => !open)}
             >
               Menu

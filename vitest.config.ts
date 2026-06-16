@@ -7,7 +7,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
-    exclude: ["e2e/**", "node_modules/**"],
+    exclude: ["node_modules/**"],
     deps: {
       // Inline `@tgoliveira/secure-auth` so Vitest/Vite can resolve `next/server`
       // subpath imports correctly from the package's ESM dist.

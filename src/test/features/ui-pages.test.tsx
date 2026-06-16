@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { SecureAuthUIProvider } from "@tgoliveira/secure-auth/react";
-import HomePage from "@/app/page";
+import HomePage from "@/app/(public)/page";
 import LoginPage from "@/app/(auth)/login/page";
 import RegisterPage from "@/app/(auth)/register/page";
 import AccountDeletedPage from "@/app/(public)/account-deleted/page";
@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { getRecoveryStateLabel } from "@/lib/ui/recovery-state-labels";
 import { testSecureAuthUiConfig } from "@/test/helpers/secure-auth-ui-config";
+import { authPageMessages } from "@/lib/auth/auth-page-messages";
 
 vi.mock("next-auth/react", () => ({
   useSession: vi.fn(() => ({ data: null, status: "unauthenticated" })),
@@ -52,10 +53,10 @@ describe("UI pages and components", () => {
     expect(screen.getByLabelText("Password")).toBeTruthy();
   });
 
-  it("renders register page with privacy reassurance and social options", () => {
+  it("renders register page with social options", () => {
     render(withSecureAuthUi(<RegisterPage />));
     expect(screen.getByRole("heading", { name: /create your account/i })).toBeTruthy();
-    expect(screen.getByText(/protected on this device/i)).toBeTruthy();
+    expect(screen.getByText(authPageMessages.registerDescription)).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with google/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with apple/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with microsoft/i })).toBeTruthy();

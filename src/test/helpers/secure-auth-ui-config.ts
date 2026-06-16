@@ -1,4 +1,5 @@
 import type { SecureAuthUIPublicConfig } from "@tgoliveira/secure-auth/react";
+import { authPageMessages } from "@/lib/auth/auth-page-messages";
 
 /** Minimal UI config for rendering @tgoliveira/secure-auth pages in Vitest. */
 export const testSecureAuthUiConfig: SecureAuthUIPublicConfig = {
@@ -20,21 +21,7 @@ export const testSecureAuthUiConfig: SecureAuthUIPublicConfig = {
     securitySettings: "/settings/account",
     sessionsSettings: "/settings/account",
   },
-  messages: {
-    loginTitle: "Welcome back",
-    loginDescription: "Sign in to continue writing your private letters.",
-    registerTitle: "Create your account",
-    registerDescription: "Start writing private letters protected on your device.",
-    loginTwoFactorTitle: "Two-factor authentication",
-    loginTwoFactorDescription:
-      "Enter the 6-digit code from your authenticator app to finish signing in.",
-    loginCompleteTitle: "Signing you in",
-    loginCompleteDescription: "Finishing your sign-in securely.",
-    registerLinkLabel: "Create one",
-    securitySettingsTitle: "Security settings",
-    sessionsSettingsTitle: "Active sessions",
-    dashboardTitle: "My letters",
-  },
+  messages: { ...authPageMessages },
   passwordPolicy: {
     enforcement: "warn",
     minLength: 12,

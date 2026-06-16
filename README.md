@@ -55,7 +55,7 @@ Design audit and implementation plan:
 - [`docs/UI_UX_AUDIT.md`](./docs/UI_UX_AUDIT.md) — screen inventory, issues, priorities
 - [`docs/UI_UX_IMPLEMENTATION_PLAN.md`](./docs/UI_UX_IMPLEMENTATION_PLAN.md) — design principles, components, checklists
 
-Shared UI components live under `src/components/ui/`. Pages use `PageLayout` for consistent mobile-first shell and navigation.
+Shared UI components live under `src/components/ui/`. Route groups `(public)`, `(auth)`, and `(vault)` wrap pages in `SiteShell` (header + footer). Page content uses `PageLayout` for width and spacing. See `docs/LAYOUT_NAVIGATION_AUDIT.md`.
 
 ## API reference (Swagger UI)
 
@@ -208,25 +208,14 @@ When the current profile is not registered and the vault is unlocked, the primar
 | `npm run lint` | ESLint (`eslint .`) |
 | `npm run test` | Run all Vitest tests |
 | `npm run test:coverage` | Vitest with coverage thresholds (≥90% lines/statements/functions/branches) |
-| `npm run test:all` | Coverage tests, then Playwright E2E |
-| `npm run test:e2e` | Browser E2E tests (Playwright; needs PostgreSQL + dev server) |
+| `npm run test:all` | Alias for `npm run test:coverage` |
 | `npm run db:generate` | Generate Drizzle migrations |
 | `npm run db:migrate` | Apply migrations to PostgreSQL |
 | `docker compose up -d` | Start local PostgreSQL |
 
-E2E browser install (once): `npx playwright install chromium`
-
-E2E runs `npm run db:migrate` automatically via Playwright global setup (requires PostgreSQL and `DATABASE_URL` in `.env.local`).
-
-Reuse an already-running dev server for E2E:
-
-```bash
-PLAYWRIGHT_REUSE_SERVER=true npm run test:e2e
-```
-
 ## Testing
 
-Tests are split by layer. Vitest runs everything under `src/test/`; Playwright runs `e2e/`.
+All tests run through **Vitest** (`src/test/`). Browser E2E (Playwright) was intentionally removed; see `docs/TESTING_STRATEGY.md`.
 
 | Type | Location | What it covers |
 |------|----------|----------------|
@@ -234,8 +223,7 @@ Tests are split by layer. Vitest runs everything under `src/test/`; Playwright r
 | **Security** | `src/test/security/` | Plaintext rejection, boundaries, sentinel phrase (static + runtime integration), AAD, WebAuthn challenges, audit redaction |
 | **Services** | `src/test/services/` | Business logic with mocked repositories (letters, vault, passkeys, trusted devices, admin) |
 | **API routes** | `src/test/api/` | Route handlers with mocked auth + services (letters, vault, passkeys, recovery, register, admin) |
-| **Features** | `src/test/features/` | Client feature flows such as passkey unlock |
-| **E2E** | `e2e/` | Full browser lifecycle: register → login → vault setup → write → list → edit → sign out |
+| **Features** | `src/test/features/` | Client feature flows (passkey unlock, site layout shell, UI pages, accessibility) |
 
 Recent passkey-related coverage includes:
 
@@ -246,7 +234,7 @@ Recent passkey-related coverage includes:
 - Passkey registration/authentication services and routes
 - Passkey removal (`DELETE /api/passkeys`)
 
-Coverage is enforced on core application code (`src/lib`, `src/server/services`, `src/server/policies`, `src/app/api`, `src/features/passkey`). Repository adapters and UI pages are covered indirectly via service/API/E2E tests.
+Coverage is enforced on core application code (`src/lib`, `src/server/services`, `src/server/policies`, `src/app/api`, `src/features/passkey`). Repository adapters and UI pages are covered indirectly via service/API/feature tests.
 
 ```bash
 npm ci                  # clean install

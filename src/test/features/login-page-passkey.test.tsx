@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import { SecureAuthUIProvider } from "@tgoliveira/secure-auth/react";
 import LoginPage from "@/app/(auth)/login/page";
 import { testSecureAuthUiConfig } from "@/test/helpers/secure-auth-ui-config";
+import { authPageMessages } from "@/lib/auth/auth-page-messages";
 
 vi.mock("next-auth/react", () => ({
   useSession: vi.fn(() => ({ data: null, status: "unauthenticated" })),
@@ -42,7 +43,7 @@ describe("login page (package UI)", () => {
     expect(screen.getByLabelText("Email")).toBeTruthy();
     expect(screen.getByLabelText("Password")).toBeTruthy();
     expect(screen.getByRole("button", { name: /sign in with email/i })).toBeTruthy();
-    expect(screen.getByText(/protected on this device/i)).toBeTruthy();
+    expect(screen.getByText(authPageMessages.loginDescription)).toBeTruthy();
   });
 
   it("posts credentials to the package start-form API route", async () => {
