@@ -216,6 +216,18 @@ describe("signInWithPasskey", () => {
     await expect(signInWithPasskey()).rejects.toThrow("Passkey sign-in could not complete your session.");
   });
 
+  it("throws when verify does not return a loginToken", async () => {
+    mocks.verify.mockResolvedValue({
+      userId: USER_ID,
+      credentialId: "cred-id",
+      vaultUnlockAvailable: false,
+      encryptedVaultKey: null,
+      prfRequired: true,
+    });
+    await expect(signInWithPasskey()).rejects.toThrow(/session token/i);
+    expect(mocks.signIn).not.toHaveBeenCalled();
+  });
+
   it("stores vault-locked when unlock throws generic error", async () => {
     mocks.unlockVaultFromPasskeyEnvelope.mockRejectedValue(new Error("decrypt failed"));
     mocks.isVaultUnlocked.mockReturnValue(false);

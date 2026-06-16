@@ -103,6 +103,12 @@ export async function signInWithPasskey(
   let prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults);
   const verifyResult = await passkeyLoginApi.verify({ response: assertion });
 
+  if (!verifyResult.loginToken) {
+    throw new Error(
+      "Passkey sign-in did not receive a session token. Try again or use email and password."
+    );
+  }
+
   setPasskeyLoginHint({
     userId: verifyResult.userId,
     credentialId: verifyResult.credentialId ?? assertion.id,

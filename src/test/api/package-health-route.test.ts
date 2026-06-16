@@ -8,7 +8,7 @@ vi.mock("@/lib/secure-auth", () => ({
           Response.json({
             ok: true,
             package: "@tgoliveira/secure-auth",
-            version: "0.1.15-internal",
+            version: "0.1.16-internal",
           })
         ),
       },

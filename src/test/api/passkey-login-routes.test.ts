@@ -5,6 +5,9 @@ const mocks = vi.hoisted(() => ({
   ensureSecureAuthDatabaseReady: vi.fn(),
   passkeyLoginOptionsPost: vi.fn(),
   passkeyLoginVerifyPost: vi.fn(),
+  getServices: vi.fn(),
+  issueLoginToken: vi.fn(),
+  recordLoginSuccess: vi.fn(),
   getLoginVaultUnlockOptions: vi.fn(),
   getVaultUnlockMetadataForCredential: vi.fn(),
   enrichLoginOptionsWithVaultPrf: vi.fn(),
@@ -24,6 +27,7 @@ vi.mock("@/lib/secure-auth", () => ({
         POST: mocks.passkeyLoginVerifyPost,
       },
     },
+    getServices: mocks.getServices,
   },
 }));
 
@@ -46,6 +50,12 @@ describe("passkey login API routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.ensureSecureAuthDatabaseReady.mockResolvedValue(undefined);
+    mocks.getServices.mockResolvedValue({
+      authLoginService: { issueLoginToken: mocks.issueLoginToken },
+      authService: { recordLoginSuccess: mocks.recordLoginSuccess },
+    });
+    mocks.issueLoginToken.mockResolvedValue("issued-token");
+    mocks.recordLoginSuccess.mockResolvedValue(undefined);
   });
 
   it("enriches login options with prfIncluded", async () => {
@@ -107,6 +117,62 @@ describe("passkey login API routes", () => {
     expect(body.vaultUnlockAvailable).toBe(true);
     expect(body.encryptedVaultKey).toBeTruthy();
     expect(mocks.getVaultUnlockMetadataForCredential).toHaveBeenCalledWith(USER_ID, "cred-id");
+  });
+
+  it("issues loginToken when package requires 2FA (passkey bypasses TOTP)", async () => {
+    const { POST: verifyPost } = await import("@/app/api/auth/passkey/login/verify/route");
+    mocks.passkeyLoginVerifyPost.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          requiresTwoFactor: true,
+          challengeToken: "challenge-token",
+          userId: USER_ID,
+          credentialId: "cred-id",
+        }),
+        { status: 200 }
+      )
+    );
+    mocks.getVaultUnlockMetadataForCredential.mockResolvedValue({
+      vaultUnlockAvailable: false,
+      encryptedVaultKey: null,
+      prfRequired: true,
+    });
+
+    const res = await verifyPost(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({ response: { id: "cred" } }),
+      })
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.loginToken).toBe("issued-token");
+    expect(body.userId).toBe(USER_ID);
+    expect(body.credentialId).toBe("cred-id");
+    expect(body.vaultUnlockAvailable).toBe(false);
+    expect(mocks.issueLoginToken).toHaveBeenCalledWith(USER_ID, "passkey");
+    expect(mocks.recordLoginSuccess).toHaveBeenCalledWith(USER_ID, "passkey");
+    expect(mocks.getVaultUnlockMetadataForCredential).toHaveBeenCalledWith(USER_ID, "cred-id");
+  });
+
+  it("returns 500 when package verify succeeds without loginToken or 2FA challenge", async () => {
+    const { POST: verifyPost } = await import("@/app/api/auth/passkey/login/verify/route");
+    mocks.passkeyLoginVerifyPost.mockResolvedValue(
+      new Response(JSON.stringify({ userId: USER_ID, credentialId: "cred-id" }), { status: 200 })
+    );
+
+    const res = await verifyPost(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({ response: { id: "cred" } }),
+      })
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body.error).toBeTruthy();
+    expect(mocks.getVaultUnlockMetadataForCredential).not.toHaveBeenCalled();
   });
 
   it("passes through package verify errors without enrichment", async () => {
