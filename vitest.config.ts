@@ -8,6 +8,11 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     exclude: ["e2e/**", "node_modules/**"],
+    deps: {
+      // Inline `@tgoliveira/secure-auth` so Vitest/Vite can resolve `next/server`
+      // subpath imports correctly from the package's ESM dist.
+      inline: ["@tgoliveira/secure-auth"],
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "text-summary", "lcov"],
@@ -28,7 +33,6 @@ export default defineConfig({
         "src/lib/db/schema.ts",
         "src/lib/db/index.ts",
         "src/lib/crypto-client/index.ts",
-        "src/modules/auth/lib/auth-options.ts",
         "src/modules/auth/lib/session.ts",
         "src/modules/**/repositories/**",
         "src/modules/**/index.ts",
@@ -48,6 +52,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // `@tgoliveira/secure-auth` imports `next/server` from its published ESM dist.
+      // Vitest's resolver (Node ESM) may not add the `.js` extension for subpath imports,
+      // so we alias to the concrete module file to keep tests hermetic.
+      "next/server": "next/server.js",
     },
   },
 });

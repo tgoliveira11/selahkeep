@@ -5,8 +5,9 @@ services:
       POSTGRES_USER: letters
       POSTGRES_PASSWORD: letters_dev
       POSTGRES_DB: letters_to_god
+    # Host 5435 avoids clashing with other local Postgres containers on 5432/5433/5434.
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

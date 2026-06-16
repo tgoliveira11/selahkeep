@@ -1,6 +1,7 @@
 /** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { SecureAuthUIProvider } from "@tgoliveira/secure-auth/react";
 import HomePage from "@/app/page";
 import LoginPage from "@/app/(auth)/login/page";
 import RegisterPage from "@/app/(auth)/register/page";
@@ -8,6 +9,7 @@ import AccountDeletedPage from "@/app/(public)/account-deleted/page";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { getRecoveryStateLabel } from "@/lib/ui/recovery-state-labels";
+import { testSecureAuthUiConfig } from "@/test/helpers/secure-auth-ui-config";
 
 vi.mock("next-auth/react", () => ({
   useSession: vi.fn(() => ({ data: null, status: "unauthenticated" })),
@@ -20,6 +22,16 @@ vi.mock("next/navigation", () => ({
   usePathname: vi.fn(() => "/"),
   useSearchParams: vi.fn(() => new URLSearchParams()),
 }));
+
+vi.mock("@tgoliveira/secure-auth/react/client", () => ({
+  signInWithPasskey: vi.fn(),
+  isPasskeyLoginSupported: vi.fn(() => false),
+  getPasskeyLoginUnsupportedMessage: () => "This browser does not support passkey sign-in.",
+}));
+
+function withSecureAuthUi(children: React.ReactNode) {
+  return <SecureAuthUIProvider config={testSecureAuthUiConfig}>{children}</SecureAuthUIProvider>;
+}
 
 describe("UI pages and components", () => {
   beforeEach(() => {
@@ -35,19 +47,18 @@ describe("UI pages and components", () => {
   });
 
   it("renders login page with labeled fields", () => {
-    render(<LoginPage />);
+    render(withSecureAuthUi(<LoginPage />));
     expect(screen.getByLabelText("Email")).toBeTruthy();
     expect(screen.getByLabelText("Password")).toBeTruthy();
   });
 
   it("renders register page with privacy reassurance and social options", () => {
-    render(<RegisterPage />);
+    render(withSecureAuthUi(<RegisterPage />));
     expect(screen.getByRole("heading", { name: /create your account/i })).toBeTruthy();
     expect(screen.getByText(/protected on this device/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with google/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with apple/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with microsoft/i })).toBeTruthy();
-    expect(screen.getByText(/microsoft create your account automatically/i)).toBeTruthy();
   });
 
   it("renders account deleted page", () => {

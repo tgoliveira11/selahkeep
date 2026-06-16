@@ -16,4 +16,10 @@ describe("formatSessionDateTime", () => {
   it("returns Unknown for invalid dates", () => {
     expect(formatSessionDateTime("not-a-date")).toBe("Unknown");
   });
+
+  it("formats older timestamps with month and day", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-10T15:00:00Z"));
+    expect(formatSessionDateTime("2026-06-01T14:32:00Z")).toMatch(/Jun/);
+  });
 });

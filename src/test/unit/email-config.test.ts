@@ -24,6 +24,19 @@ describe("email config", () => {
     expect(getEmailConfig().provider).toBeTruthy();
   });
 
+  it("strips trailing slashes from app base url when building links", () => {
+    process.env.APP_BASE_URL = "http://localhost:3001/";
+    expect(buildAccountLink("/reset-password", "abc")).toBe(
+      "http://localhost:3001/reset-password?token=abc"
+    );
+  });
+
+  it("falls back to NEXTAUTH_URL for email config base url", () => {
+    delete process.env.APP_BASE_URL;
+    process.env.NEXTAUTH_URL = "http://localhost:3001";
+    expect(getEmailConfig().appBaseUrl).toBe("http://localhost:3001");
+  });
+
   it("defaults SMTP_PORT to 587", () => {
     process.env.SMTP_HOST = "smtp.example.com";
     process.env.SMTP_USER = "user";
@@ -82,9 +95,30 @@ describe("email config", () => {
     expect(() => assertEmailDeliveryConfig("smtp")).toThrow("APP_BASE_URL is required");
   });
 
+  it("accepts NEXTAUTH_URL when APP_BASE_URL is unset for delivery config", () => {
+    process.env.EMAIL_FROM = "noreply@example.com";
+    delete process.env.APP_BASE_URL;
+    process.env.NEXTAUTH_URL = "http://localhost:3001";
+    expect(() => assertEmailDeliveryConfig("smtp")).not.toThrow();
+  });
+
   it("allows console provider without explicit delivery config", () => {
     delete process.env.EMAIL_FROM;
     delete process.env.APP_BASE_URL;
     expect(() => assertEmailDeliveryConfig("console")).not.toThrow();
+  });
+
+  it("rejects invalid SMTP_PORT values", () => {
+    process.env.SMTP_HOST = "localhost";
+    process.env.SMTP_PORT = "0";
+    expect(() => getSmtpConfig()).toThrow("SMTP_PORT must be a positive integer");
+  });
+
+  it("treats 127.0.0.1 as a local SMTP host without credentials", () => {
+    process.env.SMTP_HOST = "127.0.0.1";
+    process.env.SMTP_PORT = "1025";
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_PASSWORD;
+    expect(getSmtpConfig().host).toBe("127.0.0.1");
   });
 });

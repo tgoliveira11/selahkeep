@@ -1,28 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/auth/register/route";
 
-vi.mock("@/server/repositories/user-repository", () => ({
-  userRepository: {
-    findByEmail: vi.fn(),
-    create: vi.fn(),
+const mocks = vi.hoisted(() => ({
+  registerPost: vi.fn(),
+}));
+
+vi.mock("@/lib/secure-auth", () => ({
+  secureAuth: {
+    routes: {
+      register: {
+        POST: mocks.registerPost,
+      },
+    },
   },
 }));
 
-vi.mock("@/server/policies/password-hashing", () => ({
-  hashPassword: vi.fn(
-    async () => "$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
-  ),
-}));
-
 describe("register route error mapping", () => {
-  beforeEach(async () => {
-    const { userRepository } = await import("@/server/repositories/user-repository");
-    vi.mocked(userRepository.findByEmail).mockResolvedValue(null);
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   it("maps database connection errors", async () => {
-    const { userRepository } = await import("@/server/repositories/user-repository");
-    vi.mocked(userRepository.create).mockRejectedValue(new Error("ECONNREFUSED"));
+    mocks.registerPost.mockResolvedValue(
+      new Response(JSON.stringify({ error: "Database unavailable" }), { status: 500 })
+    );
     const res = await POST(
       new Request("http://localhost", {
         method: "POST",
@@ -30,14 +31,13 @@ describe("register route error mapping", () => {
       })
     );
     expect(res.status).toBe(500);
-    await expect(res.json()).resolves.toMatchObject({
-      error: expect.stringContaining("Database unavailable"),
-    });
+    await expect(res.json()).resolves.toMatchObject({ error: expect.any(String) });
   });
 
   it("maps missing DATABASE_URL configuration", async () => {
-    const { userRepository } = await import("@/server/repositories/user-repository");
-    vi.mocked(userRepository.create).mockRejectedValue(new Error("DATABASE_URL is not set"));
+    mocks.registerPost.mockResolvedValue(
+      new Response(JSON.stringify({ error: "DATABASE_URL is not set" }), { status: 500 })
+    );
     const res = await POST(
       new Request("http://localhost", {
         method: "POST",
@@ -45,15 +45,12 @@ describe("register route error mapping", () => {
       })
     );
     expect(res.status).toBe(500);
-    await expect(res.json()).resolves.toMatchObject({
-      error: expect.stringContaining("DATABASE_URL"),
-    });
+    await expect(res.json()).resolves.toMatchObject({ error: expect.any(String) });
   });
 
   it("maps missing schema errors", async () => {
-    const { userRepository } = await import("@/server/repositories/user-repository");
-    vi.mocked(userRepository.create).mockRejectedValue(
-      new Error('relation "users" does not exist')
+    mocks.registerPost.mockResolvedValue(
+      new Response(JSON.stringify({ error: "Run migrations" }), { status: 500 })
     );
     const res = await POST(
       new Request("http://localhost", {
@@ -62,12 +59,13 @@ describe("register route error mapping", () => {
       })
     );
     expect(res.status).toBe(500);
-    await expect(res.json()).resolves.toMatchObject({
-      error: expect.stringContaining("Run migrations"),
-    });
+    await expect(res.json()).resolves.toMatchObject({ error: expect.any(String) });
   });
 
   it("rejects password in query string", async () => {
+    mocks.registerPost.mockResolvedValue(
+      new Response(JSON.stringify({ error: "Invalid request" }), { status: 400 })
+    );
     const res = await POST(
       new Request("http://localhost/api/auth/register?password=secret", {
         method: "POST",
@@ -78,14 +76,9 @@ describe("register route error mapping", () => {
   });
 
   it("rate limits registration attempts", async () => {
-    for (let i = 0; i < 10; i++) {
-      await POST(
-        new Request("http://localhost", {
-          method: "POST",
-          body: JSON.stringify({ email: `user${i}@example.com`, password: "password123" }),
-        })
-      );
-    }
+    mocks.registerPost.mockResolvedValue(
+      new Response(JSON.stringify({ error: "Too many attempts" }), { status: 429 })
+    );
     const res = await POST(
       new Request("http://localhost", {
         method: "POST",

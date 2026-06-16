@@ -44,4 +44,24 @@ describe("detectPasskeyPrfSupport", () => {
 
     await expect(detectPasskeyPrfSupport()).resolves.toBe("unknown");
   });
+
+  it("returns unknown when capability probe throws", async () => {
+    globalThis.PublicKeyCredential = {
+      isUserVerifyingPlatformAuthenticatorAvailable: async () => true,
+      getClientCapabilities: async () => {
+        throw new Error("probe failed");
+      },
+    } as unknown as typeof PublicKeyCredential;
+
+    await expect(detectPasskeyPrfSupport()).resolves.toBe("unknown");
+  });
+
+  it("returns unknown when PRF capability is not reported", async () => {
+    globalThis.PublicKeyCredential = {
+      isUserVerifyingPlatformAuthenticatorAvailable: async () => true,
+      getClientCapabilities: async () => ({}),
+    } as unknown as typeof PublicKeyCredential;
+
+    await expect(detectPasskeyPrfSupport()).resolves.toBe("unknown");
+  });
 });

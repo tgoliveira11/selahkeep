@@ -1,9 +1,10 @@
 import "server-only";
 import { getServerSession } from "next-auth";
-import { authOptions } from "./auth-options";
+import { secureAuth } from "@/lib/secure-auth";
 
 export async function getSessionUser() {
-  const session = await getServerSession(authOptions);
+  const services = await secureAuth.getServices();
+  const session = await getServerSession(services.getAuthOptions());
   if (!session?.user?.id) return null;
   return {
     id: session.user.id,

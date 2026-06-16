@@ -84,4 +84,24 @@ describe("oauth sign-in policy", () => {
     expect(isOAuthOnlyProvider("google")).toBe(true);
     expect(isOAuthOnlyProvider("credentials")).toBe(false);
   });
+
+  it("allows login-token provider without email checks", () => {
+    expect(
+      evaluateOAuthSignIn({
+        email: undefined,
+        accountProvider: "login-token",
+        existingUser: null,
+      })
+    ).toEqual({ action: "allow_existing", markEmailVerified: false });
+  });
+
+  it("allows existing sessions when provider is missing", () => {
+    expect(
+      evaluateOAuthSignIn({
+        email: undefined,
+        accountProvider: "",
+        existingUser: null,
+      })
+    ).toEqual({ action: "allow_existing", markEmailVerified: false });
+  });
 });

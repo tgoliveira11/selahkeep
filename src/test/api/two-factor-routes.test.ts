@@ -8,55 +8,39 @@ import { POST as verify2faPost } from "@/app/api/auth/login/verify-2fa/route";
 import { USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
-  requireFullyAuthenticatedUser: vi.fn(),
-  getStatus: vi.fn(),
-  startSetup: vi.fn(),
-  verifySetup: vi.fn(),
-  disable: vi.fn(),
-  startCredentialsLogin: vi.fn(),
-  verifyTwoFactorLogin: vi.fn(),
+  statusGet: vi.fn(),
+  setupStartPost: vi.fn(),
+  setupVerifyPost: vi.fn(),
+  disablePost: vi.fn(),
+  loginStartPost: vi.fn(),
+  verify2faPost: vi.fn(),
 }));
 
-vi.mock("@/lib/auth/session", () => ({
-  requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
-}));
-
-vi.mock("@/server/services/two-factor-service", () => ({
-  twoFactorService: {
-    getStatus: mocks.getStatus,
-    startSetup: mocks.startSetup,
-    verifySetup: mocks.verifySetup,
-    disable: mocks.disable,
-  },
-}));
-
-vi.mock("@/server/services/auth-login-service", () => ({
-  authLoginService: {
-    startCredentialsLogin: mocks.startCredentialsLogin,
-    verifyTwoFactorLogin: mocks.verifyTwoFactorLogin,
-  },
-  InvalidCredentialsError: class InvalidCredentialsError extends Error {
-    name = "InvalidCredentialsError";
-  },
-  InvalidTwoFactorChallengeError: class InvalidTwoFactorChallengeError extends Error {
-    name = "InvalidTwoFactorChallengeError";
-  },
-  InvalidTwoFactorCodeError: class InvalidTwoFactorCodeError extends Error {
-    name = "InvalidTwoFactorCodeError";
+vi.mock("@/lib/secure-auth", () => ({
+  secureAuth: {
+    routes: {
+      twoFactorStatus: { GET: mocks.statusGet },
+      twoFactorSetupStart: { POST: mocks.setupStartPost },
+      twoFactorSetupVerify: { POST: mocks.setupVerifyPost },
+      twoFactorDisable: { POST: mocks.disablePost },
+      loginStart: { POST: mocks.loginStartPost },
+      loginVerify2fa: { POST: mocks.verify2faPost },
+    },
   },
 }));
 
 describe("two-factor API routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireFullyAuthenticatedUser.mockResolvedValue({
-      id: USER_ID,
-      email: "user@example.com",
-    });
   });
 
   it("GET status returns 2FA state", async () => {
-    mocks.getStatus.mockResolvedValue({ enabled: false, enabledAt: null, hasPendingSetup: false });
+    mocks.statusGet.mockResolvedValue(
+      new Response(JSON.stringify({ enabled: false, enabledAt: null, hasPendingSetup: false }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
     const res = await statusGet();
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({
@@ -67,13 +51,17 @@ describe("two-factor API routes", () => {
   });
 
   it("setup start does not return otpauth URL with secret after start", async () => {
-    mocks.startSetup.mockResolvedValue({
-      qrCodeDataUrl: "data:image/png;base64,abc",
-      manualSetupKey: "SECRETKEY",
-      otpauthUrl: "otpauth://totp/secret",
-      issuer: "Letters to God",
-      accountLabel: "user@example.com",
-    });
+    mocks.setupStartPost.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          qrCodeDataUrl: "data:image/png;base64,abc",
+          manualSetupKey: "SECRETKEY",
+          issuer: "Letters to God",
+          accountLabel: "user@example.com",
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
     const res = await setupStartPost(new Request("http://localhost"));
     const body = await res.json();
     expect(res.status).toBe(200);
@@ -82,7 +70,12 @@ describe("two-factor API routes", () => {
   });
 
   it("setup verify returns backup codes once", async () => {
-    mocks.verifySetup.mockResolvedValue({ success: true, backupCodes: ["AAAA-BBBB-CCCC"] });
+    mocks.setupVerifyPost.mockResolvedValue(
+      new Response(JSON.stringify({ success: true, backupCodes: ["AAAA-BBBB-CCCC"] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
     const res = await setupVerifyPost(
       new Request("http://localhost", {
         method: "POST",
@@ -96,10 +89,12 @@ describe("two-factor API routes", () => {
   });
 
   it("login start returns challenge when 2FA is enabled", async () => {
-    mocks.startCredentialsLogin.mockResolvedValue({
-      requiresTwoFactor: true,
-      challengeToken: "challenge-token",
-    });
+    mocks.loginStartPost.mockResolvedValue(
+      new Response(
+        JSON.stringify({ requiresTwoFactor: true, challengeToken: "challenge-token" }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
     const res = await loginStartPost(
       new Request("http://localhost", {
         method: "POST",
@@ -113,7 +108,12 @@ describe("two-factor API routes", () => {
   });
 
   it("disable requires authenticated user and valid payload", async () => {
-    mocks.disable.mockResolvedValue({ success: true });
+    mocks.disablePost.mockResolvedValue(
+      new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
     const res = await disablePost(
       new Request("http://localhost", {
         method: "POST",
@@ -125,6 +125,18 @@ describe("two-factor API routes", () => {
   });
 
   it("setup verify and disable reject invalid payloads", async () => {
+    mocks.setupVerifyPost.mockResolvedValue(
+      new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      })
+    );
+    mocks.disablePost.mockResolvedValue(
+      new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      })
+    );
     const badVerify = await setupVerifyPost(
       new Request("http://localhost", { method: "POST", body: JSON.stringify({ code: "12" }) })
     );
@@ -137,7 +149,12 @@ describe("two-factor API routes", () => {
   });
 
   it("verify-2fa returns login token on success", async () => {
-    mocks.verifyTwoFactorLogin.mockResolvedValue({ loginToken: "login-token" });
+    mocks.verify2faPost.mockResolvedValue(
+      new Response(JSON.stringify({ loginToken: "login-token" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
     const res = await verify2faPost(
       new Request("http://localhost", {
         method: "POST",

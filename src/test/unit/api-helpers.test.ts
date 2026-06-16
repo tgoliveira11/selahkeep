@@ -6,7 +6,7 @@ import { NotFoundError } from "@/server/services/letter-service";
 import { ConflictError, RateLimitError } from "@/server/services/vault-service";
 import { TwoFactorEncryptionKeyError } from "@/server/policies/two-factor-secret-crypto";
 import { AadValidationError } from "@/server/policies/aad-validation";
-import { ValidationError } from "@/server/services/two-factor-service";
+import { ValidationError } from "@/server/services/account-service";
 
 describe("api helpers", () => {
   it("parseJsonBody returns parsed JSON", async () => {

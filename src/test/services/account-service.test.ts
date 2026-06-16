@@ -59,6 +59,18 @@ describe("account deletion service", () => {
     expect(requirements.confirmationPhrase).toBe(ACCOUNT_DELETION_CONFIRMATION_PHRASE);
   });
 
+  it("reports OAuth-only accounts do not require password confirmation in UI", async () => {
+    mocks.findById.mockResolvedValue({
+      id: USER_ID,
+      email: "oauth@test.local",
+      authProvider: "google",
+      passwordHash: null,
+    });
+    const requirements = await accountService.getDeletionRequirements(USER_ID);
+    expect(requirements.requiresPassword).toBe(false);
+    expect(requirements.authProvider).toBe("google");
+  });
+
   it("allows OAuth-only deletion with confirmation phrase and active session", async () => {
     mocks.findById.mockResolvedValue({
       id: USER_ID,

@@ -6,6 +6,7 @@ describe("formatAuthMethod", () => {
     expect(formatAuthMethod("password")).toBe("Email and password");
     expect(formatAuthMethod("passkey")).toBe("Passkey");
     expect(formatAuthMethod("google")).toBe("Google");
+    expect(formatAuthMethod("apple")).toBe("Apple");
     expect(formatAuthMethod("microsoft")).toBe("Microsoft");
   });
 

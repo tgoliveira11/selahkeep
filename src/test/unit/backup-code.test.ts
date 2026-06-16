@@ -16,4 +16,14 @@ describe("backup code policy", () => {
     const hash = hashBackupCode("ABCD-EF12-3456");
     expect(hash).toBe(hashBackupCode(normalizeBackupCode("abcd ef12 3456")));
   });
+
+  it("requires TWO_FACTOR_SECRET_ENCRYPTION_KEY to hash backup codes", () => {
+    const original = process.env.TWO_FACTOR_SECRET_ENCRYPTION_KEY;
+    delete process.env.TWO_FACTOR_SECRET_ENCRYPTION_KEY;
+    try {
+      expect(() => hashBackupCode("ABCD-EF12-3456")).toThrow(/TWO_FACTOR_SECRET_ENCRYPTION_KEY/);
+    } finally {
+      process.env.TWO_FACTOR_SECRET_ENCRYPTION_KEY = original;
+    }
+  });
 });

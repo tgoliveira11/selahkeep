@@ -10,9 +10,17 @@ Web-first responsive MVP for private encrypted spiritual letters.
 
 - Next.js + TypeScript + React
 - PostgreSQL + Drizzle ORM
-- NextAuth (Google, Apple, Microsoft, email/password)
+- **Account authentication:** [`@tgoliveira/secure-auth@0.1.11-internal`](https://www.npmjs.com/package/@tgoliveira/secure-auth) (experimental 0.1.x — security review before production)
 - Web Crypto API (AES-GCM) + Argon2id recovery KDF
-- WebAuthn passkeys (@simplewebauthn) — passkeys can sign in to the account; vault unlock via passkey requires WebAuthn **PRF** support and a valid PRF-based vault envelope
+- WebAuthn passkeys (@simplewebauthn) — vault unlock via PRF is app-specific; account sign-in passkeys are provided by secure-auth
+
+Account auth env vars are documented in `.env.example` (`AUTH_*` names). Health check after starting the dev server:
+
+```bash
+curl http://localhost:3001/api/auth/package-health
+```
+
+Migration docs: [`docs/migrations/secure-auth-migration-report.md`](./docs/migrations/secure-auth-migration-report.md).
 
 ## Quick Start
 
@@ -26,7 +34,7 @@ docker compose up -d
 # Configure environment (required for migrations and the app)
 cp .env.example .env.local
 # Ensure DATABASE_URL is set in .env.local, e.g.:
-# DATABASE_URL=postgresql://letters:letters_dev@localhost:5432/letters_to_god
+# DATABASE_URL=postgresql://letters:letters_dev@localhost:5435/letters_to_god
 # NEXTAUTH_URL=http://localhost:3001
 # TWO_FACTOR_SECRET_ENCRYPTION_KEY=<openssl rand -base64 32>  # required for account 2FA
 

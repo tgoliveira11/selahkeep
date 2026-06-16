@@ -13,11 +13,11 @@ function readSource(relativePath: string) {
 
 describe("microsoft oauth security boundaries", () => {
   it("does not send private letter content through Microsoft auth modules", () => {
-    const authOptionsSource = readSource("src/modules/auth/lib/auth-options.ts");
+    const secureAuthSource = readSource("src/lib/secure-auth.ts");
     const socialSource = readSource("src/components/auth/social-sign-in.tsx");
     const policySource = readSource("src/modules/auth/lib/oauth-sign-in-policy.ts");
 
-    for (const source of [authOptionsSource, socialSource, policySource]) {
+    for (const source of [secureAuthSource, socialSource, policySource]) {
       expect(source).not.toContain(SENTINEL);
       expect(source).not.toMatch(/title|body/);
     }

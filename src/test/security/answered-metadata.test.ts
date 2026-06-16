@@ -4,7 +4,7 @@ import { join } from "path";
 
 describe("answered status as open metadata", () => {
   it("letters table has answered boolean column", () => {
-    const schema = readFileSync(join(process.cwd(), "src/lib/db/schema.ts"), "utf-8");
+    const schema = readFileSync(join(process.cwd(), "src/lib/db/app-schema.ts"), "utf-8");
     expect(schema).toContain("answered:");
     expect(schema).toContain("answeredAt:");
   });

@@ -3,18 +3,19 @@ import { DELETE, GET } from "@/app/api/account/route";
 import { USER_ID } from "@/test/helpers/fixtures";
 import { ACCOUNT_DELETION_CONFIRMATION_PHRASE } from "@/lib/account-deletion";
 
-vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: vi.fn(async () => ({ id: USER_ID, email: "user@test.local" })),
+const mocks = vi.hoisted(() => ({
+  accountGet: vi.fn(),
+  accountDelete: vi.fn(),
 }));
 
-vi.mock("@/server/services/account-service", () => ({
-  accountService: {
-    getDeletionRequirements: vi.fn(async () => ({
-      requiresPassword: true,
-      authProvider: "credentials",
-      confirmationPhrase: ACCOUNT_DELETION_CONFIRMATION_PHRASE,
-    })),
-    deleteAccount: vi.fn(async () => ({ success: true })),
+vi.mock("@/lib/secure-auth", () => ({
+  secureAuth: {
+    routes: {
+      account: {
+        GET: mocks.accountGet,
+        DELETE: mocks.accountDelete,
+      },
+    },
   },
 }));
 
@@ -24,6 +25,16 @@ describe("/api/account", () => {
   });
 
   it("returns deletion requirements", async () => {
+    mocks.accountGet.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          requiresPassword: true,
+          authProvider: "credentials",
+          confirmationPhrase: ACCOUNT_DELETION_CONFIRMATION_PHRASE,
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
     const res = await GET();
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -31,7 +42,12 @@ describe("/api/account", () => {
   });
 
   it("deletes the authenticated account with confirmation payload", async () => {
-    const { accountService } = await import("@/server/services/account-service");
+    mocks.accountDelete.mockResolvedValue(
+      new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
     const res = await DELETE(
       new Request("http://localhost/api/account", {
         method: "DELETE",
@@ -46,13 +62,6 @@ describe("/api/account", () => {
       })
     );
     expect(res.status).toBe(200);
-    expect(accountService.deleteAccount).toHaveBeenCalledWith(
-      USER_ID,
-      {
-        confirmationPhrase: ACCOUNT_DELETION_CONFIRMATION_PHRASE,
-        password: "secret",
-      },
-      "127.0.0.1"
-    );
+    expect(mocks.accountDelete).toHaveBeenCalledTimes(1);
   });
 });

@@ -37,7 +37,7 @@ export const authLoginApi = {
       | { requiresTwoFactor: true; challengeToken: string }
     >("/api/auth/login/start", payload),
   verifyTwoFactor: (payload: {
-    challengeToken: string;
+    challengeToken?: string;
     code?: string;
     backupCode?: string;
   }) => apiClient.post<{ loginToken: string }>("/api/auth/login/verify-2fa", payload),

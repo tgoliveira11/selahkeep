@@ -12,8 +12,8 @@ const FORBIDDEN_COLUMNS = [
 ];
 
 describe("database schema has no plaintext letter columns", () => {
-  it("schema.ts does not define forbidden plaintext columns for letters", () => {
-    const schema = readFileSync(join(process.cwd(), "src/lib/db/schema.ts"), "utf-8");
+  it("app-schema.ts does not define forbidden plaintext columns for letters", () => {
+    const schema = readFileSync(join(process.cwd(), "src/lib/db/app-schema.ts"), "utf-8");
     const lettersSection = schema.slice(schema.indexOf('export const letters'));
 
     for (const col of FORBIDDEN_COLUMNS) {

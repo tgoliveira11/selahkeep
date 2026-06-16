@@ -25,5 +25,25 @@ describe("device display info", () => {
     expect(formatDeviceMetadataSubtitle({ browser: "Chrome", deviceType: "unknown" })).toBe(
       "Chrome"
     );
+    expect(
+      formatDeviceMetadataSubtitle({ browser: "Safari", platform: "iOS", deviceType: "mobile" })
+    ).toBe("Safari · iOS · mobile");
+  });
+
+  it("includes form factor in mobile default device names", () => {
+    const info = getDeviceDisplayInfo(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+    );
+    expect(info.deviceType).toBe("mobile");
+    expect(info.defaultDeviceName).toContain("(mobile)");
+  });
+
+  it("uses explicit platform hints when provided", () => {
+    const info = getDeviceDisplayInfo(
+      "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "iPad"
+    );
+    expect(info.deviceType).toBe("tablet");
+    expect(info.defaultDeviceName).toContain("(tablet)");
   });
 });

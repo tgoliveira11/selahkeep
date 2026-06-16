@@ -2,12 +2,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render } from "@testing-library/react";
 import { axe } from "jest-axe";
+import { SecureAuthUIProvider } from "@tgoliveira/secure-auth/react";
 import HomePage from "@/app/page";
 import LoginPage from "@/app/(auth)/login/page";
 import RegisterPage from "@/app/(auth)/register/page";
 import AccountDeletedPage from "@/app/(public)/account-deleted/page";
 import { SkipLink } from "@/components/layout/skip-link";
 import { MAIN_CONTENT_ID } from "@/lib/ui/main-content";
+import { testSecureAuthUiConfig } from "@/test/helpers/secure-auth-ui-config";
 
 vi.mock("next-auth/react", () => ({
   useSession: vi.fn(() => ({ data: null, status: "unauthenticated" })),
@@ -22,6 +24,16 @@ vi.mock("next/navigation", () => ({
   useSearchParams: vi.fn(() => new URLSearchParams()),
 }));
 
+vi.mock("@tgoliveira/secure-auth/react/client", () => ({
+  signInWithPasskey: vi.fn(),
+  isPasskeyLoginSupported: vi.fn(() => false),
+  getPasskeyLoginUnsupportedMessage: () => "This browser does not support passkey sign-in.",
+}));
+
+function withSecureAuthUi(children: React.ReactNode) {
+  return <SecureAuthUIProvider config={testSecureAuthUiConfig}>{children}</SecureAuthUIProvider>;
+}
+
 describe("accessibility", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -33,12 +45,12 @@ describe("accessibility", () => {
   });
 
   it("login page has no obvious axe violations", async () => {
-    const { container } = render(<LoginPage />);
+    const { container } = render(withSecureAuthUi(<LoginPage />));
     expect(await axe(container)).toHaveNoViolations();
   });
 
   it("register page has no obvious axe violations", async () => {
-    const { container } = render(<RegisterPage />);
+    const { container } = render(withSecureAuthUi(<RegisterPage />));
     expect(await axe(container)).toHaveNoViolations();
   });
 

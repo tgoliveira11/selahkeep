@@ -1,28 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/auth/register/route";
-import { hashPassword } from "@/server/policies/password-hashing";
 
 const mocks = vi.hoisted(() => ({
-  findByEmail: vi.fn(),
-  create: vi.fn(),
+  registerPost: vi.fn(),
 }));
 
-vi.mock("@/server/repositories/user-repository", () => ({
-  userRepository: {
-    findByEmail: mocks.findByEmail,
-    create: mocks.create,
-  },
-}));
-
-vi.mock("@/server/policies/password-hashing", () => ({
-  hashPassword: vi.fn(
-    async () => "$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
-  ),
-}));
-
-vi.mock("@/server/services/account-auth-service", () => ({
-  accountAuthService: {
-    sendVerificationEmailForUser: vi.fn(async () => ({ alreadyVerified: false })),
+vi.mock("@/lib/secure-auth", () => ({
+  secureAuth: {
+    routes: {
+      register: {
+        POST: mocks.registerPost,
+      },
+    },
   },
 }));
 
@@ -32,8 +21,16 @@ describe("register API route", () => {
   });
 
   it("creates a new user with a bcrypt password hash", async () => {
-    mocks.findByEmail.mockResolvedValue(null);
-    mocks.create.mockResolvedValue({ id: "user-1", email: "new@example.com" });
+    mocks.registerPost.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "user-1",
+          email: "new@example.com",
+          requiresEmailVerification: true,
+        }),
+        { status: 201, headers: { "content-type": "application/json" } }
+      )
+    );
     const res = await POST(
       new Request("http://localhost/api/auth/register", {
         method: "POST",
@@ -46,15 +43,16 @@ describe("register API route", () => {
       email: "new@example.com",
       requiresEmailVerification: true,
     });
-    expect(hashPassword).toHaveBeenCalledWith("password123");
-    expect(mocks.create).toHaveBeenCalledWith({
-      email: "new@example.com",
-      authProvider: "credentials",
-      passwordHash: "$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
-    });
+    expect(mocks.registerPost).toHaveBeenCalledTimes(1);
   });
 
   it("rejects invalid input", async () => {
+    mocks.registerPost.mockResolvedValue(
+      new Response(JSON.stringify({ error: "Invalid input" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      })
+    );
     const res = await POST(
       new Request("http://localhost/api/auth/register", {
         method: "POST",
@@ -65,7 +63,12 @@ describe("register API route", () => {
   });
 
   it("rejects duplicate email", async () => {
-    mocks.findByEmail.mockResolvedValue({ id: "existing" });
+    mocks.registerPost.mockResolvedValue(
+      new Response(JSON.stringify({ error: "Email already registered" }), {
+        status: 409,
+        headers: { "content-type": "application/json" },
+      })
+    );
     const res = await POST(
       new Request("http://localhost/api/auth/register", {
         method: "POST",

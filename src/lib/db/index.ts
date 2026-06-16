@@ -1,7 +1,15 @@
 import "server-only";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import * as schema from "./schema";
+import { authSchema as packageAuthSchema } from "@tgoliveira/secure-auth/drizzle/schema";
+import { getPostgresClient } from "@/lib/db/postgres-client";
+import * as appSchema from "./app-schema";
+
+const { passkeyCredentials: _packagePasskeys, ...packageTables } = packageAuthSchema;
+
+export const schema = {
+  ...packageTables,
+  ...appSchema,
+};
 
 export type DbClient = PostgresJsDatabase<typeof schema>;
 
@@ -9,12 +17,10 @@ let dbInstance: DbClient | null = null;
 
 function getDb(): DbClient {
   if (!dbInstance) {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
+    if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL is not set");
     }
-    const client = postgres(connectionString, { max: 10 });
-    dbInstance = drizzle(client, { schema });
+    dbInstance = drizzle(getPostgresClient(), { schema });
   }
   return dbInstance;
 }

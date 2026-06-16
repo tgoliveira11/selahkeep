@@ -151,4 +151,16 @@ describe("sendEmail", () => {
       })
     ).rejects.toThrow("not implemented");
   });
+
+  it("rejects unimplemented sendgrid provider", async () => {
+    vi.stubEnv("EMAIL_PROVIDER", "sendgrid");
+    await expect(
+      sendEmail({
+        to: "user@example.com",
+        subject: "Test",
+        html: "<p>Hello</p>",
+        text: "Hello",
+      })
+    ).rejects.toThrow("not implemented");
+  });
 });
