@@ -70,7 +70,7 @@ Auth/account **pages** now delegate to `@tgoliveira/secure-auth/react` with only
 
 Account passkey **sign-in** API routes delegate to the package; vault-unlock passkey routes remain product-specific.
 
-Package-owned credential login flow (form POST to page paths; middleware rewrites to API handlers):
+Package-owned credential login flow (form POST to page paths; `src/proxy.ts` rewrites to API handlers):
 
 | Browser POST | Rewritten handler |
 |--------------|-------------------|

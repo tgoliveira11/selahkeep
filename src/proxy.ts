@@ -38,7 +38,7 @@ function rewritePackageLoginFormPost(request: NextRequest): NextResponse | null 
   return null;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const formRewrite = rewritePackageLoginFormPost(request);
   if (formRewrite) return formRewrite;
 

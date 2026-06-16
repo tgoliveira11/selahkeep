@@ -170,7 +170,7 @@ TOTP 2FA is **account authentication only** — separate from vault envelopes, r
 Passkey sign-in does **not** require TOTP when 2FA is enabled. Email/password sign-in still does.
 
 - Settings UI: `/settings/account` (`TwoFactorSettings`)
-- Login challenge: `/login/2fa` + middleware gate for OAuth partial sessions
+- Login challenge: `/login/2fa` + `src/proxy.ts` gate for OAuth partial sessions
 - Storage: `user_two_factor_settings`, `user_two_factor_backup_codes`, login challenge/token tables
 - NextAuth provider: `login-token` (one-time token after password + optional 2FA)
 

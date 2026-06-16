@@ -93,7 +93,7 @@ Optional TOTP 2FA protects **account sign-in only**. It does **not** decrypt pri
 - Backup codes generated on enable; hashed (SHA-256 + pepper) and one-time use; shown once
 - Credentials login: `POST /api/auth/login/start` → optional `POST /api/auth/login/verify-2fa` → one-time `login-token` NextAuth provider
 - Passkey login: `POST /api/auth/passkey/login/options` → `POST /api/auth/passkey/login/verify` → one-time `login-token` NextAuth provider (**TOTP not required**, even when 2FA is enabled)
-- OAuth login (Google, Apple, Microsoft): partial session until `POST /api/auth/login/verify-2fa-oauth` + session upgrade token; middleware blocks app routes until verified
+- OAuth login (Google, Apple, Microsoft): partial session until `POST /api/auth/login/verify-2fa-oauth` + session upgrade token; `src/proxy.ts` blocks app routes until verified
 - Rate limits: setup verify, login verify, disable, backup regeneration
 - Audit events never include TOTP secrets, codes, or backup codes
 
@@ -169,7 +169,7 @@ Account sessions are **not** trusted devices. Revoking a session signs out that 
 - Metadata stored: auth method, coarse browser/platform/device type, hashed IP, masked IP for display
 - Full IP is never shown in the UI; geolocation is not used
 - `last_used_at` updates at most every `SESSION_LAST_USED_UPDATE_INTERVAL_SECONDS` (default 300) during JWT refresh and when the account settings page pings sessions
-- **Limitation:** Edge middleware decodes JWT without DB checks; revocation fully applies on the next `getServerSession`/JWT callback (same class of limitation as `password_updated_at`)
+- **Limitation:** `proxy.ts` decodes JWT without DB checks; revocation fully applies on the next `getServerSession`/JWT callback (same class of limitation as `password_updated_at`)
 
 ## Rate limiting
 

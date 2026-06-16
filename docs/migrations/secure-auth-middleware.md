@@ -8,7 +8,7 @@
 - 2FA verification during login (challenge cookies, form/JSON login routes)
 - NextAuth OAuth and `login-token` credential exchange
 
-## App-owned (`src/middleware.ts`)
+## App-owned (`src/proxy.ts`)
 
 | Rule | Purpose |
 |------|---------|
@@ -38,7 +38,7 @@ const session = await getServerSession(services.getAuthOptions());
 
 This aligns product route authorization with package-issued NextAuth sessions (fixes prior split-brain with local `auth-options.ts`).
 
-## Not in middleware
+## Not in proxy
 
 - Email verification gates (configurable; currently `requireEmailVerificationBeforeSignIn: false`)
 - Single active session polling (client: `SessionProvider refetchInterval` from `secureAuth.uiConfig.sessionPolicy`)

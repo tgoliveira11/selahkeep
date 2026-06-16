@@ -48,7 +48,7 @@
 | Item | Status |
 |------|--------|
 | Delete local auth services/schema | **Done** — see below |
-| Thin re-export login pages only | Resolved — package pages + middleware POST rewrites |
+| Thin re-export login pages only | Resolved — package pages + proxy POST rewrites |
 
 ## Phase 10 removals (completed)
 
