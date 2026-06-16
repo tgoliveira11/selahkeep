@@ -56,6 +56,14 @@ describe("buildSecureAuthConfigFromEnv", () => {
     ).toThrow(/must be "true" or "false"/);
   });
 
+  it("honors PASSWORD_MIN_LENGTH below the previous client floor of 8", () => {
+    const config = buildSecureAuthConfigFromEnv(
+      { ...baseEnv, PASSWORD_MIN_LENGTH: "5", AUTH_PASSWORD_MIN_LENGTH: "5" },
+      { appName: "Test", appSlug: "test", baseUrl: "http://localhost:3001" }
+    );
+    expect(config.passwordPolicy?.minLength).toBe(5);
+  });
+
   it("maps password policy and single active session from env", () => {
     const config = buildSecureAuthConfigFromEnv(
       {

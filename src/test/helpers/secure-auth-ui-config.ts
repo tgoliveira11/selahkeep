@@ -1,5 +1,24 @@
 import type { SecureAuthUIPublicConfig } from "@tgoliveira/secure-auth/react";
+import { buildSecureAuthConfigFromEnv } from "@/lib/env/secure-auth-from-env";
 import { authPageMessages } from "@/lib/auth/auth-page-messages";
+
+const testEnvBase: NodeJS.ProcessEnv = {
+  NODE_ENV: "test",
+  NEXTAUTH_SECRET: "a".repeat(32),
+  TWO_FACTOR_SECRET_ENCRYPTION_KEY: "b".repeat(32),
+  APP_BASE_URL: "http://localhost:3001",
+};
+
+/** Resolve password policy the same way production secure-auth config does. */
+export function buildTestPasswordPolicyFromEnv(
+  env: Record<string, string> = {}
+): SecureAuthUIPublicConfig["passwordPolicy"] {
+  const config = buildSecureAuthConfigFromEnv(
+    { ...testEnvBase, ...env },
+    { appName: "Letters to God", appSlug: "letters-to-god", baseUrl: "http://localhost:3001" }
+  );
+  return config.passwordPolicy as SecureAuthUIPublicConfig["passwordPolicy"];
+}
 
 /** Minimal UI config for rendering @tgoliveira/secure-auth pages in Vitest. */
 export const testSecureAuthUiConfig: SecureAuthUIPublicConfig = {
@@ -22,16 +41,7 @@ export const testSecureAuthUiConfig: SecureAuthUIPublicConfig = {
     sessionsSettings: "/settings/account",
   },
   messages: { ...authPageMessages },
-  passwordPolicy: {
-    enforcement: "warn",
-    minLength: 12,
-    requireUppercase: false,
-    requireLowercase: false,
-    requireNumber: false,
-    requireSymbol: false,
-    blockCommonPasswords: true,
-    minScore: 2,
-  },
+  passwordPolicy: buildTestPasswordPolicyFromEnv(),
   passwordStrength: { position: "above" },
   sessionPolicy: {
     singleActiveSession: false,

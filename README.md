@@ -175,7 +175,7 @@ APP_BASE_URL=https://your-staging-url
 
 For real sending, configure SPF/DKIM/DMARC on your domain per your provider. Never commit SMTP credentials.
 
-**Password policy:** see `.env.example` (`PASSWORD_POLICY_ENFORCEMENT=warn` by default). `enforce` blocks weak passwords; `warn` shows feedback only.
+**Password policy:** set `AUTH_PASSWORD_MIN_LENGTH` (preferred) or `PASSWORD_MIN_LENGTH` in `.env.local`. The value is passed once into `@tgoliveira/secure-auth` through `buildSecureAuthConfigFromEnv` and exposed to all package password forms (register, reset, change password) via `SecureAuthUIProvider`. Default minimum length is **12** when unset. Do not hardcode password rules in local UI components.
 
 Run `npm run db:migrate` after pulling account-auth schema updates (`0006_account_email_verification_password_reset.sql`).
 

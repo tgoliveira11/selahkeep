@@ -128,8 +128,8 @@ export function buildSecureAuthConfigFromEnv(
       minLength: readIntEnv(
         env,
         "AUTH_PASSWORD_MIN_LENGTH",
-        readIntEnv(env, "PASSWORD_MIN_LENGTH", 12, { min: 8, max: 128 }),
-        { min: 8, max: 128 }
+        readIntEnv(env, "PASSWORD_MIN_LENGTH", 12, { min: 1, max: 128 }),
+        { min: 1, max: 128 }
       ),
       requireUppercase: readBoolEnv(
         env,

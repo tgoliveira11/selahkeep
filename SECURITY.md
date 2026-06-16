@@ -139,7 +139,7 @@ These flows protect **account authentication only**. They do **not** unlock, rec
 **Change password (signed in)**
 
 - `POST /api/account/change-password` — requires current password; OAuth-only accounts rejected
-- Configurable password policy (`src/lib/password-policy.ts`); default `PASSWORD_POLICY_ENFORCEMENT=warn`
+- Password policy comes from `@tgoliveira/secure-auth` via `buildSecureAuthConfigFromEnv` (`AUTH_PASSWORD_MIN_LENGTH` / `PASSWORD_MIN_LENGTH`); default minimum length **12** when unset; all register, reset, and change-password flows share `secureAuth.uiConfig.passwordPolicy`
 
 **Token and email security**
 

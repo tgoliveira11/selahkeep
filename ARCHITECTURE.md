@@ -103,8 +103,8 @@ Settings -> POST /api/account/change-password -> password_updated_at (current se
 - Service: `src/server/services/account-auth-service.ts`
 - Tokens: `src/server/repositories/account-token-repository.ts` (`email_verification`, `password_reset`)
 - Email: `src/server/email/send-email.ts` dispatches by `EMAIL_PROVIDER`; `smtp-provider.ts` (nodemailer); `config.ts` (SMTP/Mailpit/Brevo env parsing)
-- Password policy: `src/lib/password-policy.ts` (env-driven `off` | `warn` | `enforce`)
-- UI: `(auth)/check-email`, `verify-email`, `forgot-password`, `reset-password`; settings components `email-verification-settings`, `change-password-settings`, `password-strength-field`
+- Password policy: `buildSecureAuthConfigFromEnv` → `@tgoliveira/secure-auth` (`passwordPolicy` + `secureAuth.uiConfig.passwordPolicy`); resolved by `@tgoliveira/secure-auth/client/password-policy` on the client
+- UI: `(auth)/register`, `reset-password` (package pages); account settings uses package `ChangePasswordSettings` inside `SecureAuthUIProvider`
 
 Changing or resetting the account password does **not** unlock, recover, or rotate the private letters vault.
 

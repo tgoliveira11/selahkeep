@@ -23,7 +23,7 @@ import { getRecoveryStateLabel } from "@/lib/ui/recovery-state-labels";
 import { TwoFactorSettings } from "@/components/settings/two-factor-settings";
 import { PasskeySettings } from "@/components/settings/passkey-settings";
 import { EmailVerificationSettings } from "@/components/settings/email-verification-settings";
-import { ChangePasswordSettings } from "@/components/settings/change-password-settings";
+import { ChangePasswordSettings } from "@tgoliveira/secure-auth/react";
 import { ActiveSessionsSettings } from "@/components/settings/active-sessions-settings";
 import { accountAuthApi, type AccountAuthStatus } from "@/lib/api-client/account-auth";
 

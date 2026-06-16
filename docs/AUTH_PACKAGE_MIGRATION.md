@@ -47,6 +47,14 @@ Supported public entry points (from package README):
 - `sessions`: optional session policy overrides (single active session, polling interval)
 - `rateLimit.store`: `"memory" | "postgres"`
 
+### Password policy (single source of truth)
+
+- Env: `AUTH_PASSWORD_MIN_LENGTH` (preferred) or `PASSWORD_MIN_LENGTH`, plus `AUTH_PASSWORD_*` / `PASSWORD_*` siblings — see `.env.example`
+- Client wiring: `src/lib/env/secure-auth-from-env.ts` → `createSecureAuth({ passwordPolicy, ui })` → `secureAuth.uiConfig.passwordPolicy` on `SecureAuthUIProvider`
+- Package UI: register, reset password, and change password all read the same resolved policy (`@tgoliveira/secure-auth/client/password-policy`)
+- API: `GET /api/auth/password-policy` re-exports the package route for clients without static UI config
+- Do **not** duplicate password minimum length in local form components
+
 ## Step 1 audit — classification (what we replace vs keep)
 
 > This note is intentionally scoped to auth/account code paths relevant to the next implementation step (route delegation).
