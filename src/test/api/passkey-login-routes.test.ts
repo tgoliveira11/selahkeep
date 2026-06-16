@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   passkeyLoginVerifyPost: vi.fn(),
   getLoginVaultUnlockOptions: vi.fn(),
   getVaultUnlockMetadataForCredential: vi.fn(),
+  enrichLoginOptionsWithVaultPrf: vi.fn(),
 }));
 
 vi.mock("@/lib/secure-auth-schema", () => ({
@@ -37,6 +38,7 @@ vi.mock("@/server/services/passkey-login-service", () => ({
   passkeyLoginService: {
     getLoginVaultUnlockOptions: mocks.getLoginVaultUnlockOptions,
     getVaultUnlockMetadataForCredential: mocks.getVaultUnlockMetadataForCredential,
+    enrichLoginOptionsWithVaultPrf: mocks.enrichLoginOptionsWithVaultPrf,
   },
 }));
 
@@ -49,25 +51,29 @@ describe("passkey login API routes", () => {
   it("enriches login options with prfIncluded", async () => {
     const { POST: optionsPost } = await import("@/app/api/auth/passkey/login/options/route");
     mocks.passkeyLoginOptionsPost.mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          options: { challenge: "abc", extensions: { prf: { eval: { first: "salt" } } } },
-        }),
-        { status: 200 }
-      )
+      new Response(JSON.stringify({ options: { challenge: "abc" } }), { status: 200 })
+    );
+    mocks.enrichLoginOptionsWithVaultPrf.mockImplementation(
+      async (_input, options: { challenge: string; extensions?: unknown }) => ({
+        ...options,
+        extensions: { prf: { eval: { first: "salt" } } },
+      })
     );
 
     const res = await optionsPost(
       new Request("http://localhost", {
         method: "POST",
-        body: JSON.stringify({}),
+        body: JSON.stringify({ credentialId: "cred-id", userId: USER_ID }),
       })
     );
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.prfIncluded).toBe(true);
-    expect(mocks.passkeyLoginOptionsPost).toHaveBeenCalledTimes(1);
+    expect(mocks.enrichLoginOptionsWithVaultPrf).toHaveBeenCalledWith(
+      { credentialId: "cred-id", userId: USER_ID },
+      { challenge: "abc" }
+    );
   });
 
   it("enriches login verify with vault unlock metadata", async () => {
@@ -125,6 +131,7 @@ describe("passkey login API routes", () => {
     mocks.passkeyLoginOptionsPost.mockResolvedValue(
       new Response(JSON.stringify({ options: { challenge: "abc" } }), { status: 200 })
     );
+    mocks.enrichLoginOptionsWithVaultPrf.mockResolvedValue({ challenge: "abc" });
 
     const res = await optionsPost(
       new Request("http://localhost", {

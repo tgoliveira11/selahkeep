@@ -23,8 +23,8 @@ Account authentication and vault decryption are **separate** operations.
 | App shim | `src/lib/secure-auth/react-client.ts` (Next/Vitest alias) | Re-exports package client helpers but replaces `signInWithPasskey` with the product implementation |
 | Vault-aware flow | `src/features/passkey/sign-in-with-passkey.ts` | WebAuthn account auth, optional PRF vault unlock, then `login-token` session |
 | Verify enrichment | `POST /api/auth/passkey/login/verify` | Delegates to secure-auth, then adds `vaultUnlockAvailable`, `encryptedVaultKey`, `prfRequired` |
-| Options enrichment | `POST /api/auth/passkey/login/options` | Delegates to secure-auth, then adds `prfIncluded` |
-| Follow-up PRF step | `POST /api/auth/passkey/login/vault-unlock/options` | Second WebAuthn ceremony when discoverable login omits PRF |
+| Options enrichment | `POST /api/auth/passkey/login/options` | Delegates to secure-auth, injects PRF extensions when a known credential can vault-unlock, then adds `prfIncluded` |
+| Follow-up PRF step | `POST /api/auth/passkey/login/vault-unlock/options` | Second WebAuthn ceremony only when the first login options could not include PRF (fully discoverable sign-in with no email/hint) |
 | Outcome UX | `/letters`, `/vault/unlock` | Read `letters-to-god-passkey-login-outcome` from `sessionStorage` |
 
 ## Detecting passkey login

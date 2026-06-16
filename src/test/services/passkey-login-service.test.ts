@@ -9,6 +9,8 @@ import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 const mocks = vi.hoisted(() => ({
   storeChallenge: vi.fn(),
   findByCredentialId: vi.fn(),
+  findByUserId: vi.fn(),
+  findByEmail: vi.fn(),
   findActivePasskeyEnvelopeByCredentialId: vi.fn(),
   findValidLoginToken: vi.fn(),
   generateAuthenticationOptions: vi.fn(),
@@ -22,6 +24,13 @@ vi.mock("@/server/repositories/passkey-repository", () => ({
   passkeyRepository: {
     storeChallenge: mocks.storeChallenge,
     findByCredentialId: mocks.findByCredentialId,
+    findByUserId: mocks.findByUserId,
+  },
+}));
+
+vi.mock("@/server/repositories/user-repository", () => ({
+  userRepository: {
+    findByEmail: mocks.findByEmail,
   },
 }));
 
@@ -50,6 +59,73 @@ describe("passkey vault-unlock login service", () => {
     mocks.findActivePasskeyEnvelopeByCredentialId.mockResolvedValue({
       encryptedVaultKey: encryptedPayload,
       publicMetadata: { prfRequired: true },
+    });
+    mocks.findByUserId.mockResolvedValue([
+      {
+        userId: USER_ID,
+        credentialId: "cred-id",
+        signInEnabled: true,
+        vaultUnlockEnabled: true,
+      },
+    ]);
+  });
+
+  it("adds PRF to login options when the hinted passkey can unlock the vault", async () => {
+    const enriched = await passkeyLoginService.enrichLoginOptionsWithVaultPrf(
+      { credentialId: "cred-id", userId: USER_ID },
+      { challenge: "login-challenge", rpId: "localhost" }
+    );
+
+    expect(enriched.extensions).toEqual({
+      prf: { eval: { first: expect.any(String) } },
+    });
+  });
+
+  it("leaves login options unchanged when no vault envelope exists", async () => {
+    mocks.findActivePasskeyEnvelopeByCredentialId.mockResolvedValue(null);
+    const options = { challenge: "login-challenge", rpId: "localhost" };
+    const enriched = await passkeyLoginService.enrichLoginOptionsWithVaultPrf(
+      { credentialId: "cred-id", userId: USER_ID },
+      options
+    );
+    expect(enriched).toEqual(options);
+  });
+
+  it("adds evalByCredential PRF when multiple vault passkeys are allowed", async () => {
+    mocks.findByUserId.mockResolvedValue([
+      {
+        userId: USER_ID,
+        credentialId: "cred-a",
+        signInEnabled: true,
+        vaultUnlockEnabled: true,
+      },
+      {
+        userId: USER_ID,
+        credentialId: "cred-b",
+        signInEnabled: true,
+        vaultUnlockEnabled: true,
+      },
+    ]);
+    mocks.findByCredentialId.mockImplementation(async (credentialId: string) => ({
+      userId: USER_ID,
+      credentialId,
+      signInEnabled: true,
+      vaultUnlockEnabled: true,
+      transports: null,
+    }));
+
+    const enriched = await passkeyLoginService.enrichLoginOptionsWithVaultPrf(
+      { userId: USER_ID },
+      { challenge: "login-challenge", rpId: "localhost" }
+    );
+
+    expect(enriched.extensions).toEqual({
+      prf: {
+        evalByCredential: {
+          "cred-a": { first: expect.any(String) },
+          "cred-b": { first: expect.any(String) },
+        },
+      },
     });
   });
 
