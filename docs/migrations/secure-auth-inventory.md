@@ -1,6 +1,6 @@
 # Secure-Auth Migration Inventory (Phase 0)
 
-Package: `@tgoliveira/secure-auth@0.1.11-internal` (experimental; security review required before production).
+Package: `@tgoliveira/secure-auth@0.1.15-internal` (experimental; security review required before production).
 
 ## API routes
 

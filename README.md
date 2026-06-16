@@ -10,7 +10,7 @@ Web-first responsive MVP for private encrypted spiritual letters.
 
 - Next.js + TypeScript + React
 - PostgreSQL + Drizzle ORM
-- **Account authentication:** [`@tgoliveira/secure-auth@0.1.11-internal`](https://www.npmjs.com/package/@tgoliveira/secure-auth) (experimental 0.1.x — security review before production)
+- **Account authentication:** [`@tgoliveira/secure-auth@0.1.15-internal`](https://www.npmjs.com/package/@tgoliveira/secure-auth) (experimental 0.1.x — security review before production)
 - Web Crypto API (AES-GCM) + Argon2id recovery KDF
 - WebAuthn passkeys (@simplewebauthn) — vault unlock via PRF is app-specific; account sign-in passkeys are provided by secure-auth
 

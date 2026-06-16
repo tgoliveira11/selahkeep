@@ -41,12 +41,12 @@ Microsoft: register **Web** platform redirect URI; set `AUTH_MICROSOFT_TENANT_ID
 - [ ] `npm ci && npm run build` (build does **not** require `NEXTAUTH_SECRET`; runtime does)
 - [ ] Set `NEXTAUTH_SECRET` and `TWO_FACTOR_SECRET_ENCRYPTION_KEY` in the hosting provider before serving traffic
 - [ ] `npm run start` serves auth pages
-- [ ] `curl {APP_BASE_URL}/api/auth/package-health` → `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.11-internal" }`
+- [ ] `curl {APP_BASE_URL}/api/auth/package-health` → `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.15-internal" }`
 - [ ] `npm audit --audit-level=high` (recommended)
 
 ## Package maturity
 
-`@tgoliveira/secure-auth@0.1.11-internal` is experimental (0.1.x-internal). Schedule security review before production traffic.
+`@tgoliveira/secure-auth@0.1.15-internal` is experimental (0.1.x-internal). Schedule security review before production traffic.
 
 ## Manual QA (record in migration report)
 

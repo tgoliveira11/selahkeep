@@ -1,6 +1,6 @@
 # Secure-Auth Migration Report
 
-**Package:** `@tgoliveira/secure-auth@0.1.11-internal`  
+**Package:** `@tgoliveira/secure-auth@0.1.15-internal`  
 **Status:** Integration complete; Phase 10 local auth code removal partially deferred.
 
 ## What changed
