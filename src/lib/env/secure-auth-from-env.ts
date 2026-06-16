@@ -1,4 +1,5 @@
 import type { SecureAuthConfig } from "@tgoliveira/secure-auth";
+import type { SecureAuthUIPublicConfig } from "@tgoliveira/secure-auth/react";
 import { authPageMessages } from "@/lib/auth/auth-page-messages";
 import {
   readBoolEnv,
@@ -13,26 +14,23 @@ export type SecureAuthEnvSlice = Pick<
   "app" | "auth" | "accountPolicy" | "passwordPolicy" | "sessions" | "rateLimit" | "server" | "debug" | "oauth" | "webauthn" | "ui"
 >;
 
-export function buildSecureAuthConfigFromEnv(
-  env: NodeJS.ProcessEnv = process.env,
+const PRODUCT_DEFAULTS = {
+  appName: "Letters to God",
+  appSlug: "letters-to-god",
+  baseUrl: "http://localhost:3001",
+} as const;
+
+function parseSecureAuthEnv(
+  env: NodeJS.ProcessEnv,
   defaults: { appName: string; appSlug: string; baseUrl: string }
-): SecureAuthEnvSlice {
+) {
   const appName = readEnv(env, "APP_NAME") ?? defaults.appName;
   const appSlug = readEnv(env, "APP_SLUG") ?? defaults.appSlug;
   const baseUrl =
     readEnvWithLegacy(env, "APP_BASE_URL", "NEXTAUTH_URL") ?? defaults.baseUrl;
 
   const nextAuthSecret = readEnv(env, "NEXTAUTH_SECRET");
-  if (!nextAuthSecret) {
-    throw new Error("NEXTAUTH_SECRET is required for @tgoliveira/secure-auth");
-  }
-
   const twoFactorEncryptionKey = readEnv(env, "TWO_FACTOR_SECRET_ENCRYPTION_KEY");
-  if (!twoFactorEncryptionKey) {
-    throw new Error(
-      "TWO_FACTOR_SECRET_ENCRYPTION_KEY is required for @tgoliveira/secure-auth"
-    );
-  }
 
   const afterLoginPath = readEnv(env, "AUTH_AFTER_LOGIN_PATH") ?? "/letters";
   const afterLogoutPath = readEnv(env, "AUTH_AFTER_LOGOUT_PATH") ?? "/login";
@@ -96,6 +94,166 @@ export function buildSecureAuthConfigFromEnv(
     readEnvWithLegacy(env, "AUTH_MICROSOFT_TENANT_ID", "AUTH_AZURE_AD_TENANT_ID") ??
     "common";
 
+  const passwordPolicy = {
+    enforcement: readEnumEnv(
+      env,
+      "AUTH_PASSWORD_POLICY_ENFORCEMENT",
+      ["off", "warn", "enforce"] as const,
+      readEnumEnv(
+        env,
+        "PASSWORD_POLICY_ENFORCEMENT",
+        ["off", "warn", "enforce"] as const,
+        "warn"
+      )
+    ),
+    minLength: readIntEnv(
+      env,
+      "AUTH_PASSWORD_MIN_LENGTH",
+      readIntEnv(env, "PASSWORD_MIN_LENGTH", 12, { min: 1, max: 128 }),
+      { min: 1, max: 128 }
+    ),
+    requireUppercase: readBoolEnv(
+      env,
+      "AUTH_PASSWORD_REQUIRE_UPPERCASE",
+      readBoolEnv(env, "PASSWORD_REQUIRE_UPPERCASE", false)
+    ),
+    requireLowercase: readBoolEnv(
+      env,
+      "AUTH_PASSWORD_REQUIRE_LOWERCASE",
+      readBoolEnv(env, "PASSWORD_REQUIRE_LOWERCASE", false)
+    ),
+    requireNumber: readBoolEnv(
+      env,
+      "AUTH_PASSWORD_REQUIRE_NUMBER",
+      readBoolEnv(env, "PASSWORD_REQUIRE_NUMBER", false)
+    ),
+    requireSymbol: readBoolEnv(
+      env,
+      "AUTH_PASSWORD_REQUIRE_SYMBOL",
+      readBoolEnv(env, "PASSWORD_REQUIRE_SYMBOL", false)
+    ),
+    blockCommonPasswords: readBoolEnv(
+      env,
+      "AUTH_PASSWORD_BLOCK_COMMON_PASSWORDS",
+      readBoolEnv(env, "PASSWORD_BLOCK_COMMON_PASSWORDS", true)
+    ),
+    minScore: readIntEnv(
+      env,
+      "AUTH_PASSWORD_MIN_SCORE",
+      readIntEnv(env, "PASSWORD_MIN_SCORE", 2, { min: 0, max: 4 }),
+      { min: 0, max: 4 }
+    ),
+  };
+
+  const uiPaths = {
+    home: "/",
+    login: "/login",
+    register: "/register",
+    forgotPassword: "/forgot-password",
+    resetPassword: "/reset-password",
+    checkEmail: "/check-email",
+    verifyEmail: "/verify-email",
+    loginTwoFactor: "/login/2fa",
+    loginComplete: "/login/complete",
+    accountDeleted: "/account-deleted",
+    accountSettings: "/settings/account",
+    securitySettings: "/settings/account",
+    sessionsSettings: "/settings/account",
+  };
+
+  return {
+    appName,
+    appSlug,
+    baseUrl,
+    nextAuthSecret,
+    twoFactorEncryptionKey,
+    afterLoginPath,
+    afterLogoutPath,
+    requireEmailVerificationBeforeSignIn,
+    sendVerificationOnRegister,
+    singleActiveSession,
+    revocationPollIntervalSeconds,
+    passwordStrengthPosition,
+    cookieSecure,
+    googleClientId,
+    googleClientSecret,
+    appleClientId,
+    appleClientSecret,
+    microsoftClientId,
+    microsoftClientSecret,
+    microsoftTenantId,
+    passwordPolicy,
+    uiPaths,
+  };
+}
+
+/** Client-safe UI config for providers; does not require server secrets at import time. */
+export function buildSecureAuthUiPublicConfigFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+  defaults: { appName: string; appSlug: string; baseUrl: string } = PRODUCT_DEFAULTS
+): SecureAuthUIPublicConfig {
+  const parsed = parseSecureAuthEnv(env, defaults);
+
+  return {
+    appSlug: parsed.appSlug,
+    appName: parsed.appName,
+    paths: {
+      ...parsed.uiPaths,
+      afterLogin: parsed.afterLoginPath,
+    },
+    messages: { ...authPageMessages },
+    passwordPolicy: parsed.passwordPolicy,
+    passwordStrength: {
+      position: parsed.passwordStrengthPosition,
+    },
+    sessionPolicy: {
+      singleActiveSession: parsed.singleActiveSession,
+      revocationPollIntervalSeconds: parsed.revocationPollIntervalSeconds,
+    },
+  };
+}
+
+export function buildSecureAuthConfigFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+  defaults: { appName: string; appSlug: string; baseUrl: string } = PRODUCT_DEFAULTS
+): SecureAuthEnvSlice {
+  const parsed = parseSecureAuthEnv(env, defaults);
+
+  if (!parsed.nextAuthSecret) {
+    throw new Error("NEXTAUTH_SECRET is required for @tgoliveira/secure-auth");
+  }
+
+  if (!parsed.twoFactorEncryptionKey) {
+    throw new Error(
+      "TWO_FACTOR_SECRET_ENCRYPTION_KEY is required for @tgoliveira/secure-auth"
+    );
+  }
+
+  const {
+    appName,
+    appSlug,
+    baseUrl,
+    nextAuthSecret,
+    twoFactorEncryptionKey,
+    afterLoginPath,
+    afterLogoutPath,
+    requireEmailVerificationBeforeSignIn,
+    sendVerificationOnRegister,
+    singleActiveSession,
+    revocationPollIntervalSeconds,
+    passwordStrengthPosition,
+    cookieSecure,
+    googleClientId,
+    googleClientSecret,
+    appleClientId,
+    appleClientSecret,
+    microsoftClientId,
+    microsoftClientSecret,
+    microsoftTenantId,
+    passwordPolicy,
+    uiPaths,
+  } = parsed;
+
   return {
     app: {
       name: appName,
@@ -113,56 +271,7 @@ export function buildSecureAuthConfigFromEnv(
       sendVerificationOnRegister,
       requireEmailVerificationBeforeSignIn,
     },
-    passwordPolicy: {
-      enforcement: readEnumEnv(
-        env,
-        "AUTH_PASSWORD_POLICY_ENFORCEMENT",
-        ["off", "warn", "enforce"] as const,
-        readEnumEnv(
-          env,
-          "PASSWORD_POLICY_ENFORCEMENT",
-          ["off", "warn", "enforce"] as const,
-          "warn"
-        )
-      ),
-      minLength: readIntEnv(
-        env,
-        "AUTH_PASSWORD_MIN_LENGTH",
-        readIntEnv(env, "PASSWORD_MIN_LENGTH", 12, { min: 1, max: 128 }),
-        { min: 1, max: 128 }
-      ),
-      requireUppercase: readBoolEnv(
-        env,
-        "AUTH_PASSWORD_REQUIRE_UPPERCASE",
-        readBoolEnv(env, "PASSWORD_REQUIRE_UPPERCASE", false)
-      ),
-      requireLowercase: readBoolEnv(
-        env,
-        "AUTH_PASSWORD_REQUIRE_LOWERCASE",
-        readBoolEnv(env, "PASSWORD_REQUIRE_LOWERCASE", false)
-      ),
-      requireNumber: readBoolEnv(
-        env,
-        "AUTH_PASSWORD_REQUIRE_NUMBER",
-        readBoolEnv(env, "PASSWORD_REQUIRE_NUMBER", false)
-      ),
-      requireSymbol: readBoolEnv(
-        env,
-        "AUTH_PASSWORD_REQUIRE_SYMBOL",
-        readBoolEnv(env, "PASSWORD_REQUIRE_SYMBOL", false)
-      ),
-      blockCommonPasswords: readBoolEnv(
-        env,
-        "AUTH_PASSWORD_BLOCK_COMMON_PASSWORDS",
-        readBoolEnv(env, "PASSWORD_BLOCK_COMMON_PASSWORDS", true)
-      ),
-      minScore: readIntEnv(
-        env,
-        "AUTH_PASSWORD_MIN_SCORE",
-        readIntEnv(env, "PASSWORD_MIN_SCORE", 2, { min: 0, max: 4 }),
-        { min: 0, max: 4 }
-      ),
-    },
+    passwordPolicy,
     sessions: {
       maxAgeSeconds: readIntEnv(env, "AUTH_SESSION_MAX_AGE_SECONDS", 30 * 24 * 60 * 60, {
         min: 60,
@@ -218,21 +327,7 @@ export function buildSecureAuthConfigFromEnv(
       origin: readEnv(env, "WEBAUTHN_ORIGIN") ?? baseUrl,
     },
     ui: {
-      paths: {
-        home: "/",
-        login: "/login",
-        register: "/register",
-        forgotPassword: "/forgot-password",
-        resetPassword: "/reset-password",
-        checkEmail: "/check-email",
-        verifyEmail: "/verify-email",
-        loginTwoFactor: "/login/2fa",
-        loginComplete: "/login/complete",
-        accountDeleted: "/account-deleted",
-        accountSettings: "/settings/account",
-        securitySettings: "/settings/account",
-        sessionsSettings: "/settings/account",
-      },
+      paths: uiPaths,
       messages: { ...authPageMessages },
       passwordStrength: {
         position: passwordStrengthPosition,

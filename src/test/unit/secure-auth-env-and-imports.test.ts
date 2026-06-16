@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { buildSecureAuthConfigFromEnv } from "@/lib/env/secure-auth-from-env";
+import { buildSecureAuthConfigFromEnv, buildSecureAuthUiPublicConfigFromEnv } from "@/lib/env/secure-auth-from-env";
 import { readBoolEnv } from "@/lib/env/parse";
 
 const FORBIDDEN = [
@@ -106,6 +106,18 @@ describe("buildSecureAuthConfigFromEnv", () => {
         { appName: "Test", appSlug: "test", baseUrl: "http://localhost:3001" }
       )
     ).toThrow(/NEXTAUTH_SECRET/);
+  });
+
+  it("builds public UI config without server secrets", () => {
+    const config = buildSecureAuthUiPublicConfigFromEnv(
+      { APP_BASE_URL: "http://localhost:3001", PASSWORD_MIN_LENGTH: "10" },
+      { appName: "Letters to God", appSlug: "letters-to-god", baseUrl: "http://localhost:3001" }
+    );
+
+    expect(config.appName).toBe("Letters to God");
+    expect(config.passwordPolicy.minLength).toBe(10);
+    expect(config.paths.afterLogin).toBe("/letters");
+    expect(config.messages.loginDescription).toBe("Sign in to continue to your account.");
   });
 
   it("clamps invalid numeric env values to defaults", () => {

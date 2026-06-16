@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SecureAuthProviders } from "@/components/secure-auth-providers";
-import { secureAuth } from "@/lib/secure-auth";
+import { secureAuthUiPublicConfig } from "@/lib/secure-auth-ui-public-config";
 import { SkipLink } from "@/components/layout/skip-link";
 
 export const metadata: Metadata = {
@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="relative min-h-screen antialiased">
         <SkipLink />
-        <SecureAuthProviders uiConfig={secureAuth.uiConfig}>{children}</SecureAuthProviders>
+        <SecureAuthProviders uiConfig={secureAuthUiPublicConfig}>{children}</SecureAuthProviders>
       </body>
     </html>
   );

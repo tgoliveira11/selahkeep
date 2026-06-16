@@ -52,12 +52,6 @@ function wrapSecureAuthRoutes<T extends Record<string, unknown>>(routes: T): T {
   return wrapped;
 }
 
-const envConfig = buildSecureAuthConfigFromEnv(process.env, {
-  appName: "Letters to God",
-  appSlug: "letters-to-god",
-  baseUrl: "http://localhost:3001",
-});
-
 const emailTemplates: SecureAuthEmailTemplates = {
   verificationEmail: ({ appName, verifyUrl }) => ({
     subject: `Verify your email — ${appName}`,
@@ -94,23 +88,52 @@ const emailTemplates: SecureAuthEmailTemplates = {
   }),
 };
 
-const secureAuthCore = createSecureAuth({
-  db: secureAuthDb,
-  ...envConfig,
-  accountPolicy: {
-    sendVerificationOnRegister: envConfig.accountPolicy!.sendVerificationOnRegister,
-    requireEmailVerificationBeforeSignIn:
-      envConfig.auth.requireEmailVerificationBeforeSignIn,
-  },
-  email: {
-    from:
-      readEnv(process.env, "EMAIL_FROM") ??
-      `${envConfig.app.name} <noreply@localhost>`,
-    provider: emailProvider,
-    templates: emailTemplates,
-  },
-});
+type SecureAuthCore = ReturnType<typeof createSecureAuth>;
+type SecureAuthInstance = SecureAuthCore & {
+  routes: ReturnType<typeof wrapSecureAuthRoutes<SecureAuthCore["routes"]>>;
+};
 
-export const secureAuth = Object.assign(secureAuthCore, {
-  routes: wrapSecureAuthRoutes(secureAuthCore.routes),
+let secureAuthInstance: SecureAuthInstance | null = null;
+
+function initSecureAuth(): SecureAuthInstance {
+  if (secureAuthInstance) {
+    return secureAuthInstance;
+  }
+
+  const envConfig = buildSecureAuthConfigFromEnv(process.env, {
+    appName: "Letters to God",
+    appSlug: "letters-to-god",
+    baseUrl: "http://localhost:3001",
+  });
+
+  const secureAuthCore = createSecureAuth({
+    db: secureAuthDb,
+    ...envConfig,
+    accountPolicy: {
+      sendVerificationOnRegister: envConfig.accountPolicy!.sendVerificationOnRegister,
+      requireEmailVerificationBeforeSignIn:
+        envConfig.auth.requireEmailVerificationBeforeSignIn,
+    },
+    email: {
+      from:
+        readEnv(process.env, "EMAIL_FROM") ??
+        `${envConfig.app.name} <noreply@localhost>`,
+      provider: emailProvider,
+      templates: emailTemplates,
+    },
+  });
+
+  secureAuthInstance = Object.assign(secureAuthCore, {
+    routes: wrapSecureAuthRoutes(secureAuthCore.routes),
+  });
+
+  return secureAuthInstance;
+}
+
+export const secureAuth = new Proxy({} as SecureAuthInstance, {
+  get(_target, prop, receiver) {
+    const instance = initSecureAuth();
+    const value = Reflect.get(instance, prop, receiver);
+    return typeof value === "function" ? value.bind(instance) : value;
+  },
 });
