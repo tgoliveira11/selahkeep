@@ -63,6 +63,11 @@ describe("auth page copy", () => {
     expect(screen.queryByText(/your letter is protected/i)).toBeNull();
   });
 
+  it("register page uses updated product description copy", () => {
+    render(withSecureAuthUi(<RegisterPage />));
+    expect(screen.getByText("Start writing private letters in a protected space.")).toBeTruthy();
+  });
+
   it("login page inside site shell still renders header and footer attribution", () => {
     render(
       <SiteShell>

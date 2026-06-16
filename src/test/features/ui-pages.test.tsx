@@ -11,6 +11,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { getRecoveryStateLabel } from "@/lib/ui/recovery-state-labels";
 import { testSecureAuthUiConfig } from "@/test/helpers/secure-auth-ui-config";
 import { authPageMessages } from "@/lib/auth/auth-page-messages";
+import { homeCopy } from "@/lib/marketing/home-copy";
 
 vi.mock("next-auth/react", () => ({
   useSession: vi.fn(() => ({ data: null, status: "unauthenticated" })),
@@ -44,7 +45,7 @@ describe("UI pages and components", () => {
     expect(screen.getByRole("heading", { name: /letters to god/i })).toBeTruthy();
     const createLinks = screen.getAllByRole("link", { name: /create account/i });
     expect(createLinks.some((link) => link.getAttribute("href") === "/register")).toBe(true);
-    expect(screen.getAllByText(/protected on your device/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(homeCopy.hero.reassurance)).toBeTruthy();
   });
 
   it("renders login page with labeled fields", () => {

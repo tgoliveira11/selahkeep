@@ -50,12 +50,14 @@ Open [http://localhost:3001](http://localhost:3001).
 
 ## UI / UX
 
-Design audit and implementation plan:
+Design direction and layout audit:
 
+- [`docs/UI_UX_DIRECTION.md`](./docs/UI_UX_DIRECTION.md) — tone, visual language, public page sections
 - [`docs/UI_UX_AUDIT.md`](./docs/UI_UX_AUDIT.md) — screen inventory, issues, priorities
 - [`docs/UI_UX_IMPLEMENTATION_PLAN.md`](./docs/UI_UX_IMPLEMENTATION_PLAN.md) — design principles, components, checklists
+- [`docs/LAYOUT_NAVIGATION_AUDIT.md`](./docs/LAYOUT_NAVIGATION_AUDIT.md) — route shells and navigation
 
-Shared UI components live under `src/components/ui/`. Route groups `(public)`, `(auth)`, and `(vault)` wrap pages in `SiteShell` (header + footer). Page content uses `PageLayout` for width and spacing. See `docs/LAYOUT_NAVIGATION_AUDIT.md`.
+Shared UI components live under `src/components/ui/`. Route groups `(public)`, `(auth)`, and `(vault)` wrap pages in `SiteShell` (header + footer). Page content uses `PageLayout` for width and spacing.
 
 ## API reference (Swagger UI)
 

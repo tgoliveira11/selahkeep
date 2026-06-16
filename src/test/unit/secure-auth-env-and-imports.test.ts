@@ -131,7 +131,7 @@ describe("buildSecureAuthConfigFromEnv", () => {
 
     expect(config.ui?.messages?.loginDescription).toBe("Sign in to continue to your account.");
     expect(config.ui?.messages?.registerDescription).toBe(
-      "Start writing your private letters in a protected space."
+      "Start writing private letters in a protected space."
     );
   });
 });

@@ -118,8 +118,9 @@ Vault envelope methods: `trusted_device`, `passkey_authorized_device`, `recovery
 
 ## UI layer
 
-- **Design docs:** `docs/UI_UX_AUDIT.md`, `docs/UI_UX_IMPLEMENTATION_PLAN.md`
-- **Layout:** `SiteShell` (`Nav` + `SiteFooter`) on `(public)`, `(auth)`, and `(vault)` route groups; `PageLayout` for content width; responsive mobile menu in `Nav`. Auth pages use package UI inside the shell. See `docs/LAYOUT_NAVIGATION_AUDIT.md`.
+- **Design docs:** `docs/UI_UX_DIRECTION.md`, `docs/UI_UX_AUDIT.md`, `docs/UI_UX_IMPLEMENTATION_PLAN.md`
+- **Layout:** `SiteShell` (`Nav` + `SiteFooter`) on `(public)`, `(auth)`, and `(vault)` route groups; `PageLayout` for content width (including `marketing` width for the home page); responsive mobile menu in `Nav`. Auth pages use package UI inside the shell. See `docs/LAYOUT_NAVIGATION_AUDIT.md`.
+- **Public marketing:** Home page sections and copy in `src/lib/marketing/home-copy.ts`; shared CTAs in `src/components/marketing/public-cta-buttons.tsx`
 - **Vault unlock:** shared `VaultUnlockPanel` used by `/vault/unlock` and `VaultAccessGate`
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + sage primary)
 - **Security UX:** no plaintext letters in URLs/titles; recovery code cleared after confirm; `ConfirmDialog` for destructive actions

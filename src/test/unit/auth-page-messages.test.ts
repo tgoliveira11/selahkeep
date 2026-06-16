@@ -11,7 +11,17 @@ describe("auth page messages", () => {
 
   it("defines copy for password and email flows", () => {
     expect(authPageMessages.forgotPasswordTitle).toBe("Reset your password");
+    expect(authPageMessages.forgotPasswordDescription).toBe(
+      "Enter your email and we'll send instructions if an account exists."
+    );
     expect(authPageMessages.resetPasswordTitle).toBe("Choose a new password");
+    expect(authPageMessages.resetPasswordDescription).toBe(
+      "This changes your account password only."
+    );
     expect(authPageMessages.checkEmailTitle).toBe("Check your email");
+    expect(authPageMessages.verifyEmailTitle).toBe("Verify your email");
+    expect(authPageMessages.verifyEmailDescription).toBe(
+      "Confirm your email address to finish setting up your account."
+    );
   });
 });

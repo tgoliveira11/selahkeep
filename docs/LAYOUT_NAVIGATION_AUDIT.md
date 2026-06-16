@@ -27,7 +27,7 @@ Root layout (`src/app/layout.tsx`) provides global providers, fonts, skip link, 
 
 | Route | File | Layout | Notes |
 |-------|------|--------|-------|
-| `/` | `(public)/page.tsx` | `(public)` → `SiteShell` + `PageLayout` | Landing / marketing |
+| `/` | `(public)/page.tsx` | `(public)` → `SiteShell` + `PageLayout` | Landing: hero, features, privacy, future community, account, final CTA (`src/lib/marketing/home-copy.ts`) |
 | `/account-deleted` | `(public)/account-deleted/page.tsx` | `(public)` → `SiteShell` + `PageLayout` | Post-deletion confirmation |
 
 ### Auth / package pages (shared chrome, package inner UI)
@@ -41,8 +41,8 @@ All routes under `(auth)/` use `SiteShell` and wrap children in `<main id="main-
 | `/login/complete` | `(auth)/login/complete/page.tsx` | `LoginCompletePage` | `authPageMessages.loginCompleteTitle` / `loginCompleteDescription` |
 | `/register` | `(auth)/register/page.tsx` | `RegisterPage` | `authPageMessages.registerTitle` / `registerDescription` |
 | `/forgot-password` | `(auth)/forgot-password/page.tsx` | `ForgotPasswordPage` | `authPageMessages.forgotPasswordTitle` / `forgotPasswordDescription` |
-| `/reset-password` | `(auth)/reset-password/page.tsx` | `ResetPasswordPage` | `authPageMessages.resetPasswordTitle`; description uses package `ACCOUNT_PASSWORD_RESET_NOTE` |
-| `/verify-email` | `(auth)/verify-email/page.tsx` | `VerifyEmailPage` | Package success/invalid titles via `verifyEmailTitleSuccess` / `verifyEmailTitleInvalid` |
+| `/reset-password` | `(auth)/reset-password/page.tsx` | `ResetPasswordPage` | `authPageMessages.resetPasswordTitle`; `description` prop uses `resetPasswordDescription` |
+| `/verify-email` | `(auth)/verify-email/page.tsx` | `VerifyEmailPage` | Success/invalid titles via `verifyEmailTitleSuccess` / `verifyEmailTitleInvalid`; pending copy in `verifyEmailTitle` / `verifyEmailDescription` reserved for future package support |
 | `/check-email` | `(auth)/check-email/page.tsx` | `CheckEmailPage` | `authPageMessages.checkEmailTitle`; body copy from package constants |
 
 **Package limitation:** Auth form layout and OAuth/passkey UI remain owned by `@tgoliveira/secure-auth`. Copy is customized only via supported `ui.messages` keys and optional page props (`title`, `description`, `afterLoginPath`). Letter-editor privacy copy (`PrivacyNotice`) is reserved for the home page and letter flows, not auth headers.

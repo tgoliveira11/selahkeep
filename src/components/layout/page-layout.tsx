@@ -1,12 +1,13 @@
 import { cn } from "@/lib/ui/cn";
 import { MAIN_CONTENT_ID } from "@/lib/ui/main-content";
 
-type PageWidth = "narrow" | "medium" | "wide";
+type PageWidth = "narrow" | "medium" | "wide" | "marketing";
 
 const widthClass: Record<PageWidth, string> = {
   narrow: "max-w-md",
   medium: "max-w-xl",
   wide: "max-w-2xl",
+  marketing: "max-w-4xl",
 };
 
 interface PageLayoutProps {
