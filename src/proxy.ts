@@ -1,6 +1,10 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import {
+  applyContentSecurityPolicy,
+  createContentSecurityPolicyNonce,
+} from "@/lib/security/content-security-policy";
 
 const TWO_FACTOR_ALLOWED_PREFIXES = [
   "/login",
@@ -38,9 +42,19 @@ function rewritePackageLoginFormPost(request: NextRequest): NextResponse | null 
   return null;
 }
 
+function nextWithContentSecurityPolicy(request: NextRequest): NextResponse {
+  const nonce = createContentSecurityPolicyNonce();
+  const requestHeaders = new Headers(request.headers);
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  applyContentSecurityPolicy(requestHeaders, response, nonce);
+  return response;
+}
+
 export async function proxy(request: NextRequest) {
   const formRewrite = rewritePackageLoginFormPost(request);
-  if (formRewrite) return formRewrite;
+  if (formRewrite) {
+    return formRewrite;
+  }
 
   const token = await getToken({
     req: request,
@@ -56,7 +70,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  return nextWithContentSecurityPolicy(request);
 }
 
 export const config = {

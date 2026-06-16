@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { NextRequest } from "next/server";
 
 describe("IndexedDB device storage security", () => {
   const deviceStorage = readFileSync(
@@ -42,11 +43,21 @@ describe("vault client state cleanup", () => {
 });
 
 describe("CSP headers", () => {
-  it("sets restrictive Content-Security-Policy in production", () => {
+  it("applies nonce-based Content-Security-Policy in production via proxy", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const { proxy } = await import("@/proxy");
+    const response = await proxy(new NextRequest("http://localhost:3001/register"));
+    const policy = response.headers.get("Content-Security-Policy");
+    expect(policy).toContain("script-src 'self'");
+    expect(policy).toMatch(/'nonce-[^']+'/);
+    expect(policy).toContain("'strict-dynamic'");
+    expect(policy).toContain("object-src 'none'");
+    expect(policy).toContain("frame-ancestors 'none'");
+  });
+
+  it("keeps other security headers in next.config", () => {
     const config = readFileSync(join(process.cwd(), "next.config.ts"), "utf-8");
-    expect(config).toContain("Content-Security-Policy");
-    expect(config).toContain("script-src 'self'");
-    expect(config).toContain("object-src 'none'");
-    expect(config).toContain("frame-ancestors 'none'");
+    expect(config).toContain("X-Content-Type-Options");
+    expect(config).not.toContain("Content-Security-Policy");
   });
 });

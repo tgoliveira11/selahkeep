@@ -61,7 +61,7 @@ Forbidden in browser persistence:
 
 | Threat | Mitigation |
 |--------|------------|
-| **XSS on this origin** | Strict CSP (`script-src 'self'` in production), no inline scripts; XSS can still invoke Web Crypto while the page is open — treat XSS as vault compromise |
+| **XSS on this origin** | Nonce-based CSP in `src/proxy.ts` (`script-src 'self' 'nonce-…' 'strict-dynamic'`); XSS can still invoke Web Crypto while the page is open — treat XSS as vault compromise |
 | **IndexedDB export / DevTools copy** | Device secret stored as non-extractable `CryptoKey`, not copy-paste base64; vault key remains AES-GCM ciphertext |
 | **Stolen session cookie only** | Server stores ciphertext only; unlock still requires client key material |
 | **Sign out on shared device** | `clearVaultClientState()` wipes IndexedDB envelopes and in-memory vault key |
