@@ -75,6 +75,7 @@ Production hides `/api-docs` unless `ENABLE_API_DOCS=true` in `.env.local`.
 - **Account settings → Passkeys** — register sign-in passkeys, upgrade to vault unlock when vault is unlocked and PRF is supported, remove passkeys
 - **Recovery page** — register passkey + PRF vault envelope while vault is unlocked (sign-in + vault unlock)
 - If a passkey signs you in but cannot unlock the vault, you remain signed in and are guided to trusted device, recovery code, or another passkey with vault unlock support
+- Details: [`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`](docs/PASSKEY_LOGIN_VAULT_UNLOCK.md)
 
 Run `npm run db:migrate` after pulling passkey account-auth schema updates (`0005_passkey_account_authentication.sql`).
 
@@ -227,6 +228,7 @@ All tests run through **Vitest** (`src/test/`). Browser E2E (Playwright) was int
 
 Recent passkey-related coverage includes:
 
+- Passkey login + vault unlock integration (`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`, `src/test/security/passkey-login-vault-unlock.test.ts`)
 - PRF salt derivation (`src/test/security/passkey-prf.test.ts`)
 - PRF support pre-check (`src/test/unit/prf-support.test.ts`)
 - Passkey setup UX when PRF unavailable (`src/test/features/passkey-setup.test.tsx`)

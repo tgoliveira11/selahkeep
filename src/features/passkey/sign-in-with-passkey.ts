@@ -5,17 +5,17 @@ import {
   extractPasskeyPrfOutput,
   isPasskeySupported,
   unlockVaultFromPasskeyEnvelope,
+  PasskeyPrfRequiredError,
 } from "@/lib/crypto-client/passkey-vault";
 import { isVaultUnlocked } from "@/lib/crypto-client/vault";
 import { prepareAuthenticationOptions } from "@/lib/passkey/prepare-webauthn-options";
-import { PasskeyPrfRequiredError } from "@/lib/crypto-client/passkey-vault";
+import { APP_PASSKEY_SLUG } from "@/lib/passkey/app-slug";
 import {
   getPasskeyLoginHint,
   setPasskeyLoginHint,
   type PasskeyLoginHint,
 } from "@/lib/passkey/login-hint";
-
-export const PASSKEY_LOGIN_OUTCOME_KEY = "letters-passkey-login-outcome";
+import { logPasskeyLoginVaultEvent } from "@/features/passkey/passkey-login-audit";
 
 export type PasskeyLoginOutcome =
   | "vault-unlocked"
@@ -23,6 +23,18 @@ export type PasskeyLoginOutcome =
   | "prf-unavailable"
   | "cancelled"
   | "unsupported";
+
+export type SignInWithPasskeyOptions = {
+  appSlug?: string;
+  loginPath?: string;
+  afterLoginPath?: string;
+};
+
+export function buildPasskeyLoginOutcomeKey(appSlug: string = APP_PASSKEY_SLUG): string {
+  return `${appSlug}-passkey-login-outcome`;
+}
+
+export const PASSKEY_LOGIN_OUTCOME_KEY = buildPasskeyLoginOutcomeKey();
 
 export function getPasskeyLoginUnsupportedMessage(): string {
   return "This browser does not support passkey sign-in.";
@@ -47,12 +59,20 @@ export function buildPasskeyLoginOptionsPayload(
   return undefined;
 }
 
-export async function signInWithPasskey(input?: { email?: string }): Promise<{
+export async function signInWithPasskey(
+  input?: { email?: string },
+  options: SignInWithPasskeyOptions = {}
+): Promise<{
   outcome: PasskeyLoginOutcome;
   redirectTo: string;
 }> {
+  const appSlug = options.appSlug ?? APP_PASSKEY_SLUG;
+  const loginPath = options.loginPath ?? "/login";
+  const afterLoginPath = options.afterLoginPath ?? "/letters";
+  const outcomeKey = buildPasskeyLoginOutcomeKey(appSlug);
+
   if (!isPasskeyLoginSupported()) {
-    return { outcome: "unsupported", redirectTo: "/login" };
+    return { outcome: "unsupported", redirectTo: loginPath };
   }
 
   const cachedHint = getPasskeyLoginHint();
@@ -63,7 +83,7 @@ export async function signInWithPasskey(input?: { email?: string }): Promise<{
     optionsResponse = await passkeyLoginApi.options(optionsPayload);
   } catch (error) {
     if (error instanceof Error && error.name === "NotAllowedError") {
-      return { outcome: "cancelled", redirectTo: "/login" };
+      return { outcome: "cancelled", redirectTo: loginPath };
     }
     throw error;
   }
@@ -75,7 +95,7 @@ export async function signInWithPasskey(input?: { email?: string }): Promise<{
     });
   } catch (error) {
     if (error instanceof Error && error.name === "NotAllowedError") {
-      return { outcome: "cancelled", redirectTo: "/login" };
+      return { outcome: "cancelled", redirectTo: loginPath };
     }
     throw error;
   }
@@ -111,7 +131,7 @@ export async function signInWithPasskey(input?: { email?: string }): Promise<{
       prfOutput = extractPasskeyPrfOutput(vaultAssertion.clientExtensionResults);
     } catch (error) {
       if (error instanceof Error && error.name === "NotAllowedError") {
-        return { outcome: "cancelled", redirectTo: "/login" };
+        return { outcome: "cancelled", redirectTo: loginPath };
       }
     }
   }
@@ -124,18 +144,33 @@ export async function signInWithPasskey(input?: { email?: string }): Promise<{
         prfOutput,
         { prfRequired }
       );
+      logPasskeyLoginVaultEvent("passkey_login_vault_unlock_succeeded", { method: "passkey" });
     } catch (error) {
       if (error instanceof PasskeyPrfRequiredError) {
-        sessionStorage.setItem(PASSKEY_LOGIN_OUTCOME_KEY, "prf-unavailable");
+        sessionStorage.setItem(outcomeKey, "prf-unavailable");
+        logPasskeyLoginVaultEvent("passkey_login_vault_unlock_unavailable", {
+          method: "passkey",
+          errorCode: "prf_required",
+        });
       } else {
-        sessionStorage.setItem(PASSKEY_LOGIN_OUTCOME_KEY, "vault-locked");
+        sessionStorage.setItem(outcomeKey, "vault-locked");
+        logPasskeyLoginVaultEvent("passkey_login_vault_unlock_failed", { method: "passkey" });
       }
     }
   } else if (verifyResult.vaultUnlockAvailable && !prfOutput) {
     sessionStorage.setItem(
-      PASSKEY_LOGIN_OUTCOME_KEY,
+      outcomeKey,
       optionsResponse.prfIncluded ? "prf-unavailable" : "vault-locked"
     );
+    logPasskeyLoginVaultEvent("passkey_login_vault_unlock_unavailable", {
+      method: "passkey",
+      errorCode: optionsResponse.prfIncluded ? "prf_missing" : "prf_not_included",
+    });
+  } else if (!verifyResult.vaultUnlockAvailable) {
+    logPasskeyLoginVaultEvent("passkey_login_vault_unlock_unavailable", {
+      method: "passkey",
+      errorCode: "no_envelope",
+    });
   }
 
   const authResult = await signIn("login-token", {
@@ -147,17 +182,19 @@ export async function signInWithPasskey(input?: { email?: string }): Promise<{
     throw new Error("Passkey sign-in could not complete your session.");
   }
 
+  logPasskeyLoginVaultEvent("passkey_login_completed", { method: "passkey" });
+
   const vaultUnlocked = isVaultUnlocked();
   if (vaultUnlocked) {
-    sessionStorage.setItem(PASSKEY_LOGIN_OUTCOME_KEY, "vault-unlocked");
-    return { outcome: "vault-unlocked", redirectTo: "/letters" };
+    sessionStorage.setItem(outcomeKey, "vault-unlocked");
+    return { outcome: "vault-unlocked", redirectTo: afterLoginPath };
   }
 
-  const stored = sessionStorage.getItem(PASSKEY_LOGIN_OUTCOME_KEY) as PasskeyLoginOutcome | null;
+  const stored = sessionStorage.getItem(outcomeKey) as PasskeyLoginOutcome | null;
   if (stored === "prf-unavailable") {
     return { outcome: "prf-unavailable", redirectTo: "/vault/unlock" };
   }
 
-  sessionStorage.setItem(PASSKEY_LOGIN_OUTCOME_KEY, "vault-locked");
+  sessionStorage.setItem(outcomeKey, "vault-locked");
   return { outcome: "vault-locked", redirectTo: "/vault/unlock" };
 }

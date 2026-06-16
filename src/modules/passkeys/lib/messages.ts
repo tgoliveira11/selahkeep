@@ -18,7 +18,7 @@ export const PASSKEY_LOGIN_VAULT_UNLOCKED_MESSAGE =
   "Signed in with passkey. Your private letters are unlocked on this device.";
 
 export const PASSKEY_LOGIN_VAULT_LOCKED_MESSAGE =
-  "You are signed in. Your private letters are still locked because this passkey is not set up to unlock your vault.";
+  "You are signed in. Your private letters are still locked because this passkey is not set up to unlock them.";
 
 export const PASSKEY_LOGIN_PRF_UNAVAILABLE_MESSAGE =
   "This passkey signed you in, but this browser or passkey provider does not support unlocking your private letters with it.";

@@ -61,6 +61,10 @@ vi.mock("@/lib/passkey/login-hint", () => ({
   setPasskeyLoginHint: mocks.setPasskeyLoginHint,
 }));
 
+vi.mock("@/features/passkey/passkey-login-audit", () => ({
+  logPasskeyLoginVaultEvent: vi.fn(),
+}));
+
 describe("buildPasskeyLoginOptionsPayload", () => {
   it("prefers email over saved hint", () => {
     expect(
@@ -269,5 +273,22 @@ describe("signInWithPasskey", () => {
 
     const result = await signInWithPasskey();
     expect(result.outcome).toBe("vault-locked");
+  });
+  it("uses afterLoginPath when vault unlock succeeds", async () => {
+    const result = await signInWithPasskey(undefined, { afterLoginPath: "/letters/custom" });
+    expect(result.redirectTo).toBe("/letters/custom");
+  });
+
+  it("uses loginPath for unsupported and cancelled outcomes", async () => {
+    mocks.isPasskeySupported.mockReturnValue(false);
+    const unsupported = await signInWithPasskey(undefined, { loginPath: "/custom-login" });
+    expect(unsupported.redirectTo).toBe("/custom-login");
+
+    mocks.isPasskeySupported.mockReturnValue(true);
+    mocks.startAuthentication.mockRejectedValue(
+      Object.assign(new Error("cancelled"), { name: "NotAllowedError" })
+    );
+    const cancelled = await signInWithPasskey(undefined, { loginPath: "/custom-login" });
+    expect(cancelled.redirectTo).toBe("/custom-login");
   });
 });

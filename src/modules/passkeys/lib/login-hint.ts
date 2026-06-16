@@ -1,15 +1,45 @@
-const USER_ID_KEY = "letters-passkey-login-user-id";
-const CREDENTIAL_ID_KEY = "letters-passkey-login-credential-id";
-const USER_ID_COOKIE = "letters-passkey-login-user-id";
-const CREDENTIAL_ID_COOKIE = "letters-passkey-login-credential-id";
-const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 400;
+import {
+  clearPasskeyLoginHint as clearPackagePasskeyLoginHint,
+  getPasskeyLoginHint as getPackagePasskeyLoginHint,
+  setPasskeyLoginHint as setPackagePasskeyLoginHint,
+  type PasskeyLoginHint,
+} from "@tgoliveira/secure-auth/client";
+import { APP_PASSKEY_SLUG } from "@/lib/passkey/app-slug";
 
-export type PasskeyLoginHint = {
-  userId?: string;
-  credentialId?: string;
-};
+export type { PasskeyLoginHint };
 
-function readCookie(name: string): string | undefined {
+const LEGACY_USER_ID_KEY = "letters-passkey-login-user-id";
+const LEGACY_CREDENTIAL_ID_KEY = "letters-passkey-login-credential-id";
+const LEGACY_USER_ID_COOKIE = "letters-passkey-login-user-id";
+const LEGACY_CREDENTIAL_ID_COOKIE = "letters-passkey-login-credential-id";
+
+function migrateLegacyHint(): void {
+  if (typeof window === "undefined") return;
+
+  const current = getPackagePasskeyLoginHint(APP_PASSKEY_SLUG);
+  if (current?.userId || current?.credentialId) return;
+
+  const legacyUserId =
+    localStorage.getItem(LEGACY_USER_ID_KEY) ??
+    readLegacyCookie(LEGACY_USER_ID_COOKIE);
+  const legacyCredentialId =
+    localStorage.getItem(LEGACY_CREDENTIAL_ID_KEY) ??
+    readLegacyCookie(LEGACY_CREDENTIAL_ID_COOKIE);
+
+  if (!legacyUserId && !legacyCredentialId) return;
+
+  setPackagePasskeyLoginHint(APP_PASSKEY_SLUG, {
+    userId: legacyUserId ?? undefined,
+    credentialId: legacyCredentialId ?? undefined,
+  });
+
+  localStorage.removeItem(LEGACY_USER_ID_KEY);
+  localStorage.removeItem(LEGACY_CREDENTIAL_ID_KEY);
+  clearLegacyCookie(LEGACY_USER_ID_COOKIE);
+  clearLegacyCookie(LEGACY_CREDENTIAL_ID_COOKIE);
+}
+
+function readLegacyCookie(name: string): string | undefined {
   if (typeof document === "undefined") return undefined;
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
   if (!match) return undefined;
@@ -17,50 +47,24 @@ function readCookie(name: string): string | undefined {
   return value.length > 0 ? value : undefined;
 }
 
-function writeCookie(name: string, value: string): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${COOKIE_MAX_AGE_SECONDS}; samesite=lax`;
-}
-
-function clearCookie(name: string): void {
+function clearLegacyCookie(name: string): void {
   if (typeof document === "undefined") return;
   document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax`;
 }
 
 export function getPasskeyLoginHint(): PasskeyLoginHint | null {
-  if (typeof window === "undefined") return null;
-
-  const userId = localStorage.getItem(USER_ID_KEY) ?? readCookie(USER_ID_COOKIE);
-  const credentialId = localStorage.getItem(CREDENTIAL_ID_KEY) ?? readCookie(CREDENTIAL_ID_COOKIE);
-
-  if (!userId && !credentialId) return null;
-  return { userId, credentialId };
+  migrateLegacyHint();
+  return getPackagePasskeyLoginHint(APP_PASSKEY_SLUG);
 }
 
 export function setPasskeyLoginHint(hint: PasskeyLoginHint): void {
-  if (typeof window === "undefined") return;
-
-  if (hint.userId) {
-    localStorage.setItem(USER_ID_KEY, hint.userId);
-    writeCookie(USER_ID_COOKIE, hint.userId);
-  } else {
-    localStorage.removeItem(USER_ID_KEY);
-    clearCookie(USER_ID_COOKIE);
-  }
-
-  if (hint.credentialId) {
-    localStorage.setItem(CREDENTIAL_ID_KEY, hint.credentialId);
-    writeCookie(CREDENTIAL_ID_COOKIE, hint.credentialId);
-  } else {
-    localStorage.removeItem(CREDENTIAL_ID_KEY);
-    clearCookie(CREDENTIAL_ID_COOKIE);
-  }
+  setPackagePasskeyLoginHint(APP_PASSKEY_SLUG, hint);
 }
 
 export function clearPasskeyLoginHint(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(USER_ID_KEY);
-  localStorage.removeItem(CREDENTIAL_ID_KEY);
-  clearCookie(USER_ID_COOKIE);
-  clearCookie(CREDENTIAL_ID_COOKIE);
+  clearPackagePasskeyLoginHint(APP_PASSKEY_SLUG);
+  localStorage.removeItem(LEGACY_USER_ID_KEY);
+  localStorage.removeItem(LEGACY_CREDENTIAL_ID_KEY);
+  clearLegacyCookie(LEGACY_USER_ID_COOKIE);
+  clearLegacyCookie(LEGACY_CREDENTIAL_ID_COOKIE);
 }

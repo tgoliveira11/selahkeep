@@ -156,10 +156,10 @@ Failures roll back all related writes.
 
 Passkeys authenticate the account separately from vault decryption.
 
-- Login UI: **Sign in with passkey** on `/login`
+- Login UI: **Sign in with passkey** on `/login` (`@tgoliveira/secure-auth/react` `LoginPage`, wired through `src/lib/secure-auth/react-client.ts` shim)
 - Challenge type `login` (atomic consumption; distinct from vault `authentication`)
 - Successful verify issues one-time `login-token` with `twoFactorVerified: true` (no TOTP step)
-- Optional automatic vault unlock when the credential has a valid PRF-based envelope and PRF output is available client-side
+- Optional automatic vault unlock when the credential has a valid PRF-based envelope and PRF output is available client-side (`src/features/passkey/sign-in-with-passkey.ts`; see `docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`)
 - Otherwise: signed in, vault locked → `/vault/unlock`
 - Account settings list passkeys with **Sign-in only** vs **Sign-in + vault unlock** labels
 

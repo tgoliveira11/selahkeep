@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { passkeyLoginService } from "@/server/services/passkey-login-service";
+import {
+  optionsIncludePrf,
+  passkeyLoginService,
+} from "@/server/services/passkey-login-service";
 import { ChallengeError, NotFoundError } from "@/server/services/passkey-service";
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
@@ -147,5 +150,78 @@ describe("passkey vault-unlock login service", () => {
         allowCredentials: [expect.objectContaining({ transports: ["internal"] })],
       })
     );
+  });
+
+  it("detects PRF extensions in WebAuthn options", () => {
+    expect(
+      optionsIncludePrf({ extensions: { prf: { eval: { first: "salt" } } } })
+    ).toBe(true);
+    expect(optionsIncludePrf({ extensions: {} })).toBe(false);
+    expect(optionsIncludePrf(null)).toBe(false);
+  });
+
+  it("returns vault metadata when credential has a PRF envelope", async () => {
+    const result = await passkeyLoginService.getVaultUnlockMetadataForCredential(
+      USER_ID,
+      "cred-id"
+    );
+    expect(result.vaultUnlockAvailable).toBe(true);
+    expect(result.encryptedVaultKey).toEqual(encryptedPayload);
+    expect(result.prfRequired).toBe(true);
+  });
+
+  it("returns unavailable metadata when credential lacks vault unlock", async () => {
+    mocks.findByCredentialId.mockResolvedValue({
+      userId: USER_ID,
+      credentialId: "cred-id",
+      signInEnabled: true,
+      vaultUnlockEnabled: false,
+    });
+    const result = await passkeyLoginService.getVaultUnlockMetadataForCredential(
+      USER_ID,
+      "cred-id"
+    );
+    expect(result).toEqual({
+      vaultUnlockAvailable: false,
+      encryptedVaultKey: null,
+      prfRequired: true,
+    });
+  });
+
+  it("returns unavailable metadata when sign-in is disabled on credential", async () => {
+    mocks.findByCredentialId.mockResolvedValue({
+      userId: USER_ID,
+      credentialId: "cred-id",
+      signInEnabled: false,
+      vaultUnlockEnabled: true,
+    });
+    const result = await passkeyLoginService.getVaultUnlockMetadataForCredential(
+      USER_ID,
+      "cred-id"
+    );
+    expect(result.vaultUnlockAvailable).toBe(false);
+  });
+
+  it("returns unavailable metadata when credential belongs to another user", async () => {
+    mocks.findByCredentialId.mockResolvedValue({
+      userId: "other-user",
+      credentialId: "cred-id",
+      signInEnabled: true,
+      vaultUnlockEnabled: true,
+    });
+    const result = await passkeyLoginService.getVaultUnlockMetadataForCredential(
+      USER_ID,
+      "cred-id"
+    );
+    expect(result.vaultUnlockAvailable).toBe(false);
+  });
+
+  it("returns unavailable metadata when credential is unknown", async () => {
+    mocks.findByCredentialId.mockResolvedValue(null);
+    const result = await passkeyLoginService.getVaultUnlockMetadataForCredential(
+      USER_ID,
+      "cred-id"
+    );
+    expect(result.vaultUnlockAvailable).toBe(false);
   });
 });

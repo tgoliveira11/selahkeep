@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   passkeyLoginOptionsPost: vi.fn(),
   passkeyLoginVerifyPost: vi.fn(),
   getLoginVaultUnlockOptions: vi.fn(),
+  getVaultUnlockMetadataForCredential: vi.fn(),
 }));
 
 vi.mock("@/lib/secure-auth-schema", () => ({
@@ -26,8 +27,16 @@ vi.mock("@/lib/secure-auth", () => ({
 }));
 
 vi.mock("@/server/services/passkey-login-service", () => ({
+  optionsIncludePrf: (options: unknown) =>
+    Boolean(
+      options &&
+        typeof options === "object" &&
+        "extensions" in options &&
+        (options as { extensions?: { prf?: unknown } }).extensions?.prf
+    ),
   passkeyLoginService: {
     getLoginVaultUnlockOptions: mocks.getLoginVaultUnlockOptions,
+    getVaultUnlockMetadataForCredential: mocks.getVaultUnlockMetadataForCredential,
   },
 }));
 
@@ -37,12 +46,15 @@ describe("passkey login API routes", () => {
     mocks.ensureSecureAuthDatabaseReady.mockResolvedValue(undefined);
   });
 
-  it("delegates login options to the package route", async () => {
+  it("enriches login options with prfIncluded", async () => {
     const { POST: optionsPost } = await import("@/app/api/auth/passkey/login/options/route");
     mocks.passkeyLoginOptionsPost.mockResolvedValue(
-      new Response(JSON.stringify({ options: { challenge: "abc" }, prfIncluded: false }), {
-        status: 200,
-      })
+      new Response(
+        JSON.stringify({
+          options: { challenge: "abc", extensions: { prf: { eval: { first: "salt" } } } },
+        }),
+        { status: 200 }
+      )
     );
 
     const res = await optionsPost(
@@ -51,12 +63,14 @@ describe("passkey login API routes", () => {
         body: JSON.stringify({}),
       })
     );
+    const body = await res.json();
 
     expect(res.status).toBe(200);
+    expect(body.prfIncluded).toBe(true);
     expect(mocks.passkeyLoginOptionsPost).toHaveBeenCalledTimes(1);
   });
 
-  it("delegates login verify to the package route", async () => {
+  it("enriches login verify with vault unlock metadata", async () => {
     const { POST: verifyPost } = await import("@/app/api/auth/passkey/login/verify/route");
     mocks.passkeyLoginVerifyPost.mockResolvedValue(
       new Response(
@@ -68,6 +82,11 @@ describe("passkey login API routes", () => {
         { status: 200 }
       )
     );
+    mocks.getVaultUnlockMetadataForCredential.mockResolvedValue({
+      vaultUnlockAvailable: true,
+      encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+      prfRequired: true,
+    });
 
     const res = await verifyPost(
       new Request("http://localhost", {
@@ -76,9 +95,60 @@ describe("passkey login API routes", () => {
       })
     );
     const body = await res.json();
+
     expect(res.status).toBe(200);
     expect(body.loginToken).toBe("token");
-    expect(mocks.passkeyLoginVerifyPost).toHaveBeenCalledTimes(1);
+    expect(body.vaultUnlockAvailable).toBe(true);
+    expect(body.encryptedVaultKey).toBeTruthy();
+    expect(mocks.getVaultUnlockMetadataForCredential).toHaveBeenCalledWith(USER_ID, "cred-id");
+  });
+
+  it("passes through package verify errors without enrichment", async () => {
+    const { POST: verifyPost } = await import("@/app/api/auth/passkey/login/verify/route");
+    mocks.passkeyLoginVerifyPost.mockResolvedValue(
+      new Response(JSON.stringify({ error: "invalid" }), { status: 401 })
+    );
+
+    const res = await verifyPost(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({ response: { id: "cred" } }),
+      })
+    );
+
+    expect(res.status).toBe(401);
+    expect(mocks.getVaultUnlockMetadataForCredential).not.toHaveBeenCalled();
+  });
+
+  it("marks options without PRF as prfIncluded false", async () => {
+    const { POST: optionsPost } = await import("@/app/api/auth/passkey/login/options/route");
+    mocks.passkeyLoginOptionsPost.mockResolvedValue(
+      new Response(JSON.stringify({ options: { challenge: "abc" } }), { status: 200 })
+    );
+
+    const res = await optionsPost(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({}),
+      })
+    );
+    const body = await res.json();
+    expect(body.prfIncluded).toBe(false);
+  });
+
+  it("passes through package options errors", async () => {
+    const { POST: optionsPost } = await import("@/app/api/auth/passkey/login/options/route");
+    mocks.passkeyLoginOptionsPost.mockResolvedValue(
+      new Response(JSON.stringify({ error: "bad" }), { status: 400 })
+    );
+
+    const res = await optionsPost(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({}),
+      })
+    );
+    expect(res.status).toBe(400);
   });
 
   it("rejects invalid vault unlock options payload", async () => {

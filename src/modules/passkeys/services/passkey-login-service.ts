@@ -13,8 +13,50 @@ import { ChallengeError, NotFoundError } from "@/server/services/passkey-service
 const rpID = getWebAuthnRpId();
 const origins = getWebAuthnOrigins();
 
+export function optionsIncludePrf(options: unknown): boolean {
+  if (!options || typeof options !== "object") return false;
+  const extensions = (options as { extensions?: unknown }).extensions;
+  if (!extensions || typeof extensions !== "object") return false;
+  return "prf" in extensions && (extensions as { prf?: unknown }).prf != null;
+}
+
 /** Vault-only passkey helpers; account sign-in passkeys are handled by @tgoliveira/secure-auth. */
 export const passkeyLoginService = {
+  async getVaultUnlockMetadataForCredential(userId: string, credentialId: string) {
+    const credential = await passkeyRepository.findByCredentialId(credentialId);
+    if (
+      !credential ||
+      credential.userId !== userId ||
+      !credential.signInEnabled ||
+      !credential.vaultUnlockEnabled
+    ) {
+      return {
+        vaultUnlockAvailable: false,
+        encryptedVaultKey: null,
+        prfRequired: true,
+      };
+    }
+
+    const envelope = await vaultRepository.findActivePasskeyEnvelopeByCredentialId(
+      userId,
+      credential.credentialId
+    );
+    if (!envelope) {
+      return {
+        vaultUnlockAvailable: false,
+        encryptedVaultKey: null,
+        prfRequired: true,
+      };
+    }
+
+    return {
+      vaultUnlockAvailable: true,
+      encryptedVaultKey: envelope.encryptedVaultKey,
+      prfRequired:
+        (envelope.publicMetadata as { prfRequired?: boolean } | null)?.prfRequired ?? true,
+    };
+  },
+
   async getLoginVaultUnlockOptions(
     loginToken: string,
     credentialId: string,

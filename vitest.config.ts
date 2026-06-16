@@ -56,6 +56,10 @@ export default defineConfig({
       // Vitest's resolver (Node ESM) may not add the `.js` extension for subpath imports,
       // so we alias to the concrete module file to keep tests hermetic.
       "next/server": "next/server.js",
+      "@tgoliveira/secure-auth/react/client": path.resolve(
+        __dirname,
+        "./src/lib/secure-auth/react-client.ts"
+      ),
     },
   },
 });
