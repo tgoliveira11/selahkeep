@@ -14,7 +14,7 @@ Web-first responsive MVP for private encrypted spiritual letters.
 - Web Crypto API (AES-GCM) + Argon2id recovery KDF
 - WebAuthn passkeys (@simplewebauthn) — vault unlock via PRF is app-specific; account sign-in passkeys are provided by secure-auth
 
-Account auth env vars are documented in `.env.example` (`AUTH_*` names). Health check after starting the dev server:
+Account auth env vars are documented in `.env.example` (`AUTH_*` names). **Vercel deploy:** see [`docs/VERCEL_ENVIRONMENT_VARIABLES.md`](./docs/VERCEL_ENVIRONMENT_VARIABLES.md). Health check after starting the dev server:
 
 ```bash
 curl http://localhost:3001/api/auth/package-health
