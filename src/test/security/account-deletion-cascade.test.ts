@@ -8,7 +8,6 @@ const PRODUCT_TABLES_WITH_USER_CASCADE = [
   "passkeyCredentials",
   "userVaults",
   "vaultEnvelopes",
-  "trustedDevices",
 ] as const;
 
 describe("account deletion cascade", () => {

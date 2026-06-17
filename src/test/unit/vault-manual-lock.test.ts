@@ -1,15 +1,23 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { lockVaultSession, isVaultManuallyLocked } from "@/lib/crypto-client/vault-session";
-import { unlockVaultFromDeviceEnvelopes } from "@/lib/crypto-client/vault-unlock";
-import { USER_ID } from "@/test/helpers/fixtures";
+import { describe, it, expect } from "vitest";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 describe("manual vault lock", () => {
-  beforeEach(() => {
-    lockVaultSession();
+  it("useRequireVault does not silently unlock from device envelopes", () => {
+    const hook = readFileSync(
+      join(process.cwd(), "src/features/vault/use-require-vault.ts"),
+      "utf-8"
+    );
+    expect(hook).not.toContain("unwrapVaultKeyFromDevice");
+    expect(hook).toContain("isVaultUnlocked()");
+    expect(hook).toContain("Account session alone never unlocks the vault");
   });
 
-  it("blocks silent unlock from device envelopes when manually locked", async () => {
+  it("vault-session manual lock blocks until explicit unlock", async () => {
+    const { lockVaultSession, isVaultManuallyLocked } = await import(
+      "@/lib/crypto-client/vault-session"
+    );
+    lockVaultSession();
     expect(isVaultManuallyLocked()).toBe(true);
-    await expect(unlockVaultFromDeviceEnvelopes(USER_ID)).rejects.toThrow("Vault is locked");
   });
 });

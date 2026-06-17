@@ -3,41 +3,29 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { NextRequest } from "next/server";
 
-describe("IndexedDB device storage security", () => {
-  const deviceStorage = readFileSync(
-    join(process.cwd(), "src/lib/crypto-client/device-storage.ts"),
+describe("IndexedDB trusted-device cleanup", () => {
+  const cleanup = readFileSync(
+    join(process.cwd(), "src/lib/crypto-client/vault-idb-cleanup.ts"),
     "utf-8"
   );
 
-  it("does not persist raw device secret bytes as strings", () => {
-    expect(deviceStorage).not.toMatch(/deviceSecret:\s*bytesToBase64Url/);
-    expect(deviceStorage).not.toMatch(/deviceSecret:\s*string/);
-    expect(deviceStorage).toContain("deviceSecretKey: CryptoKey");
-    expect(deviceStorage).not.toContain("bytesToBase64Url");
+  it("removes legacy device secret and envelope stores on upgrade", () => {
+    expect(cleanup).toContain("device_secrets");
+    expect(cleanup).toContain("vault_envelopes");
+    expect(cleanup).toMatch(/DB_VERSION = 3/);
+    expect(cleanup).toContain("deleteObjectStore");
   });
 
-  it("uses non-extractable device secret keys", () => {
-    expect(deviceStorage).toContain("deviceSecretKey");
-    expect(deviceStorage).toMatch(/generateKey\([\s\S]*?false[\s\S]*?\["encrypt", "decrypt"\]/);
-  });
-
-  it("stores only encrypted vault envelopes, not plaintext vault keys", () => {
-    expect(deviceStorage).toContain("encryptedVaultKey");
-    expect(deviceStorage).not.toMatch(/vaultKey[^A-Za-z]/);
-    expect(deviceStorage).not.toContain("User Vault Key");
-  });
-
-  it("bumps IndexedDB version to invalidate legacy exportable secrets", () => {
-    expect(deviceStorage).toMatch(/DB_VERSION = 2/);
-    expect(deviceStorage).toContain("oldVersion < 2");
+  it("does not recreate trusted-device stores", () => {
+    expect(cleanup).not.toContain("createObjectStore");
   });
 });
 
 describe("vault client state cleanup", () => {
-  it("clearVaultClientState clears session key and IndexedDB", async () => {
+  it("clearVaultClientState clears session key and purges IndexedDB", async () => {
     const vault = readFileSync(join(process.cwd(), "src/lib/crypto-client/vault.ts"), "utf-8");
     expect(vault).toContain("clearVaultClientState");
-    expect(vault).toContain("clearLocalVaultData");
+    expect(vault).toContain("purgeTrustedDeviceIdb");
     expect(vault).toContain("setSessionVaultKey(null)");
   });
 });

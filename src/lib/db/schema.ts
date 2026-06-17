@@ -16,10 +16,8 @@ export {
   passkeyCredentials,
   userVaults,
   vaultEnvelopes,
-  trustedDevices,
   notes,
   type Note,
-  type TrustedDevice,
   type VaultEnvelope,
 } from "./app-schema";
 

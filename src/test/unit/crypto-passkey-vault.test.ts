@@ -7,24 +7,7 @@ import {
   unlockVaultFromPasskeyEnvelope,
 } from "@/lib/crypto-client/passkey-vault";
 import { generateUserVaultKey } from "@/lib/crypto-client/vault";
-import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
-
-vi.mock("@/lib/crypto-client/device-storage", () => ({
-  getOrCreateDeviceSecret: vi.fn(),
-  storeLocalVaultEnvelope: vi.fn(async () => {}),
-}));
-
-vi.mock("@/lib/crypto-client/vault", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/crypto-client/vault")>();
-  return {
-    ...actual,
-    buildDeviceVaultEnvelope: vi.fn(async (vaultKey: CryptoKey) => ({
-      encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
-      deviceId: "device-1",
-    })),
-    unwrapVaultKeyFromDevice: vi.fn(async () => generateUserVaultKey()),
-  };
-});
+import { USER_ID } from "@/test/helpers/fixtures";
 
 describe("passkey vault crypto", () => {
   beforeEach(() => {
@@ -68,7 +51,7 @@ describe("passkey vault crypto", () => {
     );
   });
 
-  it("unlockVaultFromPasskeyEnvelope persists device envelope after PRF unlock", async () => {
+  it("unlockVaultFromPasskeyEnvelope unlocks with PRF output only", async () => {
     const vaultKey = await generateUserVaultKey();
     const prfOutput = crypto.getRandomValues(new Uint8Array(32));
     const envelope = await wrapVaultKeyForPasskey(vaultKey, prfOutput, USER_ID, USER_ID);

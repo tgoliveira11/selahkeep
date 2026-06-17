@@ -17,10 +17,6 @@ const userMocks = vi.hoisted(() => ({
   findById: vi.fn(),
 }));
 
-const deviceMocks = vi.hoisted(() => ({
-  countActiveByUserId: vi.fn(),
-}));
-
 const vaultMocks = vi.hoisted(() => ({
   findActiveEnvelopesByUserId: vi.fn(),
   findVaultByUserId: vi.fn(),
@@ -37,9 +33,6 @@ vi.mock("@/server/repositories/user-repository", () => ({
   userRepository: { findById: userMocks.findById },
 }));
 
-vi.mock("@/server/repositories/trusted-device-repository", () => ({
-  trustedDeviceRepository: { countActiveByUserId: deviceMocks.countActiveByUserId },
-}));
 
 vi.mock("@/server/repositories/vault-repository", () => ({
   vaultRepository: {
@@ -103,7 +96,6 @@ describe("sentinel phrase runtime integration", () => {
     });
     vaultMocks.findVaultByUserId.mockResolvedValue({ id: "vault-1" });
     noteMocks.countByVaultId.mockResolvedValue(1);
-    deviceMocks.countActiveByUserId.mockResolvedValue(0);
     vaultMocks.findActiveEnvelopesByUserId.mockResolvedValue([]);
 
     const adminSummary = await adminService.getUserSummary(USER_ID);

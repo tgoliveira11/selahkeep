@@ -70,7 +70,7 @@ export const passkeyVaultEnvelopeService = {
   ) {
     if (!options?.prfVaultEnvelope) {
       throw new ChallengeError(
-        "Passkey vault unlock requires PRF support. Use a recovery code or trusted device."
+        "Passkey vault unlock requires PRF support. Use your vault password or recovery phrase."
       );
     }
 

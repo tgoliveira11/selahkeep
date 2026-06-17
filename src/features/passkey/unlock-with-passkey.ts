@@ -56,7 +56,7 @@ export async function unlockVaultWithPasskey(userId: string): Promise<CryptoKey>
       throw error;
     }
     throw new Error(
-      "Could not decrypt your vault with this passkey. Use your recovery code, or set up your passkey again from a trusted device."
+      "Could not decrypt your vault with this passkey. Use your vault password or recovery phrase, or set up your passkey again from a PRF-capable browser."
     );
   }
 }

@@ -316,7 +316,7 @@ MVP required envelope types:
 | `recovery_phrase` | Recovery words |
 | `passkey_prf` | PRF-based passkey vault unlock |
 
-Future optional: `trusted_device`
+The legacy `trusted_device` envelope type was removed from the product — see `docs/TRUSTED_DEVICES_REMOVAL.md`.
 
 Each envelope allows the user to unwrap the User Vault Key through a different unlock method.
 

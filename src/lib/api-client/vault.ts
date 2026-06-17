@@ -17,7 +17,6 @@ export interface VaultStatus {
   vaultVersion?: string;
   recoveryState?: "Protected" | "Basic" | "At Risk";
   methods?: string[];
-  trustedDeviceCount?: number;
   hasEncryptedSettings?: boolean;
   hasEncryptedIndex?: boolean;
   hasRecoveryCode?: boolean;
@@ -48,13 +47,6 @@ export const vaultApi = {
       encryptedVaultKey: EncryptedPayload;
       kdfMetadata?: KdfMetadata;
       publicMetadata?: Record<string, unknown>;
-      trustedDevice?: {
-        deviceName: string;
-        devicePublicKey?: Record<string, unknown>;
-        browser?: string;
-        platform?: string;
-        deviceType?: "desktop" | "mobile" | "tablet" | "unknown";
-      };
     }>;
   }) => apiClient.post<{ id: string }>("/api/vault/init", payload),
 
@@ -76,15 +68,6 @@ export const vaultApi = {
       encryptedVaultKey: EncryptedPayload;
       kdfMetadata: KdfMetadata;
     }>("/api/vault/unlock-envelope", { method }),
-
-  deviceEnvelopes: () =>
-    apiClient.get<
-      Array<{
-        id: string;
-        encryptedVaultKey: EncryptedPayload;
-        createdAt: string;
-      }>
-    >("/api/vault/device-envelopes"),
 
   getIndex: () =>
     apiClient.get<{ encryptedVaultIndex: EncryptedPayload | null }>("/api/vault/index"),

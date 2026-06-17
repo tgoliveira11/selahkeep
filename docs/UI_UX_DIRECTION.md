@@ -75,7 +75,7 @@ Account auth UI comes from `@tgoliveira/secure-auth/react`. Style integration po
 - Purple primary unlock button
 - Tabs or sections: vault password | recovery phrase | legacy device/passkey where applicable
 - Calm error messages (“That password didn’t unlock your vault”)
-- Legacy `vault-v1` users: existing trusted-device / recovery code paths preserved
+- Legacy `vault-v1` users: recovery code / passkey paths preserved where envelopes exist; trusted devices removed (`docs/TRUSTED_DEVICES_REMOVAL.md`)
 
 ### Navigation
 

@@ -99,7 +99,7 @@ Registration (`POST /api/auth/register`) creates credentials users with `email_v
 
 ### Account sessions
 
-Account sessions (sign-in state) are separate from trusted devices (vault unlock).
+Account sessions (sign-in state) are separate from vault unlock.
 
 | Method | Path | Auth |
 |--------|------|------|

@@ -40,7 +40,6 @@ interface LtgVaultUnlockPanelProps {
   onUnlockPassword: (password: string) => void;
   onUnlockRecoveryPhrase: (phrase: string) => void;
   onUnlockPasskey?: () => void;
-  onUnlockLegacyDevice?: () => void;
   onUnlockLegacyRecoveryCode?: (code: string) => void;
   onUnlockLegacyPasskey?: () => void;
 }
@@ -52,7 +51,6 @@ export function LtgVaultUnlockPanel({
   onUnlockPassword,
   onUnlockRecoveryPhrase,
   onUnlockPasskey,
-  onUnlockLegacyDevice,
   onUnlockLegacyRecoveryCode,
   onUnlockLegacyPasskey,
 }: LtgVaultUnlockPanelProps) {
@@ -73,6 +71,7 @@ export function LtgVaultUnlockPanel({
   }
 
   const displayError = mapUnlockError(error);
+  const showLegacy = vaultStatus?.hasRecoveryCode ?? false;
 
   return (
     <Card className="space-y-5 p-6">
@@ -108,13 +107,13 @@ export function LtgVaultUnlockPanel({
           >
             Recovery phrase
           </Button>
-          {(vaultStatus?.hasRecoveryCode || (vaultStatus?.trustedDeviceCount ?? 0) > 0) && (
+          {showLegacy && (
             <Button
               variant={mode === "legacy" ? "primary" : "secondary"}
               className="text-sm"
               onClick={() => setMode("legacy")}
             >
-              Other methods
+              Recovery code
             </Button>
           )}
         </div>
@@ -168,12 +167,7 @@ export function LtgVaultUnlockPanel({
 
       {mode === "legacy" && (
         <div className="space-y-3">
-          <p className="text-sm text-[var(--muted)]">Legacy unlock methods from an earlier setup.</p>
-          {onUnlockLegacyDevice && (
-            <Button className="w-full" variant="secondary" disabled={loading} onClick={onUnlockLegacyDevice}>
-              Unlock with this device
-            </Button>
-          )}
+          <p className="text-sm text-[var(--muted)]">Legacy recovery code from an earlier setup.</p>
           {onUnlockLegacyPasskey && vaultStatus?.hasPasskey && (
             <Button className="w-full" variant="secondary" disabled={loading} onClick={onUnlockLegacyPasskey}>
               Unlock with passkey
@@ -197,16 +191,6 @@ export function LtgVaultUnlockPanel({
                 Unlock with recovery code
               </Button>
             </>
-          )}
-        </div>
-      )}
-
-      {!isLtg && (
-        <div className="space-y-3">
-          {onUnlockLegacyDevice && (
-            <Button className="w-full" disabled={loading} onClick={onUnlockLegacyDevice}>
-              Unlock with this device
-            </Button>
           )}
         </div>
       )}

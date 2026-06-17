@@ -54,7 +54,6 @@ const productVaultRoutes = [
   "src/app/api/vault/status/route.ts",
   "src/app/api/vault/settings/route.ts",
   "src/app/api/passkeys/route.ts",
-  "src/app/api/trusted-devices/route.ts",
   "src/app/api/account/passkeys/[id]/enable-vault-unlock/route.ts",
 ];
 

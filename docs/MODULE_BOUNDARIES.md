@@ -8,7 +8,7 @@ This project uses a **modular monolith** under `src/modules/`. See also `docs/UT
 
 | Module | Responsibility |
 |--------|----------------|
-| `vault` | User Vault Key, unlock, trusted devices, recovery code (legacy), passkey PRF envelopes, vault login PRF enrichment |
+| `vault` | User Vault Key, unlock (password, recovery phrase, passkey PRF), recovery code (legacy), passkey PRF envelopes, vault login PRF enrichment |
 | `notes` | Encrypted note CRUD (metadata, body, per-note keys) |
 | `email` | SMTP/console provider core (account emails via `@tgoliveira/secure-auth`) |
 | `audit` | Audit events, persistence, sanitization |

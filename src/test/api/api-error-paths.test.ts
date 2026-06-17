@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST as vaultInitPost } from "@/app/api/vault/init/route";
-import { POST as trustedDevicePost } from "@/app/api/trusted-devices/route";
 import { POST as registerPost } from "@/app/api/passkeys/register/route";
 
 const sessionUser = { id: "550e8400-e29b-41d4-a716-446655440000", email: "user@example.com" };
@@ -19,10 +18,6 @@ vi.mock("@/server/services/vault-service", () => ({
   },
 }));
 
-vi.mock("@/server/services/trusted-device-service", () => ({
-  trustedDeviceService: { create: vi.fn() },
-}));
-
 vi.mock("@/server/services/passkey-service", () => ({
   passkeyService: {
     getRegistrationOptions: vi.fn(),
@@ -36,13 +31,6 @@ describe("API validation error paths", () => {
   it("rejects invalid vault init payload", async () => {
     const res = await vaultInitPost(
       new Request("http://localhost", { method: "POST", body: JSON.stringify({ bad: true }) })
-    );
-    expect(res.status).toBe(400);
-  });
-
-  it("rejects invalid trusted device payload", async () => {
-    const res = await trustedDevicePost(
-      new Request("http://localhost", { method: "POST", body: JSON.stringify({}) })
     );
     expect(res.status).toBe(400);
   });

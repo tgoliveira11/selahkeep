@@ -1,6 +1,5 @@
 import { runInTransaction } from "@/lib/db/transaction";
 import { vaultRepository } from "@/server/repositories/vault-repository";
-import { trustedDeviceRepository } from "@/server/repositories/trusted-device-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
 import type { VaultInitInput, RecoveryCodeInput, VaultSetupInput } from "@/lib/validation/vault";
 import {
@@ -66,37 +65,6 @@ export const vaultService = {
       for (const envelope of input.envelopes) {
         assertVaultKeyAad(userId, envelope.encryptedVaultKey);
 
-        if (envelope.method === "trusted_device" && envelope.trustedDevice) {
-          const activeCount = await trustedDeviceRepository.countActiveByUserId(userId);
-          if (activeCount >= trustedDeviceRepository.maxDevices) {
-            throw new Error("Trusted device limit reached");
-          }
-
-          const device = await trustedDeviceRepository.create(
-            {
-              userId,
-              deviceName: envelope.trustedDevice.deviceName,
-              devicePublicKey: envelope.trustedDevice.devicePublicKey ?? null,
-              browser: envelope.trustedDevice.browser ?? null,
-              platform: envelope.trustedDevice.platform ?? null,
-              deviceType: envelope.trustedDevice.deviceType ?? null,
-            },
-            tx
-          );
-
-          await vaultRepository.createEnvelope(
-            {
-              userId,
-              method: envelope.method,
-              encryptedVaultKey: envelope.encryptedVaultKey,
-              kdfMetadata: envelope.kdfMetadata ?? null,
-              publicMetadata: { trustedDeviceId: device.id },
-            },
-            tx
-          );
-          continue;
-        }
-
         await vaultRepository.createEnvelope(
           {
             userId,
@@ -127,7 +95,6 @@ export const vaultService = {
 
     const envelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
     const methods = new Set(envelopes.map((e) => e.method));
-    const activeDevices = await trustedDeviceRepository.findActiveByUserId(userId);
     const methodList = Array.from(methods);
 
     const hasEncryptedSettings = vault.encryptedVaultSettings != null;
@@ -157,9 +124,9 @@ export const vaultService = {
         (m) => methods.has(m)
       );
 
-      if (ltgSetupComplete || (durableMethods.length >= 1 && (methods.size >= 2 || activeDevices.length >= 2))) {
+      if (ltgSetupComplete || (durableMethods.length >= 1 && methods.size >= 2)) {
         recoveryState = "Protected";
-      } else if (activeDevices.length >= 1 || methods.has("trusted_device") || methods.has("password")) {
+      } else if (methods.has("password")) {
         recoveryState = "Basic";
       } else {
         recoveryState = "At Risk";
@@ -174,7 +141,6 @@ export const vaultService = {
       vaultVersion: vault.vaultVersion,
       recoveryState,
       methods: methodList,
-      trustedDeviceCount: activeDevices.length,
       hasEncryptedSettings,
       hasEncryptedIndex,
       hasRecoveryCode: methods.has("recovery_code"),
@@ -219,24 +185,6 @@ export const vaultService = {
 
       return { id: envelope.id };
     });
-  },
-
-  async getTrustedDeviceEnvelopes(userId: string) {
-    const envelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
-    const activeDevices = await trustedDeviceRepository.findActiveByUserId(userId);
-    const activeDeviceIds = new Set(activeDevices.map((device) => device.id));
-
-    return envelopes
-      .filter((envelope) => envelope.method === "trusted_device")
-      .filter((envelope) => {
-        const meta = envelope.publicMetadata as { trustedDeviceId?: string } | null;
-        return meta?.trustedDeviceId != null && activeDeviceIds.has(meta.trustedDeviceId);
-      })
-      .map((envelope) => ({
-        id: envelope.id,
-        encryptedVaultKey: envelope.encryptedVaultKey,
-        createdAt: envelope.createdAt,
-      }));
   },
 
   async getIndex(userId: string) {

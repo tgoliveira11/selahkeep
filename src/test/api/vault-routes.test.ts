@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET as statusGet } from "@/app/api/vault/status/route";
 import { POST as initPost } from "@/app/api/vault/init/route";
 import { POST as recoveryUnlockPost } from "@/app/api/vault/unlock-with-recovery-code/route";
-import { GET as deviceEnvelopesGet } from "@/app/api/vault/device-envelopes/route";
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
@@ -10,7 +9,6 @@ const mocks = vi.hoisted(() => ({
   getStatus: vi.fn(),
   init: vi.fn(),
   unlockWithRecoveryCode: vi.fn(),
-  getTrustedDeviceEnvelopes: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
@@ -25,7 +23,6 @@ vi.mock("@/server/services/vault-service", () => ({
     getStatus: mocks.getStatus,
     init: mocks.init,
     unlockWithRecoveryCode: mocks.unlockWithRecoveryCode,
-    getTrustedDeviceEnvelopes: mocks.getTrustedDeviceEnvelopes,
   },
   ConflictError: class ConflictError extends Error {
     name = "ConflictError";
@@ -59,8 +56,16 @@ describe("vault API routes", () => {
           vaultVersion: "vault-v1",
           envelopes: [
             {
-              method: "trusted_device",
+              method: "recovery_code",
               encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+              kdfMetadata: {
+                kdf: "argon2id",
+                version: "kdf-v1",
+                salt: "c2FsdA",
+                memory: 65536,
+                iterations: 3,
+                parallelism: 1,
+              },
             },
           ],
         }),
@@ -75,12 +80,6 @@ describe("vault API routes", () => {
       kdfMetadata: {},
     });
     const res = await recoveryUnlockPost(new Request("http://localhost", { method: "POST" }));
-    expect(res.status).toBe(200);
-  });
-
-  it("GET /vault/device-envelopes returns trusted device envelopes", async () => {
-    mocks.getTrustedDeviceEnvelopes.mockResolvedValue([]);
-    const res = await deviceEnvelopesGet();
     expect(res.status).toBe(200);
   });
 });

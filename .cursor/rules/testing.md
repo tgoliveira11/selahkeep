@@ -14,7 +14,7 @@ Place new tests in the correct folder:
 |-------|------|----------|
 | Unit | `src/test/unit/` | AES-GCM, vault unlock, WebAuthn PRF prep, validation, API client |
 | Security | `src/test/security/` | Plaintext rejection, schema, AAD, sentinel phrase, doc guards, no-letters |
-| Services | `src/test/services/` | note/vault/passkey/trusted-device/admin services |
+| Services | `src/test/services/` | note/vault/passkey/admin services |
 | API | `src/test/api/` | Route handlers (`/api/notes`, `/api/passkeys`, `/api/vault`, …) |
 | Features | `src/test/features/` | passkey unlock, site layout, notes UI, navigation |
 
@@ -26,7 +26,7 @@ Use unit/service/API/feature tests for coverage. Browser E2E was removed; see `d
 2. Database has no plaintext note title/body columns.
 3. Admin APIs do not return plaintext note content.
 4. Deleted notes soft-deleted (`deleted_at`); account deletion cascades vault/notes.
-5. Revoked trusted devices cannot unlock vault (legacy path).
+5. Account session alone does not unlock vault (`no-trusted-devices.test.ts`).
 6. Recovery phrase never stored plaintext; legacy recovery codes hashed only.
 7. Logs do not include private note content.
 8. Note titles encrypted in metadata before storage.

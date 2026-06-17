@@ -44,7 +44,7 @@ cp .env.example .env.local
 
 # Generate and run migrations (reads .env.local automatically)
 npm run db:generate   # after schema changes
-npm run db:migrate    # required after pulling schema updates (e.g. trusted device metadata)
+npm run db:migrate    # required after pulling schema updates
 
 # Start dev server (port 3001)
 npm run dev
@@ -109,7 +109,7 @@ GitHub sign-in uses the NextAuth **GitHub** provider. It authenticates the **acc
 
 ## Microsoft sign-in (account authentication only)
 
-Microsoft sign-in uses the NextAuth **Azure AD** provider (`azure-ad`) against Microsoft Entra ID / the Microsoft identity platform. It authenticates the **account only** — it does **not** unlock the private letters vault, replace trusted devices, passkey PRF vault unlock, or the recovery code.
+Microsoft sign-in uses the NextAuth **Azure AD** provider (`azure-ad`) against Microsoft Entra ID / the Microsoft identity platform. It authenticates the **account only** — it does **not** unlock the private notes vault or replace passkey PRF vault unlock or the recovery code.
 
 | Setting | Value |
 |---------|--------|
@@ -148,7 +148,7 @@ Email/password accounts are **unverified by default** until the user opens the l
 | Change password | `/settings/account`, `POST /api/account/change-password` |
 | Passkeys & TOTP 2FA | `/settings/account#security` (package `PasskeySettings`, `TwoFactorSettings`) |
 
-**Vault separation:** changing or resetting the account password does **not** unlock, recover, or rotate your vault. Users still need a vault password, recovery phrase, passkey, or trusted device for vault access.
+**Vault separation:** changing or resetting the account password does **not** unlock, recover, or rotate your vault. Users still need a vault password, recovery phrase, or passkey PRF for vault access.
 
 **Vault client status** (`GET /api/vault/status` + in-browser UVK session):
 
@@ -225,23 +225,11 @@ Run `npm run db:migrate` after pulling account-auth schema updates (`0006_accoun
 
 From **Account settings → Active sessions**, users can see browsers/devices signed in to the account, revoke one session, sign out of all other sessions, or sign out everywhere.
 
-Account sessions are separate from **trusted devices** (vault unlock). Revoking a session signs out the account on that browser; it does not remove vault trust.
+Account sessions are separate from **vault unlock**. Revoking a session signs out the account on that browser; it does not unlock the vault.
 
 Run `npm run db:migrate` after pulling session schema updates (`0007_account_sessions.sql`).
 
-## Trusted devices
-
-On `/vault/devices`, users can register the current browser storage profile (with an optional friendly name), rename devices, revoke access, and see **This device** when the local `clientDeviceId` matches an active registered entry.
-
-A trusted device means a trusted browser storage profile, not a physical computer. Normal and incognito/private windows are different storage profiles and are treated as different trusted devices when they have different `clientDeviceId` values. The app does not silently relink trusted devices based on browser/platform/deviceType metadata.
-
-Display metadata comes from `src/lib/device-display-info.ts` (browser, OS, form factor). Coarse metadata is display information only and must not be used as proof that two profiles are the same trusted device.
-
-When the current profile is not registered and the vault is unlocked, the primary action is **Trust this browser** (creates a new server row and vault envelope). Re-registering the same active `clientDeviceId` is idempotent.
-
-`last_used_at` updates automatically after each successful vault unlock.
-
-Run `npm run db:migrate` after pulling LTG vault schema updates (`0008`–`0010`, including `0010_drop_letters.sql`).
+Run `npm run db:migrate` after pulling LTG vault schema updates (`0008`–`0011`, including `0010_drop_letters.sql` and `0011_drop_trusted_devices.sql`).
 
 ## Notes (LTG Vault Phase 2–3)
 
@@ -290,7 +278,7 @@ All tests run through **Vitest** (`src/test/`). Browser E2E (Playwright) was int
 |------|----------|----------------|
 | **Unit** | `src/test/unit/` | Crypto helpers, vault unlock, PRF/WebAuthn option preparation, validation, rate limits, API client, logger, env loading |
 | **Security** | `src/test/security/` | Plaintext rejection, boundaries, sentinel phrase (static + runtime integration), AAD, WebAuthn challenges, audit redaction |
-| **Services** | `src/test/services/` | Business logic with mocked repositories (notes, vault, passkeys, trusted devices, admin) |
+| **Services** | `src/test/services/` | Business logic with mocked repositories (notes, vault, passkeys, admin) |
 | **API routes** | `src/test/api/` | Route handlers with mocked auth + services (notes, vault, passkeys, recovery, register, admin) |
 | **Features** | `src/test/features/` | Client feature flows (passkey unlock, site layout shell, UI pages, accessibility) |
 
@@ -323,7 +311,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md), [SECURITY.md](./SECURITY.md), [AGENTS.
 
 Before any **real beta**, complete the gates in [`docs/LGPD_BETA_GATES.md`](./docs/LGPD_BETA_GATES.md) and review [`docs/THREAT_MODEL_Private_Letters_Vault.md`](./docs/THREAT_MODEL_Private_Letters_Vault.md).
 
-Production rate limiting: set `RATE_LIMIT_STORE=postgres` and run migrations (`rate_limit_buckets`, `0003_trusted_device_client_id_webauthn_indexes`).
+Production rate limiting: set `RATE_LIMIT_STORE=postgres` and run migrations (`rate_limit_buckets`, WebAuthn indexes in `0003_*`).
 
 **Account deletion:** `/settings/account` — requires phrase `DELETE MY ACCOUNT` and password re-auth (credentials accounts).
 

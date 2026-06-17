@@ -5,13 +5,10 @@ import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 const mocks = vi.hoisted(() => ({
   findVaultByUserId: vi.fn(),
   findActiveEnvelopesByUserId: vi.fn(),
-  findActiveByUserId: vi.fn(),
   createEnvelope: vi.fn(),
   findActiveEnvelopeByMethod: vi.fn(),
   revokeEnvelope: vi.fn(),
   createVault: vi.fn(),
-  countActiveByUserId: vi.fn(),
-  createDevice: vi.fn(),
   record: vi.fn(),
   updateVaultIndex: vi.fn(),
 }));
@@ -25,15 +22,6 @@ vi.mock("@/server/repositories/vault-repository", () => ({
     createVault: mocks.createVault,
     createEnvelope: mocks.createEnvelope,
     updateVaultIndex: mocks.updateVaultIndex,
-  },
-}));
-
-vi.mock("@/server/repositories/trusted-device-repository", () => ({
-  trustedDeviceRepository: {
-    findActiveByUserId: mocks.findActiveByUserId,
-    countActiveByUserId: mocks.countActiveByUserId,
-    create: mocks.createDevice,
-    maxDevices: 50,
   },
 }));
 
@@ -51,40 +39,14 @@ vi.mock("@/server/policies/rate-limit", () => ({
 describe("vault service extended", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns trusted device envelopes linked to active devices only", async () => {
-    mocks.findActiveEnvelopesByUserId.mockResolvedValue([
-      {
-        id: "1",
-        method: "trusted_device",
-        encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
-        createdAt: new Date(),
-        publicMetadata: { trustedDeviceId: "device-1" },
-      },
-      {
-        id: "3",
-        method: "trusted_device",
-        encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
-        createdAt: new Date(),
-        publicMetadata: { trustedDeviceId: "device-revoked" },
-      },
-      { id: "2", method: "recovery_code", encryptedVaultKey: encryptedPayload("vault_key", USER_ID), createdAt: new Date() },
-    ]);
-    mocks.findActiveByUserId.mockResolvedValue([{ id: "device-1" }]);
-    const envelopes = await vaultService.getTrustedDeviceEnvelopes(USER_ID);
-    expect(envelopes).toHaveLength(1);
-    expect(envelopes[0].id).toBe("1");
-  });
-
   it("classifies Basic and At Risk states", async () => {
     mocks.findVaultByUserId.mockResolvedValue({ vaultVersion: "vault-v1" });
-    mocks.findActiveEnvelopesByUserId.mockResolvedValue([{ method: "trusted_device" }]);
-    mocks.findActiveByUserId.mockResolvedValue([{ id: "d1" }]);
+    mocks.findActiveEnvelopesByUserId.mockResolvedValue([{ method: "password" }]);
     await expect(vaultService.getStatus(USER_ID)).resolves.toMatchObject({
       recoveryState: "Basic",
     });
 
     mocks.findActiveEnvelopesByUserId.mockResolvedValue([]);
-    mocks.findActiveByUserId.mockResolvedValue([]);
     await expect(vaultService.getStatus(USER_ID)).resolves.toMatchObject({
       setupPhase: "setup_incomplete",
       recoveryState: undefined,
@@ -179,7 +141,6 @@ describe("vault service extended", () => {
       { method: "password" },
       { method: "recovery_phrase" },
     ]);
-    mocks.findActiveByUserId.mockResolvedValue([]);
     await expect(vaultService.getStatus(USER_ID)).resolves.toMatchObject({
       setupPhase: "complete",
       setupComplete: true,

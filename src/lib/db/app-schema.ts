@@ -57,29 +57,6 @@ export const vaultEnvelopes = pgTable(
   (table) => [index("idx_vault_envelopes_user_id_method").on(table.userId, table.method)]
 );
 
-export const trustedDevices = pgTable(
-  "trusted_devices",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    clientDeviceId: text("client_device_id"),
-    deviceName: text("device_name").notNull(),
-    devicePublicKey: jsonb("device_public_key"),
-    browser: text("browser"),
-    platform: text("platform"),
-    deviceType: text("device_type"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
-    revokedAt: timestamp("revoked_at", { withTimezone: true }),
-  },
-  (table) => [
-    index("idx_trusted_devices_user_id").on(table.userId),
-    index("idx_trusted_devices_user_client_device_id").on(table.userId, table.clientDeviceId),
-  ]
-);
-
 export const notes = pgTable(
   "notes",
   {
@@ -99,5 +76,4 @@ export const notes = pgTable(
 );
 
 export type Note = typeof notes.$inferSelect;
-export type TrustedDevice = typeof trustedDevices.$inferSelect;
 export type VaultEnvelope = typeof vaultEnvelopes.$inferSelect;

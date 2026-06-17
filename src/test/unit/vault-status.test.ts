@@ -95,7 +95,7 @@ describe("vault status model", () => {
         ltgSetupComplete: false,
         hasEncryptedSettings: false,
         hasEncryptedIndex: false,
-        methods: ["trusted_device"],
+        methods: ["recovery_code"],
       })
     ).toBe("complete");
   });

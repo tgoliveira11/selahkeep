@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { isVaultUnlocked, unwrapVaultKeyFromDevice } from "@/lib/crypto-client/vault";
+import { isVaultUnlocked } from "@/lib/crypto-client/vault";
+import { purgeTrustedDeviceIdb } from "@/lib/crypto-client/vault-idb-cleanup";
 import {
   isVaultManuallyLocked,
   subscribeVaultSession,
@@ -23,8 +24,7 @@ type VaultReadyState =
   | { status: "error"; message: string };
 
 /**
- * Ensures the user is authenticated. Silently unlocks from this device's envelope
- * only when the vault was not manually locked.
+ * Ensures the user is authenticated. Account session alone never unlocks the vault.
  */
 export function useRequireVault(): VaultGateState & { recheckVault: () => void } {
   const { data: session, status: authStatus } = useSession();
@@ -41,6 +41,10 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
       clearNoteBodyCache();
       setRecheckToken((token) => token + 1);
     });
+  }, []);
+
+  useEffect(() => {
+    void purgeTrustedDeviceIdb();
   }, []);
 
   useEffect(() => {
@@ -70,16 +74,7 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
         return;
       }
 
-      let vaultUnlocked = isVaultUnlocked();
-
-      if (!vaultUnlocked) {
-        try {
-          await unwrapVaultKeyFromDevice(userId, undefined, { explicit: false });
-          vaultUnlocked = isVaultUnlocked();
-        } catch {
-          vaultUnlocked = false;
-        }
-      }
+      const vaultUnlocked = isVaultUnlocked();
 
       if (!cancelled) {
         setReadyState({ status: "ready", userId, vaultUnlocked });

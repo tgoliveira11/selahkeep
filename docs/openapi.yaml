@@ -20,7 +20,6 @@ tags:
   - name: Auth
   - name: Notes
   - name: Vault
-  - name: TrustedDevices
   - name: Passkeys
   - name: Recovery
   - name: Account
@@ -623,15 +622,6 @@ paths:
       responses:
         '200':
           description: Vault status
-  /api/vault/device-envelopes:
-    get:
-      tags: [Vault]
-      summary: Trusted-device vault envelopes for this user
-      security:
-        - sessionCookie: []
-      responses:
-        '200':
-          description: Envelope list
   /api/vault/unlock-with-recovery-code:
     post:
       tags: [Vault, Recovery]
@@ -652,73 +642,6 @@ paths:
       responses:
         '201':
           description: Recovery envelope stored
-  /api/trusted-devices:
-    get:
-      tags: [TrustedDevices]
-      summary: List trusted devices
-      security:
-        - sessionCookie: []
-      responses:
-        '200':
-          description: Device list
-    post:
-      tags: [TrustedDevices]
-      summary: Register trusted device with vault envelope
-      security:
-        - sessionCookie: []
-      responses:
-        '201':
-          description: Device created
-        '429':
-          description: Rate limited
-  /api/trusted-devices/status:
-    get:
-      tags: [TrustedDevices]
-      summary: Client device active/revoked state
-      security:
-        - sessionCookie: []
-      parameters:
-        - name: deviceId
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Device state
-  /api/trusted-devices/touch:
-    post:
-      tags: [TrustedDevices]
-      summary: Update lastUsedAt after vault unlock
-      security:
-        - sessionCookie: []
-      responses:
-        '200':
-          description: Touch result
-  /api/trusted-devices/{id}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-    patch:
-      tags: [TrustedDevices]
-      summary: Rename trusted device
-      security:
-        - sessionCookie: []
-      responses:
-        '200':
-          description: Renamed device
-    delete:
-      tags: [TrustedDevices]
-      summary: Revoke trusted device and its vault envelope
-      security:
-        - sessionCookie: []
-      responses:
-        '200':
-          description: Revoked
   /api/passkeys/register:
     post:
       tags: [Passkeys]

@@ -34,7 +34,7 @@ Branch at planning time: `update-postforge-public-order-rss` (includes auth-rese
 | **Vault crypto** | `src/lib/crypto-client/vault.ts`, `vault-unlock.ts`, `vault-session.ts` | Vault password envelope; Argon2id-only; vault index |
 | **Recovery** | `src/lib/crypto-client/recovery-code.ts` (17-word custom list, `hash-wasm`) | Replace with 12/24-word recovery **phrase** per TDR |
 | **Passkey vault** | `src/lib/crypto-client/passkey-vault.ts`, `src/server/services/passkey-*` | Align with TDR PRF envelope; post-login auto-unlock UX |
-| **Trusted devices** | `src/modules/vault/services/trusted-device-service.ts`, `/api/trusted-devices/**` | **Not** in LTG MVP required envelopes; keep during migration, mark optional/future in TDR |
+| **Trusted devices** | Removed (`docs/TRUSTED_DEVICES_REMOVAL.md`) | Not in LTG MVP; migration `0011_drop_trusted_devices.sql` |
 | **DB product schema** | `src/lib/db/app-schema.ts` | `letters` → `notes`; `vault_envelopes` → `vault_unlock_envelopes`; add `encrypted_vault_index`; remove plaintext `answered` |
 | **DB auth schema** | `@tgoliveira/secure-auth/drizzle/schema` via `src/lib/secure-auth-db.ts` | Package-owned; do not fork |
 | **Migrations** | `drizzle/0000`–`0007` | New migrations in Phases 1–3; no drops without migration plan |
@@ -62,7 +62,7 @@ Branch at planning time: `update-postforge-public-order-rss` (includes auth-rese
 | PBKDF2 fallback in recovery KDF (`recovery-code-fallback.test.ts`) | **Argon2id only** for vault password KDF | Phase 1: remove PBKDF2 for vault password; document `hash-wasm` as primary |
 | Plaintext `letters.answered` column | Answered in **encrypted metadata** | Phase 2–3: migrate column away |
 | Title in `encrypted_title` JSON field (encrypted) | Title in encrypted metadata + index (still encrypted) | Phase 2: restructure payloads; **never** plaintext at rest (already encrypted today — preserve) |
-| `trusted_device` envelope (ADR-002) | MVP envelopes: password, recovery_phrase, passkey_prf | Keep for existing users; new setup follows TDR envelope set |
+| `trusted_device` envelope (ADR-002) | Removed — MVP envelopes: password, recovery_phrase, passkey_prf | See `docs/TRUSTED_DEVICES_REMOVAL.md` |
 | Product name “Letters to God” in UI | **LTG Vault** | Phases 1–5 progressive rebrand |
 
 ---

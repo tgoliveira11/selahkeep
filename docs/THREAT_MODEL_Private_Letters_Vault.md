@@ -30,23 +30,17 @@ LTG Vault uses **client-side encryption**. Note title, body, categories, and tag
 | Rate limiting | `RATE_LIMIT_STORE=postgres` in production (PostgreSQL adapter); in-memory for local dev |
 | Vault auto-lock | 15-minute inactivity timeout (`VAULT_INACTIVITY_MS`) |
 | Autosave | **Disabled for MVP** — no autosave implementation; plaintext autosave forbidden |
-| Trusted device revocation | Server-side envelope revoke; online status check before unlock |
-| Trusted device identity | Match by `clientDeviceId` only; metadata is display-only; no auto-relink |
-| Offline revocation gap | Documented limitation — cached local envelope may decrypt until next online check |
+| Vault unlock methods | Password, recovery phrase, passkey PRF only (`docs/TRUSTED_DEVICES_REMOVAL.md`) |
+| IndexedDB | Legacy trusted-device stores purged on DB v3 upgrade; no vault unlock material persisted |
 | CSP | Production `script-src 'self'`; no third-party scripts on vault pages |
-| IndexedDB | Non-extractable device `CryptoKey`; encrypted vault envelope only |
 | Account 2FA (TOTP) | Optional sign-in protection for email/password (and OAuth partial session) only; passkey sign-in bypasses TOTP by design; secrets encrypted at rest (`TWO_FACTOR_SECRET_ENCRYPTION_KEY`); backup codes hashed; separate from vault crypto |
 | Passkey account sign-in | WebAuthn `login` challenges; issues `login-token` session; vault unlock only with PRF envelope client-side; sign-in-only passkeys must not be shown as vault recovery |
 | Email verification & password reset | Hashed opaque tokens in `account_tokens`; single-use atomic consumption; generic forgot-password response; rate limits; no vault key or letter content in emails; password reset/change does not unlock vault |
 | Email delivery (SMTP) | Nodemailer SMTP relay; console provider dev-only; SMTP logs domain/subject only; credentials in env; Mailpit for local capture; production must not use `EMAIL_PROVIDER=console` |
 | Session invalidation on password change | `password_updated_at` compared to JWT `iat`; sessions issued before update invalidated |
-| Account session management | Server-side `account_sessions` with JWT `sid`; revocation enforced in JWT callback; masked IP display; sessions ≠ trusted devices |
+| Account session management | Server-side `account_sessions` with JWT `sid`; revocation enforced in JWT callback; masked IP display; sessions ≠ vault unlock |
 
-### Trusted device identity
-
-A trusted device means a trusted **browser storage profile**, not a physical computer. Normal and incognito/private windows are different storage profiles and are treated as different trusted devices when they have different `clientDeviceId` values. The app does **not** silently relink trusted devices based on browser/platform/deviceType metadata.
-
-Coarse metadata such as browser, platform, and device type is **display information only**. It must not be used as proof that two profiles are the same trusted device. Prior auto-relink behavior (matching metadata to overwrite `clientDeviceId`) was removed for MVP because it allowed one storage profile to take over another's server row (e.g. incognito Chrome replacing normal Chrome's trusted device).
+**Historical:** Trusted devices were removed from the product. See `docs/TRUSTED_DEVICES_REMOVAL.md` and `docs/TRUSTED_DEVICES_ASSESSMENT.md`.
 
 ---
 

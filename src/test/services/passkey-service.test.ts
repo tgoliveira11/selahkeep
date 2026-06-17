@@ -105,7 +105,7 @@ describe("passkey service", () => {
     });
     mocks.findActiveEnvelopesByUserId.mockResolvedValue([
       { id: "old-env", method: "passkey_authorized_device" },
-      { id: "keep-env", method: "trusted_device" },
+      { id: "keep-env", method: "recovery_code" },
     ]);
 
     const result = await passkeyService.verifyRegistration(

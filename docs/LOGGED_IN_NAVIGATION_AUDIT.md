@@ -25,7 +25,7 @@ This document audits LTG Vault logged-in navigation after Phases 0–5 and recor
 | Notes | `/notes` | — | No | Yes | Yes* | Yes | Main workspace | **Keep / rename** | Primary workspace; was "My notes" |
 | Write | `/notes/new` | — | No | Was yes | — | — | Quick compose | **Remove** | Notes page has create CTA; reduces clutter |
 | Vault | `/vault/settings` | — | No | Yes | Yes | Yes | Vault behavior, legacy links | **Keep** | Vault protection settings |
-| Devices | `/vault/devices` | — | No | Was yes | Yes | Yes | Legacy trusted devices | **Move** | Legacy; link from Vault settings |
+| Devices | `/vault/devices` | — | — | Removed | — | — | Trusted devices removed | **Removed** | See `docs/TRUSTED_DEVICES_REMOVAL.md` |
 | Recovery | `/vault/recovery` | — | No | Was yes | Yes | Yes | Legacy recovery code | **Move** | Legacy; link from Vault settings |
 | Account | `/settings/account` | — | No | Yes | Yes | Yes | Auth, passkeys, 2FA, sessions | **Keep** | Package account security |
 | Unlock vault | `/vault/unlock` | — | No | When locked (setup complete) | Yes | No | Unlock flow | **Keep (conditional)** | Only when vault setup is complete and UVK not in session |

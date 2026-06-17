@@ -67,9 +67,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 
 - Passkey registration without PRF does **not** create `passkey_authorized_device` envelopes and does **not** revoke existing passkey envelopes
 - Passkey-based vault unlock requires PRF support. If PRF is unavailable, the app must not create a passkey vault envelope and must not present that passkey as a recovery method.
-- Trusted-device offline unlock: when the app is offline and the current device has valid local vault material, local unlock may be allowed. The device revocation status will be verified again when the app reconnects. This is an offline usability trade-off and does not override online revocation checks. UI surfaces `TrustedDeviceUnlockVerification` (`verified-online` vs `allowed-offline`) via `useVault().offlineNotice`.
 - WebAuthn challenge validation uses atomic `consumeValidChallenge()` only (`findValidChallenge` removed)
-- `client_device_id` column on `trusted_devices` with partial unique index for active devices
 - WebAuthn challenge indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
 
 - `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted notes (Markdown body, metadata blob)
@@ -79,7 +77,6 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - `POST /api/vault/setup` — LTG vault-v2 setup (encrypted settings, index, password + recovery phrase envelopes); vault password validated client-side via `PasswordSetupFields` + `VAULT_PASSWORD_*` (never in request body)
 - `POST /api/vault/init`, `GET /api/vault/status` — returns `hasVault`, `setupPhase`, `setupComplete`, and `availableUnlockMethods`; client derives `not_configured` / `setup_incomplete` / `locked` / `unlocked` via `useVaultClientStatus` + UVK session
 - `POST /api/vault/unlock-envelope` — fetch encrypted envelope for password / recovery phrase unlock
-- `GET/POST /api/trusted-devices`, `POST /api/trusted-devices/:id/remove`, `DELETE /api/trusted-devices/:id`
 - `POST /api/recovery-code`, `POST /api/vault/unlock-with-recovery-code`
 - `POST /api/passkeys/register`, `POST /api/passkeys/authenticate`, `DELETE /api/passkeys` — vault recovery passkey flows (authenticated)
 - `POST /api/auth/passkey/login/options`, `POST /api/auth/passkey/login/verify` — passkey account sign-in (unauthenticated; bypasses TOTP)
@@ -91,7 +88,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - `POST /api/auth/verify-email/resend`, `POST /api/auth/verify-email/confirm` — email verification (hashed tokens in `account_tokens`)
 - `POST /api/auth/forgot-password`, `POST /api/auth/reset-password` — password reset (generic forgot response; no vault involvement)
 - `POST /api/account/change-password`, `GET /api/account/auth-status` — signed-in password change and auth capability flags
-- `GET /api/account/sessions`, `DELETE /api/account/sessions/:id`, `POST /api/account/sessions/revoke-others`, `POST /api/account/sessions/revoke-all`, `POST /api/account/sessions/ping` — account session management (not vault/trusted devices)
+- `GET /api/account/sessions`, `DELETE /api/account/sessions/:id`, `POST /api/account/sessions/revoke-others`, `POST /api/account/sessions/revoke-all`, `POST /api/account/sessions/ping` — account session management (not vault unlock)
 
 ### Account email and password flows
 
@@ -121,7 +118,7 @@ Note metadata/body -> Note Key -> User Vault Key
 Vault index (titles for list) -> User Vault Key
 ```
 
-Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ legacy `trusted_device`, `recovery_code` for vault-v1)
+Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ legacy `recovery_code` for vault-v1). Trusted devices were removed — see `docs/TRUSTED_DEVICES_REMOVAL.md`.
 
 ## UI layer
 
@@ -147,19 +144,11 @@ Server validates AAD in `src/server/policies/aad-validation.ts` before storage. 
 
 Multi-step sensitive flows use `runInTransaction()` (`src/lib/db/transaction.ts`):
 
-- vault initialization (trusted device + envelope + link)
-- trusted device create/revoke (device row + envelope revoke)
+- vault initialization and LTG setup
 - recovery code store/regenerate
 - passkey register/remove
 
 Failures roll back all related writes.
-
-## Trusted device revocation
-
-- Every trusted-device envelope stores `publicMetadata.trustedDeviceId`
-- Revoking a device revokes its envelope in the same transaction
-- Client checks `GET /api/trusted-devices/status?deviceId=` before unlock; clears IndexedDB on revoke
-- **Offline limitation:** cached local envelope may still decrypt until the next online status check
 
 ## Passkey account sign-in
 
@@ -180,20 +169,8 @@ Passkey sign-in follows package rules when 2FA is enabled (pending challenge unt
 - Storage: `user_two_factor_settings`, `user_two_factor_backup_codes`, login challenge/token tables
 - NextAuth provider: `login-token` (one-time token after password + optional 2FA)
 
-## Trusted device identity
-
-A trusted device is one browser storage profile: local `clientDeviceId` + local device key + one active `trusted_devices` row + compatible vault envelope.
-
-- Normal and incognito/private windows are different storage profiles when IndexedDB is isolated (different `clientDeviceId`).
-- `/vault/devices` marks **This device** only when the local `clientDeviceId` matches an active server row.
-- Unregistered profiles show **Trust this browser** when the vault is unlocked; registration creates a new row and envelope.
-- Coarse metadata (`browser`, `platform`, `deviceType`) is display-only and must not prove identity.
-- MVP does **not** auto-relink or mutate existing rows based on metadata matches.
-
 ## API Routes (additional)
 
-- `GET /api/trusted-devices/status?deviceId=` — device active/revoked state for unlock gating
-- `POST /api/trusted-devices/touch` — updates `lastUsedAt`; returns revoked state
 - `DELETE /api/account` — account deletion (cascades encrypted user data)
 
 ## Rate limiting

@@ -35,48 +35,35 @@
 
 ## Vault Unlocking (ADR-005 / ADR-006)
 
+Supported unlock methods: **vault password**, **recovery phrase**, **passkey PRF** (`passkey_authorized_device` envelope). Legacy `recovery_code` envelopes remain for older vaults.
+
 - Passkeys must not be used as raw encryption keys
-- Trusted devices are revocable
-- Revoked devices cannot unlock vault when online (server checks `GET /api/trusted-devices/status`; local IndexedDB cleared on revoke)
-- **Fail closed:** `assertTrustedDeviceCanUnlock()` blocks unlock on HTTP 401/403/404/5xx and on `not_registered`; only real network/offline failures allow local-only unlock
-- Typed client errors: `RevokedTrustedDeviceError`, `UnauthenticatedTrustedDeviceError`, `ForbiddenTrustedDeviceError`, `UnknownTrustedDeviceError`, `TrustedDeviceServerError`, `TrustedDeviceUnexpectedError`
-- Every trusted-device envelope links to `publicMetadata.trustedDeviceId`
-- Active trusted devices enforce unique `(user_id, client_device_id)` via `client_device_id` column + partial unique index
-- **Trusted device identity:** a trusted device means a trusted **browser storage profile**, not a physical computer. Normal and incognito/private windows are different storage profiles and are treated as different trusted devices when they have different `clientDeviceId` values. The app does **not** silently relink trusted devices based on browser/platform/deviceType metadata.
-- **Display metadata only:** coarse fields such as browser, platform, and device type are display information only. They must not be used as proof that two profiles are the same trusted device.
-- **Registration:** `POST /api/trusted-devices` is idempotent for the same active `userId + clientDeviceId` (returns existing row). A different `clientDeviceId` always creates a separate trusted device, even when metadata matches.
-- **Offline limitation:** if the client cannot reach the server (detected network failure only), a previously cached local envelope may still decrypt until the next successful online status check. HTTP auth/server errors do **not** fall back to offline unlock. When offline unlock is allowed, the UI shows: *"Unlocked using this device while offline. Device status will be verified again when you reconnect."*
-- When the app is offline and the current device has valid local vault material, local unlock may be allowed. The device revocation status will be verified again when the app reconnects. This is an offline usability trade-off and does not override online revocation checks.
+- Account session alone never unlocks the vault
+- Passkey PRF unlock does not cache a local device-secret envelope
+- On load, `purgeTrustedDeviceIdb()` removes legacy `device_secrets` / `vault_envelopes` IndexedDB stores (trusted devices removed — see `docs/TRUSTED_DEVICES_REMOVAL.md`)
 
 ## Database transactions
 
-Multi-step sensitive flows use `runInTransaction()` (vault init, trusted device create/revoke, recovery code store, passkey register/remove). Failures roll back related writes.
+Multi-step sensitive flows use `runInTransaction()` (vault init/setup, recovery code store, passkey register/remove). Failures roll back related writes.
 
 ## Browser Storage (IndexedDB)
 
-Allowed in IndexedDB (legacy trusted-device path):
-
-- **Encrypted vault envelope** (`encryptedVaultKey` structured payload only)
-- **Non-extractable device secret** (`CryptoKey` with `extractable: false` — never raw key bytes as strings)
+LTG Vault does not persist vault unlock material in IndexedDB. Legacy trusted-device stores are deleted on upgrade to DB version 3 (`src/lib/crypto-client/vault-idb-cleanup.ts`).
 
 Forbidden in browser persistence:
 
-- Plaintext User Vault Key, Letter Key, Note Key, recovery code, or note/letter title/body
-- Exportable/raw device secret strings (legacy v1 storage was migrated away on DB upgrade)
+- Plaintext User Vault Key, Note Key, recovery phrase, recovery code, or note title/body
+- Exportable/raw device secret strings
 
 ### Threat model (local storage)
 
 | Threat | Mitigation |
 |--------|------------|
 | **XSS on this origin** | Nonce-based CSP in `src/proxy.ts` (`script-src 'self' 'nonce-…' 'strict-dynamic' 'wasm-unsafe-eval'`); `wasm-unsafe-eval` is required for client-side Argon2 (`hash-wasm`) on recovery flows |
-| **IndexedDB export / DevTools copy** | Device secret stored as non-extractable `CryptoKey`, not copy-paste base64; vault key remains AES-GCM ciphertext |
-| **Stolen session cookie only** | Server stores ciphertext only; unlock still requires client key material |
-| **Sign out on shared device** | `clearVaultClientState()` wipes IndexedDB envelopes and in-memory vault key |
-| **Revoked trusted device** | Server envelope revoked; online unlock checks device status and clears local IndexedDB; revoking current device calls `clearVaultClientState()` |
+| **Stolen session cookie only** | Server stores ciphertext only; unlock still requires vault password, recovery phrase, or passkey PRF |
+| **Sign out on shared device** | `clearVaultClientState()` clears in-memory vault key and purges legacy IndexedDB stores |
 
-Trusted device records store display metadata only (`deviceName`, browser, platform, form factor, `devicePublicKey.deviceId`). They must not store exportable key bytes. Re-registering the same active client `deviceId` returns the existing server row idempotently (no duplicate active rows). The server never mutates an existing active row's `clientDeviceId` based on metadata alone.
-
-Residual risk: a malicious script running on this origin (XSS) or compromised browser profile on an unlocked session can still decrypt notes and letters. That is inherent to client-side encryption; depth-in-defense is CSP + minimal persistence + non-extractable keys + Markdown sanitization on preview.
+Residual risk: a malicious script running on this origin (XSS) or compromised browser profile on an unlocked session can still decrypt notes. That is inherent to client-side encryption; depth-in-defense is CSP + minimal persistence + Markdown sanitization on preview.
 
 ## Notes (Phase 2–3)
 
@@ -184,7 +171,7 @@ These flows protect **account authentication only**. They do **not** unlock, rec
 
 ### Account sessions (sign-in state)
 
-Account sessions are **not** trusted devices. Revoking a session signs out that browser from the account; it does not revoke vault unlock trust or delete trusted-device envelopes.
+Account sessions are separate from vault unlock. Revoking a session signs out that browser from the account; it does not unlock or lock the vault.
 
 - Each successful sign-in creates a server-side `account_sessions` row; JWT carries `sid` (session id)
 - A session stays **active** while `revoked_at` is null **and** `expires_at` is in the future (`expires_at` aligns with `NEXTAUTH_SESSION_MAX_AGE`, default 30 days)
@@ -201,7 +188,7 @@ Account sessions are **not** trusted devices. Revoking a session signs out that 
 - **PostgreSQL** store for production multi-instance (`RATE_LIMIT_STORE=postgres`, table `rate_limit_buckets`)
 - Scoped keys: operation + email + IP + endpoint with separate **email**, **IP**, and **email+IP** buckets for credentials login
 - Credentials login IP captured via NextAuth route wrapper (`login-request-context.ts`)
-- Applied to: registration, login, email verification resend/confirm, forgot/reset password, change password, session revoke actions, recovery unlock, passkey register/auth, trusted-device create, account deletion
+- Applied to: registration, login, email verification resend/confirm, forgot/reset password, change password, session revoke actions, recovery unlock, passkey register/auth, account deletion
 - **Social login:** OAuth token exchange and provider-side abuse controls are delegated to Google/Apple/Microsoft (NextAuth `azure-ad` provider); local rate limits apply to app auth routes where request context is available. Microsoft sign-in requests only `openid`, `email`, `profile` — no Microsoft Graph mail/calendar/files scopes; custom profile mapping avoids default Graph photo fetch. Document remaining distributed-abuse risk in threat model.
 - **Microsoft sign-in:** account authentication only via `AUTH_AZURE_AD_*` env vars; provider ID `azure-ad`; callback `/api/auth/callback/azure-ad`; tenant default `common`. Does not unlock vault. No automatic cross-provider account linking (`oauth-sign-in-policy.ts`). Missing Microsoft email claim rejects sign-in safely.
 

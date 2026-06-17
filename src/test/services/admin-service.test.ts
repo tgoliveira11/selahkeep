@@ -6,7 +6,6 @@ const mocks = vi.hoisted(() => ({
   findById: vi.fn(),
   findVaultByUserId: vi.fn(),
   countByVaultId: vi.fn(),
-  countActiveByUserId: vi.fn(),
   findActiveEnvelopesByUserId: vi.fn(),
 }));
 
@@ -16,10 +15,6 @@ vi.mock("@/server/repositories/user-repository", () => ({
 
 vi.mock("@/server/repositories/note-repository", () => ({
   noteRepository: { countByVaultId: mocks.countByVaultId },
-}));
-
-vi.mock("@/server/repositories/trusted-device-repository", () => ({
-  trustedDeviceRepository: { countActiveByUserId: mocks.countActiveByUserId },
 }));
 
 vi.mock("@/server/repositories/vault-repository", () => ({
@@ -46,7 +41,6 @@ describe("admin service", () => {
     });
     mocks.findVaultByUserId.mockResolvedValue({ id: "vault-1" });
     mocks.countByVaultId.mockResolvedValue(3);
-    mocks.countActiveByUserId.mockResolvedValue(1);
     mocks.findActiveEnvelopesByUserId.mockResolvedValue([{ method: "recovery_code" }]);
 
     await expect(adminService.getUserSummary(USER_ID)).resolves.toEqual({
@@ -55,7 +49,6 @@ describe("admin service", () => {
       authProvider: "credentials",
       createdAt: new Date("2024-01-01"),
       noteCount: 3,
-      trustedDeviceCount: 1,
       recoveryMethods: ["recovery_code"],
     });
   });

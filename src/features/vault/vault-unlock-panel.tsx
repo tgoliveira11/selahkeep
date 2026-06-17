@@ -6,23 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { FormField } from "@/components/ui/form-field";
-import { PrivacyNotice } from "@/components/ui/privacy-notice";
 import { isPasskeySupported } from "@/lib/crypto-client/passkey-vault";
 import { getRecoveryStateLabel } from "@/lib/ui/recovery-state-labels";
 import type { VaultStatus } from "@/lib/api-client/vault";
 
-export type VaultUnlockPanelMode = "init" | "unlock" | "recovery";
+export type VaultUnlockPanelMode = "unlock" | "recovery";
 
 interface VaultUnlockPanelProps {
   mode: VaultUnlockPanelMode;
   loading: boolean;
   error: string | null;
-  offlineNotice: string | null;
   vaultStatus: VaultStatus | null;
   recoveryCode: string;
   onRecoveryCodeChange: (value: string) => void;
-  onInit: () => void;
-  onUnlockDevice: () => void;
   onUnlockPasskey: () => void;
   onUnlockRecovery: () => void;
   onShowRecovery: () => void;
@@ -36,12 +32,9 @@ export function VaultUnlockPanel({
   mode,
   loading,
   error,
-  offlineNotice,
   vaultStatus,
   recoveryCode,
   onRecoveryCodeChange,
-  onInit,
-  onUnlockDevice,
   onUnlockPasskey,
   onUnlockRecovery,
   onShowRecovery,
@@ -59,23 +52,19 @@ export function VaultUnlockPanel({
 
   const title =
     heading ??
-    (mode === "init"
-      ? "Set up your vault"
-      : mode === "recovery"
-        ? showRecoveryPhrase
-          ? "Unlock with recovery phrase"
-          : "Unlock with recovery code"
-        : "Unlock your vault");
+    (mode === "recovery"
+      ? showRecoveryPhrase
+        ? "Unlock with recovery phrase"
+        : "Unlock with recovery code"
+      : "Unlock your vault");
 
   const body =
     description ??
-    (mode === "init"
-      ? "Before your first note is saved, we protect it on this device. Our team cannot read your private notes."
-      : mode === "recovery"
-        ? showRecoveryPhrase
-          ? "Enter the recovery phrase you saved when you set up your vault."
-          : "Enter the recovery code you saved when you set up your account."
-        : "Your notes are protected on this device. Unlock to continue on this browser.");
+    (mode === "recovery"
+      ? showRecoveryPhrase
+        ? "Enter the recovery phrase you saved when you set up your vault."
+        : "Enter the recovery code you saved when you set up your account."
+      : "Unlock with your recovery code, recovery phrase, or passkey.");
 
   const content = (
     <div className="space-y-5">
@@ -84,7 +73,7 @@ export function VaultUnlockPanel({
         <p className="text-sm leading-relaxed text-[var(--muted)]">{body}</p>
       </div>
 
-      {mode !== "init" && recoveryLabel && (
+      {mode !== "recovery" && recoveryLabel && (
         <Alert
           variant={
             recoveryLabel.variant === "success"
@@ -99,15 +88,6 @@ export function VaultUnlockPanel({
         </Alert>
       )}
 
-      {mode === "init" && (
-        <div className="space-y-3">
-          <PrivacyNotice compact />
-          <Button onClick={onInit} disabled={loading} className="w-full">
-            {loading ? "Setting up…" : "Set up my vault"}
-          </Button>
-        </div>
-      )}
-
       {mode === "unlock" && (
         <div className="space-y-3">
           {showPasskeyUnlock && (
@@ -115,14 +95,6 @@ export function VaultUnlockPanel({
               {loading ? "Unlocking…" : "Unlock with passkey"}
             </Button>
           )}
-          <Button
-            onClick={onUnlockDevice}
-            disabled={loading}
-            variant={showPasskeyUnlock ? "secondary" : "primary"}
-            className="w-full"
-          >
-            {loading ? "Unlocking…" : "Unlock on this device"}
-          </Button>
           <Button variant="secondary" onClick={onShowRecovery} className="w-full">
             {showRecoveryPhrase ? "Use recovery phrase" : "Use recovery code"}
           </Button>
@@ -171,10 +143,6 @@ export function VaultUnlockPanel({
         <Alert variant="danger" role="alert">
           {error}
         </Alert>
-      )}
-
-      {offlineNotice && !error && (
-        <Alert variant="muted">{offlineNotice}</Alert>
       )}
     </div>
   );

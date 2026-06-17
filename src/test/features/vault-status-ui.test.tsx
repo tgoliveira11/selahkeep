@@ -33,9 +33,6 @@ vi.mock("@/features/vault/use-vault", () => ({
   useVault: vi.fn(() => ({
     loading: false,
     error: null,
-    offlineNotice: null,
-    initializeVault: vi.fn(),
-    unlockFromDevice: vi.fn(),
     unlockFromPasskey: vi.fn(),
     unlockFromRecoveryCode: vi.fn(),
     unlockFromVaultPassword: vi.fn(),

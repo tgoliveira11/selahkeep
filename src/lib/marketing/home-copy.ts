@@ -38,7 +38,7 @@ export const homeCopy = {
     heading: "Your privacy, in plain language",
     body: [
       "Your vault belongs to you. Notes are private by default, and we design the app so our team cannot read them.",
-      "When you save a note, it is protected before it leaves your browser. Only you can unlock and read your private notes on a trusted device.",
+      "When you save a note, it is protected before it leaves your browser. Only you can unlock and read your private notes after vault unlock.",
       "Your account password signs you in only — it does not unlock your vault. Vault recovery is separate.",
       "We do not sell your note content, use it for advertising, or share it with others.",
       "Import and export are not available in this MVP. There is no way to bulk-download decrypted notes from the server.",

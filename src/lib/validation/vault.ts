@@ -32,7 +32,6 @@ const ALLOWED_ENCRYPTED_PREFIXES = [
   "vaultVersion",
   "envelopes",
   "method",
-  "trustedDevice",
   "id",
   "answered",
   "encryptionVersion",
@@ -85,7 +84,6 @@ export const vaultInitSchema = z.object({
     .array(
       z.object({
         method: z.enum([
-          "trusted_device",
           "passkey_authorized_device",
           "recovery_code",
           "password",
@@ -94,15 +92,6 @@ export const vaultInitSchema = z.object({
         encryptedVaultKey: encryptedPayloadSchema,
         kdfMetadata: kdfMetadataSchema.optional(),
         publicMetadata: z.record(z.unknown()).optional(),
-        trustedDevice: z
-          .object({
-            deviceName: z.string().min(1).max(200),
-            devicePublicKey: z.record(z.unknown()).optional(),
-            browser: z.string().optional(),
-            platform: z.string().optional(),
-            deviceType: z.enum(["desktop", "mobile", "tablet", "unknown"]).optional(),
-          })
-          .optional(),
       })
     )
     .min(1),

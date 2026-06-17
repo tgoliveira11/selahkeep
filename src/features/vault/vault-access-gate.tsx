@@ -14,15 +14,7 @@ interface VaultAccessGateProps {
 }
 
 export function VaultAccessGate({ purpose, onAccessGranted }: VaultAccessGateProps) {
-  const {
-    loading,
-    error,
-    offlineNotice,
-    initializeVault,
-    unlockFromDevice,
-    unlockFromPasskey,
-    unlockFromRecoveryCode,
-  } = useVault();
+  const { loading, error, unlockFromPasskey, unlockFromRecoveryCode } = useVault();
   const vaultUnlocked = useVaultSessionUnlocked();
   const [vaultStatus, setVaultStatus] = useState<Awaited<ReturnType<typeof vaultApi.status>> | null>(
     null
@@ -68,20 +60,6 @@ export function VaultAccessGate({ purpose, onAccessGranted }: VaultAccessGatePro
   if (clientStatus === "locked" && vaultStatus.setupPhase === "complete") {
     const panelMode: VaultUnlockPanelMode = showRecovery ? "recovery" : "unlock";
 
-    async function handleInit() {
-      await initializeVault();
-      onAccessGranted();
-    }
-
-    async function handleUnlock() {
-      try {
-        await unlockFromDevice();
-        onAccessGranted();
-      } catch {
-        setShowRecovery(true);
-      }
-    }
-
     async function handlePasskeyUnlock() {
       await unlockFromPasskey();
       onAccessGranted();
@@ -95,7 +73,7 @@ export function VaultAccessGate({ purpose, onAccessGranted }: VaultAccessGatePro
     const heading =
       purpose === "write" ? "Unlock to write" : "Unlock to read your notes";
 
-    const description = "Unlock your vault to continue on this browser.";
+    const description = "Unlock your vault with your recovery code or passkey.";
 
     return (
       <VaultUnlockPanel
@@ -103,12 +81,9 @@ export function VaultAccessGate({ purpose, onAccessGranted }: VaultAccessGatePro
         mode={panelMode}
         loading={loading}
         error={error}
-        offlineNotice={offlineNotice}
         vaultStatus={vaultStatus}
         recoveryCode={recoveryCode}
         onRecoveryCodeChange={setRecoveryCode}
-        onInit={handleInit}
-        onUnlockDevice={handleUnlock}
         onUnlockPasskey={handlePasskeyUnlock}
         onUnlockRecovery={handleRecovery}
         onShowRecovery={() => setShowRecovery(true)}

@@ -192,7 +192,6 @@ Mapped in `src/lib/config/vault-password-policy.ts` and passed explicitly to `Pa
 | `AUTH_COOKIE_SECURE` | Optional | Production | `true` | secure-auth | Secure session cookies | Unset → `true` when `NODE_ENV=production`. |
 | `EMAIL_VERIFICATION_SEND_ON_REGISTER` | Optional | Production | `true` | secure-auth | Send verification email on register | Default `true`. Needs working SMTP if users must verify. |
 | `AUTH_TRACE` | Optional | Never in prod | `false` | secure-auth | Auth debug trace | Default `false`. |
-| `MAX_TRUSTED_DEVICES` | Optional | Production | `50` | `trusted-device-repository.ts` | Max trusted devices per user | Default `50`. |
 | `ENABLE_API_DOCS` | Optional | Production | `false` | `src/app/api-docs/page.tsx` | Expose `/api-docs` Swagger UI | Disabled in production unless `true`. |
 
 ---

@@ -128,15 +128,9 @@ export default function VaultSettingsPage() {
             <h2 className="font-medium">Advanced vault options</h2>
             <p className="text-sm text-[var(--muted)]">
               Recovery phrase setup happens during vault setup. Passkey vault unlock is configured
-              under Account security. Legacy trusted devices and recovery codes remain available for
-              older vaults.
+              under Account security. Legacy recovery codes remain available for older vaults.
             </p>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <Link href="/vault/devices">
-                <Button variant="secondary" className="w-full sm:w-auto">
-                  Trusted devices
-                </Button>
-              </Link>
               <Link href="/vault/recovery">
                 <Button variant="secondary" className="w-full sm:w-auto">
                   Legacy recovery & passkey setup

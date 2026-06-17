@@ -24,9 +24,6 @@ export default function VaultUnlockPage() {
   const {
     loading,
     error,
-    offlineNotice,
-    initializeVault,
-    unlockFromDevice,
     unlockFromPasskey,
     unlockFromRecoveryCode,
     unlockFromVaultPassword,
@@ -86,12 +83,7 @@ export default function VaultUnlockPage() {
   }
 
   const showLtgUnlock = serverStatus.setupComplete && serverStatus.vaultVersion === "vault-v2";
-  const legacyMode =
-    !showLtgUnlock && serverStatus.vaultVersion === "vault-v1"
-      ? "legacy-unlock"
-      : !showLtgUnlock
-        ? "legacy-init"
-        : null;
+  const legacyMode = !showLtgUnlock ? "legacy-unlock" : null;
 
   return (
     <PageLayout width="narrow">
@@ -112,10 +104,6 @@ export default function VaultUnlockPage() {
             await unlockFromRecoveryPhrase(phrase);
             router.push("/notes");
           }}
-          onUnlockLegacyDevice={async () => {
-            await unlockFromDevice();
-            router.push("/notes");
-          }}
           onUnlockPasskey={async () => {
             await unlockFromPasskey();
             router.push("/notes");
@@ -132,21 +120,12 @@ export default function VaultUnlockPage() {
       )}
       {legacyMode && (
         <VaultUnlockPanel
-          mode={legacyMode === "legacy-init" ? "init" : "unlock"}
+          mode="unlock"
           loading={loading}
           error={error}
-          offlineNotice={offlineNotice}
           vaultStatus={serverStatus}
           recoveryCode={legacyRecoveryCode}
           onRecoveryCodeChange={setLegacyRecoveryCode}
-          onInit={async () => {
-            await initializeVault();
-            router.push("/notes");
-          }}
-          onUnlockDevice={async () => {
-            await unlockFromDevice();
-            router.push("/notes");
-          }}
           onUnlockPasskey={async () => {
             await unlockFromPasskey();
             router.push("/notes");
@@ -158,7 +137,7 @@ export default function VaultUnlockPage() {
           onShowRecovery={() => undefined}
           onBackFromRecovery={() => undefined}
           heading="Unlock your vault"
-          description="Legacy vault setup — trusted device or recovery phrase."
+          description="Use your recovery code, recovery phrase, or passkey to unlock."
         />
       )}
     </PageLayout>
