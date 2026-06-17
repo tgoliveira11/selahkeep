@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import AccountSettingsPage from "@/app/(vault)/settings/account/page";
+import { ACCOUNT_DELETION_VAULT_NOTE } from "@/lib/account-auth-messages";
 
 vi.mock("next-auth/react", () => ({
   useSession: vi.fn(() => ({
@@ -50,5 +51,10 @@ describe("account settings page wrapper", () => {
     expect(screen.queryByRole("link", { name: /security settings/i })).toBeNull();
     expect(screen.getByRole("link", { name: /trusted devices/i })).toBeTruthy();
     expect(screen.getByRole("link", { name: /recovery code/i })).toBeTruthy();
+  });
+
+  it("warns that account deletion removes vault and notes", () => {
+    render(<AccountSettingsPage />);
+    expect(screen.getByText(ACCOUNT_DELETION_VAULT_NOTE)).toBeTruthy();
   });
 });

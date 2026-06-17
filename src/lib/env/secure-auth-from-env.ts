@@ -15,8 +15,10 @@ export type SecureAuthEnvSlice = Pick<
   "app" | "auth" | "accountPolicy" | "passwordPolicy" | "sessions" | "rateLimit" | "server" | "debug" | "oauth" | "webauthn" | "ui"
 >;
 
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
+
 const PRODUCT_DEFAULTS = {
-  appName: "Letters to God",
+  appName: PRODUCT_NAME,
   appSlug: "letters-to-god",
   baseUrl: "http://localhost:3001",
 } as const;

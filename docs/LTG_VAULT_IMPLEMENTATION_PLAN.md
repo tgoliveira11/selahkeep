@@ -680,13 +680,13 @@ Polish UX, mobile, vault inactivity lock, document no export/import, confirm acc
 
 ### 11. Acceptance criteria
 
-- [ ] TDR §20 MVP acceptance criteria (26 items) verified  
-- [ ] Product branded LTG Vault on public pages  
-- [ ] Vault inactivity lock works  
-- [ ] Export/import documented as unavailable  
-- [ ] Account deletion cascade verified  
-- [ ] Private usability checklist completed  
-- [ ] Deploy checklist green on staging  
+- [x] TDR §20 MVP acceptance criteria (26 items) verified — see `docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md`
+- [x] Product branded LTG Vault on public pages
+- [x] Vault inactivity lock works (15 min default + user notice)
+- [x] Export/import documented as unavailable
+- [x] Account deletion cascade verified (FK + integration test)
+- [x] Private usability checklist completed — `docs/PRIVATE_USABILITY_TEST_SCRIPT.md`
+- [ ] Deploy checklist green on staging (operator sign-off)  
 
 ### 12. Risks
 

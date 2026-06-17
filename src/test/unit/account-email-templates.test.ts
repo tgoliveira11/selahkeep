@@ -24,6 +24,6 @@ describe("account email templates", () => {
     expect(verification.text).toContain("/verify-email?token=");
     expect(reset.text).toContain("/reset-password?token=");
     expect(verification.text).not.toContain("private letter");
-    expect(reset.text).toContain("private letter recovery code");
+    expect(reset.text).toMatch(/does not unlock your vault/i);
   });
 });

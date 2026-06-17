@@ -242,10 +242,15 @@ Challenges scoped by user ID and type; expire after 5 minutes; deleted on use vi
 
 ## Vault session hardening
 
-- **15-minute inactivity** auto-lock (`vault-session.ts`) — same as manual lock; blocks silent re-unlock until explicit unlock via gate or unlock screen
-- Manual **Lock vault** clears in-memory key and sets a session lock flag; letter pages hide decrypted content and require unlock again
+- **15-minute inactivity** auto-lock (`VAULT_INACTIVITY_MS` in `vault-session.ts`) — resets on pointer, keyboard, touch, and scroll activity via `use-vault-activity.ts`
+- Auto-lock shows: *“Your vault was locked to protect your private notes.”* (`vault-auto-lock-notice.tsx`)
+- Manual **Lock vault** clears in-memory key, note body cache, and sets a session lock flag; note pages hide decrypted content until explicit unlock
 - In-memory User Vault Key cleared on lock, sign out, and `pagehide` (best effort)
+
+## Import / export (MVP)
+
+**Not available.** Bulk import and export of decrypted notes are deferred per TDR §21. Documented on `/vault/settings`, public home page, and README. No server endpoint exposes decrypted content.
 
 ## Autosave (MVP decision)
 
-**Disabled.** Plaintext autosave is forbidden. Letters are saved only via explicit encrypted submit.
+**Disabled.** Plaintext autosave is forbidden. Notes are saved only via explicit encrypted submit.

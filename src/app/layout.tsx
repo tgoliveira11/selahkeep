@@ -3,13 +3,14 @@ import "./globals.css";
 import { SecureAuthProviders } from "@/components/secure-auth-providers";
 import { secureAuthUiPublicConfig } from "@/lib/secure-auth-ui-public-config";
 import { SkipLink } from "@/components/layout/skip-link";
+import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/marketing/brand";
 
 /** Required so per-request CSP nonces from proxy.ts apply to Next.js inline scripts. */
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Letters to God",
-  description: "Your private letters are protected on your device before they are saved.",
+  title: PRODUCT_NAME,
+  description: PRODUCT_TAGLINE,
 };
 
 export const viewport: Viewport = {

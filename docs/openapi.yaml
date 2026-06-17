@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Letters to God — Private Letters Vault API
+  title: LTG Vault — Private Encrypted Notes API
   version: 0.1.0
   description: |
     REST API for the Private Letters Vault MVP.

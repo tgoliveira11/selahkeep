@@ -146,10 +146,10 @@ describe("buildSecureAuthConfigFromEnv", () => {
   it("builds public UI config without server secrets", () => {
     const config = buildSecureAuthUiPublicConfigFromEnv(
       { APP_BASE_URL: "http://localhost:3001", PASSWORD_MIN_LENGTH: "10" },
-      { appName: "Letters to God", appSlug: "letters-to-god", baseUrl: "http://localhost:3001" }
+      { appName: "LTG Vault", appSlug: "letters-to-god", baseUrl: "http://localhost:3001" }
     );
 
-    expect(config.appName).toBe("Letters to God");
+    expect(config.appName).toBe("LTG Vault");
     expect(config.passwordPolicy.minLength).toBe(10);
     expect(config.paths.afterLogin).toBe("/notes");
     expect(config.messages.loginDescription).toBe("Sign in to continue to your account.");
@@ -171,7 +171,7 @@ describe("buildSecureAuthConfigFromEnv", () => {
 
   it("maps product auth page messages into ui config", () => {
     const config = buildSecureAuthConfigFromEnv(baseEnv, {
-      appName: "Letters to God",
+      appName: "LTG Vault",
       appSlug: "letters-to-god",
       baseUrl: "http://localhost:3001",
     });

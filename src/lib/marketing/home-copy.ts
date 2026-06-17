@@ -1,11 +1,13 @@
+import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/marketing/brand";
+
 /** Marketing copy for the public home page (`/`). */
 export const homeCopy = {
   hero: {
-    eyebrow: "A quiet place for private letters",
-    title: "Letters to God",
-    subtitle:
-      "A private place to write personal letters, keep them safely, revisit them over time, and reflect on what matters to you.",
-    reassurance: "Your letters are private by default and protected before they are saved.",
+    eyebrow: "Your private encrypted vault",
+    title: PRODUCT_NAME,
+    subtitle: PRODUCT_TAGLINE,
+    reassurance:
+      "Your notes are private by default and protected on your device before they are saved.",
   },
   features: {
     heading: "What you can do",
@@ -13,49 +15,51 @@ export const homeCopy = {
       {
         title: "Write privately",
         description:
-          "Compose personal letters in a calm, distraction-free space. Take your time and write what is on your heart.",
+          "Compose letters, prayers, reflections, and notes in a calm, distraction-free space.",
       },
       {
-        title: "Keep your letters",
+        title: "Keep everything in one vault",
         description:
-          "Save your letters securely and return to them whenever you want to remember, reflect, or find comfort.",
+          "Save your writing securely and return whenever you want to remember, reflect, or find comfort.",
       },
       {
         title: "Mark as answered",
         description:
-          "When a prayer or letter feels answered, mark it so you can revisit that moment of peace and gratitude.",
+          "When a prayer or reflection feels answered, mark it so you can revisit that moment of peace and gratitude.",
       },
       {
         title: "Recover thoughtfully",
         description:
-          "Set up a recovery code or trusted device so you can access your letters again on a new browser or device.",
+          "Set up a vault password, recovery phrase, or passkey so you can unlock your vault on a new browser or device.",
       },
     ],
   },
   privacy: {
     heading: "Your privacy, in plain language",
     body: [
-      "Your letters belong to you. They are private by default, and we design the app so our team cannot read them.",
-      "When you save a letter, it is protected before it leaves your browser. Only you can unlock and read your private letters on a trusted device.",
-      "We do not sell your letter content, use it for advertising, or share it with others.",
+      "Your vault belongs to you. Notes are private by default, and we design the app so our team cannot read them.",
+      "When you save a note, it is protected before it leaves your browser. Only you can unlock and read your private notes on a trusted device.",
+      "Your account password signs you in only — it does not unlock your vault. Vault recovery is separate.",
+      "We do not sell your note content, use it for advertising, or share it with others.",
+      "Import and export are not available in this MVP. There is no way to bulk-download decrypted notes from the server.",
     ],
   },
-  community: {
-    heading: "Community — coming later",
-    badge: "Not available yet",
+  deferred: {
+    heading: "Not in this MVP",
+    badge: "Coming later",
     body:
-      "We may someday offer a gentle way to share encouragement with others — always optional, always separate from your private letters. That feature is not live today.",
+      "Encrypted attachments, note version history, import/export, and optional community sharing are planned for future phases. They are not available today.",
   },
   account: {
     heading: "Why create an account?",
     body: [
-      "An account keeps your letters tied to you across visits and devices, with sign-in options you can trust.",
-      "It also lets you set up recovery so you are not locked out of your letters if you switch browsers or lose a device.",
-      "Your account password protects sign-in only — it does not replace your private letter recovery options.",
+      "An account keeps your vault tied to you across visits and devices, with sign-in options you can trust.",
+      "It also lets you set up vault recovery so you are not locked out if you switch browsers or lose a device.",
+      "Deleting your account permanently removes your vault and all encrypted notes stored with it.",
     ],
   },
   finalCta: {
-    heading: "Start your private letter",
-    subtitle: "Create a free account and write your first letter in a calm, protected space.",
+    heading: "Start your private vault",
+    subtitle: "Create a free account, set up your vault, and write your first note in a calm, protected space.",
   },
 } as const;

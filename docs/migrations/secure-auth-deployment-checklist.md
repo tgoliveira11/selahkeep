@@ -1,4 +1,13 @@
-# Secure-Auth Deployment Checklist
+# Secure-Auth Deployment Checklist — LTG Vault
+
+## LTG Vault product checks (Phase 5)
+
+- [ ] Public home shows **LTG Vault** branding and deferred-features copy
+- [ ] Vault inactivity lock tested (15 min or shortened in dev)
+- [ ] `/vault/settings` shows import/export unavailable notice
+- [ ] Account deletion warning mentions vault + notes removal
+- [ ] `docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md` reviewed
+- [ ] Private usability script ready: `docs/PRIVATE_USABILITY_TEST_SCRIPT.md`
 
 ## Required production environment
 

@@ -1,10 +1,11 @@
 import { ACCOUNT_PASSWORD_VAULT_NOTE } from "@/lib/account-auth-messages";
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
 import { buildAccountLink } from "../core/config";
 
 export function verificationEmailContent(token: string) {
   const link = buildAccountLink("/verify-email", token);
   return {
-    subject: "Verify your email — Letters to God",
+    subject: `Verify your email — ${PRODUCT_NAME}`,
     text: [
       "Please verify your email address to finish setting up your account.",
       "",
@@ -23,7 +24,7 @@ export function verificationEmailContent(token: string) {
 export function passwordResetEmailContent(token: string) {
   const link = buildAccountLink("/reset-password", token);
   return {
-    subject: "Reset your password — Letters to God",
+    subject: `Reset your password — ${PRODUCT_NAME}`,
     text: [
       "We received a request to reset your account password.",
       "",

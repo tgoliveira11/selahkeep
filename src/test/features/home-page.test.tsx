@@ -8,6 +8,7 @@ import {
   SiteFooter,
 } from "@/components/layout/site-footer";
 import { homeCopy } from "@/lib/marketing/home-copy";
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 vi.mock("next-auth/react", () => ({
   useSession: vi.fn(() => ({ data: null, status: "unauthenticated" })),
@@ -34,41 +35,49 @@ describe("home page marketing content", () => {
     vi.clearAllMocks();
   });
 
-  it("shows the hero title", () => {
+  it("shows the LTG Vault hero title", () => {
     render(<HomePage />);
-    expect(screen.getByRole("heading", { level: 1, name: homeCopy.hero.title })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: PRODUCT_NAME })).toBeTruthy();
+    expect(screen.getByText(homeCopy.hero.subtitle)).toBeTruthy();
   });
 
-  it("explains private letters in the hero reassurance", () => {
+  it("explains private notes in the hero reassurance", () => {
     render(<HomePage />);
     expect(screen.getByText(homeCopy.hero.reassurance)).toBeTruthy();
   });
 
-  it("explains writing and keeping letters", () => {
+  it("explains writing and keeping notes in a vault", () => {
     render(<HomePage />);
     expect(screen.getByRole("heading", { name: /write privately/i })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /keep your letters/i })).toBeTruthy();
-    expect(screen.getByText(/compose personal letters/i)).toBeTruthy();
-    expect(screen.getByText(/save your letters securely/i)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /keep everything in one vault/i })).toBeTruthy();
+    expect(screen.getByText(/compose letters, prayers, reflections/i)).toBeTruthy();
+    expect(screen.getByText(/save your writing securely/i)).toBeTruthy();
   });
 
-  it("explains marking letters as answered", () => {
+  it("explains marking notes as answered", () => {
     render(<HomePage />);
     expect(screen.getByRole("heading", { name: /mark as answered/i })).toBeTruthy();
-    expect(screen.getByText(/prayer or letter feels answered/i)).toBeTruthy();
+    expect(screen.getByText(/prayer or reflection feels answered/i)).toBeTruthy();
   });
 
-  it("explains recovery options", () => {
+  it("explains vault recovery options", () => {
     render(<HomePage />);
     expect(screen.getByRole("heading", { name: /recover thoughtfully/i })).toBeTruthy();
-    expect(screen.getByText(/recovery code or trusted device/i)).toBeTruthy();
+    expect(screen.getByText(/vault password, recovery phrase, or passkey/i)).toBeTruthy();
   });
 
-  it("does not claim community is live", () => {
+  it("documents deferred features including import/export", () => {
     render(<HomePage />);
-    expect(screen.getByText(/not available yet/i)).toBeTruthy();
-    expect(screen.getByText(/not live today/i)).toBeTruthy();
-    expect(screen.queryByText(/join our community/i)).toBeNull();
+    expect(screen.getByText(/coming later/i)).toBeTruthy();
+    expect(screen.getByText(/import\/export/i)).toBeTruthy();
+    expect(screen.getByText(/not available today/i)).toBeTruthy();
+  });
+
+  it("explains account vs vault separation", () => {
+    render(<HomePage />);
+    const privacySection = screen.getByRole("region", { name: homeCopy.privacy.heading });
+    expect(privacySection.textContent).toMatch(/account password signs you in only/i);
+    expect(privacySection.textContent).toMatch(/import and export are not available/i);
   });
 
   it("has create account and sign in CTAs", () => {
@@ -85,15 +94,15 @@ describe("home page marketing content", () => {
     render(<HomePage />);
     const privacySection = screen.getByRole("region", { name: homeCopy.privacy.heading });
     const text = privacySection.textContent ?? "";
-    expect(text).not.toMatch(/PRF|envelope encryption|vault key|IndexedDB/i);
+    expect(text).not.toMatch(/PRF|envelope encryption|IndexedDB/i);
   });
 });
 
 describe("home page shared layout", () => {
-  it("renders header navigation", () => {
+  it("renders header navigation with LTG Vault branding", () => {
     renderHomeInShell();
     expect(screen.getByRole("banner")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /letters to god/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: new RegExp(PRODUCT_NAME, "i") })).toBeTruthy();
   });
 
   it("renders footer secure-auth attribution with safe external link", () => {

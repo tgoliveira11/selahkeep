@@ -1,4 +1,4 @@
-# Vercel environment variables — Letters to God
+# Vercel environment variables — LTG Vault
 
 Complete checklist for deploying this app on [Vercel](https://vercel.com). Values were derived from the codebase (not guessed): `.env.example`, `src/lib/env/secure-auth-from-env.ts`, `src/lib/secure-auth.ts`, email modules, WebAuthn config, Drizzle, and product services.
 
@@ -30,7 +30,7 @@ Local `drizzle-kit` (`npm run db:migrate`) reads `DATABASE_URL` from `.env.local
 | `TWO_FACTOR_SECRET_ENCRYPTION_KEY` | **Required** | Production, Preview | `<generated-secret>` | `buildSecureAuthConfigFromEnv`, TOTP/backup-code crypto | Encrypt TOTP secrets at rest | Generate: `openssl rand -base64 32`. Required even if no user enables 2FA — `secureAuth` fails to initialize without it. Key is SHA-256 hashed before use (any non-empty string works; use a strong random value). |
 | `APP_BASE_URL` | **Required** | Production, Preview | `https://ltg.tgoliveira11.tech` | `buildSecureAuthConfigFromEnv`, email links, OAuth redirects | Canonical public origin (no trailing slash) | Must match the browser URL users visit. Wrong value breaks email links, OAuth callbacks, and WebAuthn. Legacy fallback: `NEXTAUTH_URL`. Default if unset: `http://localhost:3001` (wrong for Vercel). |
 | `EMAIL_PROVIDER` | **Required** (not `console`) | Production | `smtp` | `src/modules/email/core/*` | Email delivery mode | **`Do not use `EMAIL_PROVIDER=console` in production.** Console only logs; no delivery. `resend` and `sendgrid` are recognized but **not implemented** — use `smtp`. |
-| `EMAIL_FROM` | **Required** when `EMAIL_PROVIDER≠console` | Production, Preview | `Letters to God <noreply@yourdomain.com>` | `secureAuth` email config, `sendEmail()` | SMTP From header | Required for non-console providers (`assertEmailDeliveryConfig`). |
+| `EMAIL_FROM` | **Required** when `EMAIL_PROVIDER≠console` | Production, Preview | `LTG Vault <noreply@yourdomain.com>` | `secureAuth` email config, `sendEmail()` | SMTP From header | Required for non-console providers (`assertEmailDeliveryConfig`). |
 
 ---
 
@@ -95,7 +95,7 @@ Register as a **Web** platform redirect URI in Microsoft Entra (not SPA-only).
 | `APP_BASE_URL` | **Required** | Production, Preview | `https://letter-to-god.vercel.app` | WebAuthn origin fallback | Canonical site URL | **Must match the hostname in your browser address bar.** If you open a custom domain, all WebAuthn vars must use that domain — not the `.vercel.app` hostname. |
 | `WEBAUTHN_RP_ID` | Optional | Production, Preview | `letter-to-god.vercel.app` | secure-auth, passkeys | Relying party ID | Hostname only (no `https://`). When unset, derived from `WEBAUTHN_ORIGIN` / `APP_BASE_URL`. **Must match the site you visit** (or be a parent domain, e.g. `example.com` for `www.example.com`). |
 | `WEBAUTHN_ORIGIN` | Optional | Production, Preview | `https://letter-to-god.vercel.app` | secure-auth, passkeys | WebAuthn origin | Full origin with scheme, no trailing slash. Defaults to `APP_BASE_URL`. |
-| `WEBAUTHN_RP_NAME` | Optional | Production, Preview | `Letters to God` | passkey UI | Display name | Default `APP_NAME`. |
+| `WEBAUTHN_RP_NAME` | Optional | Production, Preview | `LTG Vault` | passkey UI | Display name | Default `APP_NAME`. |
 
 **Common mistake:** `WEBAUTHN_RP_ID=letter-to-god.vercel.app` while browsing `https://ltg.tgoliveira11.tech` (or a Vercel preview URL like `https://letter-to-god-git-main-….vercel.app`). WebAuthn rejects that with *“The RP ID … is invalid for this domain”*.
 
@@ -131,7 +131,7 @@ When `true`, working SMTP (`EMAIL_PROVIDER=smtp`) is effectively required.
 
 | Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
 |----------|-----------|--------------|---------------|---------|---------|-------|
-| `APP_NAME` | Optional | All | `Letters to God` | secure-auth UI/email | Display name | Default `Letters to God`. |
+| `APP_NAME` | Optional | All | `LTG Vault` | secure-auth UI/email | Display name | Default `LTG Vault`. |
 | `APP_SLUG` | Optional | All | `letters-to-god` | secure-auth | Stable app slug | Default `letters-to-god`. |
 | `NEXTAUTH_URL` | Optional | Preview | `https://<preview-host>` | Legacy base URL fallback | Same role as `APP_BASE_URL` | Prefer `APP_BASE_URL`. Still read by email config and WebAuthn fallbacks. |
 | `AUTH_AFTER_LOGIN_PATH` | Optional | All | `/letters` | secure-auth | Post-login redirect | Default `/letters`. |

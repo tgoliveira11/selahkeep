@@ -1,6 +1,6 @@
-# Architecture — Private Letters Vault MVP
+# Architecture — LTG Vault MVP
 
-> **LTG Vault direction:** [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) defines the target product; [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md) defines phased engineering work. This document describes the **current** codebase until migration completes.
+> **Product:** **LTG Vault** — private encrypted notes. [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) is the source of truth; Phases 0–5 are complete per [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md).
 
 ## Stack
 

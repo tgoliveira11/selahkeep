@@ -5,7 +5,7 @@
 | **Product name** | LTG Vault |
 | **Subtitle** | A private encrypted space for letters, prayers, reflections, and notes |
 | **Primary color** | **Purple** (resolved) |
-| **Status** | Phase 1 foundation |
+| **Status** | Phase 5 hardening complete |
 
 ---
 

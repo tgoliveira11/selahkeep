@@ -33,7 +33,7 @@ export function resolveWebAuthnSettings(
       "http://localhost:3001"
   );
   const origin = normalizeOrigin(readEnv(env, "WEBAUTHN_ORIGIN") ?? appBaseUrl);
-  const rpName = readEnv(env, "WEBAUTHN_RP_NAME") ?? defaults?.appName ?? "Letters to God";
+  const rpName = readEnv(env, "WEBAUTHN_RP_NAME") ?? defaults?.appName ?? "LTG Vault";
 
   const explicitRpId = readEnv(env, "WEBAUTHN_RP_ID");
   const rpId =

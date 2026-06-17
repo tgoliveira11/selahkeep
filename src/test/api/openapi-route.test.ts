@@ -7,7 +7,7 @@ describe("GET /api/openapi", () => {
     expect(response.status).toBe(200);
     const spec = await response.json();
     expect(spec.openapi).toMatch(/^3\.0/);
-    expect(spec.info.title).toContain("Letters to God");
+    expect(spec.info.title).toContain("LTG Vault");
     expect(spec.paths["/api/notes"]).toBeDefined();
     expect(spec.paths["/api/vault/settings"]).toBeDefined();
     expect(spec.paths["/api/vault/status"]).toBeDefined();

@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card";
 import { APP_PASSKEY_SLUG } from "@/lib/passkey/app-slug";
 import { clearVaultClientState, isVaultUnlocked } from "@/lib/crypto-client/vault";
 import { PasskeyVaultUnlockSetup } from "@/features/passkey/passkey-vault-unlock-setup";
+import { ACCOUNT_DELETION_VAULT_NOTE } from "@/lib/account-auth-messages";
+import { Alert } from "@/components/ui/alert";
 
 export default function AccountSettingsPageWrapper() {
   const { data: session } = useSession();
@@ -18,6 +20,9 @@ export default function AccountSettingsPageWrapper() {
 
   return (
     <PageLayout width="medium">
+      <Alert variant="warning" title="Before you delete your account" className="mb-6">
+        {ACCOUNT_DELETION_VAULT_NOTE}
+      </Alert>
       <AccountSettingsPage
         appSlug={APP_PASSKEY_SLUG}
         afterDeletePath="/account-deleted"

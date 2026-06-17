@@ -12,6 +12,7 @@ import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { lockVaultSession } from "@/lib/crypto-client/vault-session";
 import { useVaultSessionUnlocked } from "@/features/vault/use-vault-session-unlocked";
 import { cn } from "@/lib/ui/cn";
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 const navLinks = [
   { href: "/notes", label: "My notes" },
@@ -72,7 +73,7 @@ export function Nav() {
           className="flex items-center gap-2 text-lg font-semibold text-[var(--primary)]"
         >
           <AppMark size={28} />
-          <span>Letters to God</span>
+          <span>{PRODUCT_NAME}</span>
         </Link>
 
         {session ? (

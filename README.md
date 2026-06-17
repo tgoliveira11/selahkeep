@@ -1,12 +1,12 @@
-# Letters to God — Private Letters Vault MVP
+# LTG Vault — Private Encrypted Notes MVP
 
-> **Product direction:** The app is evolving into **LTG Vault** — a private encrypted space for letters, prayers, reflections, and notes. Primary UI accent: **purple** (`docs/UI_UX_DIRECTION.md`). Phase 1 vault setup: `/vault/setup` (vault password + BIP39 recovery phrase). See [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) and [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md).
+> **Product:** **LTG Vault** — a private encrypted space for letters, prayers, reflections, and notes. Primary UI accent: **purple** (`docs/UI_UX_DIRECTION.md`). Vault setup: `/vault/setup` (vault password + BIP39 recovery phrase). See [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) and [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md).
 
-Web-first responsive MVP for private encrypted spiritual letters.
+Web-first responsive MVP for private encrypted notes in a personal vault.
 
 ## Privacy Promise
 
-> Your private letters are protected on your device before they are saved. Our systems are designed so our team does not have access to the keys required to read them.
+> Your private notes are protected on your device before they are saved. Our systems are designed so our team does not have access to the keys required to read them.
 
 ## Stack
 
@@ -147,9 +147,15 @@ Email/password accounts are **unverified by default** until the user opens the l
 | Change password | `/settings/account`, `POST /api/account/change-password` |
 | Passkeys & TOTP 2FA | `/settings/account#security` (package `PasskeySettings`, `TwoFactorSettings`) |
 
-**Vault separation:** changing or resetting the account password does **not** unlock, recover, or rotate the private letters vault. Users still need a trusted device, passkey, or recovery code for vault access.
+**Vault separation:** changing or resetting the account password does **not** unlock, recover, or rotate your vault. Users still need a vault password, recovery phrase, passkey, or trusted device for vault access.
 
-**Email delivery** (account verification and password reset only — never private letter content):
+**Vault inactivity lock:** while the vault is unlocked, **15 minutes** of no pointer/keyboard/touch/scroll activity auto-locks the vault, clears decrypted note bodies from memory, and shows: *“Your vault was locked to protect your private notes.”* Manual **Lock vault** in the nav has the same effect without the banner.
+
+**Import / export:** bulk import and export of decrypted notes are **not available** in this MVP. See `/vault/settings` and the public home page.
+
+**Account deletion:** permanently removes your vault, all encrypted notes, vault envelopes, and passkey credentials. Warnings appear on `/settings/account` before deletion.
+
+**Email delivery** (account verification and password reset only — never private note content):
 
 | Mode | `EMAIL_PROVIDER` | Use |
 |------|------------------|-----|
@@ -178,7 +184,7 @@ SMTP_PORT=1025
 SMTP_SECURE=false
 SMTP_USER=
 SMTP_PASSWORD=
-EMAIL_FROM="Letters to God <noreply@localhost>"
+EMAIL_FROM="LTG Vault <noreply@localhost>"
 APP_BASE_URL=http://localhost:3001
 ```
 
@@ -191,7 +197,7 @@ SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=<brevo-smtp-login>
 SMTP_PASSWORD=<brevo-smtp-key>
-EMAIL_FROM="Letters to God <noreply@yourdomain.com>"
+EMAIL_FROM="LTG Vault <noreply@yourdomain.com>"
 APP_BASE_URL=https://your-staging-url
 ```
 
@@ -234,6 +240,18 @@ Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings
 - **Unlock behavior** (`GET/PATCH /api/vault/settings`): `metadata_only` (default) or `decrypt_all`
 - **API:** `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted payloads only
 - **Removed (Phase 3):** `/letters`, `/api/letters`, `letters` table
+
+## Deploy (Vercel)
+
+See [`docs/VERCEL_ENVIRONMENT_VARIABLES.md`](./docs/VERCEL_ENVIRONMENT_VARIABLES.md) and [`docs/migrations/secure-auth-deployment-checklist.md`](./docs/migrations/secure-auth-deployment-checklist.md).
+
+**Production requirements:**
+
+- `DATABASE_URL`, `NEXTAUTH_SECRET`, `TWO_FACTOR_SECRET_ENCRYPTION_KEY`, `APP_BASE_URL`
+- `EMAIL_PROVIDER=smtp` with `EMAIL_FROM` — **never** `EMAIL_PROVIDER=console` in production
+- OAuth callback URLs: `{APP_BASE_URL}/api/auth/callback/{provider}`
+- Run `npm run db:migrate` before serving traffic
+- MVP acceptance: [`docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md`](./docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md)
 
 ## Commands
 

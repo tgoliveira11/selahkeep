@@ -108,6 +108,15 @@ export default function VaultSettingsPage() {
             </Alert>
           )}
 
+          <Card className="space-y-2 border-dashed">
+            <h2 className="font-medium">Import and export</h2>
+            <p className="text-sm text-[var(--muted)]">
+              Bulk import and export of decrypted notes are not available in this MVP. Your notes
+              stay encrypted on our servers and can only be read after you unlock your vault in the
+              browser. Encrypted attachments and version history are also not available yet.
+            </p>
+          </Card>
+
           {OPTIONS.map((option) => {
             const selected = settings?.unlockBehavior === option.value;
             return (

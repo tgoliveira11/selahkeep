@@ -75,3 +75,51 @@ body {
   left: 1rem;
   top: 1rem;
 }
+
+/* Phase 5 — mobile UX hardening */
+html,
+body {
+  overflow-x: hidden;
+}
+
+.vault-auto-lock-notice {
+  position: sticky;
+  top: 3.5rem;
+  z-index: 30;
+  margin: 0 auto;
+  max-width: 56rem;
+  padding: 0.75rem 1rem 0;
+}
+
+@media (min-width: 768px) {
+  .vault-auto-lock-notice {
+    top: 4rem;
+  }
+}
+
+.note-filters select,
+.note-filters input {
+  min-height: 2.75rem;
+}
+
+.markdown-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.markdown-editor-toolbar button {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+.prose-note {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.prose-note pre,
+.prose-note code {
+  overflow-x: auto;
+  max-width: 100%;
+}

@@ -28,7 +28,7 @@ interface NoteFiltersProps {
 
 export function NoteFilters({ filters, categories, tags, onChange }: NoteFiltersProps) {
   return (
-    <div className="mb-6 space-y-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)]">
+    <div className="note-filters mb-6 space-y-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)]">
       <FormField id="note-search" label="Search">
         <Input
           id="note-search"
@@ -43,7 +43,7 @@ export function NoteFilters({ filters, categories, tags, onChange }: NoteFilters
         <FormField id="filter-category" label="Category">
           <select
             id="filter-category"
-            className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            className="w-full min-h-11 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
             value={filters.categoryId}
             onChange={(e) =>
               onChange({
@@ -65,7 +65,7 @@ export function NoteFilters({ filters, categories, tags, onChange }: NoteFilters
         <FormField id="filter-tag" label="Tag">
           <select
             id="filter-tag"
-            className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            className="w-full min-h-11 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
             value={filters.tagId}
             onChange={(e) => onChange({ ...filters, tagId: e.target.value })}
           >
@@ -81,7 +81,7 @@ export function NoteFilters({ filters, categories, tags, onChange }: NoteFilters
         <FormField id="filter-answered" label="Answered">
           <select
             id="filter-answered"
-            className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            className="w-full min-h-11 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
             value={filters.answered}
             onChange={(e) =>
               onChange({ ...filters, answered: e.target.value as AnsweredFilter })

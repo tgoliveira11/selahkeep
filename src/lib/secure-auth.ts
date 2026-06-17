@@ -9,6 +9,7 @@ import { emailProvider } from "@/lib/email-provider";
 import { buildSecureAuthConfigFromEnv } from "@/lib/env/secure-auth-from-env";
 import { readEnv } from "@/lib/env/parse";
 import { ACCOUNT_PASSWORD_VAULT_NOTE } from "@/lib/account-auth-messages";
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 type RouteHandler = (request: Request, ...args: unknown[]) => Promise<Response>;
 
@@ -101,7 +102,7 @@ function initSecureAuth(): SecureAuthInstance {
   }
 
   const envConfig = buildSecureAuthConfigFromEnv(process.env, {
-    appName: "Letters to God",
+    appName: PRODUCT_NAME,
     appSlug: "letters-to-god",
     baseUrl: "http://localhost:3001",
   });

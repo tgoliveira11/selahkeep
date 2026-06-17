@@ -8,8 +8,10 @@ const baseEnv = {
   APP_BASE_URL: "http://localhost:3001",
 };
 
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
+
 const defaults = {
-  appName: "Letters to God",
+  appName: PRODUCT_NAME,
   appSlug: "letters-to-god",
   baseUrl: "http://localhost:3001",
 };

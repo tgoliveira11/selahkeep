@@ -12,6 +12,7 @@ import {
 } from "@/components/layout/site-footer";
 import { SecureAuthUIProvider } from "@tgoliveira/secure-auth/react";
 import { testSecureAuthUiConfig } from "@/test/helpers/secure-auth-ui-config";
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 vi.mock("next-auth/react", () => ({
   useSession: vi.fn(() => ({ data: null, status: "unauthenticated" })),
@@ -53,7 +54,7 @@ describe("site layout shell", () => {
 
     const header = screen.getByRole("banner");
     expect(header).toBeTruthy();
-    expect(screen.getByRole("link", { name: /letters to god/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: new RegExp(PRODUCT_NAME, "i") })).toBeTruthy();
     expect(screen.getAllByRole("link", { name: /sign in/i }).length).toBeGreaterThan(0);
   });
 
@@ -66,7 +67,7 @@ describe("site layout shell", () => {
 
     const footer = screen.getByRole("contentinfo");
     expect(footer).toBeTruthy();
-    expect(footer.textContent).toMatch(/letters to god/i);
+    expect(footer.textContent).toMatch(new RegExp(PRODUCT_NAME, "i"));
   });
 
   it("footer includes secure-auth attribution with safe external link", () => {

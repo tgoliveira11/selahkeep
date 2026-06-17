@@ -1,4 +1,5 @@
 import type { SecureAuthUIPublicConfig } from "@tgoliveira/secure-auth/react";
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
 import { buildSecureAuthConfigFromEnv } from "@/lib/env/secure-auth-from-env";
 import { authPageMessages } from "@/lib/auth/auth-page-messages";
 
@@ -15,7 +16,7 @@ export function buildTestPasswordPolicyFromEnv(
 ): SecureAuthUIPublicConfig["passwordPolicy"] {
   const config = buildSecureAuthConfigFromEnv(
     { ...testEnvBase, ...env },
-    { appName: "Letters to God", appSlug: "letters-to-god", baseUrl: "http://localhost:3001" }
+    { appName: PRODUCT_NAME, appSlug: "letters-to-god", baseUrl: "http://localhost:3001" }
   );
   return config.passwordPolicy as SecureAuthUIPublicConfig["passwordPolicy"];
 }
@@ -23,7 +24,7 @@ export function buildTestPasswordPolicyFromEnv(
 /** Minimal UI config for rendering @tgoliveira/secure-auth pages in Vitest. */
 export const testSecureAuthUiConfig: SecureAuthUIPublicConfig = {
   appSlug: "letters-to-god",
-  appName: "Letters to God",
+  appName: PRODUCT_NAME,
   paths: {
     home: "/",
     login: "/login",

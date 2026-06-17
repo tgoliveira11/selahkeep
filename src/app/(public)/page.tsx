@@ -64,19 +64,19 @@ export default function HomePage() {
       </section>
 
       <section
-        aria-labelledby="home-community-heading"
+        aria-labelledby="home-deferred-heading"
         className="mx-auto max-w-2xl space-y-4 rounded-[var(--radius)] border border-dashed border-[var(--border)] bg-[var(--card-muted)] px-6 py-8 text-center md:px-10"
       >
         <div className="flex flex-col items-center gap-3">
-          <Badge variant="muted">{homeCopy.community.badge}</Badge>
+          <Badge variant="muted">{homeCopy.deferred.badge}</Badge>
           <h2
-            id="home-community-heading"
+            id="home-deferred-heading"
             className="text-2xl font-semibold tracking-tight text-[var(--foreground)]"
           >
-            {homeCopy.community.heading}
+            {homeCopy.deferred.heading}
           </h2>
         </div>
-        <p className="text-left leading-relaxed text-[var(--muted)]">{homeCopy.community.body}</p>
+        <p className="text-left leading-relaxed text-[var(--muted)]">{homeCopy.deferred.body}</p>
       </section>
 
       <section

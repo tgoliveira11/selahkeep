@@ -1,3 +1,5 @@
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
+
 const SECURE_AUTH_ATTRIBUTION_URL =
   "https://github.com/tgoliveira11/next-secure-auth-starter";
 
@@ -8,7 +10,7 @@ export function SiteFooter() {
     <footer className="mt-auto border-t border-[var(--border)] bg-[var(--card)]">
       <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-6 text-sm text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[var(--foreground)]">
-          <span className="font-medium text-[var(--primary)]">Letters to God</span>
+          <span className="font-medium text-[var(--primary)]">{PRODUCT_NAME}</span>
           <span className="text-[var(--muted)]"> · © {year}</span>
         </p>
         <p>

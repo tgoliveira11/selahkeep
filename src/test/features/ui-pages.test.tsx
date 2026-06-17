@@ -42,7 +42,7 @@ describe("UI pages and components", () => {
 
   it("renders landing page with create account CTA", () => {
     render(<HomePage />);
-    expect(screen.getByRole("heading", { name: /letters to god/i })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /ltg vault/i })).toBeTruthy();
     const createLinks = screen.getAllByRole("link", { name: /create account/i });
     expect(createLinks.some((link) => link.getAttribute("href") === "/register")).toBe(true);
     expect(screen.getByText(homeCopy.hero.reassurance)).toBeTruthy();

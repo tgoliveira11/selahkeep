@@ -58,7 +58,7 @@ export function MarkdownEditor({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+      <div className="markdown-editor-toolbar flex flex-wrap gap-2">
         {WRAP_ACTIONS.map((action) => (
           <Button
             key={action.label}
