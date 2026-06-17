@@ -52,7 +52,7 @@ describe("no active letters domain", () => {
     const appMark = readFile("src/modules/ui/primitives/app-mark.tsx");
     expect(icon).not.toContain("#4a6741");
     expect(appMark).not.toContain("#4a6741");
-    expect(icon).toContain("LTG");
+    expect(icon).toContain("SK");
   });
 });
 

@@ -1,22 +1,24 @@
-# LTG Vault — UI/UX Direction
+# SelahKeep — UI/UX Direction
+
+> Former working name: LTG Vault. Current product name: SelahKeep.
 
 | Field | Value |
 |-------|--------|
-| **Product name** | LTG Vault |
-| **Subtitle** | A private encrypted space for letters, prayers, reflections, and notes |
+| **Product name** | SelahKeep |
+| **Subtitle** | A private encrypted space for prayers, reflections, and notes |
 | **Primary color** | **Purple** (resolved) |
-| **Status** | Phase 5 hardening complete |
+| **Status** | Phase 5 hardening complete; SelahKeep rebrand applied |
 
 ---
 
 ## 1. Visual tone
 
-LTG Vault should feel:
+SelahKeep should feel:
 
 - **Calm** — no urgency, no clutter
 - **Private** — trust and discretion over flash
 - **Warm** — soft neutrals, human copy
-- **Reflective** — space for prayer, letters, journaling
+- **Reflective** — space for prayer, reflection, and journaling
 - **Spiritual without being heavy-handed** — gentle, not preachy
 - **Mobile-first** — touch targets, readable type, single-column flows
 
@@ -26,7 +28,7 @@ Avoid crypto jargon in user-facing copy. Prefer “vault password,” “recover
 
 ## 2. Primary color: purple
 
-**Decision:** LTG Vault primary brand color is **purple**.
+**Decision:** SelahKeep primary brand color is **purple**.
 
 Use a **calm, elegant** palette — not neon or saturated violet.
 
@@ -84,7 +86,7 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 
 - **Primary (signed in):** Notes · Vault · Account
 - **Conditional vault action:** Set up vault / Continue setup / Unlock vault / Lock vault — driven by vault client status
-- **Brand mark:** Purple LTG monogram in header and favicon (no green envelope)
+- **Brand mark:** Purple SK monogram in header and favicon (no green envelope)
 - **Account vs vault:** `/settings/account` = sign-in security; `/vault/*` = note encryption protection
 - Footer attribution unchanged; vault status badge in header (`Vault not set up`, `Setup incomplete`, `Vault locked`, `Vault unlocked`)
 
@@ -105,7 +107,7 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 
 **Phase 3 (complete):** notes list search/filters, category picker, tag chips, answered badge, `/vault/settings` unlock behavior (`metadata_only` vs `decrypt_all`).
 
-**Later phases:** full LTG rebrand, passkey vault settings polish.
+**SelahKeep rebrand (complete):** product name, subtitle, purple SK monogram, calm reflective marketing copy.
 
 ---
 

@@ -1,6 +1,6 @@
-# Architecture — LTG Vault MVP
+# Architecture — SelahKeep MVP
 
-> **Product:** **LTG Vault** — private encrypted notes. [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) is the source of truth; Phases 0–5 are complete per [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md).
+> **Product:** **SelahKeep** — private encrypted notes. Former working name: LTG Vault. [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) is the source of truth; Phases 0–5 are complete per [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md).
 
 ## Stack
 
@@ -74,7 +74,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - `GET/PATCH /api/vault/index` — encrypted vault index blob (notes list metadata, categories, tags)
 - `GET/PATCH /api/vault/settings` — encrypted vault settings (unlock behavior, setup metadata)
 - `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted note payloads only
-- `POST /api/vault/setup` — LTG vault-v2 setup (encrypted settings, index, password + recovery phrase envelopes); vault password validated client-side via `PasswordSetupFields` + `VAULT_PASSWORD_*` (never in request body)
+- `POST /api/vault/setup` — vault-v2 setup (encrypted settings, index, password + recovery phrase envelopes); vault password validated client-side via `PasswordSetupFields` + `VAULT_PASSWORD_*` (never in request body)
 - `POST /api/vault/init`, `GET /api/vault/status` — returns `hasVault`, `setupPhase`, `setupComplete`, and `availableUnlockMethods`; client derives `not_configured` / `setup_incomplete` / `locked` / `unlocked` via `useVaultClientStatus` + UVK session
 - `POST /api/vault/unlock-envelope` — fetch encrypted envelope for password / recovery phrase unlock
 - `POST /api/vault/recovery-phrase` — replace recovery phrase envelope (atomic revoke + create; client-side UVK wrap)

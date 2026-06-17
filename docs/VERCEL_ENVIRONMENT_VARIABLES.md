@@ -1,4 +1,6 @@
-# Vercel environment variables — LTG Vault
+# Vercel environment variables — SelahKeep
+
+> Former working name: LTG Vault. Current product name: SelahKeep. Production domain: `selahkeep.com`.
 
 Complete checklist for deploying this app on [Vercel](https://vercel.com). Values were derived from the codebase (not guessed): `.env.example`, `src/lib/env/secure-auth-from-env.ts`, `src/lib/secure-auth.ts`, email modules, WebAuthn config, Drizzle, and product services.
 
@@ -28,9 +30,9 @@ Local `drizzle-kit` (`npm run db:migrate`) reads `DATABASE_URL` from `.env.local
 | `DATABASE_URL` | **Required** | Production, Preview | `postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require` | `src/lib/db/*`, Drizzle, `@tgoliveira/secure-auth` | PostgreSQL connection | Use a managed Postgres (Neon, Supabase, RDS, etc.). Run migrations before or as part of deploy (`npm run db:migrate`). |
 | `NEXTAUTH_SECRET` | **Required** | Production, Preview | `<generated-secret>` | `buildSecureAuthConfigFromEnv`, `src/proxy.ts`, session/login hashing | NextAuth JWT signing and app security peppers | Generate: `openssl rand -base64 32`. No `AUTH_SECRET` variable is used in this repo. |
 | `TWO_FACTOR_SECRET_ENCRYPTION_KEY` | **Required** | Production, Preview | `<generated-secret>` | `buildSecureAuthConfigFromEnv`, TOTP/backup-code crypto | Encrypt TOTP secrets at rest | Generate: `openssl rand -base64 32`. Required even if no user enables 2FA — `secureAuth` fails to initialize without it. Key is SHA-256 hashed before use (any non-empty string works; use a strong random value). |
-| `APP_BASE_URL` | **Required** | Production, Preview | `https://ltg.tgoliveira11.tech` | `buildSecureAuthConfigFromEnv`, email links, OAuth redirects | Canonical public origin (no trailing slash) | Must match the browser URL users visit. Wrong value breaks email links, OAuth callbacks, and WebAuthn. Legacy fallback: `NEXTAUTH_URL`. Default if unset: `http://localhost:3001` (wrong for Vercel). |
+| `APP_BASE_URL` | **Required** | Production, Preview | `https://selahkeep.com` | `buildSecureAuthConfigFromEnv`, email links, OAuth redirects | Canonical public origin (no trailing slash) | Must match the browser URL users visit. Wrong value breaks email links, OAuth callbacks, and WebAuthn. Legacy fallback: `NEXTAUTH_URL`. Default if unset: `http://localhost:3001` (wrong for Vercel). |
 | `EMAIL_PROVIDER` | **Required** (not `console`) | Production | `smtp` | `src/modules/email/core/*` | Email delivery mode | **`Do not use `EMAIL_PROVIDER=console` in production.** Console only logs; no delivery. `resend` and `sendgrid` are recognized but **not implemented** — use `smtp`. |
-| `EMAIL_FROM` | **Required** when `EMAIL_PROVIDER≠console` | Production, Preview | `LTG Vault <noreply@yourdomain.com>` | `secureAuth` email config, `sendEmail()` | SMTP From header | Required for non-console providers (`assertEmailDeliveryConfig`). |
+| `EMAIL_FROM` | **Required** when `EMAIL_PROVIDER≠console` | Production, Preview | `SelahKeep <noreply@selahkeep.com>` | `secureAuth` email config, `sendEmail()` | SMTP From header | Required for non-console providers (`assertEmailDeliveryConfig`). |
 
 ---
 
@@ -56,7 +58,7 @@ Local `drizzle-kit` (`npm run db:migrate`) reads `DATABASE_URL` from `.env.local
 **Callback URL (production example):**
 
 ```text
-https://ltg.tgoliveira11.tech/api/auth/callback/google
+https://selahkeep.com/api/auth/callback/google
 ```
 
 ### Apple OAuth
@@ -69,7 +71,7 @@ https://ltg.tgoliveira11.tech/api/auth/callback/google
 **Callback URL (production example):**
 
 ```text
-https://ltg.tgoliveira11.tech/api/auth/callback/apple
+https://selahkeep.com/api/auth/callback/apple
 ```
 
 ### Microsoft OAuth (Entra ID / Azure AD)
@@ -83,7 +85,7 @@ https://ltg.tgoliveira11.tech/api/auth/callback/apple
 **Callback URL (production example)** — NextAuth provider ID is `azure-ad`, **not** `microsoft`:
 
 ```text
-https://ltg.tgoliveira11.tech/api/auth/callback/azure-ad
+https://selahkeep.com/api/auth/callback/azure-ad
 ```
 
 Register as a **Web** platform redirect URI in Microsoft Entra (not SPA-only).
@@ -92,25 +94,25 @@ Register as a **Web** platform redirect URI in Microsoft Entra (not SPA-only).
 
 | Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
 |----------|-----------|--------------|---------------|---------|---------|-------|
-| `APP_BASE_URL` | **Required** | Production, Preview | `https://letter-to-god.vercel.app` | WebAuthn origin fallback | Canonical site URL | **Must match the hostname in your browser address bar.** If you open a custom domain, all WebAuthn vars must use that domain — not the `.vercel.app` hostname. |
-| `WEBAUTHN_RP_ID` | Optional | Production, Preview | `letter-to-god.vercel.app` | secure-auth, passkeys | Relying party ID | Hostname only (no `https://`). When unset, derived from `WEBAUTHN_ORIGIN` / `APP_BASE_URL`. **Must match the site you visit** (or be a parent domain, e.g. `example.com` for `www.example.com`). |
-| `WEBAUTHN_ORIGIN` | Optional | Production, Preview | `https://letter-to-god.vercel.app` | secure-auth, passkeys | WebAuthn origin | Full origin with scheme, no trailing slash. Defaults to `APP_BASE_URL`. |
-| `WEBAUTHN_RP_NAME` | Optional | Production, Preview | `LTG Vault` | passkey UI | Display name | Default `APP_NAME`. |
+| `APP_BASE_URL` | **Required** | Production, Preview | `https://selahkeep.com` | WebAuthn origin fallback | Canonical site URL | **Must match the hostname in your browser address bar.** If you open a custom domain, all WebAuthn vars must use that domain — not the `.vercel.app` hostname. |
+| `WEBAUTHN_RP_ID` | Optional | Production, Preview | `selahkeep.com` | secure-auth, passkeys | Relying party ID | Hostname only (no `https://`). When unset, derived from `WEBAUTHN_ORIGIN` / `APP_BASE_URL`. **Must match the site you visit** (or be a parent domain, e.g. `example.com` for `www.example.com`). |
+| `WEBAUTHN_ORIGIN` | Optional | Production, Preview | `https://selahkeep.com` | secure-auth, passkeys | WebAuthn origin | Full origin with scheme, no trailing slash. Defaults to `APP_BASE_URL`. |
+| `WEBAUTHN_RP_NAME` | Optional | Production, Preview | `SelahKeep` | passkey UI | Display name | Default `APP_NAME`. |
 
-**Common mistake:** `WEBAUTHN_RP_ID=letter-to-god.vercel.app` while browsing `https://ltg.tgoliveira11.tech` (or a Vercel preview URL like `https://letter-to-god-git-main-….vercel.app`). WebAuthn rejects that with *“The RP ID … is invalid for this domain”*.
+**Common mistake:** `WEBAUTHN_RP_ID=selahkeep.com` while browsing `https://selahkeep.com` (or a Vercel preview URL like `https://letter-to-god-git-main-….vercel.app`). WebAuthn rejects that with *“The RP ID … is invalid for this domain”*.
 
 **Fix:** Set all of these to the **same host you actually use**:
 
 ```text
 # Custom domain example
-APP_BASE_URL=https://ltg.tgoliveira11.tech
-WEBAUTHN_ORIGIN=https://ltg.tgoliveira11.tech
-WEBAUTHN_RP_ID=ltg.tgoliveira11.tech
+APP_BASE_URL=https://selahkeep.com
+WEBAUTHN_ORIGIN=https://selahkeep.com
+WEBAUTHN_RP_ID=selahkeep.com
 
 # Default Vercel domain example (only if users open this URL)
-APP_BASE_URL=https://letter-to-god.vercel.app
-WEBAUTHN_ORIGIN=https://letter-to-god.vercel.app
-WEBAUTHN_RP_ID=letter-to-god.vercel.app
+APP_BASE_URL=https://selahkeep.com
+WEBAUTHN_ORIGIN=https://selahkeep.com
+WEBAUTHN_RP_ID=selahkeep.com
 ```
 
 Preview deployments each have a unique `*.vercel.app` hostname unless you use a fixed staging domain. Passkeys registered on production will not work on a different preview URL.
@@ -131,7 +133,7 @@ When `true`, working SMTP (`EMAIL_PROVIDER=smtp`) is effectively required.
 
 | Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
 |----------|-----------|--------------|---------------|---------|---------|-------|
-| `APP_NAME` | Optional | All | `LTG Vault` | secure-auth UI/email | Display name | Default `LTG Vault`. |
+| `APP_NAME` | Optional | All | `SelahKeep` | secure-auth UI/email | Display name | Default `SelahKeep`. |
 | `APP_SLUG` | Optional | All | `letters-to-god` | secure-auth | Stable app slug | Default `letters-to-god`. |
 | `NEXTAUTH_URL` | Optional | Preview | `https://<preview-host>` | Legacy base URL fallback | Same role as `APP_BASE_URL` | Prefer `APP_BASE_URL`. Still read by email config and WebAuthn fallbacks. |
 | `AUTH_AFTER_LOGIN_PATH` | Optional | All | `/letters` | secure-auth | Post-login redirect | Default `/letters`. |
@@ -170,7 +172,7 @@ Preferred names are `AUTH_*`; legacy `PASSWORD_*` names are still read.
 | `AUTH_PASSWORD_MIN_SCORE` | Optional | Production | `2` | secure-auth | zxcvbn-style min score 0–4 | Legacy: `PASSWORD_MIN_SCORE`. |
 | `AUTH_PASSWORD_STRENGTH_POSITION` | Optional | All | `above` | secure-auth UI | Strength meter position | `above` \| `below`. |
 
-### Vault password policy (LTG Vault `/vault/setup` only — not account auth)
+### Vault password policy (SelahKeep `/vault/setup` only — not account auth)
 
 Mapped in `src/lib/config/vault-password-policy.ts` and passed explicitly to `PasswordSetupFields`. The secure-auth package does **not** read these env vars.
 
@@ -220,13 +222,13 @@ There are **no `NEXT_PUBLIC_*` variables** in this repository.
 
 ## OAuth callback URLs (production checklist)
 
-Replace the host with your production domain (example: `ltg.tgoliveira11.tech`):
+Replace the host with your production domain (example: `selahkeep.com`):
 
 | Provider | Callback path |
 |----------|----------------|
-| Google | `https://ltg.tgoliveira11.tech/api/auth/callback/google` |
-| Apple | `https://ltg.tgoliveira11.tech/api/auth/callback/apple` |
-| Microsoft (Entra) | `https://ltg.tgoliveira11.tech/api/auth/callback/azure-ad` |
+| Google | `https://selahkeep.com/api/auth/callback/google` |
+| Apple | `https://selahkeep.com/api/auth/callback/apple` |
+| Microsoft (Entra) | `https://selahkeep.com/api/auth/callback/azure-ad` |
 
 For **Preview** deployments, register preview URLs in each provider console or use separate OAuth apps for staging.
 
@@ -238,16 +240,16 @@ For **Preview** deployments, register preview URLs in each provider console or u
 DATABASE_URL=<postgresql-connection-string>
 NEXTAUTH_SECRET=<openssl rand -base64 32>
 TWO_FACTOR_SECRET_ENCRYPTION_KEY=<openssl rand -base64 32>
-APP_BASE_URL=https://ltg.tgoliveira11.tech
+APP_BASE_URL=https://selahkeep.com
 EMAIL_PROVIDER=smtp
-EMAIL_FROM=Letters to God <noreply@yourdomain.com>
+EMAIL_FROM=SelahKeep <noreply@selahkeep.com>
 SMTP_HOST=<smtp-host>
 SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=<smtp-user>
 SMTP_PASSWORD=<smtp-password>
-WEBAUTHN_RP_ID=ltg.tgoliveira11.tech
-WEBAUTHN_ORIGIN=https://ltg.tgoliveira11.tech
+WEBAUTHN_RP_ID=selahkeep.com
+WEBAUTHN_ORIGIN=https://selahkeep.com
 AUTH_RATE_LIMIT_STORE=postgres
 RATE_LIMIT_STORE=postgres
 ```
@@ -265,7 +267,7 @@ Add OAuth variables only for providers you enable. Run database migrations again
 | No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.1.19-internal` from npm registry |
 | Private registry | Public npm scope `@tgoliveira` — no extra `.npmrc` required for Vercel |
 | Local `npm run build` | Passes |
-| Production domain (example) | `https://ltg.tgoliveira11.tech` |
+| Production domain (example) | `https://selahkeep.com` |
 | Package health | `GET /api/auth/package-health` → `version: 0.1.19-internal` |
 | Production deploy validated | **Not re-run in this phase** — redeploy after env review |
 
@@ -276,7 +278,7 @@ Add OAuth variables only for providers you enable. Run database migrations again
 After deploy:
 
 ```bash
-curl https://ltg.tgoliveira11.tech/api/auth/package-health
+curl https://selahkeep.com/api/auth/package-health
 ```
 
 Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.19-internal" }` when runtime secrets and DB are configured.
@@ -295,7 +297,7 @@ Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.19-i
 
 | Topic | Notes |
 |-------|-------|
-| Production domain | Example `https://ltg.tgoliveira11.tech` is from deployment guidance; confirm the live custom domain in Vercel → Domains. |
+| Production domain | Example `https://selahkeep.com` is from deployment guidance; confirm the live custom domain in Vercel → Domains. |
 | Preview `APP_BASE_URL` | Must match each preview URL or auth/email/passkeys will break unless you use a fixed staging domain. |
 | `resend` / `sendgrid` | Listed in `EmailProvider` type but throw at runtime — **not supported** yet. |
 | Apple Sign In | Only `AUTH_APPLE_CLIENT_ID` + `AUTH_APPLE_CLIENT_SECRET` are wired; generating the Apple JWT secret is external to this repo. |

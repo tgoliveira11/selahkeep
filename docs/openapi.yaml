@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
-  title: LTG Vault — Private Encrypted Notes API
+  title: SelahKeep — Private Encrypted Notes API
   version: 0.1.0
   description: |
-    REST API for the Private Letters Vault MVP.
+    REST API for the SelahKeep private encrypted notes MVP.
 
     **Security:** Private letter title and body must never be sent in plaintext.
     All letter fields use structured encrypted payloads (see ADR-001 / ADR-003).

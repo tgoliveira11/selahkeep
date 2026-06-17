@@ -1,4 +1,4 @@
-# LGPD and Privacy Beta Gates — LTG Vault MVP
+# LGPD and Privacy Beta Gates — SelahKeep MVP
 
 ## Document Status
 
@@ -10,9 +10,9 @@
 
 ## Purpose
 
-This document lists **mandatory privacy and legal gates** before onboarding real users (public or private beta) for **LTG Vault**. Items marked **Required** block beta until completed or explicitly waived by legal counsel with documented risk acceptance.
+This document lists **mandatory privacy and legal gates** before onboarding real users (public or private beta) for **SelahKeep**. Items marked **Required** block beta until completed or explicitly waived by legal counsel with documented risk acceptance.
 
-The product targets users writing private spiritual content (letters, prayers, reflections, and notes). Data sensitivity is **high** even when note content is encrypted on the client — metadata, account identifiers, and availability of encrypted blobs still implicate LGPD.
+The product targets users writing private spiritual content (prayers, reflections, and notes). Data sensitivity is **high** even when note content is encrypted on the client — metadata, account identifiers, and availability of encrypted blobs still implicate LGPD.
 
 ---
 

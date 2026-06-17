@@ -74,7 +74,7 @@ describe("vault status model", () => {
     ).toBe("setup_incomplete");
   });
 
-  it("deriveSetupPhase returns complete for LTG vault-v2 with required pieces", () => {
+  it("deriveSetupPhase returns complete for vault-v2 with required pieces", () => {
     expect(
       deriveSetupPhase({
         initialized: true,

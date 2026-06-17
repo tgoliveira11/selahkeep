@@ -8,11 +8,11 @@
 | Area | Before | After |
 |------|--------|-------|
 | `/vault/recovery` | Legacy recovery **code** UI with "Generate recovery code" and "Do this later" | Status-gated recovery **phrase** management + passkey setup |
-| LTG vault setup | Already required `recovery_phrase` envelope | Unchanged — invariant enforced server-side |
+| vault setup | Already required `recovery_phrase` envelope | Unchanged — invariant enforced server-side |
 | Recovery phrase replacement | Not implemented | `POST /api/vault/recovery-phrase` — atomic revoke + create |
-| `recovery_code` | Active generation UI on `/vault/recovery` | Legacy unlock only; no new generation for LTG vaults |
+| `recovery_code` | Active generation UI on `/vault/recovery` | Legacy unlock only; no new generation for configured vaults |
 
-## Recovery model (LTG Vault)
+## Recovery model (SelahKeep)
 
 1. **Account session** — `@tgoliveira/secure-auth`; does not decrypt notes.
 2. **Vault password** — Argon2id envelope wraps User Vault Key (UVK); client-only.
@@ -37,7 +37,7 @@ Plaintext recovery phrase and UVK **never** leave the browser. APIs accept only 
 `vaultService.setup` rejects LTG setup unless envelopes include **both** `password` and `recovery_phrase`.  
 `ltgSetupComplete` in status requires `vault-v2`, both envelopes, encrypted settings, and encrypted index.
 
-A configured LTG vault **cannot** be complete without a `recovery_phrase` envelope.
+A configured vault **cannot** be complete without a `recovery_phrase` envelope.
 
 ## `/vault/recovery` by vault status
 
@@ -80,7 +80,7 @@ Old phrase envelopes remain in DB with `revoked_at` set; they cannot unlock.
 
 - [x] Wrong terminology on `/vault/recovery` (recovery code, private letters, postpone).
 - [x] Missing status gating (redirected to unlock without context for other states).
-- [x] No replacement flow for LTG recovery phrase.
+- [x] No replacement flow for recovery phrase.
 - [x] Settings page linked to "Legacy recovery" copy.
 
 ## Remaining / intentional

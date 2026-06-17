@@ -3,7 +3,7 @@ export const authPageMessages = {
   loginTitle: "Welcome back",
   loginDescription: "Sign in to continue to your account.",
   registerTitle: "Create your account",
-  registerDescription: "Start writing private letters in a protected space.",
+  registerDescription: "Start writing private notes in a protected space.",
   loginTwoFactorTitle: "Two-factor authentication",
   loginTwoFactorDescription:
     "Enter the 6-digit code from your authenticator app to finish signing in.",
@@ -24,5 +24,5 @@ export const authPageMessages = {
   securitySettingsDescription:
     "Manage passkeys and two-factor authentication for signing in to your account.",
   sessionsSettingsTitle: "Active sessions",
-  dashboardTitle: "My letters",
+  dashboardTitle: "My notes",
 } as const;

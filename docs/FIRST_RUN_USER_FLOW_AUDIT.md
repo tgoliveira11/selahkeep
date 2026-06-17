@@ -1,7 +1,7 @@
-# First-run user flow audit — LTG Vault
+# First-run user flow audit — SelahKeep
 
 **Status:** Active  
-**Product:** LTG Vault MVP  
+**Product:** SelahKeep MVP  
 **Related:** `docs/TDR_LTG_Vault_MVP.md`, `src/lib/vault/vault-status.ts`
 
 ## Vault status model
@@ -13,7 +13,7 @@
 | `locked` | Setup complete, User Vault Key not in browser session |
 | `unlocked` | Setup complete, UVK available in session |
 
-**Account authentication** (secure-auth) is separate from **vault setup/unlock** (LTG Vault).
+**Account authentication** (secure-auth) is separate from **vault setup/unlock** (SelahKeep).
 
 ## Scenario A — Email/password account, no vault
 
@@ -22,7 +22,7 @@
 | Entry route | `/notes` (post-login) |
 | Header badge | Vault not set up |
 | Header CTA | Set up vault → `/vault/setup` |
-| `/notes` | Welcome to LTG Vault + setup CTA |
+| `/notes` | Welcome to SelahKeep + setup CTA |
 | `/vault/unlock` | Setup-first screen (no password/recovery forms) |
 | `/vault/settings` | Setup-first screen |
 | Blocked | Unlock vault, notes list/editor, vault settings |
@@ -76,7 +76,7 @@ Same as Scenario A. Account passkey sign-in does not imply vault unlock.
 
 ## `/notes` as logged-in home
 
-For users without a vault, `/notes` is the logged-in home that explains LTG Vault and routes to `/vault/setup`.
+For users without a vault, `/notes` is the logged-in home that explains SelahKeep and routes to `/vault/setup`.
 
 ## `/vault/setup` as first configuration route
 

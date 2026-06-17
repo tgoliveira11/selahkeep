@@ -1,4 +1,4 @@
-# LTG Vault — agent implementation guide
+# SelahKeep — agent implementation guide
 
 **Scope:** Product-owned vault flows that integrate with `@tgoliveira/secure-auth` without duplicating account auth.
 
@@ -14,7 +14,7 @@
 
 | | Account password | Vault password |
 |---|------------------|----------------|
-| Owner | `@tgoliveira/secure-auth` | LTG Vault (client crypto) |
+| Owner | `@tgoliveira/secure-auth` | SelahKeep (client crypto) |
 | Env | `AUTH_PASSWORD_*` | `VAULT_PASSWORD_*` |
 | Purpose | Sign in | Unlock private notes |
 | Server | bcrypt hash | never sent |
@@ -26,7 +26,7 @@
 - Client wraps UVK with Argon2id (`wrapVaultKeyForRecoveryPhrase`) and posts encrypted envelope to `POST /api/vault/recovery-phrase`.
 - Server atomically revokes the previous `recovery_phrase` envelope and creates a new one (`recovery_phrase_replaced` audit).
 - Plaintext recovery phrase and UVK **never** sent to the server.
-- Configured LTG vaults always have a `recovery_phrase` envelope from setup — `/vault/recovery` offers **Replace recovery phrase**, not initial generation.
+- Configured configured vaults always have a `recovery_phrase` envelope from setup — `/vault/recovery` offers **Replace recovery phrase**, not initial generation.
 - Legacy `recovery_code` envelopes: unlock-only on `/vault/unlock`; no new generation on `/vault/recovery`.
 
 See `docs/VAULT_RECOVERY_FLOW_AUDIT.md`.

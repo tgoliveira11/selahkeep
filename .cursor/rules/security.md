@@ -1,6 +1,6 @@
 # Security Rules
 
-- **LTG Vault:** follow `docs/TDR_LTG_Vault_MVP.md` and `docs/ADR-005_*` / `docs/ADR-006_*`.
+- **SelahKeep:** follow `docs/TDR_LTG_Vault_MVP.md` and `docs/ADR-005_*` / `docs/ADR-006_*`.
 - Encrypt note title/body/metadata on client before API calls.
 - Reject plaintext fields: `title`, `body`, `content`, `markdown`, `categoryName`, `tagNames`, `answered` (as plaintext API fields).
 - Never log plaintext note content, keys, recovery phrases, or PRF output.

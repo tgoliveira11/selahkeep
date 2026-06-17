@@ -1,4 +1,4 @@
-# Module Boundaries — LTG Vault
+# Module Boundaries — SelahKeep
 
 **Status:** Phases 0–5 complete. Active domain: **notes + vault**.
 
@@ -48,7 +48,7 @@ Product modules may use `src/lib/crypto-client` for client-side crypto. They mus
 
 **Internally reusable:** email, audit, rate-limit, security, ui utilities
 
-**Product-specific:** vault crypto-client, notes, LTG Vault copy, encrypted vault index
+**Product-specific:** vault crypto-client, notes, SelahKeep copy, encrypted vault index
 
 ## Legacy import paths
 
@@ -56,4 +56,4 @@ Shims under `src/server/services` and `src/lib/*` re-export from `src/modules/*`
 
 ## Historical modularization ADR
 
-`docs/archive/adr/ADR-004_Modularization_and_Reusability_Strategy.md` — archived; boundaries above reflect current LTG Vault state.
+`docs/archive/adr/ADR-004_Modularization_and_Reusability_Strategy.md` — archived; boundaries above reflect current SelahKeep state.

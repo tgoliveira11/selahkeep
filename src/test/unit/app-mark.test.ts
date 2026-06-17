@@ -4,11 +4,11 @@ import { join } from "node:path";
 import { BRAND_MARK_SVG } from "@/lib/ui/brand-mark";
 
 describe("app brand icon", () => {
-  it("uses LTG Vault purple monogram in favicon SVG", () => {
+  it("uses SelahKeep purple SK monogram in favicon SVG", () => {
     const icon = readFileSync(join(process.cwd(), "src/app/icon.svg"), "utf8");
     expect(icon).toContain("#5b3a8c");
-    expect(icon).toContain("LTG");
-    expect(icon).toContain('aria-label="LTG Vault"');
+    expect(icon).toContain("SK");
+    expect(icon).toContain('aria-label="SelahKeep"');
     expect(icon).not.toContain("#4a6741");
     expect(icon).not.toContain("M6 11.75");
   });

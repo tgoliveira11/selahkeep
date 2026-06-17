@@ -99,7 +99,7 @@ describe("vault service extended", () => {
     ).rejects.toThrow("Vault not initialized");
   });
 
-  it("sets up LTG vault-v2 with password and recovery phrase envelopes", async () => {
+  it("sets up vault-v2 with password and recovery phrase envelopes", async () => {
     mocks.findVaultByUserId.mockResolvedValue(null);
     mocks.createVault.mockResolvedValue({ id: "vault-ltg" });
     const settings = encryptedPayload("vault_settings", USER_ID);

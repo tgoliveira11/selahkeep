@@ -1,17 +1,17 @@
-# ADR-005 — LTG Vault Cryptography (Argon2id, Recovery Phrase, Note Keys)
+# ADR-005 — SelahKeep Cryptography (Argon2id, Recovery Phrase, Note Keys)
 
 | Field | Value |
 |-------|--------|
 | **Status** | Accepted |
 | **Date** | 2026-06-16 |
-| **Supersedes** | Partial updates to ADR-001/002 for LTG vault password + recovery phrase paths |
+| **Supersedes** | Partial updates to ADR-001/002 for vault password + recovery phrase paths |
 | **Related** | `docs/TDR_LTG_Vault_MVP.md`, Phase 1 implementation plan |
 
 ---
 
 ## 1. Context
 
-LTG Vault separates **account authentication** (`@tgoliveira/secure-auth`) from **vault unlock**. The vault is protected by a dedicated vault password/passphrase and a recovery phrase. The User Vault Key (UVK) encrypts note content (Phase 2+). Phase 1 establishes UVK lifecycle, password and recovery phrase envelopes, encrypted vault settings/index placeholders, and a no-plaintext API contract.
+SelahKeep separates **account authentication** (`@tgoliveira/secure-auth`) from **vault unlock**. The vault is protected by a dedicated vault password/passphrase and a recovery phrase. The User Vault Key (UVK) encrypts note content (Phase 2+). Phase 1 establishes UVK lifecycle, password and recovery phrase envelopes, encrypted vault settings/index placeholders, and a no-plaintext API contract.
 
 Legacy users may still have `vault-v1` trusted-device + 17-word recovery **code** envelopes. New setup uses `vault-v2` with Argon2id-only KDFs and 12/24-word BIP39 recovery **phrases**.
 
@@ -23,7 +23,7 @@ Legacy users may still have `vault-v1` trusted-device + 17-word recovery **code*
 
 **`hash-wasm`** (`argon2id` export) — already a project dependency, runs Argon2id in the browser via WebAssembly, audited usage pattern from existing recovery-code path.
 
-**Why not PBKDF2 for new vault paths:** PBKDF2 is weaker against GPU attacks at comparable iteration counts. LTG Vault vault password KDF is **Argon2id only** with **no silent fallback**.
+**Why not PBKDF2 for new vault paths:** PBKDF2 is weaker against GPU attacks at comparable iteration counts. SelahKeep vault password KDF is **Argon2id only** with **no silent fallback**.
 
 Legacy `recovery_code` envelopes may still use PBKDF2 metadata from pre-Phase-1 clients; new `password` and `recovery_phrase` envelopes must use Argon2id.
 

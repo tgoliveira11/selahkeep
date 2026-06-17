@@ -65,7 +65,7 @@ describe("smtp provider", () => {
   it("sends mail with expected fields", async () => {
     const transport = { sendMail } as never;
     await sendSmtpEmail(
-      "Letters to God <noreply@localhost>",
+      "SelahKeep <noreply@localhost>",
       {
         to: "user@example.com",
         subject: "Verify your email",
@@ -75,7 +75,7 @@ describe("smtp provider", () => {
       transport
     );
     expect(sendMail).toHaveBeenCalledWith({
-      from: "Letters to God <noreply@localhost>",
+      from: "SelahKeep <noreply@localhost>",
       to: "user@example.com",
       subject: "Verify your email",
       html: "<p>link</p>",

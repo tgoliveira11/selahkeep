@@ -35,7 +35,7 @@ describe("home page marketing content", () => {
     vi.clearAllMocks();
   });
 
-  it("shows the LTG Vault hero title", () => {
+  it("shows the SelahKeep hero title", () => {
     render(<HomePage />);
     expect(screen.getByRole("heading", { level: 1, name: PRODUCT_NAME })).toBeTruthy();
     expect(screen.getByText(homeCopy.hero.subtitle)).toBeTruthy();
@@ -50,7 +50,7 @@ describe("home page marketing content", () => {
     render(<HomePage />);
     expect(screen.getByRole("heading", { name: /write privately/i })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /keep everything in one vault/i })).toBeTruthy();
-    expect(screen.getByText(/compose letters, prayers, reflections/i)).toBeTruthy();
+    expect(screen.getByText(/compose prayers, reflections/i)).toBeTruthy();
     expect(screen.getByText(/save your writing securely/i)).toBeTruthy();
   });
 
@@ -99,7 +99,7 @@ describe("home page marketing content", () => {
 });
 
 describe("home page shared layout", () => {
-  it("renders header navigation with LTG Vault branding", () => {
+  it("renders header navigation with SelahKeep branding", () => {
     renderHomeInShell();
     expect(screen.getByRole("banner")).toBeTruthy();
     expect(screen.getByRole("link", { name: new RegExp(PRODUCT_NAME, "i") })).toBeTruthy();

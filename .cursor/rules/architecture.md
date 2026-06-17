@@ -1,6 +1,6 @@
 # Architecture Rules
 
-- **LTG Vault TDR:** `docs/TDR_LTG_Vault_MVP.md` is the source of truth for product direction (notes vault, Argon2id-only vault KDF, encrypted metadata/index). Phases 0–5 complete.
+- **SelahKeep TDR:** `docs/TDR_LTG_Vault_MVP.md` is the source of truth for product direction (notes vault, Argon2id-only vault KDF, encrypted metadata/index). Phases 0–5 complete.
 - **Auth boundary:** account authentication from `@tgoliveira/secure-auth` only — see `docs/AUTH_RESET_TO_SECURE_AUTH.md`.
 - **Modular monolith:** domain code under `src/modules/*`; see `docs/MODULE_BOUNDARIES.md`.
 - Utility modules must not import product `vault` or `notes` internals incorrectly.

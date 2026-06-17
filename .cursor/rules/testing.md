@@ -35,7 +35,7 @@ Use unit/service/API/feature tests for coverage. Browser E2E was removed; see `d
 11. Frontend does not import database clients.
 12. Note persistence goes through `/api/notes` only.
 13. No active `letters` domain (`no-letters-domain.test.ts`).
-14. Active docs reflect LTG Vault (`documentation-current-state.test.ts`).
+14. Active docs reflect SelahKeep (`documentation-current-state.test.ts`).
 
 ### IndexedDB (when touching device storage or vault unlock)
 

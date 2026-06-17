@@ -124,7 +124,7 @@ export default function RecoveryPage() {
             <CardHeader>
               <CardTitle>Legacy recovery code</CardTitle>
               <CardDescription>
-                This vault still has an older recovery code envelope from before LTG Vault used
+                This vault still has an older recovery code envelope from before SelahKeep used
                 recovery phrases. You can still unlock with that code on the unlock screen. New
                 recovery codes cannot be generated here.
               </CardDescription>

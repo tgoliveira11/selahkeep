@@ -1,4 +1,4 @@
-# LTG Vault — MVP Acceptance Checklist
+# SelahKeep — MVP Acceptance Checklist
 
 **Baseline:** Phase 5 hardening · TDR §20 + Phase 5 deliverables  
 **Format:** Criterion | Status | Evidence | Tests | Notes
@@ -7,9 +7,9 @@
 |---|-----------|--------|----------|-------|-------|
 | 1 | Authentication from `@tgoliveira/secure-auth` | ✅ Pass | `src/lib/secure-auth.ts`, auth API routes delegate to package | `secure-auth-env-and-imports.test.ts`, `no-local-auth-implementation.test.ts` | Package `@0.1.19-internal` — not modified |
 | 2 | No competing local auth/account implementation | ✅ Pass | No local user password routes; register/login delegate | `no-local-auth-implementation.test.ts`, `password-storage.test.ts` | |
-| 3 | Product branded **LTG Vault** on public pages | ✅ Pass | `home-copy.ts`, `nav.tsx`, `site-footer.tsx`, `layout.tsx` metadata | `home-page.test.tsx`, `site-layout.test.tsx`, `accessibility.test.tsx` | `APP_SLUG` remains `letters-to-god` for passkey continuity |
+| 3 | Product branded **SelahKeep** on public pages | ✅ Pass | `home-copy.ts`, `nav.tsx`, `site-footer.tsx`, `layout.tsx` metadata | `home-page.test.tsx`, `site-layout.test.tsx`, `accessibility.test.tsx` | `APP_SLUG` remains `letters-to-god` for passkey continuity |
 | 4 | User can create a vault | ✅ Pass | `/vault/setup`, `use-ltg-vault-setup.ts` | `vault-setup-crypto-integration.test.ts`, `vault-service.test.ts` | |
-| 5 | User can set vault password/passphrase | ✅ Pass | LTG vault setup flow, Argon2id envelope | `crypto-vault.test.ts`, `vault-setup-crypto-integration.test.ts`, `vault-setup-wizard.test.tsx` | Uses `PasswordSetupFields` + `VAULT_PASSWORD_*` policy |
+| 5 | User can set vault password/passphrase | ✅ Pass | vault setup flow, Argon2id envelope | `crypto-vault.test.ts`, `vault-setup-crypto-integration.test.ts`, `vault-setup-wizard.test.tsx` | Uses `PasswordSetupFields` + `VAULT_PASSWORD_*` policy |
 | 6 | Vault password KDF uses **Argon2id only** | ✅ Pass | `src/lib/crypto-client/vault-kdf.ts` | `crypto-vault.test.ts`, ADR-005 | No PBKDF2 for new password envelopes |
 | 7 | User can choose **12-word or 24-word** recovery phrase | ✅ Pass | `recovery-phrase.ts`, setup UI | `recovery-phrase.test.ts` (if present), manual `/vault/setup` | |
 | 8 | User can confirm and store recovery phrase envelope | ✅ Pass | `recovery_phrase` envelope method | `vault-service.test.ts`, `vault-setup-crypto-integration.test.ts` | |
@@ -30,7 +30,7 @@
 | 23 | Export/import documented as unavailable before public beta | ✅ Pass | `/vault/settings`, `home-copy.ts`, README, SECURITY | `home-page.test.tsx` | No import/export implementation |
 | 24 | Encrypted attachments not in MVP | ✅ Pass | No `note_attachments` table | `no-letters-domain.test.ts`, TDR §11 | Documented as deferred |
 | 25 | Build, lint, tests, and coverage pass | ✅ Pass | CI commands in AGENTS.md | `npm run lint`, `test:coverage`, `build` | ≥90% enforced scope |
-| 26 | Public pages explain LTG Vault direction clearly | ✅ Pass | Home page sections: vault vs account, deferred features | `home-page.test.tsx` | |
+| 26 | Public pages explain SelahKeep direction clearly | ✅ Pass | Home page sections: vault vs account, deferred features | `home-page.test.tsx` | |
 | 27 | Vault inactivity lock (15 min default) | ✅ Pass | `vault-session.ts` `VAULT_INACTIVITY_MS`, `use-vault-activity.ts` | `vault-session.test.ts`, `phase5-security-regression.test.ts` | Documented in README/SECURITY |
 | 28 | Inactivity lock shows calm user notice | ✅ Pass | `vault-auto-lock-notice.tsx`, `configureVaultAutoLock` | `phase5-security-regression.test.ts` | Message: vault locked to protect private notes |
 | 29 | Inactivity lock clears decrypted note body cache | ✅ Pass | `lockVaultSession` → `clearNoteBodyCache` | `vault-session.test.ts`, `phase5-security-regression.test.ts` | |

@@ -22,7 +22,7 @@ export const vaultService = {
 
     const methods = new Set(input.envelopes.map((e) => e.method));
     if (!methods.has("password") || !methods.has("recovery_phrase")) {
-      throw new Error("LTG vault setup requires password and recovery_phrase envelopes");
+      throw new Error("Vault setup requires password and recovery_phrase envelopes");
     }
 
     return runInTransaction(async (tx) => {
@@ -34,7 +34,7 @@ export const vaultService = {
       for (const envelope of input.envelopes) {
         assertVaultKeyAad(userId, envelope.encryptedVaultKey);
         if (envelope.kdfMetadata.kdf !== "argon2id") {
-          throw new Error("LTG vault envelopes require Argon2id KDF metadata");
+          throw new Error("Vault envelopes require Argon2id KDF metadata");
         }
         await vaultRepository.createEnvelope(
           {
@@ -218,7 +218,7 @@ export const vaultService = {
     const vault = await vaultRepository.findVaultByUserId(userId);
     if (!vault) throw new NotFoundError("Vault not initialized");
     if (vault.vaultVersion !== "vault-v2") {
-      throw new Error("Recovery phrase replacement requires LTG vault");
+      throw new Error("Recovery phrase replacement requires vault-v2");
     }
 
     assertVaultKeyAad(userId, input.encryptedVaultKey);

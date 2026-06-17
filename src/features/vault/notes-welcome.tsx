@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/marketing/brand";
 
 const CAPABILITIES = [
   "Write private Markdown notes",
@@ -17,10 +18,8 @@ export function NotesWelcome() {
     <div className="space-y-6">
       <Card className="space-y-4 p-6">
         <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-[var(--foreground)]">Welcome to LTG Vault</h2>
-          <p className="text-sm leading-relaxed text-[var(--muted)]">
-            LTG Vault is a private encrypted space for letters, prayers, reflections, and notes.
-          </p>
+          <h2 className="text-xl font-semibold text-[var(--foreground)]">Welcome to {PRODUCT_NAME}</h2>
+          <p className="text-sm leading-relaxed text-[var(--muted)]">{PRODUCT_TAGLINE}</p>
           <p className="text-sm leading-relaxed text-[var(--muted)]">
             Before you start writing, you need to create your vault. Your account lets you sign in,
             but your vault protects your private notes separately. During setup, you will choose a

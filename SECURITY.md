@@ -1,6 +1,6 @@
-# Security — LTG Vault MVP
+# Security — SelahKeep MVP
 
-> **Source of truth:** [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md), [`docs/ADR-005_*`](./docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md), [`docs/ADR-006_*`](./docs/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md). Phases 0–5 complete.
+> **Product:** SelahKeep (former working name: LTG Vault). **Source of truth:** [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md), [`docs/ADR-005_*`](./docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md), [`docs/ADR-006_*`](./docs/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md). Phases 0–5 complete.
 
 ## Privacy Promise
 
@@ -27,9 +27,9 @@
 - Structured payload: `version`, `alg`, `iv`, `ciphertext`, `aad`
 - **AAD binding (server + client):** `aad.userId` must match session user; `aad.resourceId` must match persisted note/vault id; `aad.field` must match the encrypted field.
 - **Note IDs:** client generates UUID; server persists the same id.
-- **LTG vault password KDF (new setups):** Argon2id only via `hash-wasm` — no PBKDF2 fallback (`src/lib/crypto-client/vault-kdf.ts`, ADR-005)
+- **vault password KDF (new setups):** Argon2id only via `hash-wasm` — no PBKDF2 fallback (`src/lib/crypto-client/vault-kdf.ts`, ADR-005)
 - **Vault password policy (setup UI):** `VAULT_PASSWORD_*` env vars mapped in `src/lib/config/vault-password-policy.ts` and passed explicitly to `PasswordSetupFields` on `/vault/setup`. Separate from account `AUTH_PASSWORD_*` policy. Vault password never leaves the browser.
-- **LTG recovery phrase (new setups):** BIP39 English, 12 or 24 words (`src/lib/crypto-client/recovery-phrase.ts`)
+- **recovery phrase (new setups):** BIP39 English, 12 or 24 words (`src/lib/crypto-client/recovery-phrase.ts`)
 - **Legacy recovery code KDF:** Argon2id preferred; PBKDF2-SHA-256 fallback (600k iterations) with versioned `kdf-v1` metadata — legacy `recovery_code` envelopes only
 - Recovery codes: ≥128 bits entropy (project-specific wordlist, not BIP39; currently 17 words from 252 unique words ≈ 135.6 bits); uniform word selection + rejection sampling; shown only at generation/regeneration; never stored plaintext
 
@@ -48,7 +48,7 @@ Multi-step sensitive flows use `runInTransaction()` (vault init/setup, recovery 
 
 ## Browser Storage (IndexedDB)
 
-LTG Vault does not persist vault unlock material in IndexedDB. Legacy trusted-device stores are deleted on upgrade to DB version 3 (`src/lib/crypto-client/vault-idb-cleanup.ts`).
+SelahKeep does not persist vault unlock material in IndexedDB. Legacy trusted-device stores are deleted on upgrade to DB version 3 (`src/lib/crypto-client/vault-idb-cleanup.ts`).
 
 Forbidden in browser persistence:
 

@@ -1,4 +1,6 @@
-# TDR — LTG Vault MVP
+# TDR — SelahKeep MVP
+
+> Former working name: LTG Vault. Current product name: SelahKeep.
 
 ## 1. Status
 
@@ -6,8 +8,8 @@
 |-------|--------|
 | **Status** | Proposed |
 | **Repository** | [https://github.com/tgoliveira11/letter-to-god](https://github.com/tgoliveira11/letter-to-god) |
-| **Product name** | LTG Vault |
-| **Product direction** | Transform the current “Letters to God” app into an encrypted private vault for letters, prayers, reflections, and personal notes |
+| **Product name** | SelahKeep |
+| **Product direction** | Encrypted private vault for prayers, reflections, and personal notes |
 | **Primary auth dependency** | `@tgoliveira/secure-auth@0.1.19-internal` |
 | **Decision type** | Product / Architecture / Security / MVP Scope |
 
@@ -15,11 +17,11 @@
 
 ## 2. Executive Summary
 
-The current product started as a digital version of “Letters to God”: a place where users could write private letters, keep them safely, and mark them as answered.
+The current product evolved from a private spiritual journaling app: a place where users could write personal reflections, keep them safely, and mark them as answered.
 
 The new direction keeps the emotional and spiritual core of the product, but expands it into a broader encrypted notes vault:
 
-> **LTG Vault** is a private encrypted space for letters, prayers, reflections, and notes.
+> **SelahKeep** is a private encrypted space for prayers, reflections, and notes.
 
 The product should **not** become a generic encrypted notes app. Its differentiation is the combination of privacy, reflection, spirituality, personal journaling, and long-term remembrance.
 
@@ -57,9 +59,9 @@ The MVP should allow users to:
 
 ### 3.1 Product Name
 
-**LTG Vault**
+**SelahKeep**
 
-**Subtitle:** A private encrypted space for letters, prayers, reflections, and notes.
+**Subtitle:** A private encrypted space for prayers, reflections, and notes.
 
 ### 3.2 Product Identity
 
@@ -79,7 +81,7 @@ The product should feel:
 
 ### 3.3 What the Product Is
 
-LTG Vault is:
+SelahKeep is:
 
 - A private encrypted vault
 - A place for personal letters
@@ -91,7 +93,7 @@ LTG Vault is:
 
 ### 3.4 What the Product Is Not
 
-LTG Vault should **not** become:
+SelahKeep should **not** become:
 
 - A generic Notion clone
 - A corporate notes tool
@@ -165,7 +167,7 @@ The vault is **product-specific** and remains owned by `letter-to-god`.
 - TOTP / two-factor authentication for **account** protection (if enabled)
 - Account deletion flows (if provided by the package)
 
-### 5.3 LTG Vault Responsibilities
+### 5.3 SelahKeep Responsibilities
 
 The `letter-to-god` app should own:
 
@@ -570,7 +572,7 @@ APIs must **not** receive: plaintext title, body, tags, categories, vault passwo
 
 ## 16. UX Requirements
 
-- **Landing:** explain LTG Vault, privacy, account vs vault, current features; community sharing as future
+- **Landing:** explain SelahKeep, privacy, account vs vault, current features; community sharing as future
 - **Vault setup:** calm education on account vs vault password vs recovery phrase; 12/24 word choice
 - **Vault unlock:** clear, non-jargon
 - **Passkey vault:** optional, separate from login; signed-in-but-locked messaging
@@ -615,9 +617,9 @@ Do not lower existing coverage thresholds. Target vault/crypto/security modules 
 
 Remove inconsistent local auth; use `@tgoliveira/secure-auth` as only account source; stabilize build/deploy; preserve product pages.
 
-### Phase 1 — LTG Vault MVP Foundation
+### Phase 1 — SelahKeep MVP Foundation
 
-Reposition UI to LTG Vault; vault setup; Argon2id; vault password; 12/24 recovery phrase; User Vault Key; password and recovery envelopes; passkey vault unlock design; encrypted notes model; encrypted metadata and body.
+Reposition UI to SelahKeep; vault setup; Argon2id; vault password; 12/24 recovery phrase; User Vault Key; password and recovery envelopes; passkey vault unlock design; encrypted notes model; encrypted metadata and body.
 
 ### Phase 2 — Notes, Markdown, Categories, Tags, Search
 
@@ -645,7 +647,7 @@ The MVP is acceptable when:
 
 1. Authentication comes from `@tgoliveira/secure-auth`
 2. No competing local auth/account implementation
-3. Product branded as **LTG Vault**
+3. Product branded as **SelahKeep**
 4. User can create a vault
 5. User can set vault password/passphrase
 6. Vault password KDF uses **Argon2id only**
@@ -668,7 +670,7 @@ The MVP is acceptable when:
 23. Export/import documented as unavailable before public beta
 24. Encrypted attachments not in MVP
 25. Build, lint, tests, and coverage pass
-26. Public pages explain LTG Vault direction clearly
+26. Public pages explain SelahKeep direction clearly
 
 ---
 
@@ -676,7 +678,7 @@ The MVP is acceptable when:
 
 | # | Decision |
 |---|----------|
-| 1 | Product name: **LTG Vault** |
+| 1 | Product name: **SelahKeep** |
 | 2 | KDF: **Argon2id only** — no PBKDF2 fallback |
 | 3 | Recovery phrase: user chooses **12 or 24 words** |
 | 4 | Categories/tags: **encrypted per-note metadata + encrypted vault index** |
@@ -700,7 +702,7 @@ For future ADRs or implementation plans:
 3. Recovery phrase wordlist source
 4. Recovery phrase confirmation UX details
 5. Exact encrypted payload format (evolve ADR-001)
-6. Exact schema/migration plan from current app to LTG Vault
+6. Exact schema/migration plan from current app to SelahKeep
 7. Note archive vs hard delete in MVP
 8. Body preview in encrypted index vs omitted
 9. Whether passkey vault unlock requires package changes in `@tgoliveira/secure-auth`
@@ -736,11 +738,11 @@ For future ADRs or implementation plans:
 
 The project should evolve from:
 
-**Letters to God** — private letters only
+**Private spiritual journaling (pre-vault)** — single-purpose private writing
 
 to:
 
-**LTG Vault** — a private encrypted space for letters, prayers, reflections, and notes
+**SelahKeep** — a private encrypted space for prayers, reflections, and notes
 
 This preserves emotional/spiritual identity while making the product more useful, extensible, and viable long term.
 
@@ -750,7 +752,7 @@ This preserves emotional/spiritual identity while making the product more useful
 |-----------|-----------|
 | **Architecture** | Authentication gives access to the **account**. Vault unlock gives access to **private content**. These must remain separate. |
 | **Privacy** | Titles, tags, categories, and bodies visible after vault unlock — **never** stored plaintext in the database. |
-| **Product** | Do not become a generic notes app. Remain a calm, private, meaningful space for letters, prayers, reflections, and personal notes. |
+| **Product** | Do not become a generic notes app. Remain a calm, private, meaningful space for prayers, reflections, and personal notes. |
 
 ---
 

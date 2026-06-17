@@ -1,4 +1,4 @@
-# LTG Vault — Private Usability Test Script
+# SelahKeep — Private Usability Test Script
 
 **Purpose:** Structured private beta usability session before public launch.  
 **Duration:** ~60–90 minutes per tester  
@@ -34,7 +34,7 @@ Complete in order where possible. Mark: ✅ smooth · ⚠️ friction · ❌ blo
 ### 1. First impression (public home)
 
 **Task:** Open the home page without signing in.  
-**Observe:** Do they understand LTG Vault vs a generic notes app?  
+**Observe:** Do they understand SelahKeep vs a generic notes app?  
 **Ask:** In one sentence, what is this product for?
 
 ### 2. Account registration
@@ -119,7 +119,7 @@ Complete in order where possible. Mark: ✅ smooth · ⚠️ friction · ❌ blo
 
 ## Post-session questions
 
-1. Did the name **LTG Vault** and subtitle make sense?
+1. Did the name **SelahKeep** and subtitle make sense?
 2. Was the difference between **account** and **vault** clear?
 3. Did you feel your notes were private? Why or why not?
 4. What felt confusing about recovery (phrase, passkey, trusted device)?

@@ -1,10 +1,12 @@
-# Agent Rules — LTG Vault MVP
+# Agent Rules — SelahKeep MVP
+
+> Former working name: LTG Vault. Current product name: SelahKeep.
 
 ## Source of Truth
 
 Read and follow these documents before implementing:
 
-- `docs/TDR_LTG_Vault_MVP.md` — **LTG Vault product/architecture (primary)**
+- `docs/TDR_LTG_Vault_MVP.md` — **SelahKeep product/architecture (primary)**
 - `docs/LTG_VAULT_IMPLEMENTATION_PLAN.md` — phased plan (Phases 0–5 complete)
 - `docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md` — vault crypto, note keys, recovery phrase
 - `docs/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md` — passkey PRF vault unlock

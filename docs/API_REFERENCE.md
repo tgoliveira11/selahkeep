@@ -84,14 +84,14 @@ Vault recovery passkeys (PRF envelope while vault unlocked) also use `POST /api/
 
 ### Vault recovery phrase
 
-LTG vault setup (`POST /api/vault/setup`) always creates a `recovery_phrase` envelope. Replacement while the vault is unlocked on the client:
+vault setup (`POST /api/vault/setup`) always creates a `recovery_phrase` envelope. Replacement while the vault is unlocked on the client:
 
 | Method | Path | Auth | Body |
 |--------|------|------|------|
 | `GET` | `/api/vault/status` | Session | — includes `recoveryPhrase.createdAt`, `recoveryPhrase.replacedAt`, `phraseLength` when configured |
 | `POST` | `/api/vault/recovery-phrase` | Session | `encryptedVaultKey`, `kdfMetadata`, optional `publicMetadata.phraseLength` — **no plaintext phrase** |
 
-`POST /api/vault/recovery-phrase` atomically revokes the previous active `recovery_phrase` envelope and creates a new one. Legacy `POST /api/recovery-code` remains for older `recovery_code` envelopes only; LTG `/vault/recovery` does not generate new recovery codes.
+`POST /api/vault/recovery-phrase` atomically revokes the previous active `recovery_phrase` envelope and creates a new one. Legacy `POST /api/recovery-code` remains for older `recovery_code` envelopes only; SelahKeep `/vault/recovery` does not generate new recovery codes.
 
 See `docs/VAULT_RECOVERY_FLOW_AUDIT.md`.
 

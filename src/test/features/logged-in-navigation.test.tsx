@@ -175,17 +175,17 @@ describe("logged-in navigation", () => {
   });
 });
 
-describe("LTG Vault metadata and icon", () => {
-  it("layout metadata uses LTG Vault title and tagline", async () => {
+describe("SelahKeep metadata and icon", () => {
+  it("layout metadata uses SelahKeep title and tagline", async () => {
     const layout = await import("@/app/layout");
     expect(layout.metadata.title).toBe(PRODUCT_NAME);
     expect(layout.metadata.description).toBe(PRODUCT_TAGLINE);
   });
 
-  it("favicon uses purple LTG monogram without green envelope colors", () => {
+  it("favicon uses purple SK monogram without green envelope colors", () => {
     const icon = readFileSync(join(process.cwd(), "src/app/icon.svg"), "utf8");
     expect(icon).toContain("#5b3a8c");
-    expect(icon).toContain("LTG");
+    expect(icon).toContain("SK");
     expect(icon).not.toContain("#4a6741");
     expect(icon).not.toContain("M6 11.75");
   });

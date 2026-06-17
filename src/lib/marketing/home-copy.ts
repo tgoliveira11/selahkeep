@@ -15,7 +15,7 @@ export const homeCopy = {
       {
         title: "Write privately",
         description:
-          "Compose letters, prayers, reflections, and notes in a calm, distraction-free space.",
+          "Compose prayers, reflections, and notes in a calm, distraction-free space.",
       },
       {
         title: "Keep everything in one vault",

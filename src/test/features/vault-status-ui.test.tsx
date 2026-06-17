@@ -105,12 +105,12 @@ describe("vault status UI", () => {
     vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(false));
   });
 
-  it("notes page shows LTG Vault welcome when vault is not configured", async () => {
+  it("notes page shows SelahKeep welcome when vault is not configured", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("not_configured"));
 
     render(<NotesPage />);
-    expect(await screen.findByText("Welcome to LTG Vault")).toBeTruthy();
+    expect(await screen.findByText("Welcome to SelahKeep")).toBeTruthy();
     expect(screen.getByRole("link", { name: /set up your vault/i }).getAttribute("href")).toBe(
       "/vault/setup"
     );
@@ -212,7 +212,7 @@ describe("vault status UI", () => {
     expect(screen.getByRole("link", { name: /go to notes/i }).getAttribute("href")).toBe("/notes");
     expect(screen.queryByLabelText(/vault password/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /^recovery phrase$/i })).toBeNull();
-    expect(screen.queryByText(/unlock ltg vault/i)).toBeNull();
+    expect(screen.queryByText(/unlock selahkeep/i)).toBeNull();
   });
 
   it("vault unlock shows continue setup when setup is incomplete", async () => {
@@ -229,7 +229,7 @@ describe("vault status UI", () => {
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
     render(<VaultUnlockPage />);
-    expect(await screen.findByText(/Unlock LTG Vault/i)).toBeTruthy();
+    expect(await screen.findByText(/Unlock SelahKeep/i)).toBeTruthy();
     expect(screen.getByLabelText(/vault password/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /recovery phrase/i })).toBeTruthy();
   });

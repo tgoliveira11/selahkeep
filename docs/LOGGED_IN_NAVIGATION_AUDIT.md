@@ -2,7 +2,7 @@
 
 Last updated: 2026-06-17
 
-This document audits LTG Vault logged-in navigation after Phases 0–5 and records the navigation/favicon changes from the focused nav audit.
+This document audits SelahKeep logged-in navigation after Phases 0–5 and records the navigation/favicon changes from the focused nav audit.
 
 ## Summary
 
@@ -21,7 +21,7 @@ This document audits LTG Vault logged-in navigation after Phases 0–5 and recor
 
 | Current label | Route | Icon | Signed out | Signed in | Vault locked | Vault unlocked | Purpose | Action | Reason |
 |---------------|-------|------|------------|-----------|--------------|----------------|---------|--------|--------|
-| LTG Vault (brand) | `/` or `/notes` | AppMark | Yes | Yes | Yes | Yes | Product home | **Keep** | Consistent branding |
+| SelahKeep (brand) | `/` or `/notes` | AppMark | Yes | Yes | Yes | Yes | Product home | **Keep** | Consistent branding |
 | Notes | `/notes` | — | No | Yes | Yes* | Yes | Main workspace | **Keep / rename** | Primary workspace; was "My notes" |
 | Write | `/notes/new` | — | No | Was yes | — | — | Quick compose | **Remove** | Notes page has create CTA; reduces clutter |
 | Vault | `/vault/settings` | — | No | Yes | Yes | Yes | Vault behavior, legacy links | **Keep** | Vault protection settings |
@@ -62,7 +62,7 @@ This document audits LTG Vault logged-in navigation after Phases 0–5 and recor
 9. **Missing from nav?** — Nothing essential; legacy Devices/Recovery moved to Vault settings.
 10. **Should not be visible?** — `Write`, top-level `Devices`, top-level `Recovery`, any `Letters` link.
 11. **Mobile vs desktop consistent?** — **Yes.** Same three primary links; mobile groups Workspace / Vault protection / Account security.
-12. **Old letter or green envelope identity?** — **Removed.** Header `AppMark` and `icon.svg` now use purple LTG monogram.
+12. **Old letter or green envelope identity?** — **Removed.** Header `AppMark` and `icon.svg` now use purple SK monogram.
 
 ---
 
@@ -71,7 +71,7 @@ This document audits LTG Vault logged-in navigation after Phases 0–5 and recor
 ### Desktop (signed in)
 
 ```text
-[LTG Vault]   Notes | Vault | Account | [Unlock vault?]   [Lock vault?] Sign out [Badge]
+[SelahKeep]   Notes | Vault | Account | [Unlock vault?]   [Lock vault?] Sign out [Badge]
 ```
 
 ### Mobile (signed in)
@@ -119,7 +119,7 @@ Account session does **not** unlock the vault. Navigation copy and grouping rein
 - `src/modules/ui/lib/brand-mark.ts`
 - `src/modules/ui/primitives/app-mark.tsx` (renders shared `BRAND_MARK_SVG`)
 
-**Metadata:** `src/app/layout.tsx` — title `LTG Vault`, description from `PRODUCT_TAGLINE`, `themeColor: #5b3a8c`.
+**Metadata:** `src/app/layout.tsx` — title `SelahKeep`, description from `PRODUCT_TAGLINE`, `themeColor: #5b3a8c`.
 
 ---
 

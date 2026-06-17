@@ -1,6 +1,6 @@
-# LTG Vault — Private Encrypted Notes MVP
+# SelahKeep — Private Encrypted Notes MVP
 
-> **Product:** **LTG Vault** — a private encrypted space for letters, prayers, reflections, and notes. Primary UI accent: **purple** (`docs/UI_UX_DIRECTION.md`). Vault setup: `/vault/setup` (vault password + BIP39 recovery phrase). See [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) and [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md).
+> **Product:** **SelahKeep** — a private encrypted space for prayers, reflections, and notes. Former working name: LTG Vault. Primary UI accent: **purple** (`docs/UI_UX_DIRECTION.md`). Vault setup: `/vault/setup` (vault password + BIP39 recovery phrase). See [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) and [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md).
 
 Web-first responsive MVP for private encrypted notes in a personal vault.
 
@@ -198,7 +198,7 @@ SMTP_PORT=1025
 SMTP_SECURE=false
 SMTP_USER=
 SMTP_PASSWORD=
-EMAIL_FROM="LTG Vault <noreply@localhost>"
+EMAIL_FROM="SelahKeep <noreply@localhost>"
 APP_BASE_URL=http://localhost:3001
 ```
 
@@ -211,7 +211,7 @@ SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=<brevo-smtp-login>
 SMTP_PASSWORD=<brevo-smtp-key>
-EMAIL_FROM="LTG Vault <noreply@yourdomain.com>"
+EMAIL_FROM="SelahKeep <noreply@selahkeep.com>"
 APP_BASE_URL=https://your-staging-url
 ```
 
@@ -229,9 +229,9 @@ Account sessions are separate from **vault unlock**. Revoking a session signs ou
 
 Run `npm run db:migrate` after pulling session schema updates (`0007_account_sessions.sql`).
 
-Run `npm run db:migrate` after pulling LTG vault schema updates (`0008`–`0011`, including `0010_drop_letters.sql` and `0011_drop_trusted_devices.sql`).
+Run `npm run db:migrate` after pulling vault schema updates (`0008`–`0011`, including `0010_drop_letters.sql` and `0011_drop_trusted_devices.sql`).
 
-## Notes (LTG Vault Phase 2–3)
+## Notes (SelahKeep Phase 2–3)
 
 Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings`**.
 
@@ -321,10 +321,10 @@ Production rate limiting: set `RATE_LIMIT_STORE=postgres` and run migrations (`r
 
 See [`docs/README.md`](./docs/README.md) for the full index. Active source of truth:
 
-- [TDR — LTG Vault MVP](./docs/TDR_LTG_Vault_MVP.md)
+- [TDR — SelahKeep MVP](./docs/TDR_LTG_Vault_MVP.md)
 - [ADR-005 — Vault crypto & note keys](./docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md)
 - [ADR-006 — Passkey PRF unlock](./docs/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md)
 - [MVP acceptance checklist](./docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md)
 - [API Reference (Swagger / OpenAPI)](./docs/API_REFERENCE.md)
 
-Historical ADRs and the pre–LTG Vault TDR are in [`docs/archive/`](./docs/archive/).
+Historical ADRs and the pre–SelahKeep TDR are in [`docs/archive/`](./docs/archive/).

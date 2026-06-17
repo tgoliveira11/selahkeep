@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { LoadingState } from "@/components/ui/loading-state";
 import { isVaultUnlocked } from "@/lib/crypto-client/vault";
 import { vaultApi } from "@/lib/api-client/vault";
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
 import { useLtgVaultSetup } from "@/features/vault/use-ltg-vault-setup";
 import { VaultSetupWizard } from "@/features/vault/vault-setup-wizard";
 
@@ -59,7 +60,7 @@ export function VaultSetupPage({ vaultPasswordPolicy }: VaultSetupPageProps) {
   return (
     <PageLayout width="narrow">
       <PageHeader
-        title="LTG Vault setup"
+        title={`${PRODUCT_NAME} setup`}
         description="Create your private vault with a vault password and recovery phrase."
       />
       <VaultSetupWizard

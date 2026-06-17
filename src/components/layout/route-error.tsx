@@ -10,7 +10,7 @@ interface RouteErrorProps {
 
 export function RouteError({
   reset,
-  message = "Something went wrong loading this page. Your private letters were not affected.",
+  message = "Something went wrong loading this page. Your private notes were not affected.",
 }: RouteErrorProps) {
   return (
     <PageLayout>

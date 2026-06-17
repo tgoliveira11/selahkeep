@@ -92,7 +92,7 @@ describe("sendEmail", () => {
       vi.stubEnv("SMTP_HOST", "localhost");
       vi.stubEnv("SMTP_PORT", "1025");
       vi.stubEnv("SMTP_SECURE", "false");
-      vi.stubEnv("EMAIL_FROM", "Letters to God <noreply@localhost>");
+      vi.stubEnv("EMAIL_FROM", "SelahKeep <noreply@localhost>");
       vi.stubEnv("NODE_ENV", "production");
     });
 
@@ -105,7 +105,7 @@ describe("sendEmail", () => {
       };
       await sendEmail(input);
       expect(smtpProvider.sendSmtpEmail).toHaveBeenCalledWith(
-        "Letters to God <noreply@localhost>",
+        "SelahKeep <noreply@localhost>",
         input
       );
     });

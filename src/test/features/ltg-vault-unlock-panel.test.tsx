@@ -6,7 +6,7 @@ import { render, screen } from "@testing-library/react";
 import { LtgVaultUnlockPanel } from "@/features/vault/ltg-vault-unlock-panel";
 
 describe("LtgVaultUnlockPanel", () => {
-  it("uses LTG Vault copy", () => {
+  it("uses SelahKeep copy", () => {
     render(
       <LtgVaultUnlockPanel
         loading={false}
@@ -23,7 +23,7 @@ describe("LtgVaultUnlockPanel", () => {
         onUnlockRecoveryPhrase={() => undefined}
       />
     );
-    expect(screen.getByText(/Unlock LTG Vault/i)).toBeTruthy();
+    expect(screen.getByText(/Unlock SelahKeep/i)).toBeTruthy();
     expect(screen.getByText(/account is signed in/i)).toBeTruthy();
   });
 

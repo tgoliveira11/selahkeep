@@ -12,7 +12,7 @@ import {
 
 const userId = "550e8400-e29b-41d4-a716-446655440000";
 
-describe("LTG vault setup crypto integration", () => {
+describe("vault setup crypto integration", () => {
   it("creates password and recovery phrase envelopes without plaintext secrets in payload", async () => {
     const vaultPassword = "my-vault-passphrase-12";
     const phrase =

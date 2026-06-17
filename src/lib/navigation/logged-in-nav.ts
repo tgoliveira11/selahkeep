@@ -1,4 +1,4 @@
-/** Logged-in primary navigation for LTG Vault. */
+/** Logged-in primary navigation for SelahKeep. */
 
 export type LoggedInNavGroup = "core" | "vault" | "account";
 

@@ -1,4 +1,4 @@
-# ADR-006 — LTG Vault Passkey PRF Unlock
+# ADR-006 — SelahKeep Passkey PRF Unlock
 
 | Field | Value |
 |-------|--------|
@@ -13,7 +13,7 @@
 | Operation | Owner | Purpose |
 |-----------|-------|---------|
 | Account passkey sign-in | `@tgoliveira/secure-auth` | Establishes account session only |
-| Passkey vault unlock | LTG Vault product layer | Unwraps User Vault Key via PRF-based envelope |
+| Passkey vault unlock | SelahKeep product layer | Unwraps User Vault Key via PRF-based envelope |
 
 The same physical passkey credential may perform both only when the user has explicitly enabled vault unlock and a valid `passkey_prf` envelope exists.
 

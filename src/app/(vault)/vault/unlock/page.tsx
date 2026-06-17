@@ -16,6 +16,7 @@ import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
 import { LtgVaultUnlockPanel } from "@/features/vault/ltg-vault-unlock-panel";
 import { VaultUnlockPanel } from "@/features/vault/vault-unlock-panel";
 import { getVaultStatusCopy } from "@/lib/vault/vault-status";
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 export default function VaultUnlockPage() {
   const { status: authStatus } = useSession();
@@ -59,7 +60,7 @@ export default function VaultUnlockPage() {
     const copy = getVaultStatusCopy("unlocked", "unlock");
     return (
       <PageLayout width="narrow">
-        <PageHeader title="LTG Vault" description="Your private notes stay encrypted. Only you can unlock them." />
+        <PageHeader title={PRODUCT_NAME} description="Your private notes stay encrypted. Only you can unlock them." />
         <Card className="space-y-4 p-6">
           <div className="space-y-2">
             <h2 className="text-lg font-semibold text-[var(--foreground)]">{copy.promptTitle}</h2>
@@ -76,7 +77,7 @@ export default function VaultUnlockPage() {
   if (clientStatus === "not_configured" || clientStatus === "setup_incomplete") {
     return (
       <PageLayout width="narrow">
-        <PageHeader title="LTG Vault" description="Your private notes stay encrypted. Only you can unlock them." />
+        <PageHeader title={PRODUCT_NAME} description="Your private notes stay encrypted. Only you can unlock them." />
         <VaultStatusPrompt clientStatus={clientStatus} context="unlock" />
       </PageLayout>
     );
@@ -88,7 +89,7 @@ export default function VaultUnlockPage() {
   return (
     <PageLayout width="narrow">
       <PageHeader
-        title="LTG Vault"
+        title={PRODUCT_NAME}
         description="Your private notes stay encrypted. Only you can unlock them."
       />
       {showLtgUnlock && (

@@ -1,4 +1,6 @@
-# LTG Vault — Phased Implementation Plan
+# SelahKeep — Phased Implementation Plan
+
+> Former working name: LTG Vault. Current product name: SelahKeep.
 
 **Status:** Phases 0–5 **complete** (historical planning tables retained below for traceability)  
 **Active routes:** `/notes`, `/api/notes`, `/vault/*` — **letters domain removed**
@@ -7,7 +9,7 @@
 
 ## Executive summary
 
-Transform **Letters to God** (private encrypted letters) into **LTG Vault** (private encrypted notes: letters, prayers, reflections, journaling) while:
+Evolve the private-letters predecessor into **SelahKeep** (private encrypted notes: prayers, reflections, journaling) while:
 
 - Keeping **account authentication** exclusively in `@tgoliveira/secure-auth@0.1.19-internal`
 - Keeping **vault decryption** product-owned in `letter-to-god`
@@ -23,7 +25,7 @@ Branch at planning time: `update-postforge-public-order-rss` (includes auth-rese
 
 ### Exists today
 
-| Area | Location | LTG Vault gap |
+| Area | Location | SelahKeep gap |
 |------|----------|---------------|
 | **Auth (package)** | `src/lib/secure-auth.ts`, `src/app/api/auth/**`, `src/app/api/account/**` delegates | **Phase 0 complete** on `main` |
 | **Auth pages** | `src/app/(auth)/**` thin `@tgoliveira/secure-auth/react` wrappers | Rebrand copy in later phases |
@@ -63,7 +65,7 @@ Branch at planning time: `update-postforge-public-order-rss` (includes auth-rese
 | Plaintext `letters.answered` column | Answered in **encrypted metadata** | Phase 2–3: migrate column away |
 | Title in `encrypted_title` JSON field (encrypted) | Title in encrypted metadata + index (still encrypted) | Phase 2: restructure payloads; **never** plaintext at rest (already encrypted today — preserve) |
 | `trusted_device` envelope (ADR-002) | Removed — MVP envelopes: password, recovery_phrase, passkey_prf | See `docs/TRUSTED_DEVICES_REMOVAL.md` |
-| Product name “Letters to God” in UI | **LTG Vault** | Phases 1–5 progressive rebrand |
+| Legacy product name in UI | **SelahKeep** | Phases 1–5 progressive rebrand |
 
 ---
 
@@ -104,7 +106,7 @@ Remove inconsistent local auth; use `@tgoliveira/secure-auth@0.1.19-internal` as
 
 ### 3. Non-goals
 
-- LTG Vault rebrand
+- SelahKeep rebrand
 - Vault password / recovery phrase redesign
 - Notes model migration
 - Package upgrades beyond `0.1.19-internal` unless security patch
@@ -128,7 +130,7 @@ All account/auth routes must be thin delegates. Product routes (`/api/letters`, 
 
 ### 7. UI impact
 
-Auth pages remain package wrappers. Account settings at `/settings/account` includes package security (passkeys + TOTP). No LTG Vault branding yet.
+Auth pages remain package wrappers. Account settings at `/settings/account` includes package security (passkeys + TOTP). No SelahKeep branding yet yet.
 
 ### 8. Security considerations
 
@@ -175,7 +177,7 @@ None (entry phase). **Status: complete on `main`.** Phase 1 may start after revi
 
 ### 1. Goal
 
-Establish LTG Vault cryptographic foundation: vault setup, Argon2id-only vault password KDF, User Vault Key, password + recovery phrase envelopes, 12/24-word recovery phrase choice, encrypted payload format, no-plaintext API contract.
+Establish SelahKeep cryptographic foundation: vault setup, Argon2id-only vault password KDF, User Vault Key, password + recovery phrase envelopes, 12/24-word recovery phrase choice, encrypted payload format, no-plaintext API contract.
 
 ### 2. Scope
 
@@ -572,7 +574,7 @@ Complete passkey vault unlock for MVP: associate passkey with vault, PRF-based e
 
 ### 10. Documentation required
 
-- Update `docs/PASSKEY_LOGIN_VAULT_UNLOCK.md` for LTG Vault
+- Update `docs/PASSKEY_LOGIN_VAULT_UNLOCK.md` for SelahKeep
 - Update `docs/ADR-002_*` passkey sections
 - Resolve `AUTH_RESET` TODO items
 
@@ -606,7 +608,7 @@ Polish UX, mobile, vault inactivity lock, document no export/import, confirm acc
 
 ### 2. Scope
 
-- Rebrand UI copy to **LTG Vault** (`src/lib/marketing/home-copy.ts`, `src/app/(public)/page.tsx`, nav, metadata)
+- Rebrand UI copy to **SelahKeep** (`src/lib/marketing/home-copy.ts`, `src/app/(public)/page.tsx`, nav, metadata)
 - Vault inactivity lock (`src/lib/crypto-client/vault-session.ts` — extend timer)
 - Mobile editor/list polish
 - Note archive UX (if `deleted_at` soft delete)
@@ -649,7 +651,7 @@ Polish UX, mobile, vault inactivity lock, document no export/import, confirm acc
 - Recovery phrase UX polish
 - Mobile navigation and editor
 - Explicit “Export not available” copy
-- Privacy promise updated for LTG Vault subtitle
+- Privacy promise updated for SelahKeep subtitle
 
 ### 8. Security considerations
 
@@ -668,16 +670,16 @@ Polish UX, mobile, vault inactivity lock, document no export/import, confirm acc
 
 ### 10. Documentation required
 
-- `README.md` — LTG Vault quick start
+- `README.md` — SelahKeep quick start
 - `SECURITY.md` — align with TDR (Argon2id only; no export)
 - `docs/VERCEL_ENVIRONMENT_VARIABLES.md`
-- `docs/migrations/secure-auth-deployment-checklist.md` — LTG Vault section
+- `docs/migrations/secure-auth-deployment-checklist.md` — SelahKeep section
 - Private usability test script (new doc or appendix)
 
 ### 11. Acceptance criteria
 
 - [x] TDR §20 MVP acceptance criteria (26 items) verified — see `docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md`
-- [x] Product branded LTG Vault on public pages
+- [x] Product branded SelahKeep on public pages
 - [x] Vault inactivity lock works (15 min default + user notice)
 - [x] Export/import documented as unavailable
 - [x] Account deletion cascade verified (FK + integration test)
@@ -784,7 +786,7 @@ Phase 0 ──► Phase 1 (crypto + vault setup)
 | Passkey vault unlock MVP | 4 |
 | Account deletion deletes vault | 5 (verify) |
 | No export/import MVP | 5 (document) |
-| LTG Vault branding | 5 |
+| SelahKeep branding | 5 |
 
 ---
 

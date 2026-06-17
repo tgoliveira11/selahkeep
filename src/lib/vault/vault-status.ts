@@ -1,4 +1,5 @@
 import type { VaultStatus } from "@/lib/api-client/vault";
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 /** Server-side vault configuration phase (does not include client unlock state). */
 export type VaultSetupPhase = "not_configured" | "setup_incomplete" | "complete";
@@ -120,7 +121,7 @@ export function getVaultStatusCopy(
           actionHref: "/vault/setup",
           promptTitle: "Set up your vault first",
           promptDescription:
-            "Your account is ready, but you have not created your private vault yet. LTG Vault protects your notes separately from your account login. Create your vault, choose a vault password, and save your recovery phrase before writing private notes.",
+            `Your account is ready, but you have not created your private vault yet. ${PRODUCT_NAME} protects your notes separately from your account login. Create your vault, choose a vault password, and save your recovery phrase before writing private notes.`,
           promptCta: "Set up vault",
           secondaryCtaLabel: "Go to notes",
           secondaryCtaHref: "/notes",

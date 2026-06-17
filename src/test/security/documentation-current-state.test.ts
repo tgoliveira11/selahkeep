@@ -127,14 +127,14 @@ describe("documentation current state", () => {
     expect(violations).toEqual([]);
   });
 
-  it("metadata title is LTG Vault", async () => {
+  it("metadata title is SelahKeep", async () => {
     const layout = await import("@/app/layout");
-    expect(String(layout.metadata.title)).toMatch(/LTG Vault/i);
+    expect(String(layout.metadata.title)).toMatch(/SelahKeep/i);
   });
 
-  it("favicon is purple LTG monogram without green envelope palette", () => {
+  it("favicon is purple SK monogram without green envelope palette", () => {
     const icon = readFileSync(join(ROOT, "src/app/icon.svg"), "utf8");
-    expect(icon).toContain("LTG");
+    expect(icon).toContain("SK");
     expect(icon).toContain("#5b3a8c");
     expect(icon).not.toContain("#4a6741");
   });

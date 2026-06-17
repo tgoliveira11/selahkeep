@@ -1,19 +1,19 @@
-# Threat Model — LTG Vault MVP
+# Threat Model — SelahKeep MVP
 
-> **Filename note:** `THREAT_MODEL_Private_Letters_Vault.md` is retained for link stability. Content below describes **LTG Vault** (notes + vault domain). Historical “private letters” wording refers to encrypted note content types (letters, prayers, reflections), not an active `letters` implementation.
+> **Filename note:** `THREAT_MODEL_Private_Letters_Vault.md` is retained for link stability. Content below describes **SelahKeep** (notes + vault domain). Historical “private letters” wording refers to encrypted note content types (prayers, reflections), not an active `letters` implementation.
 
 ## Document Status
 
 | Field | Value |
 |-------|-------|
 | **Status** | Draft — P1 beta gate |
-| **Scope** | LTG Vault MVP (web) — encrypted notes in a private vault |
+| **Scope** | SelahKeep MVP (web) — encrypted notes in a private vault |
 | **Related docs** | [TDR](./TDR_LTG_Vault_MVP.md), [ADR-005](./ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md), [ADR-006](./ADR-006_LTG_Vault_Passkey_PRF_Unlock.md), [SECURITY.md](../SECURITY.md) |
 | **Audience** | Engineering, security review, product, legal/privacy |
 
 ## Security Architecture Summary
 
-LTG Vault uses **client-side encryption**. Note title, body, categories, and tags are encrypted in the browser before any API request. The server stores only structured encrypted payloads (AES-GCM with AAD binding per ADR-005). The User Vault Key and Note Keys never leave the client in plaintext.
+SelahKeep uses **client-side encryption**. Note title, body, categories, and tags are encrypted in the browser before any API request. The server stores only structured encrypted payloads (AES-GCM with AAD binding per ADR-005). The User Vault Key and Note Keys never leave the client in plaintext.
 
 **Core privacy promise:** the operations team does not hold keys required to read private note content from database records alone.
 
@@ -236,7 +236,7 @@ User loses their recovery code and all other recovery methods (trusted devices, 
 ### 7. Phishing
 
 **Description**  
-Attacker tricks user into entering credentials, recovery code, or unlocking vault on a fake site mimicking Letters to God.
+Attacker tricks user into entering credentials, recovery code, or unlocking vault on a fake site mimicking SelahKeep.
 
 **Impact**  
 Account takeover, recovery code capture, or plaintext exfiltration if user decrypts on attacker-controlled page.
@@ -350,7 +350,7 @@ Script runs with page privileges; can harvest plaintext during entry/decryption 
 ### 11. Compromised OAuth account
 
 **Description**  
-Attacker compromises user's Google, Apple, or Microsoft account and uses OAuth login to access Letters to God.
+Attacker compromises user's Google, Apple, or Microsoft account and uses OAuth login to access SelahKeep.
 
 **Impact**  
 Full account access at application layer. Attacker still needs vault unlock on a new device unless victim's browser session/device is also compromised.

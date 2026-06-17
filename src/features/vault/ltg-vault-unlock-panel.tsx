@@ -18,6 +18,7 @@ import {
 } from "@/lib/passkey/messages";
 import { buildPasskeyLoginOutcomeKey } from "@/features/passkey/passkey-login-with-vault-unlock";
 import { APP_PASSKEY_SLUG } from "@/lib/passkey/app-slug";
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 export type LtgUnlockMode = "password" | "recovery_phrase" | "legacy";
 
@@ -76,7 +77,7 @@ export function LtgVaultUnlockPanel({
   return (
     <Card className="space-y-5 p-6">
       <div className="space-y-2">
-        <h2 className="text-lg font-semibold text-[var(--foreground)]">Unlock LTG Vault</h2>
+        <h2 className="text-lg font-semibold text-[var(--foreground)]">Unlock {PRODUCT_NAME}</h2>
         <p className="text-sm leading-relaxed text-[var(--muted)]">
           Your account is signed in, but your vault stays locked until you enter your vault password
           or recovery phrase.

@@ -10,6 +10,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import type { VaultSetupStep } from "./use-ltg-vault-setup";
 import type { RecoveryPhraseLength } from "@/lib/crypto-client/recovery-phrase";
+import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 interface VaultSetupWizardProps {
   step: VaultSetupStep;
@@ -51,7 +52,7 @@ export function VaultSetupWizard({
       {step === "intro" && (
         <>
           <div className="space-y-2">
-            <h2 className="text-lg font-semibold text-[var(--foreground)]">Set up LTG Vault</h2>
+            <h2 className="text-lg font-semibold text-[var(--foreground)]">Set up {PRODUCT_NAME}</h2>
             <p className="text-sm leading-relaxed text-[var(--muted)]">
               Your account signs you in. Your <strong>vault password</strong> opens your private
               notes. Your <strong>recovery phrase</strong> restores access if you forget the vault

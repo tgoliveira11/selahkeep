@@ -1,6 +1,8 @@
-# LTG Vault — documentation index
+# SelahKeep — documentation index
 
-**Product:** LTG Vault — a private encrypted space for letters, prayers, reflections, and notes.
+> Former working name: LTG Vault. Current product name: SelahKeep.
+
+**Product:** SelahKeep — a private encrypted space for prayers, reflections, and notes.
 
 Phases 0–5 of the MVP are **complete**. The active implementation domain is **notes + vault** (not letters).
 
@@ -13,7 +15,7 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 | [`ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md`](./ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md) | Vault crypto, note keys, recovery phrase |
 | [`ADR-006_LTG_Vault_Passkey_PRF_Unlock.md`](./ADR-006_LTG_Vault_Passkey_PRF_Unlock.md) | Passkey PRF vault unlock |
 | [`LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md`](./LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md) | MVP acceptance traceability |
-| [`UI_UX_DIRECTION.md`](./UI_UX_DIRECTION.md) | Purple LTG Vault UI direction |
+| [`UI_UX_DIRECTION.md`](./UI_UX_DIRECTION.md) | Purple SelahKeep UI direction |
 | [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md) | Logged-in nav structure |
 | [`PRIVATE_USABILITY_TEST_SCRIPT.md`](./PRIVATE_USABILITY_TEST_SCRIPT.md) | Private usability test script |
 | [`PASSKEY_LOGIN_VAULT_UNLOCK.md`](./PASSKEY_LOGIN_VAULT_UNLOCK.md) | Passkey login vs vault unlock integration |
@@ -28,24 +30,11 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 
 | Document | Purpose |
 |----------|---------|
-| [`../README.md`](../README.md) | Setup, commands, quick start |
-| [`../ARCHITECTURE.md`](../ARCHITECTURE.md) | Layers, routes, data flow |
-| [`../SECURITY.md`](../SECURITY.md) | Security model |
-| [`../AGENTS.md`](../AGENTS.md) | Agent rules |
+| [`../README.md`](../README.md) | Quick start, stack, commands |
+| [`../ARCHITECTURE.md`](../ARCHITECTURE.md) | Layers, data flow |
+| [`../SECURITY.md`](../SECURITY.md) | Security rules and crypto summary |
+| [`../AGENTS.md`](../AGENTS.md) | Agent workflow rules |
 
-## Supporting (active, specialized)
+## Historical / archived
 
-| Document | Purpose |
-|----------|---------|
-| [`THREAT_MODEL_Private_Letters_Vault.md`](./THREAT_MODEL_Private_Letters_Vault.md) | Threat model (LTG Vault; filename retained for links) |
-| [`LGPD_BETA_GATES.md`](./LGPD_BETA_GATES.md) | Pre-beta compliance gates |
-| [`BACKUP_RESTORE_POLICY.md`](./BACKUP_RESTORE_POLICY.md) | Backup/restore policy |
-| [`UTILITY_EXTRACTION_INVENTORY.md`](./UTILITY_EXTRACTION_INVENTORY.md) | Utility extraction inventory |
-
-## Archive
-
-Historical and superseded documents live under [`archive/`](./archive/). They are **not** active source-of-truth.
-
-- [`archive/TDR_Private_Letters_Vault_MVP_Revised.md`](./archive/TDR_Private_Letters_Vault_MVP_Revised.md) — pre–LTG Vault TDR
-- [`archive/adr/`](./archive/adr/) — ADR-001 through ADR-004 (superseded by ADR-005/006 + TDR)
-- [`archive/migrations/`](./archive/migrations/) — completed secure-auth migration records
+See [`archive/`](./archive/) for superseded ADRs, migration reports, and pre–SelahKeep documentation. Archived docs retain historical product names.

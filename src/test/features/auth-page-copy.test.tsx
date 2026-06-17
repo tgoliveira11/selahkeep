@@ -65,7 +65,7 @@ describe("auth page copy", () => {
 
   it("register page uses updated product description copy", () => {
     render(withSecureAuthUi(<RegisterPage />));
-    expect(screen.getByText("Start writing private letters in a protected space.")).toBeTruthy();
+    expect(screen.getByText("Start writing private notes in a protected space.")).toBeTruthy();
   });
 
   it("login page inside site shell still renders header and footer attribution", () => {
