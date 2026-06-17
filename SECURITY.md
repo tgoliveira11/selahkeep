@@ -25,7 +25,9 @@
 - Structured payload: `version`, `alg`, `iv`, `ciphertext`, `aad`
 - **AAD binding (server + client):** `aad.userId` must match session user; `aad.resourceId` must match persisted letter/vault id; `aad.field` must match the encrypted field. Reject mismatches before storage.
 - **Letter IDs:** client generates UUID; server persists the same id (no server reassignment).
-- Recovery KDF: Argon2id preferred; PBKDF2-SHA-256 fallback (600k iterations) with versioned `kdf-v1` metadata
+- **LTG vault password KDF (new setups):** Argon2id only via `hash-wasm` — no PBKDF2 fallback (`src/lib/crypto-client/vault-kdf.ts`, ADR-005)
+- **LTG recovery phrase (new setups):** BIP39 English, 12 or 24 words (`src/lib/crypto-client/recovery-phrase.ts`)
+- **Legacy recovery code KDF:** Argon2id preferred; PBKDF2-SHA-256 fallback (600k iterations) with versioned `kdf-v1` metadata — legacy `recovery_code` envelopes only
 - Recovery codes: ≥128 bits entropy (project-specific wordlist, not BIP39; currently 17 words from 252 unique words ≈ 135.6 bits); uniform word selection + rejection sampling; shown only at generation/regeneration; never stored plaintext
 
 ## Vault Unlocking (ADR-002)

@@ -7,9 +7,10 @@ import { PageLayout } from "@/components/layout/page-layout";
 import { LoadingState } from "@/components/ui/loading-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { useVault } from "@/features/vault/use-vault";
-import { vaultApi } from "@/lib/api-client/vault";
+import { vaultApi, type VaultStatus } from "@/lib/api-client/vault";
 import { isVaultUnlocked } from "@/lib/crypto-client/vault";
-import { VaultUnlockPanel, type VaultUnlockPanelMode } from "@/features/vault/vault-unlock-panel";
+import { LtgVaultUnlockPanel } from "@/features/vault/ltg-vault-unlock-panel";
+import { VaultUnlockPanel } from "@/features/vault/vault-unlock-panel";
 
 export default function VaultUnlockPage() {
   const { status } = useSession();
@@ -22,10 +23,12 @@ export default function VaultUnlockPage() {
     unlockFromDevice,
     unlockFromPasskey,
     unlockFromRecoveryCode,
+    unlockFromVaultPassword,
+    unlockFromRecoveryPhrase,
   } = useVault();
-  const [vaultStatus, setVaultStatus] = useState<Awaited<ReturnType<typeof vaultApi.status>> | null>(null);
-  const [recoveryCode, setRecoveryCode] = useState("");
-  const [mode, setMode] = useState<VaultUnlockPanelMode | "loading">("loading");
+  const [vaultStatus, setVaultStatus] = useState<VaultStatus | null>(null);
+  const [legacyRecoveryCode, setLegacyRecoveryCode] = useState("");
+  const [mode, setMode] = useState<"loading" | "ltg" | "legacy-init" | "legacy-unlock">("loading");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -43,32 +46,21 @@ export default function VaultUnlockPage() {
       .status()
       .then((s) => {
         setVaultStatus(s);
-        setMode(!s.initialized ? "init" : "unlock");
+        if (!s.initialized) {
+          router.push("/vault/setup");
+          return;
+        }
+        if (s.ltgSetupComplete) {
+          setMode("ltg");
+        } else {
+          setMode(s.vaultVersion === "vault-v1" ? "legacy-unlock" : "legacy-init");
+        }
       })
-      .catch(() => setMode("unlock"));
+      .catch(() => setMode("legacy-unlock"));
   }, [status, router]);
 
-  async function handleInit() {
+  async function handleLegacyInit() {
     await initializeVault();
-    router.push("/letters");
-  }
-
-  async function handleUnlock() {
-    try {
-      await unlockFromDevice();
-      router.push("/letters");
-    } catch {
-      setMode("recovery");
-    }
-  }
-
-  async function handleRecovery() {
-    await unlockFromRecoveryCode(recoveryCode);
-    router.push("/letters");
-  }
-
-  async function handlePasskeyUnlock() {
-    await unlockFromPasskey();
     router.push("/letters");
   }
 
@@ -83,24 +75,64 @@ export default function VaultUnlockPage() {
   return (
     <PageLayout width="narrow">
       <PageHeader
-        title="Your private vault"
-        description="Your letters stay protected on your device. Our team cannot read or unlock them for you."
+        title="LTG Vault"
+        description="Your private notes stay encrypted. Only you can unlock them."
       />
-      <VaultUnlockPanel
-        mode={mode}
-        loading={loading}
-        error={error}
-        offlineNotice={offlineNotice}
-        vaultStatus={vaultStatus}
-        recoveryCode={recoveryCode}
-        onRecoveryCodeChange={setRecoveryCode}
-        onInit={handleInit}
-        onUnlockDevice={handleUnlock}
-        onUnlockPasskey={handlePasskeyUnlock}
-        onUnlockRecovery={handleRecovery}
-        onShowRecovery={() => setMode("recovery")}
-        onBackFromRecovery={() => setMode("unlock")}
-      />
+      {mode === "ltg" && (
+        <LtgVaultUnlockPanel
+          loading={loading}
+          error={error}
+          vaultStatus={vaultStatus}
+          onUnlockPassword={async (password) => {
+            await unlockFromVaultPassword(password);
+            router.push("/letters");
+          }}
+          onUnlockRecoveryPhrase={async (phrase) => {
+            await unlockFromRecoveryPhrase(phrase);
+            router.push("/letters");
+          }}
+          onUnlockLegacyDevice={async () => {
+            await unlockFromDevice();
+            router.push("/letters");
+          }}
+          onUnlockLegacyPasskey={async () => {
+            await unlockFromPasskey();
+            router.push("/letters");
+          }}
+          onUnlockLegacyRecoveryCode={async (code) => {
+            await unlockFromRecoveryCode(code);
+            router.push("/letters");
+          }}
+        />
+      )}
+      {(mode === "legacy-init" || mode === "legacy-unlock") && (
+        <VaultUnlockPanel
+          mode={mode === "legacy-init" ? "init" : "unlock"}
+          loading={loading}
+          error={error}
+          offlineNotice={offlineNotice}
+          vaultStatus={vaultStatus}
+          recoveryCode={legacyRecoveryCode}
+          onRecoveryCodeChange={setLegacyRecoveryCode}
+          onInit={handleLegacyInit}
+          onUnlockDevice={async () => {
+            await unlockFromDevice();
+            router.push("/letters");
+          }}
+          onUnlockPasskey={async () => {
+            await unlockFromPasskey();
+            router.push("/letters");
+          }}
+          onUnlockRecovery={async () => {
+            await unlockFromRecoveryCode(legacyRecoveryCode);
+            router.push("/letters");
+          }}
+          onShowRecovery={() => setMode("legacy-unlock")}
+          onBackFromRecovery={() => setMode("legacy-unlock")}
+          heading="Unlock your vault"
+          description="Legacy vault setup — trusted device or recovery code."
+        />
+      )}
     </PageLayout>
   );
 }

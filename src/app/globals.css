@@ -2,19 +2,19 @@
 @import "@tgoliveira/secure-auth/styles.css";
 
 :root {
-  --background: #faf8f5;
+  --background: #faf8fc;
   --foreground: #1a1a1a;
-  --primary: #4a6741;
-  --primary-hover: #3d5636;
-  --accent: #c4a574;
-  --accent-muted: #e8dcc8;
+  --primary: #5b3a8c;
+  --primary-hover: #4a2f73;
+  --accent: #8b6bb8;
+  --accent-muted: #ebe4f4;
   --muted: #6b7280;
-  --border: #e5e0d8;
+  --border: #e8e2ef;
   --card: #ffffff;
-  --card-muted: #f5f2ed;
+  --card-muted: #f6f3fa;
   --danger: #b91c1c;
   --danger-muted: #fef2f2;
-  --success: #3d5636;
+  --success: #2d6a4f;
   --success-muted: #ecfdf3;
   --warning: #92400e;
   --warning-muted: #fffbeb;
@@ -22,7 +22,7 @@
   --info-muted: #eff6ff;
   --radius: 0.75rem;
   --shadow-sm: 0 1px 2px rgb(26 26 26 / 0.06);
-  --ring: rgb(74 103 65 / 0.35);
+  --ring: rgb(91 58 140 / 0.35);
 }
 
 body {

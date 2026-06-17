@@ -34,6 +34,8 @@ export const userVaults = pgTable("user_vaults", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   vaultVersion: text("vault_version").notNull(),
+  encryptedVaultSettings: jsonb("encrypted_vault_settings"),
+  encryptedVaultIndex: jsonb("encrypted_vault_index"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

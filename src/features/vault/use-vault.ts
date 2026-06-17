@@ -20,6 +20,11 @@ import {
 import { vaultApi } from "@/lib/api-client/vault";
 import { storeLocalVaultEnvelope } from "@/lib/crypto-client/device-storage";
 import { unlockVaultWithPasskey } from "@/features/passkey/unlock-with-passkey";
+import {
+  unwrapVaultKeyFromPassword,
+  unwrapVaultKeyFromRecoveryPhrase,
+} from "@/lib/crypto-client/vault-envelope";
+import type { KdfMetadata } from "@/lib/validation/encrypted-payload";
 import { getDeviceDisplayInfo } from "@/lib/device-display-info";
 import {
   getTrustedDeviceUnlockErrorMessage,
@@ -146,6 +151,60 @@ export function useVault() {
     [session]
   );
 
+  const unlockFromVaultPassword = useCallback(
+    async (vaultPassword: string) => {
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      setLoading(true);
+      setError(null);
+      try {
+        const { encryptedVaultKey, kdfMetadata } = await vaultApi.unlockEnvelope("password");
+        if (!encryptedVaultKey || !kdfMetadata) {
+          throw new Error("Vault password unlock is not configured");
+        }
+        await unwrapVaultKeyFromPassword(
+          vaultPassword,
+          encryptedVaultKey,
+          kdfMetadata as KdfMetadata,
+          { explicit: true }
+        );
+        touchVaultSession();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Vault password unlock failed");
+        throw e;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [session]
+  );
+
+  const unlockFromRecoveryPhrase = useCallback(
+    async (recoveryPhrase: string) => {
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      setLoading(true);
+      setError(null);
+      try {
+        const { encryptedVaultKey, kdfMetadata } = await vaultApi.unlockEnvelope("recovery_phrase");
+        if (!encryptedVaultKey || !kdfMetadata) {
+          throw new Error("Recovery phrase unlock is not configured");
+        }
+        await unwrapVaultKeyFromRecoveryPhrase(
+          recoveryPhrase,
+          encryptedVaultKey,
+          kdfMetadata as KdfMetadata,
+          { explicit: true }
+        );
+        touchVaultSession();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Recovery phrase unlock failed");
+        throw e;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [session]
+  );
+
   return {
     loading,
     error,
@@ -155,6 +214,8 @@ export function useVault() {
     unlockFromDevice,
     unlockFromPasskey,
     unlockFromRecoveryCode,
+    unlockFromVaultPassword,
+    unlockFromRecoveryPhrase,
     lockVault,
   };
 }

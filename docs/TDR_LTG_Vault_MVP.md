@@ -63,6 +63,8 @@ The MVP should allow users to:
 
 ### 3.2 Product Identity
 
+**Primary brand color:** purple (calm, elegant — see `docs/UI_UX_DIRECTION.md`).
+
 The product should feel:
 
 - Calm

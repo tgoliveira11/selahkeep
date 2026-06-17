@@ -1,6 +1,6 @@
 # Letters to God — Private Letters Vault MVP
 
-> **Product direction:** The app is evolving into **LTG Vault** — a private encrypted space for letters, prayers, reflections, and notes. See [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) for the authoritative MVP direction and [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md) for the phased engineering plan.
+> **Product direction:** The app is evolving into **LTG Vault** — a private encrypted space for letters, prayers, reflections, and notes. Primary UI accent: **purple** (`docs/UI_UX_DIRECTION.md`). Phase 1 vault setup: `/vault/setup` (vault password + BIP39 recovery phrase). See [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) and [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md).
 
 Web-first responsive MVP for private encrypted spiritual letters.
 

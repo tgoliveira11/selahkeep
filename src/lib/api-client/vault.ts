@@ -8,10 +8,25 @@ export interface VaultStatus {
   methods?: string[];
   trustedDeviceCount?: number;
   hasRecoveryCode?: boolean;
+  hasRecoveryPhrase?: boolean;
+  hasVaultPassword?: boolean;
   hasPasskey?: boolean;
+  ltgSetupComplete?: boolean;
 }
 
 export const vaultApi = {
+  setup: (payload: {
+    vaultVersion: "vault-v2";
+    encryptedVaultSettings: EncryptedPayload;
+    encryptedVaultIndex: EncryptedPayload;
+    envelopes: Array<{
+      method: "password" | "recovery_phrase";
+      encryptedVaultKey: EncryptedPayload;
+      kdfMetadata: KdfMetadata;
+      publicMetadata?: Record<string, unknown>;
+    }>;
+  }) => apiClient.post<{ id: string }>("/api/vault/setup", payload),
+
   init: (payload: {
     vaultVersion: string;
     envelopes: Array<{
@@ -41,6 +56,12 @@ export const vaultApi = {
       encryptedVaultKey: EncryptedPayload;
       kdfMetadata: KdfMetadata;
     }>("/api/vault/unlock-with-recovery-code", {}),
+
+  unlockEnvelope: (method: "password" | "recovery_phrase" | "recovery_code") =>
+    apiClient.post<{
+      encryptedVaultKey: EncryptedPayload;
+      kdfMetadata: KdfMetadata;
+    }>("/api/vault/unlock-envelope", { method }),
 
   deviceEnvelopes: () =>
     apiClient.get<

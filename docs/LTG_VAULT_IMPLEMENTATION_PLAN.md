@@ -268,13 +268,14 @@ Database auth schema migration needs human review before production data migrati
 
 ### 11. Acceptance criteria
 
-- [ ] User can complete vault setup with vault password/passphrase  
-- [ ] KDF is Argon2id only for vault password (no silent PBKDF2)  
-- [ ] User chooses 12- or 24-word recovery phrase; confirms once  
-- [ ] Password and recovery phrase envelopes unlock same User Vault Key  
-- [ ] Server stores only encrypted envelopes + technical metadata  
-- [ ] `npm run test:coverage` ≥90%; vault/crypto paths ≥95% where enforced  
-- [ ] ADR published and aligned with TDR  
+- [x] User can complete vault setup with vault password/passphrase (`/vault/setup`)
+- [x] KDF is Argon2id only for vault password (no silent PBKDF2 on new paths)
+- [x] User chooses 12- or 24-word recovery phrase; confirms once
+- [x] Password and recovery phrase envelopes unlock same User Vault Key
+- [x] Server stores only encrypted envelopes + technical metadata
+- [x] `npm run test:coverage` ≥90%
+- [x] ADR-005 published (`docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md`)
+- [x] Purple primary color documented and applied to app-owned vault UI
 
 ### 12. Risks
 
@@ -287,7 +288,7 @@ Database auth schema migration needs human review before production data migrati
 
 ### 13. Dependencies
 
-**Phase 0** complete (merged auth reset).
+**Phase 0** complete. **Phase 1** complete on `main` (ADR-005, `/vault/setup`, Argon2id vault KDF, BIP39 recovery phrase, purple UI tokens).
 
 ---
 

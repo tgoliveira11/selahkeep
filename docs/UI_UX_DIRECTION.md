@@ -1,68 +1,99 @@
-# UI / UX Direction — Letters to God
+# LTG Vault — UI/UX Direction
 
-Last updated: 2026-06-16
+| Field | Value |
+|-------|--------|
+| **Product name** | LTG Vault |
+| **Subtitle** | A private encrypted space for letters, prayers, reflections, and notes |
+| **Primary color** | **Purple** (resolved) |
+| **Status** | Phase 1 foundation |
 
-This document defines the visual and content direction for public and product-facing pages. Implementation lives in `src/app/globals.css`, `src/components/layout/`, `src/components/marketing/`, and route-group layouts.
+---
 
-## Product tone
+## 1. Visual tone
 
-Calm, private, hopeful, spiritual but not heavy-handed, simple, trustworthy, mobile-first, warm — not corporate, not overly technical.
+LTG Vault should feel:
 
-**Positioning:** Letters to God is a quiet private space where people can write personal letters, keep them safely, revisit them over time, and mark when they feel a prayer or letter has been answered.
+- **Calm** — no urgency, no clutter
+- **Private** — trust and discretion over flash
+- **Warm** — soft neutrals, human copy
+- **Reflective** — space for prayer, letters, journaling
+- **Spiritual without being heavy-handed** — gentle, not preachy
+- **Mobile-first** — touch targets, readable type, single-column flows
 
-## Visual language
+Avoid crypto jargon in user-facing copy. Prefer “vault password,” “recovery phrase,” and “private notes.”
 
-| Element | Direction |
-|---------|-----------|
-| Background | Warm neutral (`--background: #faf8f5`) |
-| Primary | Soft green (`--primary: #4a6741`) for links, buttons, brand |
-| Accent | Warm gold (`--accent: #c4a574`) for subtle emphasis |
-| Cards | White or muted (`--card`, `--card-muted`), soft border, light shadow |
-| Spacing | Generous vertical rhythm between sections; comfortable padding on mobile |
-| Typography | System UI stack; clear heading hierarchy (h1 → h2); relaxed line height |
-| Noise | Minimal decoration; no busy gradients or dense dashboards on public pages |
-| CTAs | Clear primary (“Create account”) + secondary (“Sign in”) pairs |
+---
 
-## Layout shell
+## 2. Primary color: purple
 
-All public, auth, and vault routes use `SiteShell`:
+**Decision:** LTG Vault primary brand color is **purple**.
 
-```text
-Header (Nav) → Main (PageLayout or auth `<main>`) → Footer (SiteFooter)
-```
+Use a **calm, elegant** palette — not neon or saturated violet.
 
-- **Max width:** Marketing content uses `PageLayout` `marketing` width (`max-w-4xl`); auth forms use `narrow` (`max-w-md`).
-- **Footer:** Must retain “Powered by @tgoliveira/secure-auth” linking to the [next-secure-auth-starter](https://github.com/tgoliveira11/next-secure-auth-starter) repo with `target="_blank"` and `rel="noopener noreferrer"`.
+### Token guidance (`src/app/globals.css`)
 
-## Public home page (`/`)
+| Token | Role | Example |
+|-------|------|---------|
+| `--primary` | Primary CTA, links, focus ring | Deep royal purple `#5b3a8c` |
+| `--primary-hover` | Hover state | `#4a2f73` |
+| `--background` | Page background | Warm neutral with soft lavender tint `#faf8fc` |
+| `--accent` | Secondary emphasis | Muted violet `#8b6bb8` |
+| `--accent-muted` | Chips, subtle fills | Soft lilac `#ebe4f4` |
+| `--card` / `--card-muted` | Surfaces | White / warm gray-lavender |
 
-Required sections (see `src/lib/marketing/home-copy.ts`):
+**Semantic colors stay semantic** — danger (red), success (green), warning (amber), info (blue). Do not use purple for error/success states.
 
-1. **Hero** — product title, subtitle, reassurance, CTAs
-2. **What you can do** — four feature cards (write, keep, mark answered, recover)
-3. **Privacy** — plain language; no crypto jargon (no PRF, envelope encryption, vault key, IndexedDB)
-4. **Community** — clearly marked as future / not live
-5. **Account** — why sign-up matters (sessions, recovery; password ≠ letter recovery)
-6. **Final CTA** — “Start your private letter” with account CTAs
+**Accessibility:** Maintain WCAG AA contrast for body text and primary buttons on card backgrounds.
 
-## Auth pages
+---
 
-Inner UI is owned by `@tgoliveira/secure-auth`. Product copy is customized via:
+## 3. Auth package integration
 
-- `src/lib/auth/auth-page-messages.ts` → `SecureAuthUIProvider` `messages`
-- Optional page props (`title`, `description`, `afterLoginPath`) on thin wrappers in `src/app/(auth)/`
+Account auth UI comes from `@tgoliveira/secure-auth/react`. Style integration points:
 
-**Do not** show letter-editor privacy copy (`PrivacyNotice`) on auth pages.
+- `SecureAuthProviders` + `secureAuthUiPublicConfig` in root layout
+- App-owned wrappers: `(auth)/layout.tsx`, copy overrides via env config
+- **Do not** fork or patch package internals
+- App purple tokens apply to app shell (nav, vault pages, marketing); package auth pages inherit base layout background where wrapped
 
-## Accessibility
+---
 
-- Semantic landmarks: `<header>`, `<main id="main-content">`, `<footer>`
-- Skip link in root layout targets `#main-content`
-- Focus-visible outlines use `--ring` / `--primary`
-- Sufficient contrast on body text (`--foreground` on `--background`) and muted secondary text
+## 4. Vault flows (Phase 1)
 
-## Related docs
+### `/vault/setup`
 
-- [`LAYOUT_NAVIGATION_AUDIT.md`](./LAYOUT_NAVIGATION_AUDIT.md) — route classification and shell coverage
-- [`UI_UX_AUDIT.md`](./UI_UX_AUDIT.md) — screen inventory and historical issues
-- [`UI_UX_IMPLEMENTATION_PLAN.md`](./UI_UX_IMPLEMENTATION_PLAN.md) — component checklists
+- Purple primary CTA on each step
+- Step 1: Explain account sign-in vs vault password vs recovery phrase
+- Step 2: Vault password + confirmation
+- Step 3: Choose 12 or 24 recovery words
+- Step 4: Show phrase once (copy affordance)
+- Step 5: Confirm phrase
+- Privacy notice: secrets never leave the device
+
+### `/vault/unlock`
+
+- Purple primary unlock button
+- Tabs or sections: vault password | recovery phrase | legacy device/passkey where applicable
+- Calm error messages (“That password didn’t unlock your vault”)
+- Legacy `vault-v1` users: existing trusted-device / recovery code paths preserved
+
+### Navigation
+
+- Footer attribution unchanged
+- Vault locked/unlocked badge after sign out (existing nav)
+
+---
+
+## 5. Phase scope
+
+**In Phase 1:** tokens, vault setup/unlock, light marketing copy toward “vault” language.
+
+**Later phases:** full LTG rebrand, notes editor, categories/tags UI, passkey vault settings polish.
+
+---
+
+## 6. References
+
+- `docs/TDR_LTG_Vault_MVP.md` §3 Product Identity
+- `src/app/globals.css` — design tokens
+- `src/components/ui/*` — primitives using CSS variables

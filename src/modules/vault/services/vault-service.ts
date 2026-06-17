@@ -2,11 +2,57 @@ import { runInTransaction } from "@/lib/db/transaction";
 import { vaultRepository } from "@/server/repositories/vault-repository";
 import { trustedDeviceRepository } from "@/server/repositories/trusted-device-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
-import type { VaultInitInput, RecoveryCodeInput } from "@/lib/validation/vault";
-import { assertVaultKeyAad } from "@/server/policies/aad-validation";
+import type { VaultInitInput, RecoveryCodeInput, VaultSetupInput } from "@/lib/validation/vault";
+import {
+  assertVaultKeyAad,
+  assertVaultSettingsAad,
+  assertVaultIndexAad,
+} from "@/server/policies/aad-validation";
 import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 
 export const vaultService = {
+  async setup(userId: string, input: VaultSetupInput) {
+    const existing = await vaultRepository.findVaultByUserId(userId);
+    if (existing) {
+      throw new ConflictError("Vault already initialized");
+    }
+
+    assertVaultSettingsAad(userId, input.encryptedVaultSettings);
+    assertVaultIndexAad(userId, input.encryptedVaultIndex);
+
+    const methods = new Set(input.envelopes.map((e) => e.method));
+    if (!methods.has("password") || !methods.has("recovery_phrase")) {
+      throw new Error("LTG vault setup requires password and recovery_phrase envelopes");
+    }
+
+    return runInTransaction(async (tx) => {
+      const vault = await vaultRepository.createVault(userId, input.vaultVersion, tx, {
+        encryptedVaultSettings: input.encryptedVaultSettings,
+        encryptedVaultIndex: input.encryptedVaultIndex,
+      });
+
+      for (const envelope of input.envelopes) {
+        assertVaultKeyAad(userId, envelope.encryptedVaultKey);
+        if (envelope.kdfMetadata.kdf !== "argon2id") {
+          throw new Error("LTG vault envelopes require Argon2id KDF metadata");
+        }
+        await vaultRepository.createEnvelope(
+          {
+            userId,
+            method: envelope.method,
+            encryptedVaultKey: envelope.encryptedVaultKey,
+            kdfMetadata: envelope.kdfMetadata,
+            publicMetadata: envelope.publicMetadata ?? null,
+          },
+          tx
+        );
+      }
+
+      await auditRepository.record("vault_initialized", userId, { vaultVersion: "vault-v2" }, tx);
+      return vault;
+    });
+  },
+
   async init(userId: string, input: VaultInitInput) {
     const existing = await vaultRepository.findVaultByUserId(userId);
     if (existing) {
@@ -78,13 +124,18 @@ export const vaultService = {
     const activeDevices = await trustedDeviceRepository.findActiveByUserId(userId);
 
     let recoveryState: "Protected" | "Basic" | "At Risk";
-    const durableMethods = ["recovery_code", "passkey_authorized_device"].filter((m) =>
-      methods.has(m)
+    const durableMethods = ["recovery_code", "recovery_phrase", "passkey_authorized_device"].filter(
+      (m) => methods.has(m)
     );
 
-    if (durableMethods.length >= 1 && (methods.size >= 2 || activeDevices.length >= 2)) {
+    const ltgSetupComplete =
+      vault.vaultVersion === "vault-v2" &&
+      methods.has("password") &&
+      methods.has("recovery_phrase");
+
+    if (ltgSetupComplete || (durableMethods.length >= 1 && (methods.size >= 2 || activeDevices.length >= 2))) {
       recoveryState = "Protected";
-    } else if (activeDevices.length >= 1 || methods.has("trusted_device")) {
+    } else if (activeDevices.length >= 1 || methods.has("trusted_device") || methods.has("password")) {
       recoveryState = "Basic";
     } else {
       recoveryState = "At Risk";
@@ -97,7 +148,10 @@ export const vaultService = {
       methods: Array.from(methods),
       trustedDeviceCount: activeDevices.length,
       hasRecoveryCode: methods.has("recovery_code"),
+      hasRecoveryPhrase: methods.has("recovery_phrase"),
+      hasVaultPassword: methods.has("password"),
       hasPasskey: methods.has("passkey_authorized_device"),
+      ltgSetupComplete,
     };
   },
 
@@ -146,6 +200,34 @@ export const vaultService = {
         encryptedVaultKey: envelope.encryptedVaultKey,
         createdAt: envelope.createdAt,
       }));
+  },
+
+  async getUnlockEnvelope(userId: string, method: string, ip?: string) {
+    try {
+      await enforceRateLimit({
+        operation: "recovery.attempt",
+        userId,
+        ip,
+        endpoint: "/api/vault/unlock-envelope",
+      });
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        await auditRepository.record("failed_unlock_attempt", userId, { method });
+        throw error;
+      }
+      throw error;
+    }
+
+    const envelope = await vaultRepository.findActiveEnvelopeByMethod(userId, method);
+    if (!envelope) {
+      await auditRepository.record("failed_unlock_attempt", userId, { method });
+      throw new NotFoundError(`No ${method} envelope configured`);
+    }
+
+    return {
+      encryptedVaultKey: envelope.encryptedVaultKey,
+      kdfMetadata: envelope.kdfMetadata,
+    };
   },
 
   async unlockWithRecoveryCode(userId: string, ip?: string) {

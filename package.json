@@ -19,6 +19,7 @@
     "postinstall": "mkdir -p public/swagger-ui && cp node_modules/swagger-ui-dist/swagger-ui.css node_modules/swagger-ui-dist/swagger-ui-bundle.js public/swagger-ui/"
   },
   "dependencies": {
+    "@scure/bip39": "^1.6.0",
     "@simplewebauthn/browser": "^13.1.0",
     "@simplewebauthn/server": "^13.1.1",
     "@tgoliveira/secure-auth": "0.1.16-internal",

@@ -13,10 +13,23 @@ export const vaultRepository = {
     return vault ?? null;
   },
 
-  async createVault(userId: string, vaultVersion: string, client: DbClient = db) {
+  async createVault(
+    userId: string,
+    vaultVersion: string,
+    client: DbClient = db,
+    options?: {
+      encryptedVaultSettings?: EncryptedPayload | null;
+      encryptedVaultIndex?: EncryptedPayload | null;
+    }
+  ) {
     const [vault] = await client
       .insert(userVaults)
-      .values({ userId, vaultVersion })
+      .values({
+        userId,
+        vaultVersion,
+        encryptedVaultSettings: options?.encryptedVaultSettings ?? null,
+        encryptedVaultIndex: options?.encryptedVaultIndex ?? null,
+      })
       .returning();
     return vault;
   },

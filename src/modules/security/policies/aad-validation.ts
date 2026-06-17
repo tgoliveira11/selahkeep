@@ -50,3 +50,11 @@ export function assertLetterUpdateAad(
 export function assertVaultKeyAad(userId: string, payload: EncryptedPayload): void {
   assertPayloadAad(payload, { userId, resourceId: userId, field: "vault_key" });
 }
+
+export function assertVaultSettingsAad(userId: string, payload: EncryptedPayload): void {
+  assertPayloadAad(payload, { userId, resourceId: userId, field: "vault_settings" });
+}
+
+export function assertVaultIndexAad(userId: string, payload: EncryptedPayload): void {
+  assertPayloadAad(payload, { userId, resourceId: userId, field: "vault_index" });
+}

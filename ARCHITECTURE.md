@@ -75,7 +75,9 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - WebAuthn challenge indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
 
 - `POST/GET /api/letters`, `GET/PUT/DELETE /api/letters/:id`
+- `POST /api/vault/setup` — LTG vault-v2 setup (encrypted settings, index, password + recovery phrase envelopes)
 - `POST /api/vault/init`, `GET /api/vault/status`
+- `POST /api/vault/unlock-envelope` — fetch encrypted envelope for password / recovery phrase unlock
 - `GET/POST /api/trusted-devices`, `POST /api/trusted-devices/:id/remove`, `DELETE /api/trusted-devices/:id`
 - `POST /api/recovery-code`, `POST /api/vault/unlock-with-recovery-code`
 - `POST /api/passkeys/register`, `POST /api/passkeys/authenticate`, `DELETE /api/passkeys` — vault recovery passkey flows (authenticated)
@@ -123,7 +125,8 @@ Vault envelope methods: `trusted_device`, `passkey_authorized_device`, `recovery
 - **Design docs:** `docs/UI_UX_DIRECTION.md`, `docs/UI_UX_AUDIT.md`, `docs/UI_UX_IMPLEMENTATION_PLAN.md`
 - **Layout:** `SiteShell` (`Nav` + `SiteFooter`) on `(public)`, `(auth)`, and `(vault)` route groups; `PageLayout` for content width (including `marketing` width for the home page); responsive mobile menu in `Nav`. Auth pages use package UI inside the shell. See `docs/LAYOUT_NAVIGATION_AUDIT.md`.
 - **Public marketing:** Home page sections and copy in `src/lib/marketing/home-copy.ts`; shared CTAs in `src/components/marketing/public-cta-buttons.tsx`
-- **Vault unlock:** shared `VaultUnlockPanel` used by `/vault/unlock` and `VaultAccessGate`
+- **Vault setup:** `/vault/setup` — LTG vault password + BIP39 recovery phrase wizard (purple primary CTAs)
+- **Vault unlock:** shared `VaultUnlockPanel` / `LtgVaultUnlockPanel` used by `/vault/unlock` and `VaultAccessGate`
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + sage primary)
 - **Security UX:** no plaintext letters in URLs/titles; recovery code cleared after confirm; `ConfirmDialog` for destructive actions
 

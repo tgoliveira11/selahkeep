@@ -16,6 +16,7 @@ import type { DeviceVaultUnlockResult } from "./trusted-device-unlock-verificati
 import { verifiedOnlineTrustedDeviceVerification } from "./trusted-device-unlock-verification";
 
 export const VAULT_VERSION = "vault-v1";
+export const VAULT_VERSION_V2 = "vault-v2";
 
 let sessionVaultKey: CryptoKey | null = null;
 
@@ -42,6 +43,42 @@ export async function clearVaultClientState(userId: string): Promise<void> {
   resetVaultSessionLockState();
   const { clearLocalVaultData } = await import("./device-storage");
   await clearLocalVaultData(userId);
+}
+
+export type VaultSettingsPlaintext = {
+  setupVersion: 1;
+  recoveryPhraseLength: 12 | 24;
+};
+
+export type VaultIndexPlaintext = {
+  version: 1;
+  noteIds: string[];
+};
+
+/** Encrypt vault settings under the User Vault Key (client-only plaintext). */
+export async function createEncryptedVaultSettings(
+  vaultKey: CryptoKey,
+  userId: string,
+  settings: VaultSettingsPlaintext
+): Promise<import("@/lib/validation/encrypted-payload").EncryptedPayload> {
+  return encryptField(JSON.stringify(settings), vaultKey, {
+    userId,
+    resourceId: userId,
+    field: "vault_settings",
+  });
+}
+
+/** Empty encrypted vault index placeholder for Phase 2 notes. */
+export async function createEmptyEncryptedVaultIndex(
+  vaultKey: CryptoKey,
+  userId: string
+): Promise<import("@/lib/validation/encrypted-payload").EncryptedPayload> {
+  const index: VaultIndexPlaintext = { version: 1, noteIds: [] };
+  return encryptField(JSON.stringify(index), vaultKey, {
+    userId,
+    resourceId: userId,
+    field: "vault_index",
+  });
 }
 
 export async function generateUserVaultKey(): Promise<CryptoKey> {
