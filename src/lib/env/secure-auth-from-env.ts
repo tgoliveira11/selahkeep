@@ -94,6 +94,12 @@ function parseSecureAuthEnv(
   const microsoftTenantId =
     readEnvWithLegacy(env, "AUTH_MICROSOFT_TENANT_ID", "AUTH_AZURE_AD_TENANT_ID") ??
     "common";
+  const githubClientId = readEnvWithLegacy(env, "AUTH_GITHUB_CLIENT_ID", "GITHUB_CLIENT_ID");
+  const githubClientSecret = readEnvWithLegacy(
+    env,
+    "AUTH_GITHUB_CLIENT_SECRET",
+    "GITHUB_CLIENT_SECRET"
+  );
 
   const passwordPolicy = {
     enforcement: readEnumEnv(
@@ -183,6 +189,8 @@ function parseSecureAuthEnv(
     microsoftClientId,
     microsoftClientSecret,
     microsoftTenantId,
+    githubClientId,
+    githubClientSecret,
     passwordPolicy,
     uiPaths,
   };
@@ -251,6 +259,8 @@ export function buildSecureAuthConfigFromEnv(
     microsoftClientId,
     microsoftClientSecret,
     microsoftTenantId,
+    githubClientId,
+    githubClientSecret,
     passwordPolicy,
     uiPaths,
   } = parsed;
@@ -320,6 +330,10 @@ export function buildSecureAuthConfigFromEnv(
               clientSecret: microsoftClientSecret,
               tenantId: microsoftTenantId,
             }
+          : undefined,
+      github:
+        githubClientId && githubClientSecret
+          ? { clientId: githubClientId, clientSecret: githubClientSecret }
           : undefined,
     },
     webauthn: (() => {

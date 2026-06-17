@@ -99,6 +99,41 @@ describe("buildSecureAuthConfigFromEnv", () => {
     expect(config.rateLimit?.store).toBe("postgres");
   });
 
+  it("maps GitHub OAuth from AUTH_* and legacy GITHUB_* env names", () => {
+    const withAuthPrefix = buildSecureAuthConfigFromEnv(
+      {
+        ...baseEnv,
+        AUTH_GITHUB_CLIENT_ID: "gh-auth-id",
+        AUTH_GITHUB_CLIENT_SECRET: "gh-auth-secret",
+      },
+      { appName: "Test", appSlug: "test", baseUrl: "http://localhost:3001" }
+    );
+    expect(withAuthPrefix.oauth?.github?.clientId).toBe("gh-auth-id");
+    expect(withAuthPrefix.oauth?.github?.clientSecret).toBe("gh-auth-secret");
+
+    const withLegacy = buildSecureAuthConfigFromEnv(
+      {
+        ...baseEnv,
+        GITHUB_CLIENT_ID: "gh-legacy-id",
+        GITHUB_CLIENT_SECRET: "gh-legacy-secret",
+      },
+      { appName: "Test", appSlug: "test", baseUrl: "http://localhost:3001" }
+    );
+    expect(withLegacy.oauth?.github?.clientId).toBe("gh-legacy-id");
+    expect(withLegacy.oauth?.github?.clientSecret).toBe("gh-legacy-secret");
+  });
+
+  it("omits GitHub OAuth when only one of client id and secret is set", () => {
+    const config = buildSecureAuthConfigFromEnv(
+      {
+        ...baseEnv,
+        AUTH_GITHUB_CLIENT_ID: "gh-id-only",
+      },
+      { appName: "Test", appSlug: "test", baseUrl: "http://localhost:3001" }
+    );
+    expect(config.oauth?.github).toBeUndefined();
+  });
+
   it("throws when required secrets are missing", () => {
     expect(() =>
       buildSecureAuthConfigFromEnv(

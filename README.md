@@ -89,6 +89,23 @@ Account-level TOTP 2FA can be enabled from **Account settings**. It adds an extr
 
 Requires `TWO_FACTOR_SECRET_ENCRYPTION_KEY` in `.env.local` (see `.env.example`). Run `npm run db:migrate` after pulling 2FA schema updates.
 
+## GitHub sign-in (account authentication only)
+
+GitHub sign-in uses the NextAuth **GitHub** provider. It authenticates the **account only** — it does **not** unlock the vault.
+
+| Setting | Value |
+|---------|--------|
+| Provider ID | `github` |
+| Env vars | `AUTH_GITHUB_CLIENT_ID`, `AUTH_GITHUB_CLIENT_SECRET` (legacy `GITHUB_*` also supported) |
+| Local callback | `http://localhost:3001/api/auth/callback/github` |
+
+**GitHub OAuth app (summary)**
+
+1. [GitHub Developer settings](https://github.com/settings/developers) → **OAuth Apps** → **New OAuth App**.
+2. **Authorization callback URL** must match exactly (local example): `http://localhost:3001/api/auth/callback/github`
+3. Copy **Client ID** and generate a **Client secret** → set env vars in `.env.local`, restart the app.
+4. Verify: `curl http://localhost:3001/api/auth/providers` should include a `github` entry.
+
 ## Microsoft sign-in (account authentication only)
 
 Microsoft sign-in uses the NextAuth **Azure AD** provider (`azure-ad`) against Microsoft Entra ID / the Microsoft identity platform. It authenticates the **account only** — it does **not** unlock the private letters vault, replace trusted devices, passkey PRF vault unlock, or the recovery code.
@@ -114,7 +131,7 @@ Microsoft sign-in uses the NextAuth **Azure AD** provider (`azure-ad`) against M
 
 **Account linking:** no automatic linking across providers. If an email is already registered with email/password (or another OAuth provider), Microsoft sign-in is rejected with a safe error.
 
-**OAuth + TOTP:** when account 2FA is enabled, OAuth sign-in (Google, Apple, Microsoft) receives a partial session until `/login/2fa` + `POST /api/auth/login/verify-2fa-oauth` completes. Passkey sign-in bypasses TOTP.
+**OAuth + TOTP:** when account 2FA is enabled, OAuth sign-in (Google, Apple, GitHub, Microsoft) receives a partial session until `/login/2fa` + `POST /api/auth/login/verify-2fa-oauth` completes. Passkey sign-in bypasses TOTP.
 
 ## Email verification and account passwords
 
