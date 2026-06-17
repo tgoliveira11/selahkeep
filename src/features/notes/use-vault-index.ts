@@ -12,17 +12,14 @@ import { getSessionVaultKey } from "@/lib/crypto-client/vault";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 
 export function useVaultIndex(userId: string | null, vaultUnlocked: boolean) {
+  const canLoad = Boolean(userId && vaultUnlocked);
   const [index, setIndex] = useState<VaultIndexPlaintext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
-    if (!userId || !vaultUnlocked) {
-      setIndex(null);
-      setLoading(false);
-      return;
-    }
+    if (!canLoad) return;
 
     let cancelled = false;
 
@@ -54,7 +51,7 @@ export function useVaultIndex(userId: string | null, vaultUnlocked: boolean) {
     return () => {
       cancelled = true;
     };
-  }, [userId, vaultUnlocked, reloadToken]);
+  }, [canLoad, reloadToken]);
 
   useEffect(() => subscribeVaultSession(() => setIndex(null)), []);
 
@@ -89,5 +86,12 @@ export function useVaultIndex(userId: string | null, vaultUnlocked: boolean) {
     [persistIndex]
   );
 
-  return { index, loading, error, reload, persistIndex, mutateIndex };
+  return {
+    index: canLoad ? index : null,
+    loading: canLoad ? loading : false,
+    error: canLoad ? error : null,
+    reload,
+    persistIndex,
+    mutateIndex,
+  };
 }

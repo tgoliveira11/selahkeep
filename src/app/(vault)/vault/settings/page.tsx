@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { VaultAccessGate } from "@/features/vault/vault-access-gate";
 import { useRequireVault } from "@/features/vault/use-require-vault";
+import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
+import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
 import { useVaultSettings } from "@/features/notes/use-vault-settings";
 import type { VaultUnlockBehavior } from "@/lib/crypto-client/vault-settings";
 import { applyUnlockBehavior } from "@/features/notes/eager-decrypt-notes";
@@ -36,8 +37,11 @@ const OPTIONS: Array<{
 
 export default function VaultSettingsPage() {
   const vault = useRequireVault();
+  const vaultClient = useVaultClientStatus();
   const userId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
+  const clientStatus =
+    vaultClient.status === "ready" ? vaultClient.clientStatus : null;
   const { settings, loading, error, updateUnlockBehavior } = useVaultSettings(userId, vaultUnlocked);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -61,7 +65,7 @@ export default function VaultSettingsPage() {
     }
   }
 
-  if (vault.status === "loading" || vault.status === "redirecting") {
+  if (vault.status === "loading" || vault.status === "redirecting" || vaultClient.status === "loading") {
     return (
       <PageLayout>
         <LoadingState label="Loading vault settings" />
@@ -69,10 +73,30 @@ export default function VaultSettingsPage() {
     );
   }
 
-  if (vault.status === "error") {
+  if (vault.status === "error" || vaultClient.status === "error") {
     return (
       <PageLayout>
-        <ErrorState message={vault.message} />
+        <ErrorState
+          message={
+            vault.status === "error"
+              ? vault.message
+              : vaultClient.status === "error"
+                ? vaultClient.message
+                : "Failed to load vault settings"
+          }
+        />
+      </PageLayout>
+    );
+  }
+
+  if (clientStatus && clientStatus !== "unlocked") {
+    return (
+      <PageLayout>
+        <PageHeader
+          title="Vault settings"
+          description="Control how your vault behaves after unlock on this device."
+        />
+        <VaultStatusPrompt clientStatus={clientStatus} context="settings" />
       </PageLayout>
     );
   }
@@ -84,16 +108,7 @@ export default function VaultSettingsPage() {
         description="Control how your vault behaves after unlock on this device."
       />
 
-      {!vaultUnlocked ? (
-        <Card>
-          <VaultAccessGate
-            purpose="read"
-            onAccessGranted={() => {
-              vault.recheckVault();
-            }}
-          />
-        </Card>
-      ) : loading ? (
+      {loading ? (
         <LoadingState label="Loading settings" />
       ) : (
         <div className="space-y-4">

@@ -9,6 +9,7 @@ import {
   assertVaultIndexAad,
 } from "@/server/policies/aad-validation";
 import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
+import { deriveSetupPhase } from "@/lib/vault/vault-status";
 
 export const vaultService = {
   async setup(userId: string, input: VaultSetupInput) {
@@ -116,42 +117,78 @@ export const vaultService = {
   async getStatus(userId: string) {
     const vault = await vaultRepository.findVaultByUserId(userId);
     if (!vault) {
-      return { initialized: false, recoveryState: "At Risk" as const };
+      return {
+        initialized: false,
+        hasVault: false,
+        setupPhase: "not_configured" as const,
+        setupComplete: false,
+      };
     }
 
     const envelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
     const methods = new Set(envelopes.map((e) => e.method));
     const activeDevices = await trustedDeviceRepository.findActiveByUserId(userId);
+    const methodList = Array.from(methods);
 
-    let recoveryState: "Protected" | "Basic" | "At Risk";
-    const durableMethods = ["recovery_code", "recovery_phrase", "passkey_authorized_device"].filter(
-      (m) => methods.has(m)
-    );
+    const hasEncryptedSettings = vault.encryptedVaultSettings != null;
+    const hasEncryptedIndex = vault.encryptedVaultIndex != null;
 
     const ltgSetupComplete =
       vault.vaultVersion === "vault-v2" &&
       methods.has("password") &&
-      methods.has("recovery_phrase");
+      methods.has("recovery_phrase") &&
+      hasEncryptedSettings &&
+      hasEncryptedIndex;
 
-    if (ltgSetupComplete || (durableMethods.length >= 1 && (methods.size >= 2 || activeDevices.length >= 2))) {
-      recoveryState = "Protected";
-    } else if (activeDevices.length >= 1 || methods.has("trusted_device") || methods.has("password")) {
-      recoveryState = "Basic";
-    } else {
-      recoveryState = "At Risk";
+    const setupPhase = deriveSetupPhase({
+      initialized: true,
+      vaultVersion: vault.vaultVersion,
+      ltgSetupComplete,
+      hasEncryptedSettings,
+      hasEncryptedIndex,
+      methods: methodList,
+    });
+
+    const setupComplete = setupPhase === "complete";
+
+    let recoveryState: "Protected" | "Basic" | "At Risk" | undefined;
+    if (setupComplete) {
+      const durableMethods = ["recovery_code", "recovery_phrase", "passkey_authorized_device"].filter(
+        (m) => methods.has(m)
+      );
+
+      if (ltgSetupComplete || (durableMethods.length >= 1 && (methods.size >= 2 || activeDevices.length >= 2))) {
+        recoveryState = "Protected";
+      } else if (activeDevices.length >= 1 || methods.has("trusted_device") || methods.has("password")) {
+        recoveryState = "Basic";
+      } else {
+        recoveryState = "At Risk";
+      }
     }
 
     return {
       initialized: true,
+      hasVault: true,
+      setupPhase,
+      setupComplete,
       vaultVersion: vault.vaultVersion,
       recoveryState,
-      methods: Array.from(methods),
+      methods: methodList,
       trustedDeviceCount: activeDevices.length,
+      hasEncryptedSettings,
+      hasEncryptedIndex,
       hasRecoveryCode: methods.has("recovery_code"),
       hasRecoveryPhrase: methods.has("recovery_phrase"),
       hasVaultPassword: methods.has("password"),
       hasPasskey: methods.has("passkey_authorized_device"),
       ltgSetupComplete,
+      availableUnlockMethods: setupComplete
+        ? {
+            password: methods.has("password"),
+            recoveryPhrase: methods.has("recovery_phrase"),
+            passkey: methods.has("passkey_authorized_device"),
+          }
+        : undefined,
     };
   },
 

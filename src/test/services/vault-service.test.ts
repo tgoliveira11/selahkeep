@@ -149,11 +149,33 @@ describe("vault service", () => {
     ).rejects.toBeInstanceOf(ConflictError);
   });
 
-  it("returns At Risk when vault missing", async () => {
+  it("returns not_configured when vault missing", async () => {
     mocks.findVaultByUserId.mockResolvedValue(null);
     await expect(vaultService.getStatus(USER_ID)).resolves.toEqual({
       initialized: false,
-      recoveryState: "At Risk",
+      hasVault: false,
+      setupPhase: "not_configured",
+      setupComplete: false,
+    });
+  });
+
+  it("reports setup_incomplete for vault-v2 missing encrypted settings", async () => {
+    mocks.findVaultByUserId.mockResolvedValue({
+      vaultVersion: "vault-v2",
+      encryptedVaultSettings: null,
+      encryptedVaultIndex: encryptedPayload("vault_index", USER_ID),
+    });
+    mocks.findActiveEnvelopesByUserId.mockResolvedValue([
+      { method: "password" },
+      { method: "recovery_phrase" },
+    ]);
+    mocks.findActiveByUserId.mockResolvedValue([]);
+
+    await expect(vaultService.getStatus(USER_ID)).resolves.toMatchObject({
+      setupPhase: "setup_incomplete",
+      setupComplete: false,
+      ltgSetupComplete: false,
+      recoveryState: undefined,
     });
   });
 

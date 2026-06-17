@@ -86,7 +86,8 @@ describe("vault service extended", () => {
     mocks.findActiveEnvelopesByUserId.mockResolvedValue([]);
     mocks.findActiveByUserId.mockResolvedValue([]);
     await expect(vaultService.getStatus(USER_ID)).resolves.toMatchObject({
-      recoveryState: "At Risk",
+      setupPhase: "setup_incomplete",
+      recoveryState: undefined,
     });
   });
 
@@ -169,17 +170,29 @@ describe("vault service extended", () => {
   });
 
   it("reports ltgSetupComplete on vault-v2 status", async () => {
-    mocks.findVaultByUserId.mockResolvedValue({ vaultVersion: "vault-v2" });
+    mocks.findVaultByUserId.mockResolvedValue({
+      vaultVersion: "vault-v2",
+      encryptedVaultSettings: encryptedPayload("vault_settings", USER_ID),
+      encryptedVaultIndex: encryptedPayload("vault_index", USER_ID),
+    });
     mocks.findActiveEnvelopesByUserId.mockResolvedValue([
       { method: "password" },
       { method: "recovery_phrase" },
     ]);
     mocks.findActiveByUserId.mockResolvedValue([]);
     await expect(vaultService.getStatus(USER_ID)).resolves.toMatchObject({
+      setupPhase: "complete",
+      setupComplete: true,
+      hasVault: true,
       ltgSetupComplete: true,
       hasVaultPassword: true,
       hasRecoveryPhrase: true,
       recoveryState: "Protected",
+      availableUnlockMethods: {
+        password: true,
+        recoveryPhrase: true,
+        passkey: false,
+      },
     });
   });
 

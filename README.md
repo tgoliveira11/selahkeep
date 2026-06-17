@@ -150,6 +150,17 @@ Email/password accounts are **unverified by default** until the user opens the l
 
 **Vault separation:** changing or resetting the account password does **not** unlock, recover, or rotate your vault. Users still need a vault password, recovery phrase, passkey, or trusted device for vault access.
 
+**Vault client status** (`GET /api/vault/status` + in-browser UVK session):
+
+| Status | Meaning | Primary CTA |
+|--------|---------|-------------|
+| `not_configured` | Signed in, no vault record | Set up vault → `/vault/setup` |
+| `setup_incomplete` | Vault record started, missing required pieces | Continue setup → `/vault/setup` |
+| `locked` | Setup complete, UVK not in this browser session | Unlock vault → `/vault/unlock` |
+| `unlocked` | Setup complete, UVK in session | Lock vault (nav action) |
+
+`/notes` and `/vault/settings` show state-specific prompts instead of unlock panels when no vault exists.
+
 **Vault inactivity lock:** while the vault is unlocked, **15 minutes** of no pointer/keyboard/touch/scroll activity auto-locks the vault, clears decrypted note bodies from memory, and shows: *“Your vault was locked to protect your private notes.”* Manual **Lock vault** in the nav has the same effect without the banner.
 
 **Import / export:** bulk import and export of decrypted notes are **not available** in this MVP. See `/vault/settings` and the public home page.

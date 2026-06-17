@@ -1,17 +1,31 @@
 import { apiClient } from "./client";
 import type { EncryptedPayload, KdfMetadata } from "@/lib/validation/encrypted-payload";
 
+export type VaultSetupPhase = "not_configured" | "setup_incomplete" | "complete";
+
+export type VaultUnlockMethods = {
+  password: boolean;
+  recoveryPhrase: boolean;
+  passkey: boolean;
+};
+
 export interface VaultStatus {
   initialized: boolean;
+  hasVault: boolean;
+  setupPhase: VaultSetupPhase;
+  setupComplete: boolean;
   vaultVersion?: string;
-  recoveryState: "Protected" | "Basic" | "At Risk";
+  recoveryState?: "Protected" | "Basic" | "At Risk";
   methods?: string[];
   trustedDeviceCount?: number;
+  hasEncryptedSettings?: boolean;
+  hasEncryptedIndex?: boolean;
   hasRecoveryCode?: boolean;
   hasRecoveryPhrase?: boolean;
   hasVaultPassword?: boolean;
   hasPasskey?: boolean;
   ltgSetupComplete?: boolean;
+  availableUnlockMethods?: VaultUnlockMethods;
 }
 
 export const vaultApi = {

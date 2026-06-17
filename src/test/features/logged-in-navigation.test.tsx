@@ -23,8 +23,14 @@ vi.mock("next/navigation", () => ({
   useSearchParams: vi.fn(() => new URLSearchParams()),
 }));
 
-vi.mock("@/features/vault/use-vault-session-unlocked", () => ({
-  useVaultSessionUnlocked: vi.fn(() => false),
+vi.mock("@/features/vault/use-vault-client-status", () => ({
+  useVaultClientStatus: vi.fn(() => ({
+    status: "ready",
+    clientStatus: "locked",
+    setupPhase: "complete",
+    serverStatus: { initialized: true, setupPhase: "complete" },
+    recheck: vi.fn(),
+  })),
 }));
 
 describe("logged-in navigation", () => {
@@ -77,13 +83,19 @@ describe("logged-in navigation", () => {
 
   it("shows Unlock vault when signed in and vault is locked", async () => {
     const { useSession } = await import("next-auth/react");
-    const { useVaultSessionUnlocked } = await import("@/features/vault/use-vault-session-unlocked");
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useSession).mockReturnValue({
       data: { user: { id: "user-1", email: "user@example.com" } },
       status: "authenticated",
       update: vi.fn(),
     });
-    vi.mocked(useVaultSessionUnlocked).mockReturnValue(false);
+    vi.mocked(useVaultClientStatus).mockReturnValue({
+      status: "ready",
+      clientStatus: "locked",
+      setupPhase: "complete",
+      serverStatus: { initialized: true, setupPhase: "complete" },
+      recheck: vi.fn(),
+    });
 
     render(
       <SiteShell>
@@ -97,13 +109,19 @@ describe("logged-in navigation", () => {
 
   it("shows Lock vault when vault is unlocked", async () => {
     const { useSession } = await import("next-auth/react");
-    const { useVaultSessionUnlocked } = await import("@/features/vault/use-vault-session-unlocked");
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useSession).mockReturnValue({
       data: { user: { id: "user-1", email: "user@example.com" } },
       status: "authenticated",
       update: vi.fn(),
     });
-    vi.mocked(useVaultSessionUnlocked).mockReturnValue(true);
+    vi.mocked(useVaultClientStatus).mockReturnValue({
+      status: "ready",
+      clientStatus: "unlocked",
+      setupPhase: "complete",
+      serverStatus: { initialized: true, setupPhase: "complete" },
+      recheck: vi.fn(),
+    });
 
     render(
       <SiteShell>

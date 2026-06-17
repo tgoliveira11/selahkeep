@@ -11,7 +11,14 @@ describe("LtgVaultUnlockPanel", () => {
       <LtgVaultUnlockPanel
         loading={false}
         error={null}
-        vaultStatus={{ initialized: true, recoveryState: "Protected", ltgSetupComplete: true }}
+        vaultStatus={{
+          initialized: true,
+          hasVault: true,
+          setupPhase: "complete",
+          setupComplete: true,
+          recoveryState: "Protected",
+          ltgSetupComplete: true,
+        }}
         onUnlockPassword={() => undefined}
         onUnlockRecoveryPhrase={() => undefined}
       />
@@ -27,6 +34,9 @@ describe("LtgVaultUnlockPanel", () => {
         error={null}
         vaultStatus={{
           initialized: true,
+          hasVault: true,
+          setupPhase: "complete",
+          setupComplete: true,
           recoveryState: "Protected",
           ltgSetupComplete: true,
           hasVaultPassword: true,

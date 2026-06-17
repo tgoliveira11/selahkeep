@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
@@ -20,6 +20,18 @@ import { buildPasskeyLoginOutcomeKey } from "@/features/passkey/passkey-login-wi
 import { APP_PASSKEY_SLUG } from "@/lib/passkey/app-slug";
 
 export type LtgUnlockMode = "password" | "recovery_phrase" | "legacy";
+
+function consumePasskeyLoginNotice(): string | null {
+  if (typeof sessionStorage === "undefined") return null;
+  const key = buildPasskeyLoginOutcomeKey(APP_PASSKEY_SLUG);
+  const outcome = sessionStorage.getItem(key);
+  if (!outcome) return null;
+  sessionStorage.removeItem(key);
+  if (outcome === "vault-unlocked") return PASSKEY_LOGIN_VAULT_UNLOCKED_MESSAGE;
+  if (outcome === "vault-locked") return PASSKEY_LOGIN_VAULT_LOCKED_MESSAGE;
+  if (outcome === "prf-unavailable") return PASSKEY_LOGIN_PRF_UNAVAILABLE_MESSAGE;
+  return null;
+}
 
 interface LtgVaultUnlockPanelProps {
   loading: boolean;
@@ -48,21 +60,9 @@ export function LtgVaultUnlockPanel({
   const [vaultPassword, setVaultPassword] = useState("");
   const [recoveryPhrase, setRecoveryPhrase] = useState("");
   const [legacyRecoveryCode, setLegacyRecoveryCode] = useState("");
-  const [passkeyNotice, setPasskeyNotice] = useState<string | null>(null);
+  const [passkeyNotice] = useState<string | null>(() => consumePasskeyLoginNotice());
 
-  const isLtg = vaultStatus?.ltgSetupComplete ?? false;
-
-  useEffect(() => {
-    const outcome = sessionStorage.getItem(buildPasskeyLoginOutcomeKey(APP_PASSKEY_SLUG));
-    if (outcome === "vault-unlocked") {
-      setPasskeyNotice(PASSKEY_LOGIN_VAULT_UNLOCKED_MESSAGE);
-    } else if (outcome === "vault-locked") {
-      setPasskeyNotice(PASSKEY_LOGIN_VAULT_LOCKED_MESSAGE);
-    } else if (outcome === "prf-unavailable") {
-      setPasskeyNotice(PASSKEY_LOGIN_PRF_UNAVAILABLE_MESSAGE);
-    }
-    if (outcome) sessionStorage.removeItem(buildPasskeyLoginOutcomeKey(APP_PASSKEY_SLUG));
-  }, []);
+  const isLtg = vaultStatus?.setupComplete ?? false;
 
   function mapUnlockError(message: string | null): string | null {
     if (!message) return null;

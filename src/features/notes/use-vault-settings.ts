@@ -13,17 +13,14 @@ import { getSessionVaultKey } from "@/lib/crypto-client/vault";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 
 export function useVaultSettings(userId: string | null, vaultUnlocked: boolean) {
+  const canLoad = Boolean(userId && vaultUnlocked);
   const [settings, setSettings] = useState<VaultSettingsPlaintext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
-    if (!userId || !vaultUnlocked) {
-      setSettings(null);
-      setLoading(false);
-      return;
-    }
+    if (!canLoad) return;
 
     let cancelled = false;
 
@@ -55,7 +52,7 @@ export function useVaultSettings(userId: string | null, vaultUnlocked: boolean) 
     return () => {
       cancelled = true;
     };
-  }, [userId, vaultUnlocked, reloadToken]);
+  }, [canLoad, reloadToken]);
 
   useEffect(() => subscribeVaultSession(() => setSettings(null)), []);
 
@@ -76,5 +73,11 @@ export function useVaultSettings(userId: string | null, vaultUnlocked: boolean) 
     [userId, settings]
   );
 
-  return { settings, loading, error, reload, updateUnlockBehavior };
+  return {
+    settings: canLoad ? settings : null,
+    loading: canLoad ? loading : false,
+    error: canLoad ? error : null,
+    reload,
+    updateUnlockBehavior,
+  };
 }

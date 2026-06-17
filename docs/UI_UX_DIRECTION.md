@@ -82,10 +82,19 @@ Account auth UI comes from `@tgoliveira/secure-auth/react`. Style integration po
 See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 
 - **Primary (signed in):** Notes · Vault · Account
-- **Conditional:** Unlock vault when locked; Lock vault when unlocked
+- **Conditional vault action:** Set up vault / Continue setup / Unlock vault / Lock vault — driven by vault client status
 - **Brand mark:** Purple LTG monogram in header and favicon (no green envelope)
 - **Account vs vault:** `/settings/account` = sign-in security; `/vault/*` = note encryption protection
-- Footer attribution unchanged; vault locked/unlocked badge in header
+- Footer attribution unchanged; vault status badge in header (`Vault not set up`, `Setup incomplete`, `Vault locked`, `Vault unlocked`)
+
+### Vault status prompts
+
+| Status | `/vault/settings` | `/notes` |
+|--------|-------------------|----------|
+| `not_configured` | Set up your vault → `/vault/setup` | Same |
+| `setup_incomplete` | Complete your vault setup → `/vault/setup` | Same |
+| `locked` | Unlock your vault → `/vault/unlock` | Same |
+| `unlocked` | Unlock behavior settings | Notes list + filters |
 
 ---
 

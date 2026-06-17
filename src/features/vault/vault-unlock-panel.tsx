@@ -51,23 +51,31 @@ export function VaultUnlockPanel({
   embedded,
 }: VaultUnlockPanelProps) {
   const showPasskeyUnlock = isPasskeySupported() && (vaultStatus?.hasPasskey ?? false);
-  const recoveryLabel = vaultStatus ? getRecoveryStateLabel(vaultStatus.recoveryState) : null;
+  const showRecoveryPhrase = vaultStatus?.hasRecoveryPhrase ?? false;
+  const recoveryLabel =
+    vaultStatus?.setupComplete && vaultStatus.recoveryState
+      ? getRecoveryStateLabel(vaultStatus.recoveryState)
+      : null;
 
   const title =
     heading ??
     (mode === "init"
-      ? "Set up your private vault"
+      ? "Set up your vault"
       : mode === "recovery"
-        ? "Unlock with recovery code"
+        ? showRecoveryPhrase
+          ? "Unlock with recovery phrase"
+          : "Unlock with recovery code"
         : "Unlock your vault");
 
   const body =
     description ??
     (mode === "init"
-      ? "Before your first letter is saved, we protect it on this device. Our team cannot read your private letters."
+      ? "Before your first note is saved, we protect it on this device. Our team cannot read your private notes."
       : mode === "recovery"
-        ? "Enter the recovery code you saved when you set up your account."
-        : "Your letters are protected on this device. Unlock to continue on this browser.");
+        ? showRecoveryPhrase
+          ? "Enter the recovery phrase you saved when you set up your vault."
+          : "Enter the recovery code you saved when you set up your account."
+        : "Your notes are protected on this device. Unlock to continue on this browser.");
 
   const content = (
     <div className="space-y-5">
@@ -116,7 +124,7 @@ export function VaultUnlockPanel({
             {loading ? "Unlocking…" : "Unlock on this device"}
           </Button>
           <Button variant="secondary" onClick={onShowRecovery} className="w-full">
-            Use recovery code
+            {showRecoveryPhrase ? "Use recovery phrase" : "Use recovery code"}
           </Button>
         </div>
       )}
@@ -130,8 +138,12 @@ export function VaultUnlockPanel({
           )}
           <FormField
             id="vault-recovery-code"
-            label="Recovery code"
-            hint="Enter all words separated by spaces, exactly as you saved them."
+            label={showRecoveryPhrase ? "Recovery phrase" : "Recovery code"}
+            hint={
+              showRecoveryPhrase
+                ? "Enter all words separated by spaces, exactly as you saved them."
+                : "Enter all words separated by spaces, exactly as you saved them."
+            }
           >
             <Input
               id="vault-recovery-code"
@@ -147,7 +159,7 @@ export function VaultUnlockPanel({
             disabled={loading || !recoveryCode.trim()}
             className="w-full"
           >
-            {loading ? "Unlocking…" : "Unlock with recovery code"}
+            {loading ? "Unlocking…" : showRecoveryPhrase ? "Unlock with recovery phrase" : "Unlock with recovery code"}
           </Button>
           <Button variant="secondary" onClick={onBackFromRecovery} className="w-full">
             Back

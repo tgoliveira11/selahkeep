@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { AppMark } from "@/components/ui/app-mark";
 import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { lockVaultSession } from "@/lib/crypto-client/vault-session";
-import { useVaultSessionUnlocked } from "@/features/vault/use-vault-session-unlocked";
+import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
+import { getVaultStatusCopy } from "@/lib/vault/vault-status";
 import {
   isLoggedInNavLinkActive,
   LOGGED_IN_NAV_LINKS,
@@ -23,8 +24,13 @@ export function Nav() {
   const router = useRouter();
   const pathname = usePathname();
   const menuId = useId();
-  const vaultUnlocked = useVaultSessionUnlocked();
+  const vaultClient = useVaultClientStatus();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const clientStatus = vaultClient.status === "ready" ? vaultClient.clientStatus : null;
+  const vaultCopy = clientStatus ? getVaultStatusCopy(clientStatus) : null;
+  const showVaultAction = clientStatus && clientStatus !== "unlocked";
+  const showLockVault = clientStatus === "unlocked";
 
   function closeMenu() {
     setMenuOpen(false);
@@ -46,6 +52,13 @@ export function Nav() {
     }
     await signOutAccount();
     router.push("/");
+  }
+
+  function badgeVariant(): "success" | "info" | "muted" {
+    if (!clientStatus) return "muted";
+    if (clientStatus === "unlocked") return "success";
+    if (clientStatus === "locked") return "info";
+    return "muted";
   }
 
   return (
@@ -79,18 +92,18 @@ export function Nav() {
                   {link.label}
                 </Link>
               ))}
-              {!vaultUnlocked && (
+              {showVaultAction && vaultCopy && (
                 <Link
-                  href="/vault/unlock"
+                  href={vaultCopy.actionHref}
                   className="rounded-[var(--radius)] px-3 py-2 text-sm font-medium text-[var(--warning)] hover:bg-[var(--card-muted)]"
                 >
-                  Unlock vault
+                  {vaultCopy.actionLabel}
                 </Link>
               )}
             </nav>
 
             <div className="hidden items-center gap-2 md:flex">
-              {vaultUnlocked && (
+              {showLockVault && (
                 <Button variant="secondary" onClick={handleLockVault}>
                   Lock vault
                 </Button>
@@ -98,10 +111,8 @@ export function Nav() {
               <Button variant="secondary" onClick={handleSignOut}>
                 Sign out
               </Button>
-              {vaultUnlocked ? (
-                <Badge variant="success">Unlocked</Badge>
-              ) : (
-                <Badge variant="muted">Locked</Badge>
+              {vaultCopy && (
+                <Badge variant={badgeVariant()}>{vaultCopy.badgeLabel}</Badge>
               )}
             </div>
 
@@ -157,14 +168,14 @@ export function Nav() {
                 </Link>
               </li>
             ))}
-            {!vaultUnlocked && (
+            {showVaultAction && vaultCopy && (
               <li>
                 <Link
-                  href="/vault/unlock"
+                  href={vaultCopy.actionHref}
                   onClick={closeMenu}
                   className="block rounded-[var(--radius)] px-3 py-3 text-sm font-medium text-[var(--warning)]"
                 >
-                  Unlock vault
+                  {vaultCopy.actionLabel}
                 </Link>
               </li>
             )}
@@ -190,7 +201,7 @@ export function Nav() {
                 </Link>
               </li>
             ))}
-            {vaultUnlocked && (
+            {showLockVault && (
               <li>
                 <button
                   type="button"
@@ -232,9 +243,9 @@ export function Nav() {
             <Button variant="secondary" className="w-full" onClick={handleSignOut}>
               Sign out
             </Button>
-            <p className="px-1 text-xs text-[var(--muted)]">
-              Vault status: {vaultUnlocked ? "Unlocked on this browser" : "Locked"}
-            </p>
+            {vaultCopy && (
+              <p className="px-1 text-xs text-[var(--muted)]">Vault status: {vaultCopy.badgeLabel}</p>
+            )}
           </div>
         </nav>
       )}

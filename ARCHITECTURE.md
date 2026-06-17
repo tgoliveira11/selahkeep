@@ -77,7 +77,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - `GET/PATCH /api/vault/settings` — encrypted vault settings (unlock behavior, setup metadata)
 - `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted note payloads only
 - `POST /api/vault/setup` — LTG vault-v2 setup (encrypted settings, index, password + recovery phrase envelopes)
-- `POST /api/vault/init`, `GET /api/vault/status`
+- `POST /api/vault/init`, `GET /api/vault/status` — returns `hasVault`, `setupPhase`, `setupComplete`, and `availableUnlockMethods`; client derives `not_configured` / `setup_incomplete` / `locked` / `unlocked` via `useVaultClientStatus` + UVK session
 - `POST /api/vault/unlock-envelope` — fetch encrypted envelope for password / recovery phrase unlock
 - `GET/POST /api/trusted-devices`, `POST /api/trusted-devices/:id/remove`, `DELETE /api/trusted-devices/:id`
 - `POST /api/recovery-code`, `POST /api/vault/unlock-with-recovery-code`

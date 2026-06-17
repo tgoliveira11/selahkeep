@@ -4,10 +4,10 @@ import { render, screen } from "@testing-library/react";
 import { PrivacyNotice } from "@/modules/vault/components/privacy-notice";
 
 describe("privacy notice", () => {
-  it("renders compact letter-editor copy for marketing flows", () => {
+  it("renders compact note-editor copy for marketing flows", () => {
     render(<PrivacyNotice compact />);
     expect(
-      screen.getByText(/your letter is protected on this device before it is saved/i)
+      screen.getByText(/your note is protected on this device before it is saved/i)
     ).toBeTruthy();
   });
 

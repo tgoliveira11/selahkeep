@@ -43,6 +43,23 @@ interface PasskeyVaultUnlockSetupProps {
   vaultUnlocked: boolean;
 }
 
+async function fetchPasskeyVaultData(): Promise<{
+  passkeys: AccountPasskey[];
+  statusById: Record<string, VaultUnlockStatus>;
+}> {
+  const result = await passkeyAccountApi.list();
+  const signInPasskeys = result.passkeys.filter((passkey) => passkey.signInEnabled);
+  const statuses: Record<string, VaultUnlockStatus> = {};
+  await Promise.all(
+    signInPasskeys.map(async (passkey) => {
+      statuses[passkey.id] = await apiClient.get<VaultUnlockStatus>(
+        `/api/account/passkeys/${passkey.id}/vault-unlock`
+      );
+    })
+  );
+  return { passkeys: signInPasskeys, statusById: statuses };
+}
+
 export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultUnlockSetupProps) {
   const [passkeys, setPasskeys] = useState<AccountPasskey[]>([]);
   const [statusById, setStatusById] = useState<Record<string, VaultUnlockStatus>>({});
@@ -51,24 +68,27 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
   const [error, setError] = useState<string | null>(null);
 
   const loadPasskeys = useCallback(async () => {
-    const result = await passkeyAccountApi.list();
-    const signInPasskeys = result.passkeys.filter((passkey) => passkey.signInEnabled);
-    setPasskeys(signInPasskeys);
-
-    const statuses: Record<string, VaultUnlockStatus> = {};
-    await Promise.all(
-      signInPasskeys.map(async (passkey) => {
-        statuses[passkey.id] = await apiClient.get<VaultUnlockStatus>(
-          `/api/account/passkeys/${passkey.id}/vault-unlock`
-        );
-      })
-    );
-    setStatusById(statuses);
+    const data = await fetchPasskeyVaultData();
+    setPasskeys(data.passkeys);
+    setStatusById(data.statusById);
   }, []);
 
   useEffect(() => {
-    void loadPasskeys().catch(() => setPasskeys([]));
-  }, [loadPasskeys]);
+    let cancelled = false;
+    fetchPasskeyVaultData()
+      .then((data) => {
+        if (!cancelled) {
+          setPasskeys(data.passkeys);
+          setStatusById(data.statusById);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPasskeys([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleEnable(passkeyId: string) {
     setLoadingId(passkeyId);

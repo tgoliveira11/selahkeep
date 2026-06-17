@@ -1,6 +1,6 @@
 # Logged-in Navigation Audit
 
-Last updated: 2026-06-16
+Last updated: 2026-06-17
 
 This document audits LTG Vault logged-in navigation after Phases 0–5 and records the navigation/favicon changes from the focused nav audit.
 
@@ -28,12 +28,14 @@ This document audits LTG Vault logged-in navigation after Phases 0–5 and recor
 | Devices | `/vault/devices` | — | No | Was yes | Yes | Yes | Legacy trusted devices | **Move** | Legacy; link from Vault settings |
 | Recovery | `/vault/recovery` | — | No | Was yes | Yes | Yes | Legacy recovery code | **Move** | Legacy; link from Vault settings |
 | Account | `/settings/account` | — | No | Yes | Yes | Yes | Auth, passkeys, 2FA, sessions | **Keep** | Package account security |
-| Unlock vault | `/vault/unlock` | — | No | When locked | Yes | No | Unlock flow | **Keep (conditional)** | Only when vault locked |
+| Unlock vault | `/vault/unlock` | — | No | When locked (setup complete) | Yes | No | Unlock flow | **Keep (conditional)** | Only when vault setup is complete and UVK not in session |
+| Set up vault | `/vault/setup` | — | No | When not configured | — | — | First-time setup | **Keep (conditional)** | Replaces unlock link when no vault |
+| Continue setup | `/vault/setup` | — | No | When setup incomplete | — | — | Resume setup | **Keep (conditional)** | Replaces unlock link when setup incomplete |
 | Lock vault | (action) | — | No | When unlocked | No | Yes | Lock in-memory vault | **Keep (conditional)** | Does not sign out |
 | Sign out | (action) | — | No | Yes | Yes | Yes | End account session | **Keep** | Locks vault first |
-| Vault status badge | — | — | No | Yes | Locked | Unlocked | State indicator | **Keep** | Clear vault vs account distinction |
+| Vault status badge | — | — | No | Yes | Four states | Four states | State indicator | **Keep** | `Vault not set up` / `Setup incomplete` / `Vault locked` / `Vault unlocked` |
 
-\*Notes list is visible when signed in but decrypted content requires vault unlock (existing gate).
+\*Notes and Vault settings show state-specific prompts; decrypted content requires `unlocked` status.
 
 ### Routes not in primary nav (by design)
 
@@ -50,8 +52,8 @@ This document audits LTG Vault logged-in navigation after Phases 0–5 and recor
 ## Specific menu questions
 
 1. **Main menu: Notes, Vault, or both?** — **Both.** Notes is the workspace; Vault is protection/settings.
-2. **Vault Setup after vault exists?** — **No primary nav item.** `useRequireVault` redirects to setup when needed.
-3. **Vault Unlock when already unlocked?** — **No.** Shown only when vault is locked.
+2. **Vault Setup after vault exists?** — **No primary nav item.** Pages show setup prompts when `not_configured` or `setup_incomplete`.
+3. **Vault Unlock when already unlocked?** — **No.** Shown only when setup is complete and vault is locked.
 4. **Recovery phrase under Vault or Account?** — **Vault domain** (setup during `/vault/setup`). Account page links to Vault settings; legacy recovery code under Vault settings advanced section.
 5. **Passkey vault unlock under Vault vs account passkeys under Account?** — **Yes.** Passkey vault unlock setup lives in Account security (`PasskeyVaultUnlockSetup`); account passkeys remain package-owned on the same page.
 6. **TOTP only under account security?** — **Yes.** Package `SecuritySettingsPage`.

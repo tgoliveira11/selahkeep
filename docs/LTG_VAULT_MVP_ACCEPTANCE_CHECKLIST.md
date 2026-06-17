@@ -40,6 +40,7 @@
 | 33 | Accessibility smoke (axe) on core pages | ✅ Pass | `accessibility.test.tsx` | jest-axe on home, login, register, account-deleted | |
 | 34 | Account deletion warning mentions vault + notes | ✅ Pass | `ACCOUNT_DELETION_VAULT_NOTE` on settings page | `account-deletion-page.test.tsx` | |
 | 35 | Deployment docs updated (no console email in prod) | ✅ Pass | `VERCEL_ENVIRONMENT_VARIABLES.md`, `secure-auth-deployment-checklist.md`, README deploy | Manual review | OAuth callbacks documented |
+| 36 | Vault status distinguishes not configured / setup incomplete / locked / unlocked | ✅ Pass | `GET /api/vault/status`, `useVaultClientStatus`, `/notes`, `/vault/settings`, nav badge | `vault-status.test.ts`, `vault-status-ui.test.tsx` | No unlock panel when vault missing |
 
 ---
 
