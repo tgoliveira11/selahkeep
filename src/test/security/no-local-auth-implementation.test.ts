@@ -64,15 +64,15 @@ describe("no local auth implementation guard", () => {
     }
   });
 
-  it("pins @tgoliveira/secure-auth to 0.1.16-internal", () => {
+  it("pins @tgoliveira/secure-auth to 0.1.17-internal", () => {
     const packageJson = JSON.parse(readSource("package.json")) as {
       dependencies: Record<string, string>;
     };
-    expect(packageJson.dependencies["@tgoliveira/secure-auth"]).toBe("0.1.16-internal");
+    expect(packageJson.dependencies["@tgoliveira/secure-auth"]).toBe("0.1.17-internal");
 
     const lockfile = readSource("package-lock.json");
-    expect(lockfile).toContain('"@tgoliveira/secure-auth": "0.1.16-internal"');
-    expect(lockfile).not.toMatch(/secure-auth-0\.1\.1[0-5]-internal/);
+    expect(lockfile).toContain('"@tgoliveira/secure-auth": "0.1.17-internal"');
+    expect(lockfile).not.toMatch(/secure-auth-0\.1\.1[0-6]-internal/);
   });
 
   it("delegates account auth API routes to @tgoliveira/secure-auth", () => {

@@ -248,11 +248,11 @@ Add OAuth variables only for providers you enable. Run database migrations again
 |-------|--------|
 | `npm install` without `--legacy-peer-deps` | Passes (`nodemailer@7.x` satisfies `next-auth` peer) |
 | `package-lock.json` committed | Yes |
-| No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.1.16-internal` from npm registry |
+| No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.1.17-internal` from npm registry |
 | Private registry | Public npm scope `@tgoliveira` — no extra `.npmrc` required for Vercel |
 | Local `npm run build` | Passes |
 | Production domain (example) | `https://ltg.tgoliveira11.tech` |
-| Package health | `GET /api/auth/package-health` → `version: 0.1.16-internal` |
+| Package health | `GET /api/auth/package-health` → `version: 0.1.17-internal` |
 | Production deploy validated | **Not re-run in this phase** — redeploy after env review |
 
 ---
@@ -265,7 +265,7 @@ After deploy:
 curl https://ltg.tgoliveira11.tech/api/auth/package-health
 ```
 
-Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.16-internal" }` when runtime secrets and DB are configured.
+Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.17-internal" }` when runtime secrets and DB are configured.
 
 ---
 

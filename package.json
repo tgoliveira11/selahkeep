@@ -22,7 +22,7 @@
     "@scure/bip39": "^1.6.0",
     "@simplewebauthn/browser": "^13.1.0",
     "@simplewebauthn/server": "^13.1.1",
-    "@tgoliveira/secure-auth": "0.1.16-internal",
+    "@tgoliveira/secure-auth": "0.1.17-internal",
     "drizzle-orm": "^0.45.2",
     "hash-wasm": "^4.12.0",
     "idb": "^8.0.2",

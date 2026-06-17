@@ -8,7 +8,7 @@
 | **Repository** | [https://github.com/tgoliveira11/letter-to-god](https://github.com/tgoliveira11/letter-to-god) |
 | **Product name** | LTG Vault |
 | **Product direction** | Transform the current “Letters to God” app into an encrypted private vault for letters, prayers, reflections, and personal notes |
-| **Primary auth dependency** | `@tgoliveira/secure-auth@0.1.16-internal` |
+| **Primary auth dependency** | `@tgoliveira/secure-auth@0.1.17-internal` |
 | **Decision type** | Product / Architecture / Security / MVP Scope |
 
 ---
@@ -141,7 +141,7 @@ The project should broadly keep the existing architecture:
 The account system must come from:
 
 ```text
-@tgoliveira/secure-auth@0.1.16-internal
+@tgoliveira/secure-auth@0.1.17-internal
 ```
 
 The app must **not** keep competing local authentication/account implementations.
@@ -686,7 +686,7 @@ The MVP is acceptable when:
 | 8 | Export/import: **deferred**; document unavailable before public beta |
 | 9 | Passkey vault unlock: **part of MVP** |
 | 10 | Encrypted attachments: **deferred** |
-| 11 | Authentication: **`@tgoliveira/secure-auth@0.1.16-internal`** |
+| 11 | Authentication: **`@tgoliveira/secure-auth@0.1.17-internal`** |
 | 12 | Vault decryption: **product-owned** (`letter-to-god`) |
 
 ---
