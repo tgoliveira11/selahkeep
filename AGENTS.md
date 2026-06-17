@@ -1,24 +1,24 @@
-# Agent Rules — Private Letters Vault MVP
+# Agent Rules — LTG Vault MVP
 
 ## Source of Truth
 
 Read and follow these documents before implementing:
 
-- `docs/TDR_LTG_Vault_MVP.md` — **LTG Vault product/architecture direction (primary for new work)**
-- `docs/LTG_VAULT_IMPLEMENTATION_PLAN.md` — phased engineering plan (derived from LTG Vault TDR)
-- `docs/TDR_Private_Letters_Vault_MVP_Revised.md` — previous letters-only TDR (superseded where conflicting with LTG Vault TDR)
-- `docs/ADR-001_Cryptographic_Payload_Format_and_Envelope_Encryption.md`
-- `docs/ADR-002_Vault_Unlocking_Passkeys_Trusted_Devices_Recovery_Code.md`
-- `docs/ADR-003_API_Contract_Database_Schema_No_Plaintext_Enforcement.md`
-- `docs/ADR-004_Modularization_and_Reusability_Strategy.md`
+- `docs/TDR_LTG_Vault_MVP.md` — **LTG Vault product/architecture (primary)**
+- `docs/LTG_VAULT_IMPLEMENTATION_PLAN.md` — phased plan (Phases 0–5 complete)
+- `docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md` — vault crypto, note keys, recovery phrase
+- `docs/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md` — passkey PRF vault unlock
 - `docs/MODULE_BOUNDARIES.md`
-- `docs/UTILITY_EXTRACTION_INVENTORY.md` (Phase 2 pure utilities)
+- `docs/AUTH_RESET_TO_SECURE_AUTH.md` — auth boundary (`@tgoliveira/secure-auth`)
+- `docs/README.md` — documentation index
+
+**Historical docs** (do not treat as active): `docs/archive/**`
 
 ## Core Rule
 
-**Never implement a backend path that receives or stores plaintext private letter title/body.**
+**Never implement a backend path that receives or stores plaintext private note title/body/metadata.**
 
-Private letter title and body must be encrypted on the client before any API request.
+Note title, body, categories, and tags must be encrypted on the client before any API request.
 
 ## Architecture Boundary
 
@@ -32,25 +32,28 @@ React UI
   -> PostgreSQL
 ```
 
-Only the **Crypto Client Layer** may handle plaintext private letter title/body.
+Only the **Crypto Client Layer** may handle plaintext note title/body.
+
+**Account authentication** is owned by `@tgoliveira/secure-auth` — do not reimplement login, OAuth, passkey account login, TOTP, sessions, or password flows locally.
 
 React components must NOT import database clients, repositories, or ORM code.
 
 ## Forbidden
 
-- Plaintext `title`, `body`, `content`, `message` fields for private letters
-- Server Actions for private letter persistence
+- Plaintext `title`, `body`, `content`, `message`, `markdown` fields for notes on APIs
+- Reintroducing active `letters` routes, APIs, modules, schema, or UI (`/letters`, `/api/letters`, `letters` table)
+- Server Actions for private note persistence
 - Frontend direct database access
-- localStorage/sessionStorage/cookies for plaintext keys or letter content
+- localStorage/sessionStorage/cookies for plaintext keys or note content
 - Exportable/raw device secrets in IndexedDB (use non-extractable `CryptoKey` only)
-- Duplicate trusted-device registration for the same client `deviceId`
 - Mock encryption, fake passkey flows, fake recovery flows
-- AI APIs processing private letter content
-- Admin access to private letter content
-- Using TOTP 2FA, backup codes, or account login secrets as vault keys, letter keys, recovery codes, or trusted-device unlock material
-- Plaintext email verification or password reset tokens in database, logs, or analytics
-- Password reset or change flows that unlock, recover, or rotate the private letters vault
-- Confusing account sessions with trusted devices; revoking sessions must not revoke trusted-device vault envelopes
+- AI APIs processing private note content
+- Admin access to private note content
+- Using TOTP 2FA, backup codes, or account login secrets as vault keys, note keys, or vault unlock material
+- PBKDF2 fallback for **new** vault password or recovery phrase KDF paths (Argon2id only per ADR-005)
+- Password reset or change flows that unlock, recover, or rotate the vault
+- Confusing account sessions with vault unlock; account session does not decrypt notes
+- Competing local auth/account implementation (see `no-local-auth-implementation.test.ts`)
 
 ## Stop Conditions
 
@@ -69,60 +72,38 @@ Keep docs accurate with the code. **Do not merge behavior changes without updati
 |------------------|---------|
 | Setup, commands, ports, env vars | `README.md` |
 | Layers, directories, data flow | `ARCHITECTURE.md`, `docs/MODULE_BOUNDARIES.md` |
-| Crypto, vault, passkeys, recovery | `SECURITY.md` and/or ADRs (or add `TODO_SECURITY_REVIEW`) |
+| Crypto, vault, passkeys, recovery | `SECURITY.md`, ADR-005/006 |
 | Agent workflow, testing, boundaries | `AGENTS.md`, `.cursor/rules/*.md` |
-| New API routes or contracts | ADR-003 alignment; note in `ARCHITECTURE.md` if structural |
-
-Rules:
-
-- README must describe how to run the app **and** how to run tests (including coverage).
-- If you add a feature, user-facing flow, or recovery method, document it in README or SECURITY as appropriate.
-- Do not leave stale instructions (e.g. wrong port, missing env vars, outdated test commands).
+| Navigation / branding | `docs/LOGGED_IN_NAVIGATION_AUDIT.md`, `docs/UI_UX_DIRECTION.md` |
+| New API routes or contracts | `docs/API_REFERENCE.md`, `ARCHITECTURE.md` |
 
 ## Testing (required on every change)
 
-**Minimum coverage: 90%** for lines, statements, functions, and branches on enforced scope (see `vitest.config.ts`).
+**Minimum coverage: 90%** for enforced scope (see `vitest.config.ts`).
 
 Before finishing any task:
 
 ```bash
-npm ci                  # clean install from lockfile
-npm run lint            # ESLint
-npm run test:coverage   # must pass thresholds
-npm run build           # production typecheck + build
+npm ci
+npm run lint
+npm run test:coverage
+npm run build
 ```
 
-If coverage drops below 90%, add or extend tests until `npm run test:coverage` passes. Do not lower thresholds to make CI green.
-
-### Test layers (use the right type)
+### Test layers
 
 | Layer | Location | Use for |
 |-------|----------|---------|
-| Unit | `src/test/unit/` | Pure helpers, crypto, validation, clients |
-| Security | `src/test/security/` | Plaintext rejection, boundaries, sentinel phrase, redaction |
+| Unit | `src/test/unit/` | Pure helpers, crypto, validation |
+| Security | `src/test/security/` | Plaintext rejection, boundaries, sentinel, doc guards |
 | Services | `src/test/services/` | Business logic with mocked repositories |
 | API routes | `src/test/api/` | Route handlers with mocked auth + services |
-| Features | `src/test/features/` | Client feature flows (e.g. passkey unlock, site layout) |
+| Features | `src/test/features/` | Client flows (passkey unlock, nav, notes UI) |
 
-Guidelines:
-
-- Prefer **unit tests** for deterministic logic (crypto, parsing, validation).
-- Prefer **service/API tests** for authorization, rate limits, and envelope storage.
-- Browser E2E (Playwright) was removed; see `docs/TESTING_STRATEGY.md`.
-- New API routes, services, or crypto paths **must** include tests in the matching layer.
-- Security-sensitive paths (passkeys, recovery, vault unlock, account 2FA) need explicit tests; see `.cursor/rules/testing.md`.
-
-Enforced coverage scope (see `vitest.config.ts`):
-
-- `src/lib/**` (except excluded db/auth barrel files)
-- `src/server/services/**`, `src/server/policies/**`
-- `src/app/api/**` (except NextAuth catch-all route)
-- `src/features/passkey/**`
-
-Repository adapters and UI pages are covered indirectly via service/API/feature tests unless a change adds testable logic there—in that case extend the appropriate layer.
+Browser E2E (Playwright) was removed; see `docs/TESTING_STRATEGY.md`.
 
 ### Security tests (always required)
 
-Implement and maintain sentinel phrase tests and the checklist in `.cursor/rules/testing.md`.
-
 Sentinel phrase: `SENTINEL-PRIVATE-LETTER-DO-NOT-STORE-PLAINTEXT-12345` — must never appear in database records, API responses, logs, or admin endpoints.
+
+Also maintain: `no-letters-domain.test.ts`, `no-local-auth-implementation.test.ts`, `documentation-current-state.test.ts`.

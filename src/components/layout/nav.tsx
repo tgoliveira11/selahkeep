@@ -11,29 +11,12 @@ import { AppMark } from "@/components/ui/app-mark";
 import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { lockVaultSession } from "@/lib/crypto-client/vault-session";
 import { useVaultSessionUnlocked } from "@/features/vault/use-vault-session-unlocked";
+import {
+  isLoggedInNavLinkActive,
+  LOGGED_IN_NAV_LINKS,
+} from "@/lib/navigation/logged-in-nav";
 import { cn } from "@/lib/ui/cn";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
-
-const navLinks = [
-  { href: "/notes", label: "My notes" },
-  { href: "/notes/new", label: "Write" },
-  { href: "/vault/settings", label: "Vault" },
-  { href: "/vault/devices", label: "Devices" },
-  { href: "/vault/recovery", label: "Recovery" },
-  { href: "/settings/account", label: "Account" },
-] as const;
-
-function isNavLinkActive(pathname: string, href: string): boolean {
-  if (href === "/settings/account") {
-    return (
-      pathname === href ||
-      pathname.startsWith(`${href}/`) ||
-      pathname === "/settings/security" ||
-      pathname.startsWith("/settings/security/")
-    );
-  }
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
 
 export function Nav() {
   const { data: session } = useSession();
@@ -78,14 +61,17 @@ export function Nav() {
 
         {session ? (
           <>
-            <div className="hidden items-center gap-1 md:flex">
-              {navLinks.map((link) => (
+            <nav
+              aria-label="Main navigation"
+              className="hidden items-center gap-1 md:flex"
+            >
+              {LOGGED_IN_NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   className={cn(
                     "rounded-[var(--radius)] px-3 py-2 text-sm transition-colors hover:bg-[var(--card-muted)]",
-                    isNavLinkActive(pathname, link.href)
+                    isLoggedInNavLinkActive(pathname, link.href)
                       ? "font-medium text-[var(--primary)]"
                       : "text-[var(--foreground)]"
                   )}
@@ -96,12 +82,12 @@ export function Nav() {
               {!vaultUnlocked && (
                 <Link
                   href="/vault/unlock"
-                  className="rounded-[var(--radius)] px-3 py-2 text-sm text-[var(--warning)] hover:bg-[var(--card-muted)]"
+                  className="rounded-[var(--radius)] px-3 py-2 text-sm font-medium text-[var(--warning)] hover:bg-[var(--card-muted)]"
                 >
-                  Unlock
+                  Unlock vault
                 </Link>
               )}
-            </div>
+            </nav>
 
             <div className="hidden items-center gap-2 md:flex">
               {vaultUnlocked && (
@@ -132,7 +118,10 @@ export function Nav() {
           </>
         ) : (
           <div className="flex items-center gap-2">
-            <Link href="/register" className="hidden text-sm text-[var(--muted)] hover:text-[var(--foreground)] sm:inline">
+            <Link
+              href="/register"
+              className="hidden text-sm text-[var(--muted)] hover:text-[var(--foreground)] sm:inline"
+            >
               Create account
             </Link>
             <Link href="/login">
@@ -145,18 +134,23 @@ export function Nav() {
       {session && menuOpen && (
         <nav
           id={menuId}
-          aria-label="Main navigation"
+          aria-label="Mobile navigation"
           className="border-t border-[var(--border)] bg-[var(--card)] px-4 py-3 md:hidden"
         >
+          <p className="px-3 pb-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
+            Workspace
+          </p>
           <ul className="space-y-1">
-            {navLinks.map((link) => (
+            {LOGGED_IN_NAV_LINKS.filter((link) => link.group === "core").map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
                   onClick={closeMenu}
                   className={cn(
                     "block rounded-[var(--radius)] px-3 py-3 text-sm",
-                    isNavLinkActive(pathname, link.href) ? "bg-[var(--card-muted)] font-medium" : ""
+                    isLoggedInNavLinkActive(pathname, link.href)
+                      ? "bg-[var(--card-muted)] font-medium text-[var(--primary)]"
+                      : ""
                   )}
                 >
                   {link.label}
@@ -165,18 +159,76 @@ export function Nav() {
             ))}
             {!vaultUnlocked && (
               <li>
-                <Link href="/vault/unlock" onClick={closeMenu} className="block rounded-[var(--radius)] px-3 py-3 text-sm text-[var(--warning)]">
+                <Link
+                  href="/vault/unlock"
+                  onClick={closeMenu}
+                  className="block rounded-[var(--radius)] px-3 py-3 text-sm font-medium text-[var(--warning)]"
+                >
                   Unlock vault
                 </Link>
               </li>
             )}
           </ul>
-          <div className="mt-4 space-y-2 border-t border-[var(--border)] pt-4">
+
+          <p className="mt-4 px-3 pb-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
+            Vault protection
+          </p>
+          <ul className="space-y-1">
+            {LOGGED_IN_NAV_LINKS.filter((link) => link.group === "vault").map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  onClick={closeMenu}
+                  className={cn(
+                    "block rounded-[var(--radius)] px-3 py-3 text-sm",
+                    isLoggedInNavLinkActive(pathname, link.href)
+                      ? "bg-[var(--card-muted)] font-medium text-[var(--primary)]"
+                      : ""
+                  )}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
             {vaultUnlocked && (
-              <Button variant="secondary" className="w-full" onClick={handleLockVault}>
-                Lock vault
-              </Button>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleLockVault();
+                    closeMenu();
+                  }}
+                  className="block w-full rounded-[var(--radius)] px-3 py-3 text-left text-sm"
+                >
+                  Lock vault
+                </button>
+              </li>
             )}
+          </ul>
+
+          <p className="mt-4 px-3 pb-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
+            Account security
+          </p>
+          <ul className="space-y-1">
+            {LOGGED_IN_NAV_LINKS.filter((link) => link.group === "account").map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  onClick={closeMenu}
+                  className={cn(
+                    "block rounded-[var(--radius)] px-3 py-3 text-sm",
+                    isLoggedInNavLinkActive(pathname, link.href)
+                      ? "bg-[var(--card-muted)] font-medium text-[var(--primary)]"
+                      : ""
+                  )}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-4 space-y-2 border-t border-[var(--border)] pt-4">
             <Button variant="secondary" className="w-full" onClick={handleSignOut}>
               Sign out
             </Button>

@@ -1,12 +1,9 @@
-# Cryptography Rules (ADR-001)
+# Cryptography Rules (ADR-005)
 
-- AES-GCM, 256-bit keys, 96-bit IV per operation.
-- Structured payloads: `version`, `alg`, `iv`, `ciphertext`, `aad`.
-- AAD fields: `userId`, `resourceId`, `field` — must match authenticated user and persisted resource; validate server-side and client-side.
-- Letter Key per letter; encrypted by User Vault Key.
-- Recovery code: ≥128 bits entropy (uniform word selection + rejection sampling from a project-specific wordlist — **not BIP39**); dynamic word count from unique wordlist size (currently 17 words / 252 words ≈ 135.6 bits); Argon2id KDF primary; PBKDF2-SHA-256 fallback (600k iterations) with versioned `kdf-v1` metadata.
-- Recovery code shown only at generation/regeneration; never stored plaintext.
-- Passkeys authenticate identity; PRF output wraps vault key (not signature bytes).
-- PRF required for passkey vault envelopes; document browser fallback (recovery/trusted device).
-- IV reuse forbidden.
-- Uncertain choices require `TODO_SECURITY_REVIEW_REQUIRED`.
+- Follow `docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md` and `docs/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md`.
+- Historical ADR-001–004 are archived under `docs/archive/adr/` — do not implement from them when they conflict with ADR-005/006.
+- Argon2id only for vault password and recovery phrase KDF on new paths.
+- Per-note keys wrapped by User Vault Key; encrypted metadata includes title, category, tags, answered.
+- Encrypted vault index for list/search metadata — no plaintext title/category/tag at rest.
+- AAD binds `userId`, `resourceId`, `field`, `encryptionVersion`.
+- Passkey PRF output never leaves the browser.

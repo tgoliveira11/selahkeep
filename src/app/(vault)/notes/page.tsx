@@ -54,7 +54,7 @@ export default function NotesPage() {
   return (
     <PageLayout>
       <PageHeader
-        title="My notes"
+        title="Notes"
         description="Private encrypted notes — prayers, reflections, and journaling in one vault."
         action={
           <Link href="/notes/new">

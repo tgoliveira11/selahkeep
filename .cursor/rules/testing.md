@@ -11,100 +11,61 @@
 Place new tests in the correct folder:
 
 | Layer | Path | Examples |
-|-------|------|------------|
+|-------|------|----------|
 | Unit | `src/test/unit/` | AES-GCM, vault unlock, WebAuthn PRF prep, validation, API client |
-| Security | `src/test/security/` | Plaintext rejection, schema, AAD, sentinel phrase, module + utility boundaries |
-| Services | `src/test/services/` | letter/vault/passkey/trusted-device/admin services |
-| API | `src/test/api/` | Route handlers (`/api/letters`, `/api/passkeys`, `/api/vault`, …) |
-| Features | `src/test/features/` | `unlock-with-passkey`, site layout shell, client orchestration |
+| Security | `src/test/security/` | Plaintext rejection, schema, AAD, sentinel phrase, doc guards, no-letters |
+| Services | `src/test/services/` | note/vault/passkey/trusted-device/admin services |
+| API | `src/test/api/` | Route handlers (`/api/notes`, `/api/passkeys`, `/api/vault`, …) |
+| Features | `src/test/features/` | passkey unlock, site layout, notes UI, navigation |
 
 Use unit/service/API/feature tests for coverage. Browser E2E was removed; see `docs/TESTING_STRATEGY.md`.
 
 ## Required security tests
 
-1. API rejects plaintext title/body on create.
-2. Database has no plaintext title/body columns or values.
-3. Admin APIs do not return plaintext letter content.
-4. Deleted letters removed from active storage.
-5. Revoked trusted devices cannot unlock vault.
-6. Recovery code not stored in plaintext.
-7. Logs do not include private letter content.
-8. Default titles encrypted before storage.
-9. Answered status queryable as open metadata.
+1. API rejects plaintext title/body on note create.
+2. Database has no plaintext note title/body columns.
+3. Admin APIs do not return plaintext note content.
+4. Deleted notes soft-deleted (`deleted_at`); account deletion cascades vault/notes.
+5. Revoked trusted devices cannot unlock vault (legacy path).
+6. Recovery phrase never stored plaintext; legacy recovery codes hashed only.
+7. Logs do not include private note content.
+8. Note titles encrypted in metadata before storage.
+9. Answered status in encrypted metadata/index only.
 10. New-device unlock requires valid recovery method.
 11. Frontend does not import database clients.
-12. Letter persistence goes through API endpoints.
-13. PostgreSQL migrations generated.
+12. Note persistence goes through `/api/notes` only.
+13. No active `letters` domain (`no-letters-domain.test.ts`).
+14. Active docs reflect LTG Vault (`documentation-current-state.test.ts`).
 
 ### IndexedDB (when touching device storage or vault unlock)
 
-- Device secret must be a **non-extractable** `CryptoKey`, never base64/raw bytes in IndexedDB.
+- Device secret must be a **non-extractable** `CryptoKey`.
 - Only **encrypted** vault envelopes may be persisted locally.
 - Sign out must call `clearVaultClientState()`.
-- Trusted device labels use `getDeviceDisplayInfo()`; store `devicePublicKey.deviceId` for “This device” matching.
-- See `src/test/security/indexeddb-storage.test.ts` and `SECURITY.md` browser storage section.
+- See `src/test/security/indexeddb-storage.test.ts`.
 
-### Passkey & recovery (when touching those areas)
+### Passkey & recovery
 
-- PRF salt derivation stable per user (`passkey-prf.test.ts`).
-- WebAuthn JSON options convert PRF salts to `ArrayBuffer` before browser calls (`prepare-webauthn-options.test.ts`).
-- Passkey register/authenticate/remove covered in service + API tests.
-- Recovery envelope storage uses KDF metadata, not plaintext code.
-- Recovery entropy: mathematical test in `recovery-code.test.ts` (not word-count only).
+- PRF never sent to API; passkey PRF vault unlock per ADR-006.
+- Account passkey login owned by `@tgoliveira/secure-auth`.
+- Recovery phrase: BIP39 client-only (ADR-005).
 
-### Module boundaries (Phase 1 modular monolith)
+### Module boundaries
 
-- Static import guards: `src/test/security/module-boundaries.test.ts`, `src/test/security/utility-module-boundaries.test.ts` (Phase 2 utility cores)
-- Shim-aware source reads: `src/test/helpers/module-source.ts`
-- See `docs/MODULE_BOUNDARIES.md` for forbidden cross-module imports
+- `src/test/security/module-boundaries.test.ts`, `utility-module-boundaries.test.ts`
+- `docs/MODULE_BOUNDARIES.md`
 
-### Account sessions (when touching session management)
+### Account auth (package-owned)
 
-- IP masking/hashing: `session-ip.test.ts`
-- User-agent parsing: `user-agent-metadata.test.ts`
-- Session service + API routes: `account-session-service.test.ts`, `account-sessions-routes.test.ts`
-- Security boundary: `account-sessions-boundary.test.ts`
-- UI: `active-sessions-settings.test.tsx`, `session-card.test.tsx`
-
-### Account email verification and passwords (when touching auth flows)
-
-- Password policy off/warn/enforce: `password-policy.test.ts`
-- Token hash, single-use, expiration: `account-auth-service.test.ts`
-- API generic forgot-password, rate limits: `account-auth-routes.test.ts`
-- No token plaintext in DB/logs; no vault in reset/change: `account-auth-boundary.test.ts`
-- UI states: `forgot-password-page.test.tsx`, `verify-email-page.test.tsx`
-- Email adapters: `send-email.test.ts`, `smtp-provider.test.ts`, `email-config.test.ts` (mock transport; no real SMTP in CI)
-
-### Account 2FA (when touching TOTP login or settings)
-
-- TOTP secret encryption round-trip: `two-factor-secret-crypto.test.ts`
-- TOTP verify/generate: `totp.test.ts`
-- Backup code hash and one-time use: `backup-code.test.ts`, `two-factor-service.test.ts`
-- API routes never return stored secrets after setup: `two-factor-routes.test.ts`
-- Vault/crypto boundary unchanged: `two-factor-boundary.test.ts`
-- Login flow: `auth-login-service.test.ts`, `auth-login-routes.test.ts`
-- UI copy distinguishes account 2FA from vault recovery: `two-factor-settings.test.tsx`
-
-### P1 beta gates (required before real beta)
-
-- Runtime sentinel integration: `sentinel-runtime-integration.test.ts`
-- Rate limit abstraction: `rate-limit.test.ts`
-- Account deletion: `account-service.test.ts`, `account-route.test.ts`
-- Audit redaction: `audit-sanitization.test.ts`
-- WebAuthn challenges: `webauthn-challenge-hardening.test.ts`
-- Vault auto-lock: `vault-session.test.ts`
-- Threat model / LGPD / backup docs in `/docs`
-
-- AAD mismatch rejection: `aad-validation.test.ts`, `aad-verify.test.ts`, letter service tests.
-- Transaction rollback: mock `runInTransaction` in `setup.ts`; service tests pass `tx` client.
-- Trusted device revocation unlock: `trusted-device-revocation-unlock.test.ts`, `trusted-device-state.test.ts`.
+- Delegate route tests: `secure-auth-delegate-routes.test.ts`, `no-local-auth-implementation.test.ts`
+- Do not add local auth service tests.
 
 ## Sentinel phrase test
 
-Create letter with: `SENTINEL-PRIVATE-LETTER-DO-NOT-STORE-PLAINTEXT-12345`
+Create note with: `SENTINEL-PRIVATE-LETTER-DO-NOT-STORE-PLAINTEXT-12345`
 
 Verify phrase absent from: database, API responses, logs, admin endpoints.
 
 ## Documentation
 
-When adding tests or changing what is covered, update `README.md` Testing section and `AGENTS.md` if workflow or thresholds change.
+When adding tests or changing coverage, update `README.md`, `AGENTS.md`, and `docs/TESTING_STRATEGY.md` as needed.

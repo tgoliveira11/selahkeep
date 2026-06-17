@@ -4,7 +4,7 @@ Branch: `main` (Phase 0 complete)
 
 ## Goal
 
-Remove competing local auth/account implementation. Keep a thin `@tgoliveira/secure-auth` integration and preserve private letters / vault product functionality.
+Remove competing local auth/account implementation. Keep thin `@tgoliveira/secure-auth` integration and preserve **notes / vault** product functionality.
 
 ## Removed (local competing auth)
 
@@ -22,8 +22,8 @@ Remove competing local auth/account implementation. Keep a thin `@tgoliveira/sec
 
 | Area | Notes |
 |------|-------|
-| Letters | pages, API, crypto-client, services, repositories |
-| Vault | init/status, recovery code, trusted devices, device envelopes |
+| Notes | pages, API, crypto-client, services, repositories |
+| Vault | init/status, recovery phrase, trusted devices, passkey PRF envelopes |
 | Vault passkeys | `/api/passkeys/**` recovery registration/authentication |
 | Vault login PRF | `/api/auth/passkey/login/options` PRF enrichment via `passkeyLoginVaultService` |
 | Vault unlock after login | `/api/auth/passkey/login/vault-unlock/options` (product-only) |

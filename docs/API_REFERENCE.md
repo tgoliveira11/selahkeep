@@ -46,7 +46,7 @@ Most routes require a **NextAuth session cookie**:
 
 After logging in via the browser, copy the cookie from DevTools → Application → Cookies, or use Swagger UI in the same browser session so cookies are sent automatically.
 
-Registration (`POST /api/auth/register`) and NextAuth OAuth/credentials flows are documented in ADR-003; interactive OAuth (Google, Apple, Microsoft `azure-ad`) is easier through the web login page than Swagger. Microsoft sign-in is account authentication only and does not unlock the vault.
+Registration (`POST /api/auth/register`) and NextAuth OAuth/credentials flows are documented in ADR-005 and `docs/API_REFERENCE.md`. Interactive OAuth is easiest through the web login page. Microsoft/GitHub sign-in is account authentication only and does not unlock the vault.
 
 ### Account two-factor authentication (TOTP)
 
@@ -126,6 +126,6 @@ When adding or changing API routes:
 
 1. Update `docs/openapi.yaml`
 2. Verify at `/api-docs` after `npm run dev`
-3. Align with `docs/ADR-003_API_Contract_Database_Schema_No_Plaintext_Enforcement.md`
+3. Align with `docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md`
 
 Contract tests in `src/test/api/` and security tests should remain the source of truth for behavior; OpenAPI is for human discovery and external tooling.

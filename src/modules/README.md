@@ -1,6 +1,6 @@
 # Internal Modules
 
-This project uses an **internal modular monolith** per `docs/ADR-004_Modularization_and_Reusability_Strategy.md`.
+This project uses an **internal modular monolith** per `docs/MODULE_BOUNDARIES.md`.
 
 ## Phase status
 

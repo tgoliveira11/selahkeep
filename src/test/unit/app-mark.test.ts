@@ -4,12 +4,13 @@ import { join } from "node:path";
 import { BRAND_MARK_SVG } from "@/lib/ui/brand-mark";
 
 describe("app brand icon", () => {
-  it("uses LTG Vault purple design-system colors in favicon SVG", () => {
+  it("uses LTG Vault purple monogram in favicon SVG", () => {
     const icon = readFileSync(join(process.cwd(), "src/app/icon.svg"), "utf8");
     expect(icon).toContain("#5b3a8c");
-    expect(icon).toContain("#faf8fc");
-    expect(icon).toContain("#8b6bb8");
+    expect(icon).toContain("LTG");
     expect(icon).toContain('aria-label="LTG Vault"');
+    expect(icon).not.toContain("#4a6741");
+    expect(icon).not.toContain("M6 11.75");
   });
 
   it("keeps shared brand mark aligned with favicon file", () => {

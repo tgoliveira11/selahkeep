@@ -1,3 +1,7 @@
+> **Archived historical document.** Not an active architecture or source-of-truth document.
+> Current source of truth: `docs/TDR_LTG_Vault_MVP.md`, `docs/ADR-005_*`, `docs/ADR-006_*`.
+
+
 # Secure-Auth Deployment Checklist — LTG Vault
 
 ## LTG Vault product checks (Phase 5)

@@ -11,13 +11,10 @@
 
 ## Modular monolith (Phase 1 + Phase 2)
 
-This project uses an **internal modular monolith** per `docs/ADR-004_Modularization_and_Reusability_Strategy.md`.
+This project uses an **internal modular monolith**. See `docs/MODULE_BOUNDARIES.md` and `docs/UTILITY_EXTRACTION_INVENTORY.md`.
 
-- Business logic lives under `src/modules/{auth,account,sessions,two-factor,passkeys,email,audit,rate-limit,security,vault,notes,ui}`.
-- **Phase 2** isolates pure utilities in subfolders (`security/logger`, `email/core`, `rate-limit/adapters`, `ui/primitives`, …). See `docs/UTILITY_EXTRACTION_INVENTORY.md`.
-- Next.js routes stay in `src/app/api` and delegate to module services.
-- Legacy paths (`src/server/services`, `src/lib/auth`, …) re-export from `src/modules/*` during migration.
-- **No external packages** or monorepo — utilities are internal only until Phase 4.
+- Business logic lives under `src/modules/{email,audit,rate-limit,security,vault,notes,ui}`.
+- **Account auth** is not a local module — `@tgoliveira/secure-auth` via `src/lib/secure-auth.ts`.
 
 See `docs/MODULE_BOUNDARIES.md` for responsibilities and forbidden cross-module imports.
 
@@ -43,7 +40,7 @@ src/
   app/
     (public)/          # Landing, marketing
     (auth)/            # Login, signup
-    (vault)/           # Letters, devices, recovery
+    (vault)/           # Notes, vault, settings
     api/               # REST API routes (thin; delegate to modules)
   components/          # App shell + domain components (migrating to modules)
     ui/                # Re-exports from modules/ui
@@ -114,35 +111,35 @@ Settings -> POST /api/account/change-password -> password_updated_at (current se
 - Password policy: `buildSecureAuthConfigFromEnv` → `@tgoliveira/secure-auth` (`passwordPolicy` + `secureAuth.uiConfig.passwordPolicy`); resolved by `@tgoliveira/secure-auth/client/password-policy` on the client
 - UI: `(auth)/register`, `reset-password` (package pages); account settings uses package `ChangePasswordSettings` inside `SecureAuthUIProvider`
 
-Changing or resetting the account password does **not** unlock, recover, or rotate the private letters vault.
+Changing or resetting the account password does **not** unlock, recover, or rotate the vault.
 
 ## Envelope Encryption
 
 ```text
 Note metadata/body -> Note Key -> User Vault Key -> vault envelopes
+Note metadata/body -> Note Key -> User Vault Key
 Vault index (titles for list) -> User Vault Key
-Legacy letter title/body -> Letter Key -> User Vault Key
 ```
 
-Vault envelope methods: `trusted_device`, `passkey_authorized_device`, `recovery_code`
+Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ legacy `trusted_device`, `recovery_code` for vault-v1)
 
 ## UI layer
 
-- **Design docs:** `docs/UI_UX_DIRECTION.md`, `docs/UI_UX_AUDIT.md`, `docs/UI_UX_IMPLEMENTATION_PLAN.md`
-- **Layout:** `SiteShell` (`Nav` + `SiteFooter`) on `(public)`, `(auth)`, and `(vault)` route groups; `PageLayout` for content width (including `marketing` width for the home page); responsive mobile menu in `Nav`. Auth pages use package UI inside the shell. See `docs/LAYOUT_NAVIGATION_AUDIT.md`.
-- **Public marketing:** Home page sections and copy in `src/lib/marketing/home-copy.ts`; shared CTAs in `src/components/marketing/public-cta-buttons.tsx`
-- **Vault setup:** `/vault/setup` — LTG vault password + BIP39 recovery phrase wizard (purple primary CTAs)
-- **Vault unlock:** shared `VaultUnlockPanel` / `LtgVaultUnlockPanel` used by `/vault/unlock` and `VaultAccessGate`
-- **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + sage primary)
-- **Security UX:** no plaintext notes/letters in URLs/titles; recovery phrase cleared after confirm; `ConfirmDialog` for destructive actions; Markdown preview sanitized (`dompurify` + `marked`)
+- **Design docs:** `docs/UI_UX_DIRECTION.md`, `docs/LOGGED_IN_NAVIGATION_AUDIT.md`
+- **Layout:** `SiteShell` (`Nav` + `SiteFooter`) on `(public)`, `(auth)`, and `(vault)` route groups; `PageLayout` for content width; responsive mobile menu in `Nav`. Auth pages use package UI inside the shell.
+- **Public marketing:** Home page sections and copy in `src/lib/marketing/home-copy.ts`
+- **Vault setup:** `/vault/setup` — vault password + BIP39 recovery phrase wizard
+- **Vault unlock:** `LtgVaultUnlockPanel` / `VaultAccessGate` on `/vault/unlock` and note pages
+- **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + **purple** primary)
+- **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview
 
-## AAD binding (ADR-001)
+## AAD binding (ADR-005)
 
-Client generates letter UUIDs and binds encrypted payloads with AAD:
+Client generates note UUIDs and binds encrypted payloads with AAD:
 
 - `aad.userId` — authenticated user ID
-- `aad.resourceId` — persisted letter/vault resource ID (client-provided letter UUID)
-- `aad.field` — encrypted field name (`title`, `body`, `letter_key`, etc.)
+- `aad.resourceId` — note or vault resource ID
+- `aad.field` — encrypted field name (`note_metadata`, `note_body`, `note_key`, `vault_key`, etc.)
 
 Server validates AAD in `src/server/policies/aad-validation.ts` before storage. Client verifies AAD in `src/lib/crypto-client/aad-verify.ts` before decryption.
 

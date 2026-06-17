@@ -1,11 +1,7 @@
 # LTG Vault — Phased Implementation Plan
 
-**Status:** Proposed (planning only)  
-**Derived from:** [`docs/TDR_LTG_Vault_MVP.md`](./TDR_LTG_Vault_MVP.md)  
-**Repository:** [letter-to-god](https://github.com/tgoliveira11/letter-to-god)  
-**Last updated:** 2026-06-16
-
-This document translates the LTG Vault TDR into an engineering plan. It does **not** authorize implementation by itself; each phase should be executed only after the previous phase’s acceptance criteria are met and relevant ADRs are updated.
+**Status:** Phases 0–5 **complete** (historical planning tables retained below for traceability)  
+**Active routes:** `/notes`, `/api/notes`, `/vault/*` — **letters domain removed**
 
 ---
 
@@ -797,10 +793,11 @@ Phase 0 ──► Phase 1 (crypto + vault setup)
 | Document | Role |
 |----------|------|
 | [`docs/TDR_LTG_Vault_MVP.md`](./TDR_LTG_Vault_MVP.md) | Product/architecture source of truth |
-| [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./AUTH_RESET_TO_SECURE_AUTH.md) | Phase 0 status |
-| [`docs/ADR-001_*`](./ADR-001_Cryptographic_Payload_Format_and_Envelope_Encryption.md) | Payload format (to evolve) |
-| [`docs/ADR-002_*`](./ADR-002_Vault_Unlocking_Passkeys_Trusted_Devices_Recovery_Code.md) | Unlock methods (to evolve) |
-| [`docs/ADR-003_*`](./ADR-003_API_Contract_Database_Schema_No_Plaintext_Enforcement.md) | API contract |
+| [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./AUTH_RESET_TO_SECURE_AUTH.md) | Phase 0 auth boundary |
+| [`docs/ADR-005_*`](./ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md) | Active vault crypto |
+| [`docs/ADR-006_*`](./ADR-006_LTG_Vault_Passkey_PRF_Unlock.md) | Active passkey PRF unlock |
+| [`docs/archive/adr/`](./archive/adr/) | Historical ADR-001–004 |
+| [`docs/README.md`](./README.md) | Documentation index |
 | `AGENTS.md` | Agent workflow + test thresholds |
 
 ---

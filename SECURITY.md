@@ -1,36 +1,38 @@
-# Security — Private Letters Vault MVP
+# Security — LTG Vault MVP
 
-> **LTG Vault direction:** [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) — Argon2id-only vault KDF, encrypted note metadata/index, no plaintext titles/tags/categories at rest, account auth from `@tgoliveira/secure-auth@0.1.17-internal`. Implementation phases: [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md). This file documents **current** enforced rules; align ADRs during migration.
+> **Source of truth:** [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md), [`docs/ADR-005_*`](./docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md), [`docs/ADR-006_*`](./docs/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md). Phases 0–5 complete.
 
 ## Privacy Promise
 
-> Your private letters are protected on your device before they are saved. Our systems are designed so our team does not have access to the keys required to read them.
+> Your private notes are protected on your device before they are saved. Our systems are designed so our team does not have access to the keys required to read them.
 
 ## Non-Negotiable Rules
 
-1. Private letter title and body encrypted in browser before API requests.
+1. Private note title, body, and metadata encrypted in the browser before API requests.
 2. Backend receives only structured encrypted payloads.
 3. User Vault Key generated on client; never sent in plaintext.
-4. Letter Key generated per letter; encrypted by User Vault Key.
-5. Recovery codes never stored in plaintext (≥128 bits entropy).
-6. No plaintext keys or letter content in localStorage, sessionStorage, cookies, URLs, logs, or analytics.
-7. No AI processing of private letters.
-8. No admin access to private letter content.
-9. No Server Actions for private letter persistence.
+4. Per-note keys encrypted by User Vault Key.
+5. Recovery phrase never leaves the browser; recovery codes (legacy) never stored in plaintext.
+6. No plaintext keys or note content in localStorage, sessionStorage, cookies, URLs, logs, or analytics.
+7. No AI processing of private notes.
+8. No admin access to private note content.
+9. No Server Actions for note persistence.
 10. Frontend must not access database directly.
+11. Account authentication from `@tgoliveira/secure-auth` only — no competing local auth.
+12. Account session does not unlock the vault.
 
-## Cryptography (ADR-001)
+## Cryptography (ADR-005)
 
 - AES-GCM, 256-bit keys, 96-bit random IV per operation
 - Structured payload: `version`, `alg`, `iv`, `ciphertext`, `aad`
-- **AAD binding (server + client):** `aad.userId` must match session user; `aad.resourceId` must match persisted letter/vault id; `aad.field` must match the encrypted field. Reject mismatches before storage.
-- **Letter IDs:** client generates UUID; server persists the same id (no server reassignment).
+- **AAD binding (server + client):** `aad.userId` must match session user; `aad.resourceId` must match persisted note/vault id; `aad.field` must match the encrypted field.
+- **Note IDs:** client generates UUID; server persists the same id.
 - **LTG vault password KDF (new setups):** Argon2id only via `hash-wasm` — no PBKDF2 fallback (`src/lib/crypto-client/vault-kdf.ts`, ADR-005)
 - **LTG recovery phrase (new setups):** BIP39 English, 12 or 24 words (`src/lib/crypto-client/recovery-phrase.ts`)
 - **Legacy recovery code KDF:** Argon2id preferred; PBKDF2-SHA-256 fallback (600k iterations) with versioned `kdf-v1` metadata — legacy `recovery_code` envelopes only
 - Recovery codes: ≥128 bits entropy (project-specific wordlist, not BIP39; currently 17 words from 252 unique words ≈ 135.6 bits); uniform word selection + rejection sampling; shown only at generation/regeneration; never stored plaintext
 
-## Vault Unlocking (ADR-002)
+## Vault Unlocking (ADR-005 / ADR-006)
 
 - Passkeys must not be used as raw encryption keys
 - Trusted devices are revocable
@@ -51,7 +53,7 @@ Multi-step sensitive flows use `runInTransaction()` (vault init, trusted device 
 
 ## Browser Storage (IndexedDB)
 
-Allowed in IndexedDB (per ADR-002):
+Allowed in IndexedDB (legacy trusted-device path):
 
 - **Encrypted vault envelope** (`encryptedVaultKey` structured payload only)
 - **Non-extractable device secret** (`CryptoKey` with `extractable: false` — never raw key bytes as strings)

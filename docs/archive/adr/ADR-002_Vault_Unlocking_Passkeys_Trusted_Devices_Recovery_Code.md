@@ -1,3 +1,7 @@
+> **Archived historical document.** Not an active architecture or source-of-truth document.
+> Current source of truth: `docs/TDR_LTG_Vault_MVP.md`, `docs/ADR-005_*`, `docs/ADR-006_*`.
+
+
 # ADR-002 — Vault Unlocking, Passkeys, Trusted Devices, and Recovery Code
 
 ## Status

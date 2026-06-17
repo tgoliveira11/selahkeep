@@ -758,9 +758,10 @@ This preserves emotional/spiritual identity while making the product more useful
 
 | Document | Role |
 |----------|------|
-| `docs/TDR_Private_Letters_Vault_MVP_Revised.md` | Previous letters-only TDR (superseded where conflicting) |
-| `docs/ADR-001_*` | Encrypted payload format (to be aligned with note model) |
-| `docs/ADR-002_*` | Vault unlocking (passkeys, trusted devices, recovery) |
-| `docs/ADR-003_*` | API contract / no plaintext |
-| `docs/AUTH_RESET_TO_SECURE_AUTH.md` | Auth reset status |
-| `docs/LTG_VAULT_IMPLEMENTATION_PLAN.md` | Engineering phased plan (derived from this TDR) |
+| `docs/archive/TDR_Private_Letters_Vault_MVP_Revised.md` | Historical letters-only TDR (archived) |
+| `docs/ADR-005_*` | Active vault crypto, note keys, recovery phrase |
+| `docs/ADR-006_*` | Active passkey PRF vault unlock |
+| `docs/archive/adr/ADR-001` … `ADR-004` | Historical ADRs (archived) |
+| `docs/AUTH_RESET_TO_SECURE_AUTH.md` | Auth boundary with secure-auth |
+| `docs/LTG_VAULT_IMPLEMENTATION_PLAN.md` | Engineering phased plan (Phases 0–5 complete) |
+| `docs/README.md` | Documentation index |

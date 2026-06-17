@@ -272,7 +272,7 @@ Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.17-i
 ## Related docs
 
 - [`.env.example`](../.env.example) — local template (placeholders only)
-- [`docs/migrations/secure-auth-deployment-checklist.md`](./migrations/secure-auth-deployment-checklist.md)
+- [`docs/archive/migrations/secure-auth-deployment-checklist.md`](./archive/migrations/secure-auth-deployment-checklist.md) (historical; see also `docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md`)
 - [`README.md`](../README.md) — email, OAuth, WebAuthn setup
 
 ---

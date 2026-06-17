@@ -1,30 +1,32 @@
-# Threat Model — Private Letters Vault MVP
+# Threat Model — LTG Vault MVP
+
+> **Filename note:** `THREAT_MODEL_Private_Letters_Vault.md` is retained for link stability. Content below describes **LTG Vault** (notes + vault domain). Historical “private letters” wording refers to encrypted note content types (letters, prayers, reflections), not an active `letters` implementation.
 
 ## Document Status
 
 | Field | Value |
 |-------|-------|
 | **Status** | Draft — P1 beta gate |
-| **Scope** | Private Letters Vault MVP (web) |
-| **Related docs** | [TDR](./TDR_Private_Letters_Vault_MVP_Revised.md), [ADR-001](./ADR-001_Cryptographic_Payload_Format_and_Envelope_Encryption.md), [ADR-002](./ADR-002_Vault_Unlocking_Passkeys_Trusted_Devices_Recovery_Code.md), [ADR-003](./ADR-003_API_Contract_Database_Schema_No_Plaintext_Enforcement.md), [SECURITY.md](../SECURITY.md) |
+| **Scope** | LTG Vault MVP (web) — encrypted notes in a private vault |
+| **Related docs** | [TDR](./TDR_LTG_Vault_MVP.md), [ADR-005](./ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md), [ADR-006](./ADR-006_LTG_Vault_Passkey_PRF_Unlock.md), [SECURITY.md](../SECURITY.md) |
 | **Audience** | Engineering, security review, product, legal/privacy |
 
 ## Security Architecture Summary
 
-The Private Letters Vault uses **client-side encryption**. Private letter title and body are encrypted in the browser before any API request. The server stores only structured encrypted payloads (AES-GCM with AAD binding per ADR-001). The User Vault Key and Letter Keys never leave the client in plaintext.
+LTG Vault uses **client-side encryption**. Note title, body, categories, and tags are encrypted in the browser before any API request. The server stores only structured encrypted payloads (AES-GCM with AAD binding per ADR-005). The User Vault Key and Note Keys never leave the client in plaintext.
 
-**Core privacy promise:** the operations team does not hold keys required to read private letters from database records alone.
+**Core privacy promise:** the operations team does not hold keys required to read private note content from database records alone.
 
-**Residual truth:** any attacker who can execute JavaScript in an unlocked vault session on the user's device can decrypt letters. Client-side encryption protects data at rest on the server; it does not eliminate endpoint compromise.
+**Residual truth:** any attacker who can execute JavaScript in an unlocked vault session on the user's device can decrypt notes. Client-side encryption protects data at rest on the server; it does not eliminate endpoint compromise.
 
 ### Implemented controls (cross-cutting)
 
 | Control | Implementation |
 |---------|----------------|
-| Client-side encryption | `src/lib/crypto-client/` — AES-GCM, per-letter keys, AAD binding |
+| Client-side encryption | `src/lib/crypto-client/` — AES-GCM, per-note keys, AAD binding |
 | No plaintext on server | Plaintext rejection policy, Zod schemas, sentinel tests |
 | Account deletion | `DELETE /api/account` cascades user-owned rows via FK `onDelete: "cascade"` |
-| Audit logging | Sanitized metadata only; no letter content or key material |
+| Audit logging | Sanitized metadata only; no note content or key material |
 | Rate limiting | `RATE_LIMIT_STORE=postgres` in production (PostgreSQL adapter); in-memory for local dev |
 | Vault auto-lock | 15-minute inactivity timeout (`VAULT_INACTIVITY_MS`) |
 | Autosave | **Disabled for MVP** — no autosave implementation; plaintext autosave forbidden |
@@ -96,7 +98,7 @@ Reputation destruction, regulatory exposure (LGPD), loss of user trust. Direct l
 
 **Current mitigations**
 
-- Architecture forbids admin access to private letter content (TDR, ADR-003, AGENTS.md).
+- Architecture forbids admin access to private note content (TDR, ADR-005, AGENTS.md).
 - No server-side decryption path for letter title/body.
 - No admin API returning encrypted letter payloads for support workflows.
 - Audit events record security actions without sensitive content.
@@ -220,7 +222,7 @@ User loses their recovery code and all other recovery methods (trusted devices, 
 **Current mitigations**
 
 - Recovery code shown only at generation/regeneration; never stored server-side.
-- UX prompts encourage recovery setup after first letter (ADR-002).
+- UX prompts encourage recovery phrase setup after vault creation (ADR-005).
 - Recovery state classification (Protected / Basic / At Risk) encourages multiple methods.
 - Passkeys and multiple trusted devices provide alternate paths.
 
@@ -524,7 +526,7 @@ Silent destruction of privacy promise; plaintext in database, logs, or browser s
 
 - Mandatory human review for crypto-client and vault-unlock changes.
 - Expand security tests for new API routes and envelope methods.
-- Pre-beta external crypto review (ADR-002 security review gate).
+- Pre-beta external crypto review (ADR-005 security review gate).
 
 ---
 
@@ -580,7 +582,7 @@ If recovery code is weak or KDF parameters are insufficient, attacker derives wr
 
 **Required follow-up**
 
-- External security review of KDF parameters and recovery code entropy before production (ADR-002 gate).
+- External security review of Argon2id KDF parameters and recovery phrase entropy before production (ADR-005 gate).
 - Document offline attack model in SECURITY.md.
 - Plan encryption version migration path for KDF upgrades (TDR §25 key rotation — future).
 - User education: treat recovery code like a master password; store offline securely.
@@ -591,7 +593,7 @@ If recovery code is weak or KDF parameters are insufficient, attacker derives wr
 
 | Trigger | Action |
 |---------|--------|
-| New API route or envelope method | Update this document and ADR-003 |
+| New API route or envelope method | Update this document and ADR-005 |
 | New third-party integration | Re-assess threats 3, 9, 10, 13 |
 | Backup provider change | Re-assess threats 1, 12 |
 | Auth method change | Re-assess threats 7, 8, 11 |

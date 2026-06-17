@@ -6,7 +6,7 @@
 |-------|-------|
 | **Status** | Draft — P1 beta gate |
 | **Scope** | PostgreSQL active storage and provider-managed backups |
-| **Related docs** | [TDR §23–24](./TDR_Private_Letters_Vault_MVP_Revised.md), [THREAT_MODEL](./THREAT_MODEL_Private_Letters_Vault.md), [LGPD_BETA_GATES](./LGPD_BETA_GATES.md) |
+| **Related docs** | [TDR §23–24](./TDR_LTG_Vault_MVP.md), [THREAT_MODEL](./THREAT_MODEL_Private_Letters_Vault.md), [LGPD_BETA_GATES](./LGPD_BETA_GATES.md) |
 
 ## Purpose
 

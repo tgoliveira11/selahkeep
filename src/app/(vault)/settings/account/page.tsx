@@ -38,14 +38,9 @@ export default function AccountSettingsPageWrapper() {
         }}
         footer={
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Link href="/vault/devices">
+            <Link href="/vault/settings">
               <Button variant="secondary" className="w-full sm:w-auto">
-                Trusted devices
-              </Button>
-            </Link>
-            <Link href="/vault/recovery">
-              <Button variant="secondary" className="w-full sm:w-auto">
-                Recovery code & passkey
+                Vault settings
               </Button>
             </Link>
           </div>

@@ -1,4 +1,4 @@
-# LGPD and Privacy Beta Gates — Private Letters Vault MVP
+# LGPD and Privacy Beta Gates — LTG Vault MVP
 
 ## Document Status
 
@@ -6,13 +6,13 @@
 |-------|-------|
 | **Status** | Draft — P1 beta gate checklist |
 | **Scope** | Brazil LGPD alignment and privacy prerequisites before real-user beta |
-| **Related docs** | [TDR §37](./TDR_Private_Letters_Vault_MVP_Revised.md), [THREAT_MODEL](./THREAT_MODEL_Private_Letters_Vault.md), [BACKUP_RESTORE_POLICY](./BACKUP_RESTORE_POLICY.md), [SECURITY.md](../SECURITY.md) |
+| **Related docs** | [TDR §37](./TDR_LTG_Vault_MVP.md), [THREAT_MODEL](./THREAT_MODEL_Private_Letters_Vault.md), [BACKUP_RESTORE_POLICY](./BACKUP_RESTORE_POLICY.md), [SECURITY.md](../SECURITY.md) |
 
 ## Purpose
 
-This document lists **mandatory privacy and legal gates** before onboarding real users (public or private beta) for the Private Letters Vault MVP. Items marked **Required** block beta until completed or explicitly waived by legal counsel with documented risk acceptance.
+This document lists **mandatory privacy and legal gates** before onboarding real users (public or private beta) for **LTG Vault**. Items marked **Required** block beta until completed or explicitly waived by legal counsel with documented risk acceptance.
 
-The product targets users writing private spiritual letters. Data sensitivity is **high** even when letter content is encrypted on the client — metadata, account identifiers, and availability of encrypted blobs still implicate LGPD.
+The product targets users writing private spiritual content (letters, prayers, reflections, and notes). Data sensitivity is **high** even when note content is encrypted on the client — metadata, account identifiers, and availability of encrypted blobs still implicate LGPD.
 
 ---
 
@@ -62,21 +62,21 @@ The product targets users writing private spiritual letters. Data sensitivity is
 | Category | Examples | Encrypted? | LGPD relevance |
 |----------|----------|------------|----------------|
 | Account data | Email, auth provider, password hash | Password hashed | Identification |
-| Account 2FA | Encrypted TOTP secret, hashed backup codes | TOTP secret encrypted (`tf-v1`); backup codes hashed | Sign-in security — not letter decryption |
-| Encrypted letter content | `encrypted_title`, `encrypted_body` | Yes (client-side) | Potentially sensitive personal content |
-| Cryptographic envelopes | Vault envelopes, letter keys (wrapped) | Yes | Security — not readable by operator |
-| Metadata | Timestamps, answered status, device names | Partially open | Profiling surface limited but present |
-| Audit / security logs | Login, unlock failures, device revoke | Sanitized — no letter content | Legitimate interest / security |
+| Account 2FA | Encrypted TOTP secret, hashed backup codes | TOTP secret encrypted (`tf-v1`); backup codes hashed | Sign-in security — not note decryption |
+| Encrypted note content | `encrypted_title`, `encrypted_body`, `encrypted_categories`, `encrypted_tags` | Yes (client-side) | Potentially sensitive personal content |
+| Cryptographic envelopes | Vault envelopes, note keys (wrapped) | Yes | Security — not readable by operator |
+| Metadata | Timestamps, answered status (encrypted), device names | Partially encrypted | Profiling surface limited but present |
+| Audit / security logs | Login, unlock failures, device revoke | Sanitized — no note content | Legitimate interest / security |
 | OAuth tokens | Managed by NextAuth / providers | Provider-dependent | Third-party processing |
 
-**Key message for LGPD analysis:** The operator is designed **not** to have access to decryption keys for private letter content. This reduces but does not eliminate LGPD obligations — personal data and metadata remain.
+**Key message for LGPD analysis:** The operator is designed **not** to have access to decryption keys for private note content. This reduces but does not eliminate LGPD obligations — personal data and metadata remain.
 
 ### 2.2 Likely data subject rights
 
 | Right (LGPD Art. 18) | MVP support | Notes |
 |----------------------|-------------|-------|
-| Confirmation / access | **Partial** | User can view own letters when vault unlocked; export not implemented |
-| Correction | **Partial** | User can edit letters in app |
+| Confirmation / access | **Partial** | User can view own notes when vault unlocked; export not implemented |
+| Correction | **Partial** | User can edit notes in app |
 | Anonymization / deletion | **Partial** | Account deletion cascades active user data |
 | Portability | **Not implemented** | No encrypted export format in MVP |
 | Information about sharing | **Required in policy** | Document OAuth and hosting subprocessors |
@@ -88,15 +88,15 @@ The product targets users writing private spiritual letters. Data sensitivity is
 
 Document for legal review:
 
-- Client-side encryption before transmission (AES-GCM, ADR-001)
-- No plaintext private letters on server
+- Client-side encryption before transmission (AES-GCM, ADR-005)
+- No plaintext private notes on server
 - Rate limiting with PostgreSQL adapter in production (`RATE_LIMIT_STORE=postgres`)
 - Audit logs without sensitive content
 - Vault auto-lock after 15 minutes of inactivity
 - Trusted device revocation with documented offline limitation
 - Plaintext rejection, sentinel tests, and CI security gates
 - Autosave **disabled** for MVP — no background plaintext persistence
-- Optional account TOTP 2FA (sign-in only; does not decrypt letters); backup codes shown once and stored hashed
+- Optional account TOTP 2FA (sign-in only; does not decrypt notes); backup codes shown once and stored hashed
 
 ### 2.4 Data Protection Officer (DPO)
 
@@ -151,7 +151,7 @@ When a user requests account deletion (`DELETE /api/account` or `/settings/accou
 | WebAuthn challenges | Cascade deleted |
 | Audit events | Retained with `userId` set to null |
 
-Letter deletion (`DELETE /api/letters/:id`) physically removes encrypted letter rows from active storage (no soft delete in MVP).
+Note deletion (`DELETE /api/notes/:id`) soft-deletes encrypted note rows (`deleted_at`); account deletion cascades vault and notes.
 
 Rate limiting applies to account deletion attempts. Deletion is audited as `account_deletion_requested` without sensitive metadata.
 

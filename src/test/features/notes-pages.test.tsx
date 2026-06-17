@@ -37,7 +37,7 @@ describe("notes pages", () => {
 
   it("renders notes list with vault locked message", async () => {
     render(<NotesPage />);
-    expect(await screen.findByText("My notes")).toBeTruthy();
+    expect(await screen.findByText("Notes")).toBeTruthy();
     expect(screen.getByText(/vault locked/i)).toBeTruthy();
   });
 });

@@ -9,7 +9,7 @@ Phase 2 isolates pure internal utilities inside `src/modules/*` subfolders. Vaul
 | Action | Meaning |
 |--------|---------|
 | **Extract now** | Moved to a utility subfolder with public module API |
-| **Keep in domain** | Stays in auth/account/sessions/vault/letters by design |
+| **Keep in domain** | Stays in vault/notes by design |
 | **Defer** | Future phase (stack-coupled starter or package) |
 | **Do not extract** | Product-specific; must not become generic utility |
 
@@ -17,7 +17,7 @@ Phase 2 isolates pure internal utilities inside `src/modules/*` subfolders. Vaul
 
 | Utility | Prior location | Target | Action | Notes |
 |---------|----------------|--------|--------|-------|
-| Safe logger / redaction | `security/logger.ts` | `security/logger/` | Extract now | No vault/letters imports |
+| Safe logger / redaction | `security/logger.ts` | `security/logger/` | Extract now | No vault/notes plaintext imports |
 | Load env | `security/load-env.ts` | `security/env/` | Extract now | Dev/test helper |
 | Password policy | `security/password-policy.ts` | `security/password-policy/` | Extract now | Client + server safe |
 | Request IP | `security/request-ip.ts` | `security/ip/request-ip.ts` | Extract now | Next.js request helper |
@@ -93,4 +93,4 @@ Legacy shims remain at Phase 1 paths (`src/lib/*`, `src/server/*`, `src/componen
 - `audit-repository` still imports sanitization through `src/server/policies` shim.
 - Rate-limit and email facades remain server-only (`server-only` / Drizzle).
 
-See `docs/MODULE_BOUNDARIES.md` and `docs/ADR-004_Modularization_and_Reusability_Strategy.md`.
+See `docs/MODULE_BOUNDARIES.md`.

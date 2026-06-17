@@ -22,7 +22,9 @@ Account auth env vars are documented in `.env.example` (`AUTH_*` names). **Verce
 curl http://localhost:3001/api/auth/package-health
 ```
 
-Migration docs: [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md), [`docs/migrations/secure-auth-migration-report.md`](./docs/migrations/secure-auth-migration-report.md).
+Migration history (archived): [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md), [`docs/archive/migrations/secure-auth-migration-report.md`](./docs/archive/migrations/secure-auth-migration-report.md).
+
+Documentation index: [`docs/README.md`](./docs/README.md).
 
 ## Quick Start
 
@@ -52,12 +54,11 @@ Open [http://localhost:3001](http://localhost:3001).
 
 ## UI / UX
 
-Design direction and layout audit:
+Design direction and navigation:
 
-- [`docs/UI_UX_DIRECTION.md`](./docs/UI_UX_DIRECTION.md) — tone, visual language, public page sections
-- [`docs/UI_UX_AUDIT.md`](./docs/UI_UX_AUDIT.md) — screen inventory, issues, priorities
-- [`docs/UI_UX_IMPLEMENTATION_PLAN.md`](./docs/UI_UX_IMPLEMENTATION_PLAN.md) — design principles, components, checklists
-- [`docs/LAYOUT_NAVIGATION_AUDIT.md`](./docs/LAYOUT_NAVIGATION_AUDIT.md) — route shells and navigation
+- [`docs/UI_UX_DIRECTION.md`](./docs/UI_UX_DIRECTION.md) — tone, purple brand, public page sections
+- [`docs/LOGGED_IN_NAVIGATION_AUDIT.md`](./docs/LOGGED_IN_NAVIGATION_AUDIT.md) — logged-in nav structure
+- [`docs/README.md`](./docs/README.md) — documentation index
 
 Shared UI components live under `src/components/ui/`. Route groups `(public)`, `(auth)`, and `(vault)` wrap pages in `SiteShell` (header + footer). Page content uses `PageLayout` for width and spacing.
 
@@ -243,7 +244,7 @@ Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings
 
 ## Deploy (Vercel)
 
-See [`docs/VERCEL_ENVIRONMENT_VARIABLES.md`](./docs/VERCEL_ENVIRONMENT_VARIABLES.md) and [`docs/migrations/secure-auth-deployment-checklist.md`](./docs/migrations/secure-auth-deployment-checklist.md).
+See [`docs/VERCEL_ENVIRONMENT_VARIABLES.md`](./docs/VERCEL_ENVIRONMENT_VARIABLES.md) and [`docs/archive/migrations/secure-auth-deployment-checklist.md`](./docs/archive/migrations/secure-auth-deployment-checklist.md).
 
 **Production requirements:**
 
@@ -317,8 +318,12 @@ Production rate limiting: set `RATE_LIMIT_STORE=postgres` and run migrations (`r
 
 ## Documentation
 
-- [API Reference (Swagger / OpenAPI)](./docs/API_REFERENCE.md) — browse at `/api-docs` when running locally
-- [TDR](./docs/TDR_Private_Letters_Vault_MVP_Revised.md)
-- [ADR-001 Cryptography](./docs/ADR-001_Cryptographic_Payload_Format_and_Envelope_Encryption.md)
-- [ADR-002 Vault Unlocking](./docs/ADR-002_Vault_Unlocking_Passkeys_Trusted_Devices_Recovery_Code.md)
-- [ADR-003 API & Schema](./docs/ADR-003_API_Contract_Database_Schema_No_Plaintext_Enforcement.md)
+See [`docs/README.md`](./docs/README.md) for the full index. Active source of truth:
+
+- [TDR — LTG Vault MVP](./docs/TDR_LTG_Vault_MVP.md)
+- [ADR-005 — Vault crypto & note keys](./docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md)
+- [ADR-006 — Passkey PRF unlock](./docs/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md)
+- [MVP acceptance checklist](./docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md)
+- [API Reference (Swagger / OpenAPI)](./docs/API_REFERENCE.md)
+
+Historical ADRs and the pre–LTG Vault TDR are in [`docs/archive/`](./docs/archive/).

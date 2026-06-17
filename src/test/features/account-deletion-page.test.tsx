@@ -42,15 +42,14 @@ vi.mock("@/features/passkey/passkey-vault-unlock-setup", () => ({
 }));
 
 describe("account settings page wrapper", () => {
-  it("renders package account settings with security and product recovery links", () => {
+  it("renders package account settings with security and vault settings link", () => {
     render(<AccountSettingsPage />);
     expect(screen.getByRole("heading", { name: /account settings/i })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /security settings/i })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /passkeys/i })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /two-factor authentication/i })).toBeTruthy();
     expect(screen.queryByRole("link", { name: /security settings/i })).toBeNull();
-    expect(screen.getByRole("link", { name: /trusted devices/i })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /recovery code/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /vault settings/i })).toBeTruthy();
   });
 
   it("warns that account deletion removes vault and notes", () => {

@@ -46,6 +46,14 @@ describe("no active letters domain", () => {
     const config = readFile("next.config.ts");
     expect(config).not.toContain("/letters");
   });
+
+  it("brand mark does not use legacy green letter envelope palette", () => {
+    const icon = readFile("src/app/icon.svg");
+    const appMark = readFile("src/modules/ui/primitives/app-mark.tsx");
+    expect(icon).not.toContain("#4a6741");
+    expect(appMark).not.toContain("#4a6741");
+    expect(icon).toContain("LTG");
+  });
 });
 
 function readFile(relative: string): string {

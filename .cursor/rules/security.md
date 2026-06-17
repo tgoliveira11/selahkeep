@@ -1,30 +1,23 @@
 # Security Rules
 
-- **LTG Vault TDR:** follow `docs/TDR_LTG_Vault_MVP.md` for target vault crypto (Argon2id only for vault password KDF; no plaintext note titles/tags/categories at rest). Current code may still reflect prior ADRs until migration.
-- Encrypt private letter title/body on client before API calls.
-- Reject plaintext fields: `title`, `body`, `content`, `message`, `plaintextTitle`, `plaintextBody`, `decryptedContent`.
-- Never log plaintext letter content, keys, or recovery codes.
+- **LTG Vault:** follow `docs/TDR_LTG_Vault_MVP.md` and `docs/ADR-005_*` / `docs/ADR-006_*`.
+- Encrypt note title/body/metadata on client before API calls.
+- Reject plaintext fields: `title`, `body`, `content`, `markdown`, `categoryName`, `tagNames`, `answered` (as plaintext API fields).
+- Never log plaintext note content, keys, recovery phrases, or PRF output.
 - Never store User Vault Key in plaintext on backend or in localStorage.
-- No Server Actions for private letter persistence.
+- No Server Actions for note persistence.
 - No frontend database imports.
-- No AI APIs for private letter content.
-- No admin endpoints returning letter content.
-- **AAD binding:** validate `aad.userId`, `aad.resourceId`, `aad.field` server-side before storage; client verifies before decrypt.
-- **Recovery codes:** ≥128 bits entropy; client-generated from a project-specific wordlist (**not BIP39**); never stored plaintext; Argon2id KDF (PBKDF2-SHA-256 fallback with versioned metadata).
-- **Trusted device revocation:** revoke envelope with device; client must check server device status before unlock; clear IndexedDB on revoke.
-- **Transactions:** vault init, device create/revoke, recovery code, passkey register/remove must use `runInTransaction()`.
-- **Rate limiting:** adapter interface; memory (local) or PostgreSQL (`RATE_LIMIT_STORE=postgres`); scoped keys only.
-- **Account deletion:** `DELETE /api/account`; cascaded encrypted data removal.
-- **Account 2FA (TOTP):** account sign-in only; never vault keys, letter content, or recovery codes; TOTP secrets encrypted at rest (`TWO_FACTOR_SECRET_ENCRYPTION_KEY`).
-- **Credentials passwords:** bcrypt hash in `users.password_hash` only; never plaintext or reversible encryption (`password-hashing.ts`). Passwords accepted only in HTTPS POST/DELETE JSON bodies; verified server-side with `verifyPassword()`; never in URLs or API responses (`auth-password-input.ts`).
-- **Account tokens:** verification/reset tokens hashed in `account_tokens`; single-use atomic consumption; never log token plaintext.
-- **Email delivery:** account-auth links only in email; SMTP via nodemailer; `EMAIL_PROVIDER=console` forbidden in production; never log email bodies or tokens in SMTP mode.
-- **Email/password flows:** account auth only — never unlock vault, rotate vault keys, or send letter content in email (`account-auth-service.ts`).
-- **Microsoft OAuth:** NextAuth `azure-ad` provider only; scopes `openid email profile`; env `AUTH_AZURE_AD_*`; account auth only — never vault unlock; no cross-provider auto-linking (`oauth-sign-in-policy.ts`).
-- **Forgot password:** generic response always; no account enumeration.
-- **Session invalidation:** `password_updated_at` vs JWT `iat` after reset/change; account sessions use JWT `sid` + `account_sessions.revoked_at`.
-- **Account sessions ≠ trusted devices:** session revoke signs out account only; never revoke vault envelopes from session APIs.
-- **Audit logs:** sanitized metadata only; no sentinel phrases or letter content.
-- **Autosave:** explicitly disabled for MVP (Option A).
-- **Vault auto-lock:** 15-minute inactivity + manual lock; see `vault-session.ts`.
+- No AI APIs for private note content.
+- No admin endpoints returning note content.
+- **Vault password KDF:** Argon2id only for new paths — no PBKDF2 fallback (ADR-005).
+- **Recovery phrase:** BIP39 English 12/24 words; client-only; Argon2id envelope.
+- **Legacy recovery code:** Argon2id preferred; PBKDF2 fallback only for legacy `recovery_code` envelopes.
+- **Passkey vault unlock:** PRF-based `passkey_prf` envelopes only; PRF never sent to server (ADR-006).
+- **Account 2FA (TOTP):** account sign-in only; never vault keys or note content.
+- **Authentication:** `@tgoliveira/secure-auth` owns account auth — no competing local implementation.
+- **Account sessions ≠ vault unlock:** session does not decrypt notes.
+- **AAD binding:** validate server-side; client verifies before decrypt.
+- **Audit logs:** sanitized metadata only.
+- **Vault auto-lock:** 15-minute inactivity + manual lock.
+- **No active `letters` domain.**
 - Mark uncertain crypto with `TODO_SECURITY_REVIEW_REQUIRED`.

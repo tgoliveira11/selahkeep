@@ -1,3 +1,7 @@
+> **Archived historical document.** Not an active architecture or source-of-truth document.
+> Current source of truth: `docs/TDR_LTG_Vault_MVP.md`, `docs/ADR-005_*`, `docs/ADR-006_*`.
+
+
 # UI/UX Implementation Plan — Private Letters Vault MVP
 
 Companion to [`UI_UX_AUDIT.md`](./UI_UX_AUDIT.md). This document records design decisions and the implementation checklist for the UI/UX improvement pass.
