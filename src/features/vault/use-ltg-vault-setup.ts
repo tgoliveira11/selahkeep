@@ -19,6 +19,8 @@ import {
 } from "@/lib/crypto-client/recovery-phrase";
 import { unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { vaultApi } from "@/lib/api-client/vault";
+import { validatePasswordSetup } from "@tgoliveira/secure-auth/client/password-policy";
+import type { PasswordPolicyConfig } from "@tgoliveira/secure-auth/client/password-policy";
 
 export type VaultSetupStep =
   | "intro"
@@ -28,7 +30,7 @@ export type VaultSetupStep =
   | "phrase-confirm"
   | "saving";
 
-export function useLtgVaultSetup() {
+export function useLtgVaultSetup(vaultPasswordPolicy: PasswordPolicyConfig) {
   const { data: session } = useSession();
   const [step, setStep] = useState<VaultSetupStep>("intro");
   const [vaultPassword, setVaultPassword] = useState("");
@@ -52,6 +54,15 @@ export function useLtgVaultSetup() {
     setError(null);
     try {
       assertRecoveryPhraseConfirmation(recoveryPhrase, phraseConfirmation);
+
+      const passwordValidation = validatePasswordSetup({
+        password: vaultPassword,
+        confirmation: vaultPasswordConfirm,
+        policy: vaultPasswordPolicy,
+      });
+      if (!passwordValidation.valid) {
+        throw new Error("Vault password does not meet the required policy.");
+      }
 
       const userId = session.user.id;
       const vaultKey = await generateUserVaultKey();
@@ -96,7 +107,7 @@ export function useLtgVaultSetup() {
     } finally {
       setLoading(false);
     }
-  }, [session, vaultPassword, recoveryPhrase, phraseConfirmation, phraseLength]);
+  }, [session, vaultPassword, vaultPasswordConfirm, vaultPasswordPolicy, recoveryPhrase, phraseConfirmation, phraseLength]);
 
   return {
     step,

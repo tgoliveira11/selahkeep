@@ -65,15 +65,15 @@ describe("no local auth implementation guard", () => {
     }
   });
 
-  it("pins @tgoliveira/secure-auth to 0.1.17-internal", () => {
+  it("pins @tgoliveira/secure-auth to 0.1.19-internal", () => {
     const packageJson = JSON.parse(readSource("package.json")) as {
       dependencies: Record<string, string>;
     };
-    expect(packageJson.dependencies["@tgoliveira/secure-auth"]).toBe("0.1.17-internal");
+    expect(packageJson.dependencies["@tgoliveira/secure-auth"]).toBe("0.1.19-internal");
 
     const lockfile = readSource("package-lock.json");
-    expect(lockfile).toContain('"@tgoliveira/secure-auth": "0.1.17-internal"');
-    expect(lockfile).not.toMatch(/secure-auth-0\.1\.1[0-6]-internal/);
+    expect(lockfile).toContain('"@tgoliveira/secure-auth": "0.1.19-internal"');
+    expect(lockfile).not.toMatch(/secure-auth-0\.1\.1[0-8]-internal/);
   });
 
   it("delegates account auth API routes to @tgoliveira/secure-auth", () => {
@@ -96,6 +96,7 @@ describe("no local auth implementation guard", () => {
     const shim = readSource("src/lib/secure-auth/vault-passkey-react-client.ts");
     expect(shim).toContain("passkey-login-with-vault-unlock");
     expect(shim).toContain("vault-passkey-react-reexports");
+    expect(shim).toContain("PasswordSetupFields");
     expect(shim).not.toContain("secureAuth.routes");
   });
 

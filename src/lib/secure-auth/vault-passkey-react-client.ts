@@ -2,6 +2,8 @@
 
 export {
   ConfirmDialog,
+  PasswordSetupFields,
+  PasswordStrengthField,
   TurnstileCaptcha,
   defaultSignOutAccount,
   getPasskeyLoginUnsupportedMessage,

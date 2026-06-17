@@ -22,7 +22,7 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 | [`TESTING_STRATEGY.md`](./TESTING_STRATEGY.md) | Test layers and coverage |
 | [`VERCEL_ENVIRONMENT_VARIABLES.md`](./VERCEL_ENVIRONMENT_VARIABLES.md) | Deployment env vars |
 | [`API_REFERENCE.md`](./API_REFERENCE.md) | API overview |
-| [`FIRST_RUN_USER_FLOW_AUDIT.md`](./FIRST_RUN_USER_FLOW_AUDIT.md) | First-run scenarios (no vault → setup → unlock) |
+| [`LTG_VAULT_AGENT_IMPLEMENTATION_GUIDE.md`](./LTG_VAULT_AGENT_IMPLEMENTATION_GUIDE.md) | Agent notes for vault + secure-auth integration |
 
 ## Root-level docs
 

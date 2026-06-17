@@ -12,7 +12,7 @@ Web-first responsive MVP for private encrypted notes in a personal vault.
 
 - Next.js + TypeScript + React
 - PostgreSQL + Drizzle ORM
-- **Account authentication:** [`@tgoliveira/secure-auth@0.1.17-internal`](https://www.npmjs.com/package/@tgoliveira/secure-auth) (experimental 0.1.x — security review before production)
+- **Account authentication:** [`@tgoliveira/secure-auth@0.1.19-internal`](https://www.npmjs.com/package/@tgoliveira/secure-auth) (experimental 0.1.x — security review before production)
 - Web Crypto API (AES-GCM) + Argon2id recovery KDF
 - WebAuthn passkeys (@simplewebauthn) — vault unlock via PRF is app-specific; account sign-in passkeys are provided by secure-auth
 
@@ -160,6 +160,8 @@ Email/password accounts are **unverified by default** until the user opens the l
 | `unlocked` | Setup complete, UVK in session | Lock vault (nav action) |
 
 `/notes` and `/vault/settings` show state-specific prompts instead of unlock panels when no vault exists.
+
+**Vault setup password UI:** `/vault/setup` uses `PasswordSetupFields` from `@tgoliveira/secure-auth` with an app-owned vault password policy (`VAULT_PASSWORD_*` env vars → `src/lib/config/vault-password-policy.ts`). The vault password is validated client-side only and never sent to the server; Argon2id wraps the User Vault Key after validation.
 
 **Vault inactivity lock:** while the vault is unlocked, **15 minutes** of no pointer/keyboard/touch/scroll activity auto-locks the vault, clears decrypted note bodies from memory, and shows: *“Your vault was locked to protect your private notes.”* Manual **Lock vault** in the nav has the same effect without the banner.
 

@@ -170,6 +170,21 @@ Preferred names are `AUTH_*`; legacy `PASSWORD_*` names are still read.
 | `AUTH_PASSWORD_MIN_SCORE` | Optional | Production | `2` | secure-auth | zxcvbn-style min score 0–4 | Legacy: `PASSWORD_MIN_SCORE`. |
 | `AUTH_PASSWORD_STRENGTH_POSITION` | Optional | All | `above` | secure-auth UI | Strength meter position | `above` \| `below`. |
 
+### Vault password policy (LTG Vault `/vault/setup` only — not account auth)
+
+Mapped in `src/lib/config/vault-password-policy.ts` and passed explicitly to `PasswordSetupFields`. The secure-auth package does **not** read these env vars.
+
+| Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
+|----------|-----------|--------------|---------------|---------|---------|-------|
+| `VAULT_PASSWORD_ENFORCEMENT` | Optional | Production | `enforce` | `/vault/setup` | `off` \| `warn` \| `enforce` | Default `enforce` for vault setup. |
+| `VAULT_PASSWORD_MIN_LENGTH` | Optional | Production | `16` | `/vault/setup` | Minimum vault password length | Default `16`. Separate from `AUTH_PASSWORD_MIN_LENGTH`. |
+| `VAULT_PASSWORD_REQUIRE_UPPERCASE` | Optional | Production | `false` | `/vault/setup` | Require uppercase | |
+| `VAULT_PASSWORD_REQUIRE_LOWERCASE` | Optional | Production | `false` | `/vault/setup` | Require lowercase | |
+| `VAULT_PASSWORD_REQUIRE_NUMBER` | Optional | Production | `false` | `/vault/setup` | Require digit | |
+| `VAULT_PASSWORD_REQUIRE_SYMBOL` | Optional | Production | `false` | `/vault/setup` | Require symbol | |
+| `VAULT_PASSWORD_BLOCK_COMMON_PASSWORDS` | Optional | Production | `true` | `/vault/setup` | Block common passwords | |
+| `VAULT_PASSWORD_MIN_SCORE` | Optional | Production | `2` | `/vault/setup` | Strength min score 0–4 | |
+
 ### Cookies, email registration, debug, product limits
 
 | Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
@@ -248,11 +263,11 @@ Add OAuth variables only for providers you enable. Run database migrations again
 |-------|--------|
 | `npm install` without `--legacy-peer-deps` | Passes (`nodemailer@7.x` satisfies `next-auth` peer) |
 | `package-lock.json` committed | Yes |
-| No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.1.17-internal` from npm registry |
+| No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.1.19-internal` from npm registry |
 | Private registry | Public npm scope `@tgoliveira` — no extra `.npmrc` required for Vercel |
 | Local `npm run build` | Passes |
 | Production domain (example) | `https://ltg.tgoliveira11.tech` |
-| Package health | `GET /api/auth/package-health` → `version: 0.1.17-internal` |
+| Package health | `GET /api/auth/package-health` → `version: 0.1.19-internal` |
 | Production deploy validated | **Not re-run in this phase** — redeploy after env review |
 
 ---
@@ -265,7 +280,7 @@ After deploy:
 curl https://ltg.tgoliveira11.tech/api/auth/package-health
 ```
 
-Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.17-internal" }` when runtime secrets and DB are configured.
+Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.19-internal" }` when runtime secrets and DB are configured.
 
 ---
 

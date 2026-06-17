@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
+import { PasswordSetupFields } from "@tgoliveira/secure-auth/react/client";
+import type { PasswordPolicyConfig } from "@tgoliveira/secure-auth/client/password-policy";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
-import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import type { VaultSetupStep } from "./use-ltg-vault-setup";
@@ -13,6 +15,7 @@ interface VaultSetupWizardProps {
   step: VaultSetupStep;
   loading: boolean;
   error: string | null;
+  vaultPasswordPolicy: PasswordPolicyConfig;
   vaultPassword: string;
   vaultPasswordConfirm: string;
   recoveryPhrase: string;
@@ -29,6 +32,7 @@ export function VaultSetupWizard({
   step,
   loading,
   error,
+  vaultPasswordPolicy,
   vaultPassword,
   vaultPasswordConfirm,
   recoveryPhrase,
@@ -40,8 +44,7 @@ export function VaultSetupWizard({
   onGeneratePhrase,
   onComplete,
 }: VaultSetupWizardProps) {
-  const passwordsMatch = vaultPassword === vaultPasswordConfirm;
-  const passwordLongEnough = vaultPassword.length >= 12;
+  const [passwordStepValid, setPasswordStepValid] = useState(false);
 
   return (
     <Card className="space-y-5 p-6">
@@ -70,41 +73,33 @@ export function VaultSetupWizard({
           <div className="space-y-2">
             <h2 className="text-lg font-semibold">Create your vault password</h2>
             <p className="text-sm text-[var(--muted)]">
-              Choose a passphrase you will use to unlock your vault. This is separate from your
-              account password.
+              Your account password signs you in. Your vault password unlocks your private notes.
             </p>
           </div>
-          <FormField label="Vault password" id="vault-password">
-            <Input
-              id="vault-password"
-              type="password"
-              autoComplete="new-password"
-              value={vaultPassword}
-              onChange={(e) => onVaultPasswordChange(e.target.value)}
-            />
-          </FormField>
-          <FormField label="Confirm vault password" id="vault-password-confirm">
-            <Input
-              id="vault-password-confirm"
-              type="password"
-              autoComplete="new-password"
-              value={vaultPasswordConfirm}
-              onChange={(e) => onVaultPasswordConfirmChange(e.target.value)}
-            />
-          </FormField>
-          {!passwordLongEnough && vaultPassword.length > 0 && (
-            <p className="text-sm text-[var(--warning)]">Use at least 12 characters.</p>
-          )}
-          {vaultPasswordConfirm.length > 0 && !passwordsMatch && (
-            <p className="text-sm text-[var(--danger)]">Passwords do not match.</p>
-          )}
+          <PasswordSetupFields
+            passwordId="vault-password"
+            confirmId="vault-password-confirm"
+            passwordName="vaultPassword"
+            confirmName="confirmVaultPassword"
+            passwordLabel="Vault password"
+            confirmLabel="Confirm vault password"
+            value={vaultPassword}
+            confirmValue={vaultPasswordConfirm}
+            onChange={onVaultPasswordChange}
+            onConfirmChange={onVaultPasswordConfirmChange}
+            policy={vaultPasswordPolicy}
+            feedbackPosition="above"
+            passwordPlaceholder="Choose a vault password"
+            confirmPlaceholder="Confirm your vault password"
+            onValidityChange={(isValid) => setPasswordStepValid(isValid)}
+          />
           <div className="flex gap-3">
             <Button variant="secondary" onClick={() => onSetStep("intro")}>
               Back
             </Button>
             <Button
               className="flex-1"
-              disabled={!passwordsMatch || !passwordLongEnough}
+              disabled={!passwordStepValid}
               onClick={() => onSetStep("phrase-length")}
             >
               Continue

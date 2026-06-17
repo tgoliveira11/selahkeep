@@ -76,7 +76,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - `GET/PATCH /api/vault/index` — encrypted vault index blob (notes list metadata, categories, tags)
 - `GET/PATCH /api/vault/settings` — encrypted vault settings (unlock behavior, setup metadata)
 - `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted note payloads only
-- `POST /api/vault/setup` — LTG vault-v2 setup (encrypted settings, index, password + recovery phrase envelopes)
+- `POST /api/vault/setup` — LTG vault-v2 setup (encrypted settings, index, password + recovery phrase envelopes); vault password validated client-side via `PasswordSetupFields` + `VAULT_PASSWORD_*` (never in request body)
 - `POST /api/vault/init`, `GET /api/vault/status` — returns `hasVault`, `setupPhase`, `setupComplete`, and `availableUnlockMethods`; client derives `not_configured` / `setup_incomplete` / `locked` / `unlocked` via `useVaultClientStatus` + UVK session
 - `POST /api/vault/unlock-envelope` — fetch encrypted envelope for password / recovery phrase unlock
 - `GET/POST /api/trusted-devices`, `POST /api/trusted-devices/:id/remove`, `DELETE /api/trusted-devices/:id`
@@ -128,7 +128,7 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 - **Design docs:** `docs/UI_UX_DIRECTION.md`, `docs/LOGGED_IN_NAVIGATION_AUDIT.md`
 - **Layout:** `SiteShell` (`Nav` + `SiteFooter`) on `(public)`, `(auth)`, and `(vault)` route groups; `PageLayout` for content width; responsive mobile menu in `Nav`. Auth pages use package UI inside the shell.
 - **Public marketing:** Home page sections and copy in `src/lib/marketing/home-copy.ts`
-- **Vault setup:** `/vault/setup` — vault password + BIP39 recovery phrase wizard
+- **Vault setup:** `/vault/setup` — `PasswordSetupFields` (secure-auth) + BIP39 recovery phrase wizard; policy from `src/lib/config/vault-password-policy.ts`
 - **Vault unlock:** `LtgVaultUnlockPanel` / `VaultAccessGate` on `/vault/unlock` and note pages
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + **purple** primary)
 - **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview

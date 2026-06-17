@@ -28,6 +28,7 @@
 - **AAD binding (server + client):** `aad.userId` must match session user; `aad.resourceId` must match persisted note/vault id; `aad.field` must match the encrypted field.
 - **Note IDs:** client generates UUID; server persists the same id.
 - **LTG vault password KDF (new setups):** Argon2id only via `hash-wasm` — no PBKDF2 fallback (`src/lib/crypto-client/vault-kdf.ts`, ADR-005)
+- **Vault password policy (setup UI):** `VAULT_PASSWORD_*` env vars mapped in `src/lib/config/vault-password-policy.ts` and passed explicitly to `PasswordSetupFields` on `/vault/setup`. Separate from account `AUTH_PASSWORD_*` policy. Vault password never leaves the browser.
 - **LTG recovery phrase (new setups):** BIP39 English, 12 or 24 words (`src/lib/crypto-client/recovery-phrase.ts`)
 - **Legacy recovery code KDF:** Argon2id preferred; PBKDF2-SHA-256 fallback (600k iterations) with versioned `kdf-v1` metadata — legacy `recovery_code` envelopes only
 - Recovery codes: ≥128 bits entropy (project-specific wordlist, not BIP39; currently 17 words from 252 unique words ≈ 135.6 bits); uniform word selection + rejection sampling; shown only at generation/regeneration; never stored plaintext
@@ -142,7 +143,7 @@ Plaintext passwords are redacted from logs (`safeLogger`) and blocked from audit
 
 These flows protect **account authentication only**. They do **not** unlock, recover, rotate, or decrypt the private letters vault. User-facing copy states this on reset and change-password screens.
 
-**Account authentication** is implemented by `@tgoliveira/secure-auth@0.1.17-internal` (thin app routes + `createSecureAuth` in `src/lib/secure-auth.ts`). See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md).
+**Account authentication** is implemented by `@tgoliveira/secure-auth@0.1.19-internal` (thin app routes + `createSecureAuth` in `src/lib/secure-auth.ts`). See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md).
 
 **Email verification**
 

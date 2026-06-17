@@ -1,6 +1,8 @@
 /** Re-export package react/client helpers without going through the app alias. */
 export {
   ConfirmDialog,
+  PasswordSetupFields,
+  PasswordStrengthField,
   TurnstileCaptcha,
   defaultSignOutAccount,
   getPasskeyLoginUnsupportedMessage,

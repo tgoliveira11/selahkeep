@@ -5,11 +5,11 @@
 
 | # | Criterion | Status | Evidence | Tests | Notes |
 |---|-----------|--------|----------|-------|-------|
-| 1 | Authentication from `@tgoliveira/secure-auth` | ✅ Pass | `src/lib/secure-auth.ts`, auth API routes delegate to package | `secure-auth-env-and-imports.test.ts`, `no-local-auth-implementation.test.ts` | Package `@0.1.17-internal` — not modified |
+| 1 | Authentication from `@tgoliveira/secure-auth` | ✅ Pass | `src/lib/secure-auth.ts`, auth API routes delegate to package | `secure-auth-env-and-imports.test.ts`, `no-local-auth-implementation.test.ts` | Package `@0.1.19-internal` — not modified |
 | 2 | No competing local auth/account implementation | ✅ Pass | No local user password routes; register/login delegate | `no-local-auth-implementation.test.ts`, `password-storage.test.ts` | |
 | 3 | Product branded **LTG Vault** on public pages | ✅ Pass | `home-copy.ts`, `nav.tsx`, `site-footer.tsx`, `layout.tsx` metadata | `home-page.test.tsx`, `site-layout.test.tsx`, `accessibility.test.tsx` | `APP_SLUG` remains `letters-to-god` for passkey continuity |
 | 4 | User can create a vault | ✅ Pass | `/vault/setup`, `use-ltg-vault-setup.ts` | `vault-setup-crypto-integration.test.ts`, `vault-service.test.ts` | |
-| 5 | User can set vault password/passphrase | ✅ Pass | LTG vault setup flow, Argon2id envelope | `crypto-vault.test.ts`, `vault-setup-crypto-integration.test.ts` | |
+| 5 | User can set vault password/passphrase | ✅ Pass | LTG vault setup flow, Argon2id envelope | `crypto-vault.test.ts`, `vault-setup-crypto-integration.test.ts`, `vault-setup-wizard.test.tsx` | Uses `PasswordSetupFields` + `VAULT_PASSWORD_*` policy |
 | 6 | Vault password KDF uses **Argon2id only** | ✅ Pass | `src/lib/crypto-client/vault-kdf.ts` | `crypto-vault.test.ts`, ADR-005 | No PBKDF2 for new password envelopes |
 | 7 | User can choose **12-word or 24-word** recovery phrase | ✅ Pass | `recovery-phrase.ts`, setup UI | `recovery-phrase.test.ts` (if present), manual `/vault/setup` | |
 | 8 | User can confirm and store recovery phrase envelope | ✅ Pass | `recovery_phrase` envelope method | `vault-service.test.ts`, `vault-setup-crypto-integration.test.ts` | |

@@ -9,7 +9,7 @@
 
 Transform **Letters to God** (private encrypted letters) into **LTG Vault** (private encrypted notes: letters, prayers, reflections, journaling) while:
 
-- Keeping **account authentication** exclusively in `@tgoliveira/secure-auth@0.1.17-internal`
+- Keeping **account authentication** exclusively in `@tgoliveira/secure-auth@0.1.19-internal`
 - Keeping **vault decryption** product-owned in `letter-to-god`
 - Migrating from letter-centric storage to **note-centric** storage with encrypted metadata, encrypted vault index, categories, tags, and Markdown bodies
 - Replacing recovery-code + mixed KDF behavior with **Argon2id-only vault password KDF** and **12/24-word recovery phrase** envelopes
@@ -92,7 +92,7 @@ Sentinel phrase tests and `.cursor/rules/testing.md` checklist remain mandatory 
 
 ### 1. Goal
 
-Remove inconsistent local auth; use `@tgoliveira/secure-auth@0.1.17-internal` as the only account/auth source; stabilize build and deployment; preserve product pages.
+Remove inconsistent local auth; use `@tgoliveira/secure-auth@0.1.19-internal` as the only account/auth source; stabilize build and deployment; preserve product pages.
 
 ### 2. Scope
 
@@ -107,7 +107,7 @@ Remove inconsistent local auth; use `@tgoliveira/secure-auth@0.1.17-internal` as
 - LTG Vault rebrand
 - Vault password / recovery phrase redesign
 - Notes model migration
-- Package upgrades beyond `0.1.17-internal` unless security patch
+- Package upgrades beyond `0.1.19-internal` unless security patch
 
 ### 4. Files/modules likely affected
 
@@ -152,7 +152,7 @@ Auth pages remain package wrappers. Account settings at `/settings/account` incl
 
 - [x] `main` contains auth reset; local validation green (`lint`, `test`, `test:coverage`, `build`, `dev` loads `/`)
 - [x] No forbidden local auth paths (guard test passes)
-- [x] `GET /api/auth/package-health` delegates to package health → `0.1.17-internal`
+- [x] `GET /api/auth/package-health` delegates to package health → `0.1.19-internal`
 - [x] Letters/vault/recovery pages preserved (product routes unchanged)
 - [x] Lint, test:coverage, build pass
 - [ ] Vercel production deploy validated (documented in `docs/VERCEL_ENVIRONMENT_VARIABLES.md`)

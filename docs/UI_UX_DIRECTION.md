@@ -64,7 +64,7 @@ Account auth UI comes from `@tgoliveira/secure-auth/react`. Style integration po
 
 - Purple primary CTA on each step
 - Step 1: Explain account sign-in vs vault password vs recovery phrase
-- Step 2: Vault password + confirmation
+- Step 2: Vault password + confirmation via `PasswordSetupFields` (`@tgoliveira/secure-auth`) with app-owned `VAULT_PASSWORD_*` policy
 - Step 3: Choose 12 or 24 recovery words
 - Step 4: Show phrase once (copy affordance)
 - Step 5: Confirm phrase
