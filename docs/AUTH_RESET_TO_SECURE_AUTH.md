@@ -1,6 +1,6 @@
 # Auth reset to `@tgoliveira/secure-auth@0.1.16-internal`
 
-Branch: `cleanup/auth-reset-secure-auth-package`
+Branch: `main` (Phase 0 complete)
 
 ## Goal
 
@@ -14,8 +14,8 @@ Remove competing local auth/account implementation. Keep a thin `@tgoliveira/sec
 | Services | `account-service`, `passkey-account-service`, `passkey-login-service` shims |
 | Client | `src/features/passkey/sign-in-with-passkey.ts`, `src/lib/secure-auth/react-client.ts` shim |
 | UI | `src/components/auth/**`, `src/components/settings/**` (package React components replace these) |
-| Policies | local TOTP/backup-code/two-factor-secret-crypto, login-request-context, OAuth provider local impl |
-| Tests | local auth route/service/OAuth/TOTP/settings tests (see git history on this branch) |
+| Policies | local TOTP/backup-code/two-factor-secret-crypto, login-request-context, OAuth provider local impl, **local `password-hashing` (bcrypt)**, **local `password-policy` module** (package owns policy) |
+| Tests | local auth route/service/OAuth/TOTP/settings tests; `password-hashing.test.ts` |
 | Next config | `@tgoliveira/secure-auth/react/client` webpack/turbopack alias |
 
 ## Preserved (product)
@@ -87,8 +87,14 @@ Package owns: login, register, OAuth, account passkey sign-in, 2FA, password flo
 ## Validation
 
 ```bash
+npm install
 npm run lint
 npm run test
 npm run test:coverage
 npm run build
+npm run dev   # confirm http://localhost:3001/ loads
 ```
+
+## Phase 0 status
+
+**Complete on `main`.** Account/auth is owned exclusively by `@tgoliveira/secure-auth@0.1.16-internal`. Guard tests: `no-local-auth-implementation.test.ts`, `secure-auth-delegate-routes.test.ts`, `secure-auth-env-and-imports.test.ts`.

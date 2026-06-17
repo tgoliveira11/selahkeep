@@ -23,5 +23,6 @@ describe("package health route", () => {
     const body = await response.json();
     expect(body.ok).toBe(true);
     expect(body.package).toBe("@tgoliveira/secure-auth");
+    expect(body.version).toBe("0.1.16-internal");
   });
 });

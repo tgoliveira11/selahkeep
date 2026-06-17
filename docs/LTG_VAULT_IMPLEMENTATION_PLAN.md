@@ -29,7 +29,7 @@ Branch at planning time: `update-postforge-public-order-rss` (includes auth-rese
 
 | Area | Location | LTG Vault gap |
 |------|----------|---------------|
-| **Auth (package)** | `src/lib/secure-auth.ts`, `src/app/api/auth/**`, `src/app/api/account/**` delegates | Phase 0 largely done; merge branch + deploy validation remain |
+| **Auth (package)** | `src/lib/secure-auth.ts`, `src/app/api/auth/**`, `src/app/api/account/**` delegates | **Phase 0 complete** on `main` |
 | **Auth pages** | `src/app/(auth)/**` thin `@tgoliveira/secure-auth/react` wrappers | Rebrand copy in later phases |
 | **Account + security settings** | `src/app/(vault)/settings/account/page.tsx` (`AccountSettingsPage` + `SecuritySettingsPage`) | Vault-specific settings move to product vault settings |
 | **Letters UI** | `src/app/(vault)/letters/**` | Rename/replace with notes UX; Markdown editor |
@@ -118,7 +118,7 @@ Remove inconsistent local auth; use `@tgoliveira/secure-auth@0.1.16-internal` as
 | Action | Paths |
 |--------|-------|
 | **Done (see `AUTH_RESET_TO_SECURE_AUTH.md`)** | `src/lib/secure-auth.ts`, `src/app/api/auth/**`, `src/app/api/account/**`, `src/app/(auth)/**`, `src/lib/auth/session.ts`, `src/test/security/no-local-auth-implementation.test.ts` |
-| **Verify / merge** | Branch `cleanup/auth-reset-secure-auth-package` → `main` |
+| **Verify / merge** | ~~Branch `cleanup/auth-reset-secure-auth-package` → `main`~~ **Done** |
 | **Docs** | `docs/AUTH_RESET_TO_SECURE_AUTH.md`, `docs/migrations/secure-auth-*.md` |
 | **Config** | `next.config.ts`, `vitest.config.ts`, `.env.example`, `docs/VERCEL_ENVIRONMENT_VARIABLES.md` |
 
@@ -154,11 +154,12 @@ Auth pages remain package wrappers. Account settings at `/settings/account` incl
 
 ### 11. Acceptance criteria
 
-- [ ] `main` contains auth reset; Vercel deploy green  
-- [ ] No forbidden local auth paths (guard test passes)  
-- [ ] `curl $APP_BASE_URL/api/auth/package-health` → `0.1.16-internal`  
-- [ ] Letters/vault/recovery pages still reachable when authenticated  
-- [ ] Lint, test:coverage, build pass  
+- [x] `main` contains auth reset; local validation green (`lint`, `test`, `test:coverage`, `build`, `dev` loads `/`)
+- [x] No forbidden local auth paths (guard test passes)
+- [x] `GET /api/auth/package-health` delegates to package health → `0.1.16-internal`
+- [x] Letters/vault/recovery pages preserved (product routes unchanged)
+- [x] Lint, test:coverage, build pass
+- [ ] Vercel production deploy validated (documented in `docs/VERCEL_ENVIRONMENT_VARIABLES.md`)
 
 ### 12. Risks
 
@@ -170,7 +171,7 @@ Auth pages remain package wrappers. Account settings at `/settings/account` incl
 
 ### 13. Dependencies
 
-None (entry phase). **Current status: substantially complete** on `cleanup/auth-reset-secure-auth-package`; remaining work is merge + production validation.
+None (entry phase). **Status: complete on `main`.** Phase 1 may start after reviewing open `TODO_SECURITY_REVIEW_REQUIRED` items in `AUTH_RESET_TO_SECURE_AUTH.md`.
 
 ---
 

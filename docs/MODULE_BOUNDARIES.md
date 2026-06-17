@@ -62,7 +62,7 @@ During Phase 1, many moved files keep **re-export shims** at their original path
 ## Phase 2 utility layout
 
 ```text
-src/modules/security/{logger,env,password-policy,ip,user-agent,scopes,policies}
+src/modules/security/{logger,env,ip,user-agent,scopes,policies}
 src/modules/email/{core,templates}
 src/modules/rate-limit/{core,adapters}
 src/modules/audit/{core,repositories}

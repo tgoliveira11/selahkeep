@@ -17,6 +17,11 @@ const forbiddenPaths = [
   "src/features/passkey/sign-in-with-passkey.ts",
   "src/lib/secure-auth/react-client.ts",
   "src/lib/secure-auth/react-client-reexports.ts",
+  "src/lib/password-policy.ts",
+  "src/modules/security/password-policy",
+  "src/modules/security/password-policy.ts",
+  "src/modules/security/policies/password-hashing.ts",
+  "src/server/policies/password-hashing.ts",
   "src/server/services/account-service.ts",
   "src/server/services/passkey-account-service.ts",
   "src/server/services/passkey-login-service.ts",
@@ -28,13 +33,28 @@ const delegatedAuthRoutes = [
   "src/app/api/auth/register/route.ts",
   "src/app/api/auth/forgot-password/route.ts",
   "src/app/api/auth/reset-password/route.ts",
+  "src/app/api/auth/password-policy/route.ts",
+  "src/app/api/auth/verify-email/confirm/route.ts",
+  "src/app/api/auth/verify-email/resend/route.ts",
+  "src/app/api/auth/login/start/route.ts",
+  "src/app/api/auth/login/verify-2fa/route.ts",
+  "src/app/api/auth/login/verify-2fa-oauth/route.ts",
+  "src/app/api/auth/passkey/login/verify/route.ts",
+  "src/app/api/auth/package-health/route.ts",
   "src/app/api/auth/[...nextauth]/route.ts",
   "src/app/api/account/route.ts",
   "src/app/api/account/change-password/route.ts",
   "src/app/api/account/sessions/route.ts",
   "src/app/api/account/2fa/status/route.ts",
   "src/app/api/account/passkeys/route.ts",
-  "src/app/api/auth/passkey/login/verify/route.ts",
+];
+
+const productVaultRoutes = [
+  "src/app/api/letters/route.ts",
+  "src/app/api/vault/status/route.ts",
+  "src/app/api/passkeys/route.ts",
+  "src/app/api/trusted-devices/route.ts",
+  "src/app/api/account/passkeys/[id]/enable-vault-unlock/route.ts",
 ];
 
 describe("no local auth implementation guard", () => {
@@ -42,6 +62,17 @@ describe("no local auth implementation guard", () => {
     for (const relativePath of forbiddenPaths) {
       expect(existsSync(path.join(root, relativePath))).toBe(false);
     }
+  });
+
+  it("pins @tgoliveira/secure-auth to 0.1.16-internal", () => {
+    const packageJson = JSON.parse(readSource("package.json")) as {
+      dependencies: Record<string, string>;
+    };
+    expect(packageJson.dependencies["@tgoliveira/secure-auth"]).toBe("0.1.16-internal");
+
+    const lockfile = readSource("package-lock.json");
+    expect(lockfile).toContain('"@tgoliveira/secure-auth": "0.1.16-internal"');
+    expect(lockfile).not.toMatch(/secure-auth-0\.1\.1[0-5]-internal/);
   });
 
   it("delegates account auth API routes to @tgoliveira/secure-auth", () => {
@@ -53,6 +84,13 @@ describe("no local auth implementation guard", () => {
     }
   });
 
+  it("keeps product vault passkey login options as a thin package delegate plus PRF enrichment", () => {
+    const source = readSource("src/app/api/auth/passkey/login/options/route.ts");
+    expect(source).toContain("secureAuth.routes.passkeyLoginOptions");
+    expect(source).toContain("passkeyLoginVaultService.enrichLoginOptionsWithVaultPrf");
+    expect(source).not.toMatch(/bcrypt\.(hash|compare)/);
+  });
+
   it("keeps a single createSecureAuth composition root", () => {
     const source = readSource("src/lib/secure-auth.ts");
     expect(source).toContain("createSecureAuth");
@@ -61,12 +99,7 @@ describe("no local auth implementation guard", () => {
   });
 
   it("does not import removed local auth modules from product code", () => {
-    const productPaths = [
-      "src/app/api/letters/route.ts",
-      "src/app/api/vault/status/route.ts",
-      "src/server/services/vault-service.ts",
-    ];
-    for (const relativePath of productPaths) {
+    for (const relativePath of productVaultRoutes) {
       const source = readSource(relativePath);
       expect(source).not.toMatch(/@\/modules\/(auth|account|sessions|two-factor)/);
     }

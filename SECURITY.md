@@ -101,7 +101,7 @@ Optional TOTP 2FA protects **account sign-in only**. It does **not** decrypt pri
 
 ## Authentication passwords
 
-Credentials passwords are **never stored in plaintext** and are **not reversibly encrypted**. The server stores a **bcrypt one-way hash** in `users.password_hash` (cost factor **12** via `src/server/policies/password-hashing.ts`).
+Credentials passwords are **never stored in plaintext** and are **not reversibly encrypted**. The server stores a **bcrypt one-way hash** in `users.password_hash` (cost factor **12**). Hashing is owned by `@tgoliveira/secure-auth` — the app does not implement local password hashing.
 
 ### Transport (API)
 
