@@ -1,174 +1,103 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { PageLayout } from "@/components/layout/page-layout";
-import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
-import { RecoveryNotice } from "@/components/ui/recovery-notice";
-import { SuccessState } from "@/components/ui/success-state";
-import { generateRecoveryCode, wrapVaultKeyForRecovery } from "@/lib/crypto-client";
-import { getSessionVaultKey } from "@/lib/crypto-client/vault";
-import { vaultApi, type VaultStatus } from "@/lib/api-client/vault";
-import { isVaultUnlocked } from "@/lib/crypto-client/vault";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { Alert } from "@/components/ui/alert";
+import { useRequireVault } from "@/features/vault/use-require-vault";
+import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
+import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
+import { RecoveryPhraseReplace } from "@/features/recovery/recovery-phrase-replace";
 import { PasskeySetup } from "@/features/recovery/passkey-setup";
+import { getRecoveryStateLabel } from "@/modules/vault/lib/recovery-state-labels";
 
 export default function RecoveryPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [vaultStatus, setVaultStatus] = useState<VaultStatus | null>(null);
-  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [postponed, setPostponed] = useState(false);
+  const vault = useRequireVault();
+  const vaultClient = useVaultClientStatus();
+  const userId = vault.status === "ready" ? vault.userId : null;
+  const clientStatus =
+    vaultClient.status === "ready" ? vaultClient.clientStatus : null;
+  const serverStatus =
+    vaultClient.status === "ready" ? vaultClient.serverStatus : null;
 
-  const refreshStatus = useCallback(async () => {
-    try {
-      const nextStatus = await vaultApi.status();
-      setVaultStatus(nextStatus);
-    } catch {
-      setVaultStatus(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (status === "unauthenticated") router.push("/login");
-    else if (status === "authenticated" && !isVaultUnlocked()) router.push("/vault/unlock");
-  }, [status, router]);
-
-  useEffect(() => {
-    if (status !== "authenticated" || !isVaultUnlocked()) return;
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const nextStatus = await vaultApi.status();
-        if (!cancelled) setVaultStatus(nextStatus);
-      } catch {
-        if (!cancelled) setVaultStatus(null);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [status]);
-
-  async function handleGenerate() {
-    const vaultKey = getSessionVaultKey();
-    if (!vaultKey) {
-      setError("Unlock your vault before generating a recovery code.");
-      return;
-    }
-
-    const userId = session?.user?.id;
-    if (!userId) {
-      setError("Not authenticated");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const code = generateRecoveryCode();
-      const { encryptedVaultKey, kdfMetadata } = await wrapVaultKeyForRecovery(
-        vaultKey,
-        code,
-        userId,
-        userId
-      );
-      await vaultApi.storeRecoveryCode({ encryptedVaultKey, kdfMetadata });
-      setRecoveryCode(code);
-      setCopied(false);
-      await refreshStatus();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to generate recovery code");
-    } finally {
-      setLoading(false);
-    }
+  if (
+    vault.status === "loading" ||
+    vault.status === "redirecting" ||
+    vaultClient.status === "loading"
+  ) {
+    return (
+      <PageLayout width="medium">
+        <LoadingState label="Loading recovery options" />
+      </PageLayout>
+    );
   }
 
-  function handleConfirmSaved() {
-    setSaved(true);
-    setRecoveryCode(null);
-    refreshStatus();
+  if (vault.status === "error" || vaultClient.status === "error") {
+    return (
+      <PageLayout width="medium">
+        <ErrorState
+          message={
+            vault.status === "error"
+              ? vault.message
+              : vaultClient.status === "error"
+                ? vaultClient.message
+                : "Failed to load recovery options"
+          }
+        />
+      </PageLayout>
+    );
   }
 
-  async function handleCopyCode() {
-    if (!recoveryCode) return;
-    try {
-      await navigator.clipboard.writeText(recoveryCode);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
+  if (clientStatus && clientStatus !== "unlocked") {
+    return (
+      <PageLayout width="medium">
+        <PageHeader
+          title="Recovery options"
+          description="Manage ways to unlock your vault on a new device."
+        />
+        <VaultStatusPrompt clientStatus={clientStatus} context="recovery" />
+      </PageLayout>
+    );
   }
 
-  const hasRecoveryCode = vaultStatus?.hasRecoveryCode ?? false;
-  const hasPasskey = vaultStatus?.hasPasskey ?? false;
-  const showRecoverySetup = !hasRecoveryCode && !recoveryCode && !saved && !postponed;
+  const recoveryState = getRecoveryStateLabel(serverStatus?.recoveryState);
+  const recoveryPhrase = serverStatus?.recoveryPhrase;
+  const hasLegacyRecoveryCode = serverStatus?.hasRecoveryCode ?? false;
 
   return (
     <PageLayout width="medium">
       <PageHeader
-        title="Recovery methods"
-        description="Set up calm, practical ways to access your private letters if you lose this device."
+        title="Recovery options"
+        description="Manage ways to unlock your vault on a new device."
       />
 
       <div className="space-y-8">
+        {recoveryState && (
+          <Alert variant={recoveryState.variant} title={recoveryState.label}>
+            {recoveryState.description}
+          </Alert>
+        )}
+
         <Card>
           <CardHeader>
-            <CardTitle>Recovery code</CardTitle>
+            <CardTitle>Recovery phrase</CardTitle>
             <CardDescription>
-              A recovery code lets you unlock your letters on a new browser. Save it somewhere safe
-              offline — we cannot show it again.
+              Your recovery phrase restores vault access if you forget your vault password. It is
+              created during vault setup and never leaves this device.
             </CardDescription>
           </CardHeader>
 
-          {hasRecoveryCode && !recoveryCode && (
-            <SuccessState message="Your recovery code is set up. Keep the copy you saved somewhere safe." />
-          )}
-
-          {showRecoverySetup && (
-            <div className="space-y-4">
-              <RecoveryNotice />
-              <Button onClick={handleGenerate} disabled={loading} className="w-full sm:w-auto">
-                {loading ? "Generating…" : "Generate recovery code"}
-              </Button>
-              <Button variant="secondary" onClick={() => setPostponed(true)} className="w-full sm:w-auto">
-                Do this later
-              </Button>
-            </div>
-          )}
-
-          {recoveryCode && !saved && (
-            <div className="space-y-4">
-              <Alert variant="warning" title="Save this code now">
-                This is the only time we can show it. Store it offline — a notebook, password manager,
-                or printed copy.
-              </Alert>
-              <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card-muted)] p-4 font-mono text-sm leading-relaxed break-all select-all">
-                {recoveryCode}
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button variant="secondary" onClick={handleCopyCode}>
-                  {copied ? "Copied" : "Copy code"}
-                </Button>
-                <Button onClick={handleConfirmSaved}>I have saved my recovery code</Button>
-              </div>
-            </div>
-          )}
-
-          {postponed && !hasRecoveryCode && (
-            <Alert variant="muted" className="mt-4">
-              You can return anytime. If you lose this device before setting up another recovery
-              method, your private letters may be unrecoverable — we cannot restore them for you.
+          {recoveryPhrase ? (
+            <RecoveryPhraseReplace
+              recoveryPhrase={recoveryPhrase}
+              onReplaced={() => vaultClient.recheck()}
+            />
+          ) : (
+            <Alert variant="warning" title="Recovery phrase missing">
+              Your vault is missing a recovery phrase envelope. Complete vault setup again or contact
+              support if this looks wrong.
             </Alert>
           )}
         </Card>
@@ -181,21 +110,28 @@ export default function RecoveryPage() {
               device — when your browser supports it.
             </CardDescription>
           </CardHeader>
-          {session?.user?.id && (
+          {userId && (
             <PasskeySetup
-              userId={session.user.id}
-              hasPasskey={hasPasskey}
-              onStatusChange={refreshStatus}
+              userId={userId}
+              hasPasskey={serverStatus?.hasPasskey ?? false}
+              onStatusChange={() => vaultClient.recheck()}
             />
           )}
         </Card>
-      </div>
 
-      {error && (
-        <Alert variant="danger" className="mt-6" role="alert">
-          {error}
-        </Alert>
-      )}
+        {hasLegacyRecoveryCode && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Legacy recovery code</CardTitle>
+              <CardDescription>
+                This vault still has an older recovery code envelope from before LTG Vault used
+                recovery phrases. You can still unlock with that code on the unlock screen. New
+                recovery codes cannot be generated here.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+      </div>
     </PageLayout>
   );
 }

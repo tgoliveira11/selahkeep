@@ -50,7 +50,7 @@ Registration (`POST /api/auth/register`) and NextAuth OAuth/credentials flows ar
 
 ### Account two-factor authentication (TOTP)
 
-Optional account-level 2FA protects **sign-in only** — it does not decrypt private letters or replace the vault recovery code.
+Optional account-level 2FA protects **sign-in only** — it does not decrypt private notes or replace the vault recovery phrase.
 
 | Method | Path | Auth |
 |--------|------|------|
@@ -81,6 +81,19 @@ Passkeys authenticate the account separately from vault decryption. A passkey un
 | `POST` | `/api/account/passkeys/:id/enable-vault-unlock` | Session (vault unlocked client-side) |
 
 Vault recovery passkeys (PRF envelope while vault unlocked) also use `POST /api/passkeys/register` and `POST /api/passkeys/authenticate` on `/vault/recovery`.
+
+### Vault recovery phrase
+
+LTG vault setup (`POST /api/vault/setup`) always creates a `recovery_phrase` envelope. Replacement while the vault is unlocked on the client:
+
+| Method | Path | Auth | Body |
+|--------|------|------|------|
+| `GET` | `/api/vault/status` | Session | — includes `recoveryPhrase.createdAt`, `recoveryPhrase.replacedAt`, `phraseLength` when configured |
+| `POST` | `/api/vault/recovery-phrase` | Session | `encryptedVaultKey`, `kdfMetadata`, optional `publicMetadata.phraseLength` — **no plaintext phrase** |
+
+`POST /api/vault/recovery-phrase` atomically revokes the previous active `recovery_phrase` envelope and creates a new one. Legacy `POST /api/recovery-code` remains for older `recovery_code` envelopes only; LTG `/vault/recovery` does not generate new recovery codes.
+
+See `docs/VAULT_RECOVERY_FLOW_AUDIT.md`.
 
 ### Email verification and account passwords
 

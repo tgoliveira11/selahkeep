@@ -98,10 +98,21 @@ export type VaultStatusCopy = {
 
 export function getVaultStatusCopy(
   clientStatus: VaultClientStatus,
-  context: "default" | "settings" | "unlock" | "notes" = "default"
+  context: "default" | "settings" | "unlock" | "notes" | "recovery" = "default"
 ): VaultStatusCopy {
   switch (clientStatus) {
     case "not_configured":
+      if (context === "recovery") {
+        return {
+          badgeLabel: "Vault not set up",
+          actionLabel: "Set up vault",
+          actionHref: "/vault/setup",
+          promptTitle: "Set up your vault first",
+          promptDescription:
+            "Your recovery phrase is created during vault setup. Create your vault, choose a vault password, and save your recovery phrase before managing recovery options.",
+          promptCta: "Set up vault",
+        };
+      }
       if (context === "unlock") {
         return {
           badgeLabel: "Vault not set up",
@@ -138,6 +149,17 @@ export function getVaultStatusCopy(
         secondaryCtaHref: "/vault/settings",
       };
     case "setup_incomplete":
+      if (context === "recovery") {
+        return {
+          badgeLabel: "Vault setup incomplete",
+          actionLabel: "Continue setup",
+          actionHref: "/vault/setup",
+          promptTitle: "Complete your vault setup",
+          promptDescription:
+            "Finish vault setup — including your recovery phrase — before managing recovery options.",
+          promptCta: "Continue setup",
+        };
+      }
       if (context === "unlock") {
         return {
           badgeLabel: "Vault setup incomplete",
@@ -169,6 +191,17 @@ export function getVaultStatusCopy(
         promptCta: "Continue setup",
       };
     case "locked":
+      if (context === "recovery") {
+        return {
+          badgeLabel: "Vault locked",
+          actionLabel: "Unlock vault",
+          actionHref: "/vault/unlock",
+          promptTitle: "Unlock your vault",
+          promptDescription:
+            "Unlock your vault to view recovery phrase status or replace your recovery phrase.",
+          promptCta: "Unlock vault",
+        };
+      }
       if (context === "settings") {
         return {
           badgeLabel: "Vault locked",

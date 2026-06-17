@@ -19,6 +19,18 @@
 | Purpose | Sign in | Unlock private notes |
 | Server | bcrypt hash | never sent |
 
+## Recovery phrase replacement (`/vault/recovery`)
+
+- Requires authenticated session and **unlocked vault** (UVK in browser memory only).
+- User generates a new 12- or 24-word BIP39 phrase client-side; shown once with confirmation.
+- Client wraps UVK with Argon2id (`wrapVaultKeyForRecoveryPhrase`) and posts encrypted envelope to `POST /api/vault/recovery-phrase`.
+- Server atomically revokes the previous `recovery_phrase` envelope and creates a new one (`recovery_phrase_replaced` audit).
+- Plaintext recovery phrase and UVK **never** sent to the server.
+- Configured LTG vaults always have a `recovery_phrase` envelope from setup — `/vault/recovery` offers **Replace recovery phrase**, not initial generation.
+- Legacy `recovery_code` envelopes: unlock-only on `/vault/unlock`; no new generation on `/vault/recovery`.
+
+See `docs/VAULT_RECOVERY_FLOW_AUDIT.md`.
+
 ## Related docs
 
 - `docs/TDR_LTG_Vault_MVP.md`

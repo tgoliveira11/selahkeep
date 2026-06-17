@@ -1,7 +1,7 @@
 import { runInTransaction } from "@/lib/db/transaction";
 import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
-import type { VaultInitInput, RecoveryCodeInput, VaultSetupInput } from "@/lib/validation/vault";
+import type { VaultInitInput, RecoveryCodeInput, VaultSetupInput, RecoveryPhraseReplaceInput } from "@/lib/validation/vault";
 import {
   assertVaultKeyAad,
   assertVaultSettingsAad,
@@ -118,6 +118,32 @@ export const vaultService = {
 
     const setupComplete = setupPhase === "complete";
 
+    const activeRecoveryPhrase = methods.has("recovery_phrase")
+      ? await vaultRepository.findActiveEnvelopeByMethod(userId, "recovery_phrase")
+      : null;
+
+    let recoveryPhraseMeta:
+      | {
+          phraseLength?: number;
+          createdAt: string;
+          replacedAt?: string;
+        }
+      | undefined;
+
+    if (activeRecoveryPhrase) {
+      const phraseHistory = await vaultRepository.findEnvelopesByMethod(userId, "recovery_phrase");
+      const firstEnvelope = phraseHistory[0];
+      const revokedCount = phraseHistory.filter((envelope) => envelope.revokedAt != null).length;
+      const publicMetadata = activeRecoveryPhrase.publicMetadata as { phraseLength?: number } | null;
+
+      recoveryPhraseMeta = {
+        phraseLength: publicMetadata?.phraseLength,
+        createdAt: firstEnvelope?.createdAt.toISOString() ?? activeRecoveryPhrase.createdAt.toISOString(),
+        replacedAt:
+          revokedCount > 0 ? activeRecoveryPhrase.createdAt.toISOString() : undefined,
+      };
+    }
+
     let recoveryState: "Protected" | "Basic" | "At Risk" | undefined;
     if (setupComplete) {
       const durableMethods = ["recovery_code", "recovery_phrase", "passkey_authorized_device"].filter(
@@ -148,6 +174,7 @@ export const vaultService = {
       hasVaultPassword: methods.has("password"),
       hasPasskey: methods.has("passkey_authorized_device"),
       ltgSetupComplete,
+      recoveryPhrase: recoveryPhraseMeta,
       availableUnlockMethods: setupComplete
         ? {
             password: methods.has("password"),
@@ -184,6 +211,45 @@ export const vaultService = {
       );
 
       return { id: envelope.id };
+    });
+  },
+
+  async replaceRecoveryPhrase(userId: string, input: RecoveryPhraseReplaceInput) {
+    const vault = await vaultRepository.findVaultByUserId(userId);
+    if (!vault) throw new NotFoundError("Vault not initialized");
+    if (vault.vaultVersion !== "vault-v2") {
+      throw new Error("Recovery phrase replacement requires LTG vault");
+    }
+
+    assertVaultKeyAad(userId, input.encryptedVaultKey);
+    if (input.kdfMetadata.kdf !== "argon2id") {
+      throw new Error("Recovery phrase envelope requires Argon2id KDF metadata");
+    }
+
+    return runInTransaction(async (tx) => {
+      const existing = await vaultRepository.findActiveEnvelopeByMethod(userId, "recovery_phrase", tx);
+      if (!existing) {
+        throw new NotFoundError("No recovery phrase configured");
+      }
+
+      await vaultRepository.revokeEnvelope(existing.id, userId, tx);
+      await auditRepository.record("recovery_phrase_replaced", userId, undefined, tx);
+
+      const envelope = await vaultRepository.createEnvelope(
+        {
+          userId,
+          method: "recovery_phrase",
+          encryptedVaultKey: input.encryptedVaultKey,
+          kdfMetadata: input.kdfMetadata,
+          publicMetadata: input.publicMetadata ?? null,
+        },
+        tx
+      );
+
+      return {
+        id: envelope.id,
+        createdAt: envelope.createdAt.toISOString(),
+      };
     });
   },
 

@@ -44,7 +44,7 @@ Supported unlock methods: **vault password**, **recovery phrase**, **passkey PRF
 
 ## Database transactions
 
-Multi-step sensitive flows use `runInTransaction()` (vault init/setup, recovery code store, passkey register/remove). Failures roll back related writes.
+Multi-step sensitive flows use `runInTransaction()` (vault init/setup, recovery phrase replace, legacy recovery code store, passkey register/remove). Failures roll back related writes.
 
 ## Browser Storage (IndexedDB)
 

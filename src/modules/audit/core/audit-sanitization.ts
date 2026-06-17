@@ -4,6 +4,7 @@ export const AUDIT_EVENT_TYPES = [
   "vault_initialized",
   "recovery_code_generated",
   "recovery_code_regenerated",
+  "recovery_phrase_replaced",
   "trusted_device_added",
   "trusted_device_revoked",
   "trusted_device_removed",

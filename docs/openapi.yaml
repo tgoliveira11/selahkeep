@@ -636,12 +636,25 @@ paths:
   /api/recovery-code:
     post:
       tags: [Recovery]
-      summary: Store or regenerate recovery-code envelope
+      summary: Store or regenerate recovery-code envelope (legacy vault-v1)
       security:
         - sessionCookie: []
       responses:
         '201':
           description: Recovery envelope stored
+  /api/vault/recovery-phrase:
+    post:
+      tags: [Recovery, Vault]
+      summary: Replace recovery-phrase envelope (client encrypts UVK; atomic revoke + create)
+      security:
+        - sessionCookie: []
+      responses:
+        '201':
+          description: New recovery phrase envelope stored
+        '400':
+          description: Plaintext rejected or invalid payload
+        '404':
+          description: Vault or recovery phrase not configured
   /api/passkeys/register:
     post:
       tags: [Passkeys]

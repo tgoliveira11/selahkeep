@@ -8,7 +8,7 @@ import { getVaultStatusCopy } from "@/lib/vault/vault-status";
 
 interface VaultStatusPromptProps {
   clientStatus: Exclude<VaultClientStatus, "unlocked">;
-  context?: "default" | "settings" | "unlock" | "notes";
+  context?: "default" | "settings" | "unlock" | "notes" | "recovery";
 }
 
 export function VaultStatusPrompt({

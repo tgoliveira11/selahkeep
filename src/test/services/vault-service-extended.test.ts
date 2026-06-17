@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   findActiveEnvelopesByUserId: vi.fn(),
   createEnvelope: vi.fn(),
   findActiveEnvelopeByMethod: vi.fn(),
+  findEnvelopesByMethod: vi.fn(),
   revokeEnvelope: vi.fn(),
   createVault: vi.fn(),
   record: vi.fn(),
@@ -18,6 +19,7 @@ vi.mock("@/server/repositories/vault-repository", () => ({
     findVaultByUserId: mocks.findVaultByUserId,
     findActiveEnvelopesByUserId: mocks.findActiveEnvelopesByUserId,
     findActiveEnvelopeByMethod: mocks.findActiveEnvelopeByMethod,
+    findEnvelopesByMethod: mocks.findEnvelopesByMethod,
     revokeEnvelope: mocks.revokeEnvelope,
     createVault: mocks.createVault,
     createEnvelope: mocks.createEnvelope,
@@ -37,7 +39,11 @@ vi.mock("@/server/policies/rate-limit", () => ({
 }));
 
 describe("vault service extended", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.findEnvelopesByMethod.mockResolvedValue([]);
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue(null);
+  });
 
   it("classifies Basic and At Risk states", async () => {
     mocks.findVaultByUserId.mockResolvedValue({ vaultVersion: "vault-v1" });

@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   createEnvelope: vi.fn(),
   findActiveEnvelopesByUserId: vi.fn(),
   findActiveEnvelopeByMethod: vi.fn(),
+  findEnvelopesByMethod: vi.fn(),
   revokeEnvelope: vi.fn(),
   updateVaultIndex: vi.fn(),
   updateVaultSettings: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock("@/server/repositories/vault-repository", () => ({
     createEnvelope: mocks.createEnvelope,
     findActiveEnvelopesByUserId: mocks.findActiveEnvelopesByUserId,
     findActiveEnvelopeByMethod: mocks.findActiveEnvelopeByMethod,
+    findEnvelopesByMethod: mocks.findEnvelopesByMethod,
     revokeEnvelope: mocks.revokeEnvelope,
     updateVaultIndex: mocks.updateVaultIndex,
     updateVaultSettings: mocks.updateVaultSettings,
@@ -39,6 +41,8 @@ vi.mock("@/server/repositories/audit-repository", () => ({
 describe("vault service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.findEnvelopesByMethod.mockResolvedValue([]);
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue(null);
   });
 
   it("initializes a new vault with recovery_code envelope", async () => {
@@ -256,6 +260,90 @@ describe("vault service", () => {
     mocks.findVaultByUserId.mockResolvedValue({ encryptedVaultIndex: index });
     await expect(vaultService.getIndex(USER_ID)).resolves.toEqual({
       encryptedVaultIndex: index,
+    });
+  });
+
+  it("replaceRecoveryPhrase revokes previous envelope and creates a new one", async () => {
+    mocks.findVaultByUserId.mockResolvedValue({ id: "vault-1", vaultVersion: "vault-v2" });
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue({ id: "env-old" });
+    mocks.createEnvelope.mockResolvedValue({
+      id: "env-new",
+      createdAt: new Date("2026-06-17T12:00:00.000Z"),
+    });
+
+    const result = await vaultService.replaceRecoveryPhrase(USER_ID, {
+      encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+      kdfMetadata: {
+        kdf: "argon2id",
+        version: "kdf-v1",
+        salt: "c2FsdA",
+        memory: 65536,
+        iterations: 3,
+        parallelism: 1,
+      },
+      publicMetadata: { phraseLength: 24 },
+    });
+
+    expect(result.id).toBe("env-new");
+    expect(mocks.revokeEnvelope).toHaveBeenCalledWith("env-old", USER_ID, expect.anything());
+    expect(mocks.createEnvelope).toHaveBeenCalledWith(
+      expect.objectContaining({ method: "recovery_phrase", publicMetadata: { phraseLength: 24 } }),
+      expect.anything()
+    );
+    expect(mocks.record).toHaveBeenCalledWith(
+      "recovery_phrase_replaced",
+      USER_ID,
+      undefined,
+      expect.anything()
+    );
+  });
+
+  it("replaceRecoveryPhrase fails when no active recovery phrase exists", async () => {
+    mocks.findVaultByUserId.mockResolvedValue({ id: "vault-1", vaultVersion: "vault-v2" });
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue(null);
+
+    await expect(
+      vaultService.replaceRecoveryPhrase(USER_ID, {
+        encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+        kdfMetadata: {
+          kdf: "argon2id",
+          version: "kdf-v1",
+          salt: "c2FsdA",
+          memory: 65536,
+          iterations: 3,
+          parallelism: 1,
+        },
+      })
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("includes recovery phrase metadata in status", async () => {
+    const createdAt = new Date("2026-01-01T00:00:00.000Z");
+    const replacedAt = new Date("2026-06-01T00:00:00.000Z");
+    mocks.findVaultByUserId.mockResolvedValue({
+      vaultVersion: "vault-v2",
+      encryptedVaultSettings: encryptedPayload("vault_settings", USER_ID),
+      encryptedVaultIndex: encryptedPayload("vault_index", USER_ID),
+    });
+    mocks.findActiveEnvelopesByUserId.mockResolvedValue([
+      { method: "password" },
+      { method: "recovery_phrase" },
+    ]);
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue({
+      createdAt: replacedAt,
+      publicMetadata: { phraseLength: 12 },
+    });
+    mocks.findEnvelopesByMethod.mockResolvedValue([
+      { createdAt, revokedAt: createdAt },
+      { createdAt: replacedAt, revokedAt: null },
+    ]);
+
+    await expect(vaultService.getStatus(USER_ID)).resolves.toMatchObject({
+      recoveryPhrase: {
+        phraseLength: 12,
+        createdAt: createdAt.toISOString(),
+        replacedAt: replacedAt.toISOString(),
+      },
     });
   });
 });

@@ -109,7 +109,7 @@ GitHub sign-in uses the NextAuth **GitHub** provider. It authenticates the **acc
 
 ## Microsoft sign-in (account authentication only)
 
-Microsoft sign-in uses the NextAuth **Azure AD** provider (`azure-ad`) against Microsoft Entra ID / the Microsoft identity platform. It authenticates the **account only** — it does **not** unlock the private notes vault or replace passkey PRF vault unlock or the recovery code.
+Microsoft sign-in uses the NextAuth **Azure AD** provider (`azure-ad`) against Microsoft Entra ID / the Microsoft identity platform. It authenticates the **account only** — it does **not** unlock the private notes vault or replace passkey PRF vault unlock or the recovery phrase.
 
 | Setting | Value |
 |---------|--------|

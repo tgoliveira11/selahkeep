@@ -125,15 +125,15 @@ export default function VaultSettingsPage() {
           )}
 
           <Card className="space-y-3 border-dashed">
-            <h2 className="font-medium">Advanced vault options</h2>
+            <h2 className="font-medium">Recovery and passkey</h2>
             <p className="text-sm text-[var(--muted)]">
-              Recovery phrase setup happens during vault setup. Passkey vault unlock is configured
-              under Account security. Legacy recovery codes remain available for older vaults.
+              Your recovery phrase is created during vault setup. You can replace it or set up
+              passkey vault unlock from the recovery page while your vault is unlocked.
             </p>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Link href="/vault/recovery">
                 <Button variant="secondary" className="w-full sm:w-auto">
-                  Legacy recovery & passkey setup
+                  Recovery options
                 </Button>
               </Link>
             </div>

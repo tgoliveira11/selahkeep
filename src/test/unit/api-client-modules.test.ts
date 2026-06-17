@@ -41,6 +41,12 @@ describe("typed API client modules", () => {
         if (url === "/api/recovery-code" && init?.method === "POST") {
           return new Response(JSON.stringify({ id: "env-1" }), { status: 201 });
         }
+        if (url === "/api/vault/recovery-phrase" && init?.method === "POST") {
+          return new Response(
+            JSON.stringify({ id: "env-phrase", createdAt: "2026-06-17T00:00:00.000Z" }),
+            { status: 201 }
+          );
+        }
         if (url === "/api/vault/unlock-with-recovery-code" && init?.method === "POST") {
           return new Response(
             JSON.stringify({
@@ -98,6 +104,20 @@ describe("typed API client modules", () => {
         },
       })
     ).resolves.toEqual({ id: "env-1" });
+    await expect(
+      vaultApi.replaceRecoveryPhrase({
+        encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+        kdfMetadata: {
+          kdf: "argon2id",
+          version: "kdf-v1",
+          salt: "c2FsdA",
+          memory: 65536,
+          iterations: 3,
+          parallelism: 1,
+        },
+        publicMetadata: { phraseLength: 12 },
+      })
+    ).resolves.toEqual({ id: "env-phrase", createdAt: "2026-06-17T00:00:00.000Z" });
     await expect(vaultApi.unlockWithRecoveryCode()).resolves.toHaveProperty("encryptedVaultKey");
   });
 

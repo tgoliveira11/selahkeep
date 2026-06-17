@@ -9,6 +9,12 @@ export type VaultUnlockMethods = {
   passkey: boolean;
 };
 
+export type RecoveryPhraseStatus = {
+  phraseLength?: number;
+  createdAt: string;
+  replacedAt?: string;
+};
+
 export interface VaultStatus {
   initialized: boolean;
   hasVault: boolean;
@@ -24,6 +30,7 @@ export interface VaultStatus {
   hasVaultPassword?: boolean;
   hasPasskey?: boolean;
   ltgSetupComplete?: boolean;
+  recoveryPhrase?: RecoveryPhraseStatus;
   availableUnlockMethods?: VaultUnlockMethods;
 }
 
@@ -56,6 +63,13 @@ export const vaultApi = {
     encryptedVaultKey: EncryptedPayload;
     kdfMetadata: KdfMetadata;
   }) => apiClient.post<{ id: string }>("/api/recovery-code", payload),
+
+  replaceRecoveryPhrase: (payload: {
+    encryptedVaultKey: EncryptedPayload;
+    kdfMetadata: KdfMetadata;
+    publicMetadata?: { phraseLength: 12 | 24 };
+  }) =>
+    apiClient.post<{ id: string; createdAt: string }>("/api/vault/recovery-phrase", payload),
 
   unlockWithRecoveryCode: () =>
     apiClient.post<{

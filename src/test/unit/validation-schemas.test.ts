@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { vaultInitSchema, recoveryCodeSchema } from "@/lib/validation/vault";
+import { vaultInitSchema, recoveryCodeSchema, recoveryPhraseReplaceSchema } from "@/lib/validation/vault";
 import {
   twoFactorLoginVerifySchema,
   twoFactorVerifySchema,
@@ -58,6 +58,22 @@ describe("validation schemas", () => {
         iterations: 3,
         parallelism: 1,
       },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("recoveryPhraseReplaceSchema accepts encrypted envelope with phrase length metadata", () => {
+    const result = recoveryPhraseReplaceSchema.safeParse({
+      encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+      kdfMetadata: {
+        kdf: "argon2id",
+        version: "kdf-v1",
+        salt: "c2FsdA",
+        memory: 65536,
+        iterations: 3,
+        parallelism: 1,
+      },
+      publicMetadata: { phraseLength: 24 },
     });
     expect(result.success).toBe(true);
   });

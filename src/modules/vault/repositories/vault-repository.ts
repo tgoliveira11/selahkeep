@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { db, type DbClient } from "@/lib/db";
 import { userVaults, vaultEnvelopes } from "@/lib/db/schema";
 import type { EncryptedPayload, KdfMetadata } from "@/lib/validation/encrypted-payload";
@@ -64,8 +64,8 @@ export const vaultRepository = {
       .where(and(eq(vaultEnvelopes.userId, userId), isNull(vaultEnvelopes.revokedAt)));
   },
 
-  async findActiveEnvelopeByMethod(userId: string, method: string) {
-    const [envelope] = await db
+  async findActiveEnvelopeByMethod(userId: string, method: string, client: DbClient = db) {
+    const [envelope] = await client
       .select()
       .from(vaultEnvelopes)
       .where(
@@ -77,6 +77,14 @@ export const vaultRepository = {
       )
       .limit(1);
     return envelope ?? null;
+  },
+
+  async findEnvelopesByMethod(userId: string, method: string, client: DbClient = db) {
+    return client
+      .select()
+      .from(vaultEnvelopes)
+      .where(and(eq(vaultEnvelopes.userId, userId), eq(vaultEnvelopes.method, method)))
+      .orderBy(asc(vaultEnvelopes.createdAt));
   },
 
   async findActivePasskeyEnvelopeByCredentialId(userId: string, credentialId: string) {

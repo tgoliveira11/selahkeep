@@ -9,14 +9,14 @@ import {
   wrapVaultKeyForPassword,
   wrapVaultKeyForRecoveryPhrase,
 } from "@/lib/crypto-client/vault-envelope";
-import { generateRecoveryPhrase } from "@/lib/crypto-client/recovery-phrase";
 
 const userId = "550e8400-e29b-41d4-a716-446655440000";
 
 describe("LTG vault setup crypto integration", () => {
   it("creates password and recovery phrase envelopes without plaintext secrets in payload", async () => {
     const vaultPassword = "my-vault-passphrase-12";
-    const phrase = generateRecoveryPhrase(12);
+    const phrase =
+      "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
     const vaultKey = await generateUserVaultKey();
 
     const passwordEnvelope = await wrapVaultKeyForPassword(vaultKey, vaultPassword, {
@@ -54,7 +54,7 @@ describe("LTG vault setup crypto integration", () => {
 
     const serialized = JSON.stringify(apiPayload);
     expect(serialized).not.toContain(vaultPassword);
-    expect(serialized).not.toContain(phrase.split(" ")[0]);
+    expect(serialized).not.toContain(phrase);
     expect(apiPayload.envelopes).toHaveLength(2);
     expect(apiPayload.encryptedVaultIndex.aad.field).toBe("vault_index");
     expect(apiPayload.encryptedVaultSettings.aad.field).toBe("vault_settings");

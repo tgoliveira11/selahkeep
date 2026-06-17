@@ -41,6 +41,7 @@
 | 34 | Account deletion warning mentions vault + notes | ✅ Pass | `ACCOUNT_DELETION_VAULT_NOTE` on settings page | `account-deletion-page.test.tsx` | |
 | 35 | Deployment docs updated (no console email in prod) | ✅ Pass | `VERCEL_ENVIRONMENT_VARIABLES.md`, `secure-auth-deployment-checklist.md`, README deploy | Manual review | OAuth callbacks documented |
 | 36 | Vault status distinguishes not configured / setup incomplete / locked / unlocked | ✅ Pass | `GET /api/vault/status`, `useVaultClientStatus`, `/notes`, `/vault/settings`, nav badge | `vault-status.test.ts`, `vault-status-ui.test.tsx` | No unlock panel when vault missing |
+| 37 | `/vault/recovery` status-gated; recovery phrase replace (not initial generation) | ✅ Pass | `/vault/recovery`, `POST /api/vault/recovery-phrase` | `vault-recovery-page.test.tsx`, `recovery-phrase-route.test.ts`, `vault-service.test.ts` | Legacy `recovery_code` unlock only; no "Do this later" |
 
 ---
 

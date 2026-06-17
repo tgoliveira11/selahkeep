@@ -77,7 +77,8 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - `POST /api/vault/setup` — LTG vault-v2 setup (encrypted settings, index, password + recovery phrase envelopes); vault password validated client-side via `PasswordSetupFields` + `VAULT_PASSWORD_*` (never in request body)
 - `POST /api/vault/init`, `GET /api/vault/status` — returns `hasVault`, `setupPhase`, `setupComplete`, and `availableUnlockMethods`; client derives `not_configured` / `setup_incomplete` / `locked` / `unlocked` via `useVaultClientStatus` + UVK session
 - `POST /api/vault/unlock-envelope` — fetch encrypted envelope for password / recovery phrase unlock
-- `POST /api/recovery-code`, `POST /api/vault/unlock-with-recovery-code`
+- `POST /api/vault/recovery-phrase` — replace recovery phrase envelope (atomic revoke + create; client-side UVK wrap)
+- `POST /api/recovery-code`, `POST /api/vault/unlock-with-recovery-code` — legacy recovery code only
 - `POST /api/passkeys/register`, `POST /api/passkeys/authenticate`, `DELETE /api/passkeys` — vault recovery passkey flows (authenticated)
 - `POST /api/auth/passkey/login/options`, `POST /api/auth/passkey/login/verify` — passkey account sign-in (unauthenticated; bypasses TOTP)
 - `GET /api/account/passkeys`, `POST /api/account/passkeys/register`, `DELETE /api/account/passkeys/:id`, `POST /api/account/passkeys/:id/enable-vault-unlock`
@@ -126,6 +127,7 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 - **Layout:** `SiteShell` (`Nav` + `SiteFooter`) on `(public)`, `(auth)`, and `(vault)` route groups; `PageLayout` for content width; responsive mobile menu in `Nav`. Auth pages use package UI inside the shell.
 - **Public marketing:** Home page sections and copy in `src/lib/marketing/home-copy.ts`
 - **Vault setup:** `/vault/setup` — `PasswordSetupFields` (secure-auth) + BIP39 recovery phrase wizard; policy from `src/lib/config/vault-password-policy.ts`
+- **Recovery management:** `/vault/recovery` — status-gated recovery phrase replace + passkey setup (no initial phrase generation post-setup)
 - **Vault unlock:** `LtgVaultUnlockPanel` / `VaultAccessGate` on `/vault/unlock` and note pages
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + **purple** primary)
 - **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview
@@ -145,7 +147,8 @@ Server validates AAD in `src/server/policies/aad-validation.ts` before storage. 
 Multi-step sensitive flows use `runInTransaction()` (`src/lib/db/transaction.ts`):
 
 - vault initialization and LTG setup
-- recovery code store/regenerate
+- recovery phrase replace (`POST /api/vault/recovery-phrase`)
+- legacy recovery code store/regenerate (`POST /api/recovery-code`)
 - passkey register/remove
 
 Failures roll back all related writes.

@@ -174,4 +174,16 @@ describe("vault status model", () => {
     expect(copy.badgeLabel).toBe("Vault unlocked");
     expect(copy.actionLabel).toBe("Lock vault");
   });
+
+  it("getVaultStatusCopy recovery context routes not configured to setup", () => {
+    const copy = getVaultStatusCopy("not_configured", "recovery");
+    expect(copy.actionHref).toBe("/vault/setup");
+    expect(copy.promptDescription).toMatch(/recovery phrase/i);
+  });
+
+  it("getVaultStatusCopy recovery context routes locked to unlock", () => {
+    const copy = getVaultStatusCopy("locked", "recovery");
+    expect(copy.actionHref).toBe("/vault/unlock");
+    expect(copy.promptDescription).toMatch(/replace your recovery phrase/i);
+  });
 });
