@@ -9,8 +9,13 @@ function readSource(relativePath: string): string {
 }
 
 describe("passkey login vault unlock security boundaries", () => {
-  it("does not keep a local account passkey sign-in client", () => {
+  it("uses vault-only passkey login client instead of forbidden local account shim", () => {
     expect(() => readSource("src/features/passkey/sign-in-with-passkey.ts")).toThrow();
+    expect(() => readSource("src/lib/secure-auth/react-client.ts")).toThrow();
+    const vaultLogin = readSource("src/features/passkey/passkey-login-with-vault-unlock.ts");
+    expect(vaultLogin).toContain("passkeyLoginApi.verify");
+    expect(vaultLogin).toContain("vaultUnlockMetadata");
+    expect(vaultLogin).not.toContain("secureAuth.routes");
   });
 
   it("delegates account passkey verify to the package route", () => {
@@ -18,6 +23,14 @@ describe("passkey login vault unlock security boundaries", () => {
     expect(verifyRoute).toContain("secureAuth.routes.passkeyLoginVerify.POST");
     expect(verifyRoute).not.toContain("getVaultUnlockMetadataForCredential");
     expect(verifyRoute).not.toMatch(/decrypt|unwrap|UserVaultKey/i);
+  });
+
+  it("keeps vault metadata on a separate product route gated by login token", () => {
+    const metadataRoute = readSource(
+      "src/app/api/auth/passkey/login/vault-unlock/metadata/route.ts"
+    );
+    expect(metadataRoute).toContain("getVaultUnlockMetadataForLogin");
+    expect(metadataRoute).toContain("rejectPasskeyVaultForbiddenFields");
   });
 
   it("keeps vault PRF enrichment on login options only in the product vault service", () => {

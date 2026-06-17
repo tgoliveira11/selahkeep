@@ -76,16 +76,16 @@ Production hides `/api-docs` unless `ENABLE_API_DOCS=true` in `.env.local`.
 ## Passkeys (sign-in and vault unlock)
 
 - **Sign in with passkey** on `/login` — phishing-resistant account authentication; does not require TOTP even when 2FA is enabled
-- **Account settings → Passkeys** — register sign-in passkeys, upgrade to vault unlock when vault is unlocked and PRF is supported, remove passkeys
-- **Recovery page** — register passkey + PRF vault envelope while vault is unlocked (sign-in + vault unlock)
-- If a passkey signs you in but cannot unlock the vault, you remain signed in and are guided to trusted device, recovery code, or another passkey with vault unlock support
+- **Account settings → Passkeys** — register sign-in passkeys (package); **Passkey vault unlock** section enables/disables vault unlock per passkey when vault is unlocked and PRF is supported
+- **Recovery page** — register passkey + PRF vault envelope while vault is unlocked
+- **Passkey sign-in** may auto-unlock the vault when a compatible PRF envelope exists; otherwise you remain signed in and are guided to `/vault/unlock`
 - Details: [`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`](docs/PASSKEY_LOGIN_VAULT_UNLOCK.md)
 
 Run `npm run db:migrate` after pulling passkey account-auth schema updates (`0005_passkey_account_authentication.sql`).
 
 ## Two-factor authentication (optional)
 
-Account-level TOTP 2FA can be enabled from **Account settings**. It adds an extra sign-in code when signing in with **email and password** and does **not** replace your private letter recovery code or vault unlock methods. **Passkeys** use device verification and do not require a separate one-time code.
+Account-level TOTP 2FA can be enabled from **Account settings**. It adds an extra sign-in code when signing in with **email and password** and does **not** replace vault password, recovery phrase, or passkey vault unlock. **Passkeys** use device verification and do not require a separate one-time code for account sign-in.
 
 Requires `TWO_FACTOR_SECRET_ENCRYPTION_KEY` in `.env.local` (see `.env.example`). Run `npm run db:migrate` after pulling 2FA schema updates.
 

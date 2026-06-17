@@ -95,6 +95,10 @@ export default function VaultUnlockPage() {
             await unlockFromDevice();
             router.push("/notes");
           }}
+          onUnlockPasskey={async () => {
+            await unlockFromPasskey();
+            router.push("/notes");
+          }}
           onUnlockLegacyPasskey={async () => {
             await unlockFromPasskey();
             router.push("/notes");

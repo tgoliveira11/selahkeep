@@ -582,11 +582,11 @@ Complete passkey vault unlock for MVP: associate passkey with vault, PRF-based e
 
 ### 11. Acceptance criteria
 
-- [ ] User can opt in passkey for vault unlock  
-- [ ] PRF envelope unlocks vault on compatible login  
-- [ ] Without envelope, account session works; vault stays locked  
-- [ ] Authentication and vault decryption proven separate in tests  
-- [ ] No PRF/signature key misuse  
+- [x] User can opt in passkey for vault unlock  
+- [x] PRF envelope unlocks vault on compatible login  
+- [x] Without envelope, account session works; vault stays locked  
+- [x] Authentication and vault decryption proven separate in tests  
+- [x] No PRF/signature key misuse  
 
 ### 12. Risks
 

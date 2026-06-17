@@ -166,9 +166,9 @@ Failures roll back all related writes.
 
 ## Passkey account sign-in
 
-Account passkey sign-in is owned by `@tgoliveira/secure-auth` (`LoginPage`, `signInWithPasskey` from `@tgoliveira/secure-auth/react/client`).
+Account passkey sign-in is owned by `@tgoliveira/secure-auth` (`LoginPage`, `signInWithPasskey` from `@tgoliveira/secure-auth/react/client` via vault shim).
 
-Product-specific vault PRF enrichment remains on `POST /api/auth/passkey/login/options` via `passkeyLoginVaultService`. Verify delegates to `secureAuth.routes.passkeyLoginVerify` (no local verify enrichment). Post-login vault unlock uses `/vault/unlock` or `POST /api/auth/passkey/login/vault-unlock/options`.
+Product-specific vault PRF enrichment remains on `POST /api/auth/passkey/login/options` via `passkeyLoginVaultService`. Verify delegates to `secureAuth.routes.passkeyLoginVerify` (no vault enrichment). Post-login auto-unlock is implemented in `src/features/passkey/passkey-login-with-vault-unlock.ts`, wired through `src/lib/secure-auth/vault-passkey-react-client.ts` (Next/Vitest alias). Vault metadata is fetched from `POST /api/auth/passkey/login/vault-unlock/metadata` (loginToken-gated). Manual unlock and second-ceremony PRF use `/vault/unlock` and `POST /api/auth/passkey/login/vault-unlock/options`. Per-passkey enable/status/revoke: `enable-vault-unlock`, `GET/DELETE .../vault-unlock`.
 
 See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md) and [`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`](./docs/PASSKEY_LOGIN_VAULT_UNLOCK.md).
 

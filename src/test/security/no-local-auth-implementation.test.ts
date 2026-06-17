@@ -92,6 +92,13 @@ describe("no local auth implementation guard", () => {
     expect(source).not.toMatch(/bcrypt\.(hash|compare)/);
   });
 
+  it("uses vault-only passkey react client shim without reimplementing account verify", () => {
+    const shim = readSource("src/lib/secure-auth/vault-passkey-react-client.ts");
+    expect(shim).toContain("passkey-login-with-vault-unlock");
+    expect(shim).toContain("vault-passkey-react-reexports");
+    expect(shim).not.toContain("secureAuth.routes");
+  });
+
   it("keeps a single createSecureAuth composition root", () => {
     const source = readSource("src/lib/secure-auth.ts");
     expect(source).toContain("createSecureAuth");

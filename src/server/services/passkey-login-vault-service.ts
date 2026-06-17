@@ -147,6 +147,15 @@ export const passkeyLoginVaultService = {
     return getVaultUnlockMetadataForCredential(userId, credentialId);
   },
 
+  async getVaultUnlockMetadataForLogin(loginToken: string, credentialId: string) {
+    const tokenRow = await loginTokenRepository.findValidLoginToken(hashOpaqueToken(loginToken));
+    if (!tokenRow) {
+      throw new ChallengeError("Login session expired. Sign in with your passkey again.");
+    }
+
+    return getVaultUnlockMetadataForCredential(tokenRow.userId, credentialId);
+  },
+
   async getLoginVaultUnlockOptions(
     loginToken: string,
     credentialId: string,
@@ -164,7 +173,7 @@ export const passkeyLoginVaultService = {
       !credential.signInEnabled ||
       !credential.vaultUnlockEnabled
     ) {
-      throw new NotFoundError("This passkey cannot unlock your private letters.");
+      throw new NotFoundError("This passkey cannot unlock your vault.");
     }
 
     const envelope = await vaultRepository.findActivePasskeyEnvelopeByCredentialId(

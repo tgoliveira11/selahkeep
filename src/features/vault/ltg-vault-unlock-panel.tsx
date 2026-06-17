@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
@@ -8,6 +8,16 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import type { VaultStatus } from "@/lib/api-client/vault";
+import {
+  PASSKEY_LOGIN_PRF_UNAVAILABLE_MESSAGE,
+  PASSKEY_LOGIN_VAULT_LOCKED_MESSAGE,
+  PASSKEY_LOGIN_VAULT_UNLOCKED_MESSAGE,
+  PASSKEY_UNLOCK_DECRYPT_FAILED_MESSAGE,
+  PASSKEY_UNLOCK_NO_ENVELOPE_MESSAGE,
+  PASSKEY_UNLOCK_PRF_UNAVAILABLE_MESSAGE,
+} from "@/lib/passkey/messages";
+import { buildPasskeyLoginOutcomeKey } from "@/features/passkey/passkey-login-with-vault-unlock";
+import { APP_PASSKEY_SLUG } from "@/lib/passkey/app-slug";
 
 export type LtgUnlockMode = "password" | "recovery_phrase" | "legacy";
 
@@ -17,6 +27,7 @@ interface LtgVaultUnlockPanelProps {
   vaultStatus: VaultStatus | null;
   onUnlockPassword: (password: string) => void;
   onUnlockRecoveryPhrase: (phrase: string) => void;
+  onUnlockPasskey?: () => void;
   onUnlockLegacyDevice?: () => void;
   onUnlockLegacyRecoveryCode?: (code: string) => void;
   onUnlockLegacyPasskey?: () => void;
@@ -28,6 +39,7 @@ export function LtgVaultUnlockPanel({
   vaultStatus,
   onUnlockPassword,
   onUnlockRecoveryPhrase,
+  onUnlockPasskey,
   onUnlockLegacyDevice,
   onUnlockLegacyRecoveryCode,
   onUnlockLegacyPasskey,
@@ -36,8 +48,31 @@ export function LtgVaultUnlockPanel({
   const [vaultPassword, setVaultPassword] = useState("");
   const [recoveryPhrase, setRecoveryPhrase] = useState("");
   const [legacyRecoveryCode, setLegacyRecoveryCode] = useState("");
+  const [passkeyNotice, setPasskeyNotice] = useState<string | null>(null);
 
   const isLtg = vaultStatus?.ltgSetupComplete ?? false;
+
+  useEffect(() => {
+    const outcome = sessionStorage.getItem(buildPasskeyLoginOutcomeKey(APP_PASSKEY_SLUG));
+    if (outcome === "vault-unlocked") {
+      setPasskeyNotice(PASSKEY_LOGIN_VAULT_UNLOCKED_MESSAGE);
+    } else if (outcome === "vault-locked") {
+      setPasskeyNotice(PASSKEY_LOGIN_VAULT_LOCKED_MESSAGE);
+    } else if (outcome === "prf-unavailable") {
+      setPasskeyNotice(PASSKEY_LOGIN_PRF_UNAVAILABLE_MESSAGE);
+    }
+    if (outcome) sessionStorage.removeItem(buildPasskeyLoginOutcomeKey(APP_PASSKEY_SLUG));
+  }, []);
+
+  function mapUnlockError(message: string | null): string | null {
+    if (!message) return null;
+    if (message.includes("not set up to unlock")) return PASSKEY_UNLOCK_NO_ENVELOPE_MESSAGE;
+    if (message.includes("PRF support")) return PASSKEY_UNLOCK_PRF_UNAVAILABLE_MESSAGE;
+    if (message.includes("Could not decrypt")) return PASSKEY_UNLOCK_DECRYPT_FAILED_MESSAGE;
+    return message;
+  }
+
+  const displayError = mapUnlockError(error);
 
   return (
     <Card className="space-y-5 p-6">
@@ -48,6 +83,14 @@ export function LtgVaultUnlockPanel({
           or recovery phrase.
         </p>
       </div>
+
+      {passkeyNotice && <Alert variant="muted">{passkeyNotice}</Alert>}
+
+      {isLtg && onUnlockPasskey && vaultStatus?.hasPasskey && (
+        <Button className="w-full" variant="secondary" disabled={loading} onClick={onUnlockPasskey}>
+          {loading ? "Unlocking…" : "Unlock with passkey"}
+        </Button>
+      )}
 
       {isLtg && (
         <div className="flex flex-wrap gap-2">
@@ -168,7 +211,7 @@ export function LtgVaultUnlockPanel({
         </div>
       )}
 
-      {error && <Alert variant="danger">{error}</Alert>}
+      {displayError && <Alert variant="danger">{displayError}</Alert>}
     </Card>
   );
 }

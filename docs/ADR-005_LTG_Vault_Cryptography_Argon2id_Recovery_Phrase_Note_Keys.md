@@ -85,7 +85,7 @@ Implementation: `src/lib/crypto-client/argon2id.ts`, `src/lib/crypto-client/vaul
 |------|-------|---------------|---------|
 | `password` | **1 — implement** | `password` | Vault password/passphrase unwraps UVK |
 | `recovery_phrase` | **1 — implement** | `recovery_phrase` | Recovery phrase unwraps UVK |
-| `passkey_prf` | **4 — document only** | `passkey_prf` | PRF-derived key unwraps UVK |
+| `passkey_prf` | **4 — implemented** | `passkey_authorized_device` | PRF-derived key unwraps UVK; see ADR-006 |
 | `trusted_device` | legacy | `trusted_device` | Device secret unwraps UVK |
 | `recovery_code` | legacy | `recovery_code` | 17-word legacy code |
 | `passkey_authorized_device` | legacy/4 | `passkey_authorized_device` | Passkey PRF envelope |
@@ -253,7 +253,7 @@ Validation: `rejectVaultPlaintextFields()` in `src/lib/validation/vault.ts`; `re
 
 - New vaults use `vault-v2` + `password` + `recovery_phrase` envelopes.
 - Legacy `vault-v1` flows remain until migrated.
-- Phase 4 implements `passkey_prf` envelope per ADR-002 evolution.
+- Phase 4 implements passkey PRF vault unlock per ADR-006 (`passkey_authorized_device` envelope with `prfRequired: true`).
 - Phase 2 adds Note Keys wrapped by UVK (`notes` table, `/api/notes`, vault index).
 - Phase 3 extends vault index v2 with encrypted categories, tags, answered flags; client-only search; `unlockBehavior` in encrypted vault settings. Letters domain removed.
 

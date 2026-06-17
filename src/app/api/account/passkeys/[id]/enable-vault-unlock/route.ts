@@ -5,6 +5,7 @@ import { passkeyVaultEnvelopeService } from "@/server/services/passkey-vault-env
 import { encryptedPayloadSchema } from "@/lib/validation/encrypted-payload";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
 import { getClientIp } from "@/lib/request-ip";
+import { rejectPasskeyVaultForbiddenFields } from "@/server/policies/passkey-vault-plaintext-rejection";
 
 const bodySchema = z.object({
   action: z.enum(["options", "verify"]),
@@ -21,6 +22,10 @@ export async function POST(request: Request, context: RouteContext) {
     const user = await requireSessionUser();
     const { id } = await context.params;
     const body = await parseJsonBody(request);
+    const plaintextError = rejectPasskeyVaultForbiddenFields(body);
+    if (plaintextError) {
+      return NextResponse.json({ error: plaintextError }, { status: 400 });
+    }
     const parsed = bodySchema.safeParse(body);
 
     if (!parsed.success) {

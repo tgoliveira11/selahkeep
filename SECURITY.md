@@ -221,10 +221,10 @@ Safe audit events only (no plaintext letters, recovery codes, keys, or ciphertex
 - Email/password sign-in still requires TOTP when 2FA is enabled
 - OAuth + TOTP behavior is unchanged (partial session until `/login/2fa`)
 - Successful passkey login issues the same one-time `login-token` session as post-TOTP credentials login (`twoFactorVerified: true`)
-- Vault unlock after passkey login happens **client-side only** when a valid PRF-based envelope exists for that credential and PRF output is available
+- Vault unlock after passkey login happens **client-side only** when a valid PRF-based envelope exists for that credential and PRF output is available (`passkey-login-with-vault-unlock.ts` via react client alias)
 - Discoverable passkey sign-in may prompt a **second WebAuthn step** with PRF (`POST /api/auth/passkey/login/vault-unlock/options`) before the session is completed
-- If the passkey signs in but has no vault envelope (or PRF is unavailable), the vault remains locked and the user is routed to the vault unlock flow
-- Account passkey management: `GET /api/account/passkeys`, register/remove, and optional upgrade to vault unlock while vault is unlocked
+- If the passkey signs in but has no vault envelope (or PRF is unavailable), the vault remains locked and the user is routed to `/vault/unlock`
+- Account passkey management: `GET /api/account/passkeys`, register/remove (package), optional vault unlock enable (`enable-vault-unlock`), status/revoke (`GET/DELETE .../vault-unlock`)
 
 ## Passkey vault unlock (PRF)
 

@@ -29,7 +29,7 @@ export const passkeyVaultEnvelopeService = {
       throw new NotFoundError("Passkey not found");
     }
     if (credential.vaultUnlockEnabled) {
-      throw new ChallengeError("This passkey already unlocks your private letters.");
+      throw new ChallengeError("This passkey already unlocks your vault.");
     }
 
     await enforceRateLimit({
@@ -81,7 +81,7 @@ export const passkeyVaultEnvelopeService = {
       throw new NotFoundError("Passkey not found");
     }
     if (credential.vaultUnlockEnabled) {
-      throw new ChallengeError("This passkey already unlocks your private letters.");
+      throw new ChallengeError("This passkey already unlocks your vault.");
     }
 
     const clientData = JSON.parse(
@@ -165,6 +165,66 @@ export const passkeyVaultEnvelopeService = {
 
       await auditRepository.record(
         "passkey_vault_unlock_enabled",
+        userId,
+        { credentialId: credential.credentialId },
+        tx
+      );
+    });
+
+    return { success: true };
+  },
+
+  async getVaultUnlockStatus(userId: string, credentialDbId: string) {
+    const credential = await passkeyRepository.findByIdForUser(credentialDbId, userId);
+    if (!credential) {
+      throw new NotFoundError("Passkey not found");
+    }
+
+    const envelope = credential.vaultUnlockEnabled
+      ? await vaultRepository.findActivePasskeyEnvelopeByCredentialId(
+          userId,
+          credential.credentialId
+        )
+      : null;
+
+    return {
+      signInEnabled: credential.signInEnabled,
+      vaultUnlockEnabled: Boolean(credential.vaultUnlockEnabled && envelope),
+      prfSupported: credential.prfSupported,
+      credentialId: credential.credentialId,
+    };
+  },
+
+  async disableVaultUnlock(userId: string, credentialDbId: string) {
+    const credential = await passkeyRepository.findByIdForUser(credentialDbId, userId);
+    if (!credential) {
+      throw new NotFoundError("Passkey not found");
+    }
+    if (!credential.vaultUnlockEnabled) {
+      throw new ChallengeError("Passkey vault unlock is not enabled for this passkey.");
+    }
+
+    await runInTransaction(async (tx) => {
+      const envelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
+      for (const envelope of envelopes) {
+        const metadata = envelope.publicMetadata as { credentialId?: string } | null;
+        if (
+          envelope.method === "passkey_authorized_device" &&
+          metadata?.credentialId === credential.credentialId
+        ) {
+          await vaultRepository.revokeEnvelope(envelope.id, userId, tx);
+        }
+      }
+
+      await passkeyRepository.updateCredentialFlags(
+        credential.id,
+        userId,
+        { vaultUnlockEnabled: false },
+        tx
+      );
+
+      await auditRepository.record(
+        "passkey_vault_unlock_disabled",
         userId,
         { credentialId: credential.credentialId },
         tx

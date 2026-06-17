@@ -33,6 +33,11 @@ vi.mock("@tgoliveira/secure-auth/react", () => ({
 
 vi.mock("@/lib/crypto-client/vault", () => ({
   clearVaultClientState: vi.fn(async () => undefined),
+  isVaultUnlocked: vi.fn(() => false),
+}));
+
+vi.mock("@/features/passkey/passkey-vault-unlock-setup", () => ({
+  PasskeyVaultUnlockSetup: () => <div>Passkey vault unlock setup</div>,
 }));
 
 describe("account settings page wrapper", () => {
