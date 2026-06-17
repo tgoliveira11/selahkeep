@@ -1,5 +1,7 @@
 # Security — Private Letters Vault MVP
 
+> **LTG Vault direction:** [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) — Argon2id-only vault KDF, encrypted note metadata/index, no plaintext titles/tags/categories at rest, account auth from `@tgoliveira/secure-auth@0.1.16-internal`. Implementation phases: [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md). This file documents **current** enforced rules; align ADRs during migration.
+
 ## Privacy Promise
 
 > Your private letters are protected on your device before they are saved. Our systems are designed so our team does not have access to the keys required to read them.

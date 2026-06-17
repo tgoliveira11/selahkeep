@@ -1,5 +1,7 @@
 # Architecture — Private Letters Vault MVP
 
+> **LTG Vault direction:** [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) defines the target product; [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md) defines phased engineering work. This document describes the **current** codebase until migration completes.
+
 ## Stack
 
 - **Frontend:** Next.js, TypeScript, React

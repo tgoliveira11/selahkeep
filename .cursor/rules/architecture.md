@@ -1,5 +1,6 @@
 # Architecture Rules
 
+- **LTG Vault TDR:** `docs/TDR_LTG_Vault_MVP.md` is the source of truth for product direction (notes vault, Argon2id-only vault KDF, encrypted metadata/index). Supersedes conflicting letters-only assumptions.
 - **Phase 1 + 2 modular monolith:** domain code under `src/modules/*`; pure utilities in `core/`, `adapters/`, `primitives/` subfolders (see `docs/UTILITY_EXTRACTION_INVENTORY.md`).
 - Prefer `@/modules/{name}` public APIs (`index.ts`, `server.ts`) over deep cross-module imports.
 - Utility modules (`security`, `email/core`, `rate-limit/core`, `audit/core`, `ui/primitives`) must not import `vault` or `letters`.

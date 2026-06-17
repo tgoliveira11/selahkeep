@@ -1,5 +1,6 @@
 # Security Rules
 
+- **LTG Vault TDR:** follow `docs/TDR_LTG_Vault_MVP.md` for target vault crypto (Argon2id only for vault password KDF; no plaintext note titles/tags/categories at rest). Current code may still reflect prior ADRs until migration.
 - Encrypt private letter title/body on client before API calls.
 - Reject plaintext fields: `title`, `body`, `content`, `message`, `plaintextTitle`, `plaintextBody`, `decryptedContent`.
 - Never log plaintext letter content, keys, or recovery codes.

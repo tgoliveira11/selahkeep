@@ -4,7 +4,9 @@
 
 Read and follow these documents before implementing:
 
-- `docs/TDR_Private_Letters_Vault_MVP_Revised.md`
+- `docs/TDR_LTG_Vault_MVP.md` — **LTG Vault product/architecture direction (primary for new work)**
+- `docs/LTG_VAULT_IMPLEMENTATION_PLAN.md` — phased engineering plan (derived from LTG Vault TDR)
+- `docs/TDR_Private_Letters_Vault_MVP_Revised.md` — previous letters-only TDR (superseded where conflicting with LTG Vault TDR)
 - `docs/ADR-001_Cryptographic_Payload_Format_and_Envelope_Encryption.md`
 - `docs/ADR-002_Vault_Unlocking_Passkeys_Trusted_Devices_Recovery_Code.md`
 - `docs/ADR-003_API_Contract_Database_Schema_No_Plaintext_Enforcement.md`
