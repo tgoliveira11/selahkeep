@@ -13,7 +13,7 @@
 
 This project uses an **internal modular monolith** per `docs/ADR-004_Modularization_and_Reusability_Strategy.md`.
 
-- Business logic lives under `src/modules/{auth,account,sessions,two-factor,passkeys,email,audit,rate-limit,security,vault,letters,notes,ui}`.
+- Business logic lives under `src/modules/{auth,account,sessions,two-factor,passkeys,email,audit,rate-limit,security,vault,notes,ui}`.
 - **Phase 2** isolates pure utilities in subfolders (`security/logger`, `email/core`, `rate-limit/adapters`, `ui/primitives`, …). See `docs/UTILITY_EXTRACTION_INVENTORY.md`.
 - Next.js routes stay in `src/app/api` and delegate to module services.
 - Legacy paths (`src/server/services`, `src/lib/auth`, …) re-export from `src/modules/*` during migration.
@@ -39,7 +39,7 @@ React UI (src/app, src/components, src/features)
 src/
   modules/             # Phase 1 domain modules (see MODULE_BOUNDARIES.md)
     auth/ account/ sessions/ two-factor/ passkeys/
-    email/ audit/ rate-limit/ security/ vault/ letters/ notes/ ui/
+    email/ audit/ rate-limit/ security/ vault/ notes/ ui/
   app/
     (public)/          # Landing, marketing
     (auth)/            # Login, signup
@@ -48,7 +48,7 @@ src/
   components/          # App shell + domain components (migrating to modules)
     ui/                # Re-exports from modules/ui
     layout/            # SiteShell, Nav, SiteFooter, PageLayout
-    letters/           # LetterCard (legacy)
+    notes/           # NoteCard
     notes/             # NoteCard
   features/            # Client feature flows (passkey, vault)
   lib/
@@ -76,8 +76,9 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - WebAuthn challenge indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
 
 - `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted notes (Markdown body, metadata blob)
-- `GET/PATCH /api/vault/index` — encrypted vault index blob
-- `POST/GET /api/letters`, `GET/PUT/DELETE /api/letters/:id` — legacy letters (read-only migration path; `/letters` redirects to `/notes`)
+- `GET/PATCH /api/vault/index` — encrypted vault index blob (notes list metadata, categories, tags)
+- `GET/PATCH /api/vault/settings` — encrypted vault settings (unlock behavior, setup metadata)
+- `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted note payloads only
 - `POST /api/vault/setup` — LTG vault-v2 setup (encrypted settings, index, password + recovery phrase envelopes)
 - `POST /api/vault/init`, `GET /api/vault/status`
 - `POST /api/vault/unlock-envelope` — fetch encrypted envelope for password / recovery phrase unlock

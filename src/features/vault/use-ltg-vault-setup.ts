@@ -63,6 +63,7 @@ export function useLtgVaultSetup() {
           createEncryptedVaultSettings(vaultKey, userId, {
             setupVersion: 1,
             recoveryPhraseLength: phraseLength,
+            unlockBehavior: "metadata_only",
           }),
           createEmptyEncryptedVaultIndex(vaultKey, userId),
         ]);

@@ -13,6 +13,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
+import { CategoryTagFields } from "@/features/notes/category-tag-fields";
+import { useCategoriesTags } from "@/features/notes/use-categories-tags";
 import { useNotes } from "@/features/notes/use-notes";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 import { useRequireVault } from "@/features/vault/use-require-vault";
@@ -23,8 +25,18 @@ export default function NewNotePage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [tagIds, setTagIds] = useState<string[]>([]);
+  const [answered, setAnswered] = useState(false);
   const userId = vault.status === "ready" ? vault.userId : null;
+  const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
   const { createNote, busy, error: notesError } = useNotes(userId);
+  const {
+    categories,
+    tags,
+    createCategory,
+    createTag,
+  } = useCategoriesTags(userId, vaultUnlocked);
   const [error, setError] = useState<string | null>(null);
 
   const canWrite = vault.status === "ready" && vault.vaultUnlocked;
@@ -33,6 +45,9 @@ export default function NewNotePage() {
     return subscribeVaultSession(() => {
       setTitle("");
       setBody("");
+      setCategoryId(null);
+      setTagIds([]);
+      setAnswered(false);
       setError(null);
     });
   }, []);
@@ -74,7 +89,7 @@ export default function NewNotePage() {
     setError(null);
 
     try {
-      const note = await createNote({ title, body });
+      const note = await createNote({ title, body, categoryId, tagIds, answered });
       router.push(`/notes/${note.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save note");
@@ -103,6 +118,18 @@ export default function NewNotePage() {
               maxLength={200}
             />
           </FormField>
+          <CategoryTagFields
+            categories={categories}
+            tags={tags}
+            categoryId={categoryId}
+            tagIds={tagIds}
+            answered={answered}
+            onCategoryChange={setCategoryId}
+            onTagIdsChange={setTagIds}
+            onAnsweredChange={setAnswered}
+            onCreateCategory={createCategory}
+            onCreateTag={createTag}
+          />
           <FormField id="note-body" label="Your note">
             <MarkdownEditor value={body} onChange={setBody} />
           </FormField>

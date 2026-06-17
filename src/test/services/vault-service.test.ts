@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   findActiveEnvelopesByUserId: vi.fn(),
   findActiveEnvelopeByMethod: vi.fn(),
   revokeEnvelope: vi.fn(),
+  updateVaultIndex: vi.fn(),
+  updateVaultSettings: vi.fn(),
   countActiveByUserId: vi.fn(),
   findActiveByUserId: vi.fn(),
   createDevice: vi.fn(),
@@ -28,6 +30,8 @@ vi.mock("@/server/repositories/vault-repository", () => ({
     findActiveEnvelopesByUserId: mocks.findActiveEnvelopesByUserId,
     findActiveEnvelopeByMethod: mocks.findActiveEnvelopeByMethod,
     revokeEnvelope: mocks.revokeEnvelope,
+    updateVaultIndex: mocks.updateVaultIndex,
+    updateVaultSettings: mocks.updateVaultSettings,
   },
 }));
 
@@ -238,5 +242,30 @@ describe("vault service", () => {
     await expect(vaultService.unlockWithRecoveryCode(USER_ID)).rejects.toBeInstanceOf(
       NotFoundError
     );
+  });
+
+  it("getSettings returns encrypted vault settings", async () => {
+    const settings = encryptedPayload("vault_settings", USER_ID);
+    mocks.findVaultByUserId.mockResolvedValue({ encryptedVaultSettings: settings });
+    await expect(vaultService.getSettings(USER_ID)).resolves.toEqual({
+      encryptedVaultSettings: settings,
+    });
+  });
+
+  it("updateSettings persists encrypted vault settings", async () => {
+    const settings = encryptedPayload("vault_settings", USER_ID);
+    mocks.findVaultByUserId.mockResolvedValue({ id: "vault-1" });
+    mocks.updateVaultSettings.mockResolvedValue({ encryptedVaultSettings: settings });
+    await expect(vaultService.updateSettings(USER_ID, settings)).resolves.toEqual({
+      encryptedVaultSettings: settings,
+    });
+  });
+
+  it("getIndex returns encrypted vault index", async () => {
+    const index = encryptedPayload("vault_index", USER_ID);
+    mocks.findVaultByUserId.mockResolvedValue({ encryptedVaultIndex: index });
+    await expect(vaultService.getIndex(USER_ID)).resolves.toEqual({
+      encryptedVaultIndex: index,
+    });
   });
 });

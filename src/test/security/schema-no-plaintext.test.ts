@@ -11,28 +11,25 @@ const FORBIDDEN_COLUMNS = [
   'message text',
 ];
 
-describe("database schema has no plaintext letter columns", () => {
-  it("app-schema.ts does not define forbidden plaintext columns for letters", () => {
+describe("database schema has no plaintext note columns", () => {
+  it("app-schema.ts has no letters table", () => {
     const schema = readFileSync(join(process.cwd(), "src/lib/db/app-schema.ts"), "utf-8");
-    const lettersSection = schema.slice(schema.indexOf('export const letters'));
-
-    for (const col of FORBIDDEN_COLUMNS) {
-      expect(lettersSection).not.toContain(col);
-    }
-
-    expect(lettersSection).toContain("encryptedTitle");
-    expect(lettersSection).toContain("encryptedBody");
-    expect(lettersSection).toContain("encryptedLetterKey");
+    expect(schema).not.toMatch(/export const letters\b/);
   });
 
   it("notes table stores only encrypted fields", () => {
     const schema = readFileSync(join(process.cwd(), "src/lib/db/app-schema.ts"), "utf-8");
-    const notesSection = schema.slice(schema.indexOf('export const notes'));
+    const notesSection = schema.slice(schema.indexOf("export const notes"));
+
+    for (const col of FORBIDDEN_COLUMNS) {
+      expect(notesSection).not.toContain(col);
+    }
 
     expect(notesSection).toContain("encryptedMetadata");
     expect(notesSection).toContain("encryptedWrappedNoteKey");
     expect(notesSection).toContain("encryptedBody");
     expect(notesSection).not.toMatch(/\btitle:\s/);
     expect(notesSection).not.toMatch(/\bbody:\s/);
+    expect(notesSection).not.toMatch(/\banswered:\s/);
   });
 });

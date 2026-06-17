@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { encryptLetter } from "@/lib/crypto-client/letters";
+import { encryptNote } from "@/lib/crypto-client/notes";
 import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
-import { letterService } from "@/server/services/letter-service";
+import { noteService } from "@/server/services/note-service";
 import { adminService } from "@/server/services/admin-service";
 import { safeLogger } from "@/lib/logger";
 import { SENTINEL_PHRASE } from "./sentinel-phrase.test";
-import { USER_ID, LETTER_ID } from "@/test/helpers/fixtures";
+import { USER_ID, NOTE_ID } from "@/test/helpers/fixtures";
 import { ENCRYPTION_VERSION } from "@/lib/validation/encrypted-payload";
 
-const letterMocks = vi.hoisted(() => ({
+const noteMocks = vi.hoisted(() => ({
   create: vi.fn(),
-  countByUserId: vi.fn(),
+  countByVaultId: vi.fn(),
 }));
 
 const userMocks = vi.hoisted(() => ({
@@ -23,12 +23,13 @@ const deviceMocks = vi.hoisted(() => ({
 
 const vaultMocks = vi.hoisted(() => ({
   findActiveEnvelopesByUserId: vi.fn(),
+  findVaultByUserId: vi.fn(),
 }));
 
-vi.mock("@/server/repositories/letter-repository", () => ({
-  letterRepository: {
-    create: letterMocks.create,
-    countByUserId: letterMocks.countByUserId,
+vi.mock("@/server/repositories/note-repository", () => ({
+  noteRepository: {
+    create: noteMocks.create,
+    countByVaultId: noteMocks.countByVaultId,
   },
 }));
 
@@ -41,7 +42,10 @@ vi.mock("@/server/repositories/trusted-device-repository", () => ({
 }));
 
 vi.mock("@/server/repositories/vault-repository", () => ({
-  vaultRepository: { findActiveEnvelopesByUserId: vaultMocks.findActiveEnvelopesByUserId },
+  vaultRepository: {
+    findActiveEnvelopesByUserId: vaultMocks.findActiveEnvelopesByUserId,
+    findVaultByUserId: vaultMocks.findVaultByUserId,
+  },
 }));
 
 vi.mock("@/server/repositories/audit-repository", () => ({
@@ -59,37 +63,37 @@ describe("sentinel phrase runtime integration", () => {
     const vaultKey = await generateUserVaultKey();
     setSessionVaultKey(vaultKey);
 
-    const encrypted = await encryptLetter(
-      USER_ID,
-      LETTER_ID,
-      SENTINEL_PHRASE,
-      SENTINEL_PHRASE
-    );
+    const encrypted = await encryptNote(USER_ID, NOTE_ID, {
+      title: SENTINEL_PHRASE,
+      body: SENTINEL_PHRASE,
+    });
 
     const createInput = {
-      id: LETTER_ID,
+      id: NOTE_ID,
       ...encrypted,
     };
 
-    letterMocks.create.mockImplementation(async (data: Record<string, unknown>) => ({
+    noteMocks.create.mockImplementation(async (data: Record<string, unknown>) => ({
       id: data.id,
-      userId: data.userId,
-      encryptedTitle: data.encryptedTitle,
+      vaultId: "vault-1",
+      encryptedMetadata: data.encryptedMetadata,
       encryptedBody: data.encryptedBody,
-      encryptedLetterKey: data.encryptedLetterKey,
-      encryptionVersion: data.encryptionVersion,
-      answered: false,
+      encryptedWrappedNoteKey: data.encryptedWrappedNoteKey,
+      bodyEncryptionVersion: data.bodyEncryptionVersion,
       createdAt: new Date(),
       updatedAt: new Date(),
+      deletedAt: null,
     }));
 
-    const letter = await letterService.create(USER_ID, createInput);
-    const apiJson = JSON.stringify(letter);
-    const persistedJson = JSON.stringify(letterMocks.create.mock.calls[0][0]);
+    vaultMocks.findVaultByUserId.mockResolvedValue({ id: "vault-1" });
+
+    const note = await noteService.create(USER_ID, createInput);
+    const apiJson = JSON.stringify(note);
+    const persistedJson = JSON.stringify(noteMocks.create.mock.calls[0][0]);
 
     expect(apiJson).not.toContain(SENTINEL_PHRASE);
     expect(persistedJson).not.toContain(SENTINEL_PHRASE);
-    expect(createInput.encryptedTitle.ciphertext).not.toEqual(SENTINEL_PHRASE);
+    expect(createInput.encryptedMetadata.ciphertext).not.toEqual(SENTINEL_PHRASE);
 
     userMocks.findById.mockResolvedValue({
       id: USER_ID,
@@ -97,19 +101,20 @@ describe("sentinel phrase runtime integration", () => {
       authProvider: "credentials",
       createdAt: new Date(),
     });
-    letterMocks.countByUserId.mockResolvedValue(1);
+    vaultMocks.findVaultByUserId.mockResolvedValue({ id: "vault-1" });
+    noteMocks.countByVaultId.mockResolvedValue(1);
     deviceMocks.countActiveByUserId.mockResolvedValue(0);
     vaultMocks.findActiveEnvelopesByUserId.mockResolvedValue([]);
 
     const adminSummary = await adminService.getUserSummary(USER_ID);
     expect(JSON.stringify(adminSummary)).not.toContain(SENTINEL_PHRASE);
 
-    safeLogger.info("letter created", {
-      endpoint: `/api/letters/${LETTER_ID}`,
+    safeLogger.info("note created", {
+      endpoint: `/api/notes/${NOTE_ID}`,
       encryptionVersion: ENCRYPTION_VERSION,
     });
     safeLogger.error("simulated failure", {
-      endpoint: `/api/letters/${LETTER_ID}`,
+      endpoint: `/api/notes/${NOTE_ID}`,
       errorCode: "test",
     });
 

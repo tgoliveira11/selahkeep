@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
 import { PlaintextRejectionError } from "@/server/policies/plaintext-rejection";
 import { UnauthorizedError } from "@/lib/auth/session";
-import { NotFoundError } from "@/server/services/letter-service";
+import { NotFoundError } from "@/server/services/vault-service";
 import { ConflictError, RateLimitError } from "@/server/services/vault-service";
 import { AadValidationError } from "@/server/policies/aad-validation";
 

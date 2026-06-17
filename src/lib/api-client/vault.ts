@@ -79,4 +79,13 @@ export const vaultApi = {
     apiClient.patch<{ encryptedVaultIndex: EncryptedPayload | null }>("/api/vault/index", {
       encryptedVaultIndex,
     }),
+
+  getSettings: () =>
+    apiClient.get<{ encryptedVaultSettings: EncryptedPayload | null }>("/api/vault/settings"),
+
+  updateSettings: (encryptedVaultSettings: EncryptedPayload) =>
+    apiClient.patch<{ encryptedVaultSettings: EncryptedPayload | null }>(
+      "/api/vault/settings",
+      { encryptedVaultSettings }
+    ),
 };

@@ -1,5 +1,4 @@
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
-import type { CreateLetterInput, UpdateLetterInput } from "@/lib/validation/letters";
 import type { CreateNoteInput, UpdateNoteInput } from "@/lib/validation/notes";
 
 export class AadValidationError extends Error {
@@ -23,28 +22,6 @@ export function assertPayloadAad(
   }
   if (payload.aad.field !== expected.field) {
     throw new AadValidationError("AAD field does not match expected field");
-  }
-}
-
-export function assertLetterCreateAad(userId: string, letterId: string, input: CreateLetterInput): void {
-  assertPayloadAad(input.encryptedTitle, { userId, resourceId: letterId, field: "title" });
-  assertPayloadAad(input.encryptedBody, { userId, resourceId: letterId, field: "body" });
-  assertPayloadAad(input.encryptedLetterKey, { userId, resourceId: letterId, field: "letter_key" });
-}
-
-export function assertLetterUpdateAad(
-  userId: string,
-  letterId: string,
-  input: UpdateLetterInput
-): void {
-  if (input.encryptedTitle) {
-    assertPayloadAad(input.encryptedTitle, { userId, resourceId: letterId, field: "title" });
-  }
-  if (input.encryptedBody) {
-    assertPayloadAad(input.encryptedBody, { userId, resourceId: letterId, field: "body" });
-  }
-  if (input.encryptedLetterKey) {
-    assertPayloadAad(input.encryptedLetterKey, { userId, resourceId: letterId, field: "letter_key" });
   }
 }
 

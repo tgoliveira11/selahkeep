@@ -80,28 +80,6 @@ export const trustedDevices = pgTable(
   ]
 );
 
-export const letters = pgTable(
-  "letters",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    encryptedTitle: jsonb("encrypted_title").notNull(),
-    encryptedBody: jsonb("encrypted_body").notNull(),
-    encryptedLetterKey: jsonb("encrypted_letter_key").notNull(),
-    encryptionVersion: text("encryption_version").notNull(),
-    answered: boolean("answered").notNull().default(false),
-    answeredAt: timestamp("answered_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [
-    index("idx_letters_user_id_created_at").on(table.userId, table.createdAt),
-    index("idx_letters_user_id_answered").on(table.userId, table.answered),
-  ]
-);
-
 export const notes = pgTable(
   "notes",
   {
@@ -120,7 +98,6 @@ export const notes = pgTable(
   (table) => [index("idx_notes_vault_id_created_at").on(table.vaultId, table.createdAt)]
 );
 
-export type Letter = typeof letters.$inferSelect;
 export type Note = typeof notes.$inferSelect;
 export type TrustedDevice = typeof trustedDevices.$inferSelect;
 export type VaultEnvelope = typeof vaultEnvelopes.$inferSelect;

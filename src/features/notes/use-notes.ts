@@ -30,7 +30,6 @@ function metadataToIndexEntry(noteId: string, metadata: NoteMetadataPlaintext): 
     answered: metadata.answered,
     createdAt: metadata.createdAt,
     updatedAt: metadata.updatedAt,
-    archived: false,
   };
 }
 

@@ -255,10 +255,9 @@ Validation: `rejectVaultPlaintextFields()` in `src/lib/validation/vault.ts`; `re
 - Legacy `vault-v1` flows remain until migrated.
 - Phase 4 implements `passkey_prf` envelope per ADR-002 evolution.
 - Phase 2 adds Note Keys wrapped by UVK (`notes` table, `/api/notes`, vault index).
+- Phase 3 extends vault index v2 with encrypted categories, tags, answered flags; client-only search; `unlockBehavior` in encrypted vault settings. Letters domain removed.
 
 ```text
 TODO_SECURITY_REVIEW_REQUIRED:
 Production migration from vault-v1 + recovery_code to vault-v2 + recovery_phrase requires a human-reviewed data migration plan before bulk user conversion.
-
-Letters-to-notes bulk migration (Option B coexistence) requires human review before production rollout — see docs/LETTERS_TO_NOTES_MIGRATION.md.
 ```

@@ -1,4 +1,4 @@
-import { rejectPlaintextFields } from "@/lib/validation/letters";
+import { rejectPlaintextFields } from "@/lib/validation/plaintext-forbidden";
 
 export function assertNoPlaintextFields(body: Record<string, unknown>): void {
   const error = rejectPlaintextFields(body);

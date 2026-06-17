@@ -19,14 +19,7 @@ describe("sentinel phrase not in static artifacts", () => {
     expect(admin).not.toContain("encryptedTitle");
     expect(admin).not.toContain("encryptedBody");
     expect(admin).not.toContain("title");
-    expect(admin).toContain("letterCount");
-  });
-
-  it("API letter responses use encrypted field names only in service layer", () => {
-    const letterRepo = readModuleSource("src/server/repositories/letter-repository.ts");
-    expect(letterRepo).toContain("encryptedTitle");
-    expect(letterRepo).not.toMatch(/\btitle:\s/);
-    expect(letterRepo).not.toMatch(/\bbody:\s/);
+    expect(admin).toContain("noteCount");
   });
 
   it("note repository uses encrypted field names only", () => {

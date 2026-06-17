@@ -45,15 +45,17 @@ export async function clearVaultClientState(userId: string): Promise<void> {
   await clearLocalVaultData(userId);
 }
 
-export type VaultSettingsPlaintext = {
-  setupVersion: 1;
-  recoveryPhraseLength: 12 | 24;
-};
-
 import type { VaultIndexPlaintext } from "./vault-index-types";
 import { createEmptyVaultIndex, encryptVaultIndex } from "./vault-index";
+import {
+  defaultVaultSettings,
+  encryptVaultSettings,
+  type VaultSettingsPlaintext,
+  type VaultUnlockBehavior,
+} from "./vault-settings";
 
-export type { VaultIndexPlaintext, VaultIndexEntry } from "./vault-index-types";
+export type { VaultIndexPlaintext, VaultIndexEntry, VaultIndexNoteEntry } from "./vault-index-types";
+export type { VaultSettingsPlaintext, VaultUnlockBehavior } from "./vault-settings";
 
 /** Encrypt vault settings under the User Vault Key (client-only plaintext). */
 export async function createEncryptedVaultSettings(
@@ -61,12 +63,10 @@ export async function createEncryptedVaultSettings(
   userId: string,
   settings: VaultSettingsPlaintext
 ): Promise<import("@/lib/validation/encrypted-payload").EncryptedPayload> {
-  return encryptField(JSON.stringify(settings), vaultKey, {
-    userId,
-    resourceId: userId,
-    field: "vault_settings",
-  });
+  return encryptVaultSettings(settings, userId, vaultKey);
 }
+
+export { defaultVaultSettings, encryptVaultSettings, decryptVaultSettings } from "./vault-settings";
 
 export async function createEmptyEncryptedVaultIndex(
   vaultKey: CryptoKey,
@@ -190,19 +190,6 @@ export function generateDefaultNoteTitle(): string {
     hour12: false,
   });
   return `Note from ${formatted}`;
-}
-
-export function generateDefaultTitle(): string {
-  const now = new Date();
-  const formatted = now.toLocaleString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: false,
-  });
-  return `Letter from ${formatted}`;
 }
 
 function bytesToBase64Url(bytes: Uint8Array): string {

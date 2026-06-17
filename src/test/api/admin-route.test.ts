@@ -27,7 +27,7 @@ describe("admin API route", () => {
     mocks.getUserSummary.mockResolvedValue({
       id: USER_ID,
       email: "user@example.com",
-      letterCount: 2,
+      noteCount: 2,
     });
     const res = await GET(new Request("http://localhost"), {
       params: Promise.resolve({ id: USER_ID }),

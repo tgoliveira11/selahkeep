@@ -30,6 +30,7 @@ describe("LTG vault setup crypto integration", () => {
     const encryptedVaultSettings = await createEncryptedVaultSettings(vaultKey, userId, {
       setupVersion: 1,
       recoveryPhraseLength: 12,
+      unlockBehavior: "metadata_only",
     });
     const encryptedVaultIndex = await createEmptyEncryptedVaultIndex(vaultKey, userId);
 

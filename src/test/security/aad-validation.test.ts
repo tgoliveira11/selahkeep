@@ -1,70 +1,70 @@
 import { describe, it, expect } from "vitest";
 import {
   assertPayloadAad,
-  assertLetterCreateAad,
-  assertLetterUpdateAad,
+  assertNoteCreateAad,
+  assertNoteUpdateAad,
   assertVaultKeyAad,
   AadValidationError,
 } from "@/server/policies/aad-validation";
-import { encryptedPayload, USER_ID, LETTER_ID } from "@/test/helpers/fixtures";
-import { createLetterInput } from "@/test/helpers/fixtures";
+import { encryptedPayload, USER_ID, NOTE_ID } from "@/test/helpers/fixtures";
+import { createNoteInput } from "@/test/helpers/fixtures";
 
 describe("AAD validation policy", () => {
   it("accepts matching userId, resourceId, and field", () => {
     expect(() =>
-      assertPayloadAad(encryptedPayload("title"), {
+      assertPayloadAad(encryptedPayload("note_metadata", NOTE_ID), {
         userId: USER_ID,
-        resourceId: LETTER_ID,
-        field: "title",
+        resourceId: NOTE_ID,
+        field: "note_metadata",
       })
     ).not.toThrow();
   });
 
   it("rejects mismatched userId", () => {
     expect(() =>
-      assertPayloadAad(encryptedPayload("title"), {
+      assertPayloadAad(encryptedPayload("note_metadata", NOTE_ID), {
         userId: "00000000-0000-0000-0000-000000000099",
-        resourceId: LETTER_ID,
-        field: "title",
+        resourceId: NOTE_ID,
+        field: "note_metadata",
       })
     ).toThrow(AadValidationError);
   });
 
   it("rejects mismatched resourceId", () => {
     expect(() =>
-      assertPayloadAad(encryptedPayload("title"), {
+      assertPayloadAad(encryptedPayload("note_metadata", NOTE_ID), {
         userId: USER_ID,
         resourceId: "00000000-0000-0000-0000-000000000099",
-        field: "title",
+        field: "note_metadata",
       })
     ).toThrow(AadValidationError);
   });
 
   it("rejects mismatched field", () => {
     expect(() =>
-      assertPayloadAad(encryptedPayload("title"), {
+      assertPayloadAad(encryptedPayload("note_metadata", NOTE_ID), {
         userId: USER_ID,
-        resourceId: LETTER_ID,
-        field: "body",
+        resourceId: NOTE_ID,
+        field: "note_body",
       })
     ).toThrow(AadValidationError);
   });
 
-  it("validates all letter create payloads together", () => {
-    const input = createLetterInput();
-    expect(() => assertLetterCreateAad(USER_ID, LETTER_ID, input)).not.toThrow();
+  it("validates all note create payloads together", () => {
+    const input = createNoteInput();
+    expect(() => assertNoteCreateAad(USER_ID, NOTE_ID, input)).not.toThrow();
   });
 
-  it("rejects letter create when title AAD resourceId differs from letter id", () => {
-    const input = createLetterInput();
-    input.encryptedTitle.aad.resourceId = "00000000-0000-0000-0000-000000000099";
-    expect(() => assertLetterCreateAad(USER_ID, LETTER_ID, input)).toThrow(AadValidationError);
+  it("rejects note create when metadata AAD resourceId differs from note id", () => {
+    const input = createNoteInput();
+    input.encryptedMetadata.aad.resourceId = "00000000-0000-0000-0000-000000000099";
+    expect(() => assertNoteCreateAad(USER_ID, NOTE_ID, input)).toThrow(AadValidationError);
   });
 
-  it("validates letter update payloads against persisted letter id", () => {
+  it("validates note update payloads against persisted note id", () => {
     expect(() =>
-      assertLetterUpdateAad(USER_ID, LETTER_ID, {
-        encryptedBody: encryptedPayload("body"),
+      assertNoteUpdateAad(USER_ID, NOTE_ID, {
+        encryptedBody: encryptedPayload("note_body", NOTE_ID),
       })
     ).not.toThrow();
   });
@@ -74,7 +74,7 @@ describe("AAD validation policy", () => {
       assertVaultKeyAad(USER_ID, encryptedPayload("vault_key", USER_ID))
     ).not.toThrow();
     expect(() =>
-      assertVaultKeyAad(USER_ID, encryptedPayload("vault_key", LETTER_ID))
+      assertVaultKeyAad(USER_ID, encryptedPayload("vault_key", NOTE_ID))
     ).toThrow(AadValidationError);
   });
 });

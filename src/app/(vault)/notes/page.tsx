@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
@@ -10,85 +10,30 @@ import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { NoteCard } from "@/components/notes/note-card";
-import { vaultApi } from "@/lib/api-client/vault";
 import {
-  decryptVaultIndex,
-  type VaultIndexEntry,
-} from "@/lib/crypto-client/vault-index";
+  NoteFilters,
+  defaultNoteFilters,
+  noteFiltersToSearch,
+  type NoteFilterState,
+} from "@/features/notes/note-filters";
+import { useVaultIndex } from "@/features/notes/use-vault-index";
+import { searchVaultIndex, searchVaultIndexWhenLocked } from "@/lib/crypto-client/note-search";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 import { useRequireVault } from "@/features/vault/use-require-vault";
-
-interface NoteListItem {
-  id: string;
-  title: string;
-  answered: boolean;
-  createdAt: string;
-  locked: boolean;
-}
 
 export default function NotesPage() {
   const vault = useRequireVault();
   const vaultUserId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
-  const [notes, setNotes] = useState<NoteListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { index, loading, error } = useVaultIndex(vaultUserId, vaultUnlocked);
+  const [filters, setFilters] = useState<NoteFilterState>(defaultNoteFilters);
 
-  useEffect(() => {
-    return subscribeVaultSession(() => {
-      setNotes([]);
-    });
-  }, []);
+  useEffect(() => subscribeVaultSession(() => setFilters(defaultNoteFilters)), []);
 
-  useEffect(() => {
-    if (!vaultUserId) return;
-
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const { encryptedVaultIndex } = await vaultApi.getIndex();
-        const items: NoteListItem[] = [];
-
-        if (!vaultUnlocked || !encryptedVaultIndex) {
-          if (!cancelled) {
-            setNotes([]);
-            setLoading(false);
-          }
-          return;
-        }
-
-        const index = await decryptVaultIndex(encryptedVaultIndex);
-        const activeEntries = index.entries.filter((e: VaultIndexEntry) => !e.archived);
-
-        for (const entry of activeEntries) {
-          items.push({
-            id: entry.id,
-            title: entry.title,
-            answered: entry.answered,
-            createdAt: entry.createdAt,
-            locked: false,
-          });
-        }
-
-        if (!cancelled) setNotes(items);
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Failed to load notes");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [vaultUserId, vaultUnlocked]);
+  const notes = useMemo(() => {
+    if (!vaultUnlocked || !index) return searchVaultIndexWhenLocked();
+    return searchVaultIndex(index, noteFiltersToSearch(filters));
+  }, [vaultUnlocked, index, filters]);
 
   if (vault.status === "loading" || vault.status === "redirecting" || loading) {
     return (
@@ -130,6 +75,15 @@ export default function NotesPage() {
         </div>
       )}
 
+      {vault.vaultUnlocked && index && (
+        <NoteFilters
+          filters={filters}
+          categories={index.categories.filter((c) => !c.deletedAt)}
+          tags={index.tags.filter((t) => !t.deletedAt)}
+          onChange={setFilters}
+        />
+      )}
+
       {vault.vaultUnlocked && notes.length === 0 ? (
         <EmptyState
           title="No notes yet"
@@ -149,7 +103,8 @@ export default function NotesPage() {
                 title={note.title}
                 answered={note.answered}
                 createdAt={note.createdAt}
-                locked={note.locked}
+                categoryName={note.categoryName}
+                tagNames={note.tagNames}
               />
             </li>
           ))}

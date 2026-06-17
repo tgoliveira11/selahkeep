@@ -15,6 +15,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { SuccessState } from "@/components/ui/success-state";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
+import { CategoryTagFields } from "@/features/notes/category-tag-fields";
+import { useCategoriesTags } from "@/features/notes/use-categories-tags";
 import { renderSanitizedMarkdown } from "@/features/notes/sanitize-markdown";
 import { useNotes } from "@/features/notes/use-notes";
 import { notesApi } from "@/lib/api-client/notes";
@@ -22,6 +24,7 @@ import { decryptNote, type NoteMetadataPlaintext } from "@/lib/crypto-client/not
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { VaultAccessGate } from "@/features/vault/vault-access-gate";
+import { getCachedNoteBody } from "@/features/notes/eager-decrypt-notes";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
 export default function NoteDetailPage() {
@@ -38,9 +41,11 @@ export default function NoteDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const vaultUserId = vault.status === "ready" ? vault.userId : null;
   const canRead = vault.status === "ready" && vault.vaultUnlocked;
+  const vaultUserId = vault.status === "ready" ? vault.userId : null;
+  const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
   const { updateNote, deleteNote, busy, error: notesError } = useNotes(vaultUserId);
+  const { categories, tags, createCategory, createTag } = useCategoriesTags(vaultUserId, vaultUnlocked);
 
   useEffect(() => {
     return subscribeVaultSession(() => {
@@ -63,6 +68,21 @@ export default function NoteDetailPage() {
       setError(null);
       try {
         const note = await notesApi.get(id);
+        const cachedBody = getCachedNoteBody(id);
+        if (cachedBody) {
+          const decrypted = await decryptNote(
+            note.encryptedMetadata,
+            note.encryptedBody,
+            note.encryptedWrappedNoteKey
+          );
+          if (!cancelled) {
+            setMetadata(decrypted.metadata);
+            setBody(cachedBody);
+            setWrappedKey(note.encryptedWrappedNoteKey);
+          }
+          return;
+        }
+
         const decrypted = await decryptNote(
           note.encryptedMetadata,
           note.encryptedBody,
@@ -184,6 +204,18 @@ export default function NoteDetailPage() {
               maxLength={200}
             />
           </FormField>
+          <CategoryTagFields
+            categories={categories}
+            tags={tags}
+            categoryId={metadata.categoryId}
+            tagIds={metadata.tagIds}
+            answered={metadata.answered}
+            onCategoryChange={(categoryId) => setMetadata({ ...metadata, categoryId })}
+            onTagIdsChange={(tagIds) => setMetadata({ ...metadata, tagIds })}
+            onAnsweredChange={(answered) => setMetadata({ ...metadata, answered })}
+            onCreateCategory={createCategory}
+            onCreateTag={createTag}
+          />
           <FormField id="edit-body" label="Your note">
             <MarkdownEditor value={body} onChange={setBody} id="edit-note-markdown" />
           </FormField>
@@ -202,6 +234,21 @@ export default function NoteDetailPage() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">{metadata.title}</h1>
               {metadata.answered && <Badge variant="success">Answered</Badge>}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {metadata.categoryId && (
+                <Badge variant="muted">
+                  {categories.find((c) => c.id === metadata.categoryId)?.name ?? "Category"}
+                </Badge>
+              )}
+              {metadata.tagIds.map((tagId) => {
+                const tag = tags.find((t) => t.id === tagId);
+                return tag ? (
+                  <Badge key={tagId} variant="muted">
+                    {tag.name}
+                  </Badge>
+                ) : null;
+              })}
             </div>
             <p className="text-sm text-[var(--muted)]">
               Updated{" "}

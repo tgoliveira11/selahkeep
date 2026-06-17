@@ -72,4 +72,12 @@ export const noteRepository = {
       .returning({ id: notes.id });
     return note ?? null;
   },
+
+  async countByVaultId(vaultId: string) {
+    const rows = await db
+      .select({ id: notes.id })
+      .from(notes)
+      .where(and(eq(notes.vaultId, vaultId), isNull(notes.deletedAt)));
+    return rows.length;
+  },
 };

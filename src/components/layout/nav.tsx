@@ -16,6 +16,7 @@ import { cn } from "@/lib/ui/cn";
 const navLinks = [
   { href: "/notes", label: "My notes" },
   { href: "/notes/new", label: "Write" },
+  { href: "/vault/settings", label: "Vault" },
   { href: "/vault/devices", label: "Devices" },
   { href: "/vault/recovery", label: "Recovery" },
   { href: "/settings/account", label: "Account" },

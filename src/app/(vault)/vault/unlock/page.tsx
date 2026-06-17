@@ -38,7 +38,7 @@ export default function VaultUnlockPage() {
     if (status !== "authenticated") return;
 
     if (isVaultUnlocked()) {
-      router.push("/letters");
+      router.push("/notes");
       return;
     }
 
@@ -61,7 +61,7 @@ export default function VaultUnlockPage() {
 
   async function handleLegacyInit() {
     await initializeVault();
-    router.push("/letters");
+    router.push("/notes");
   }
 
   if (status === "loading" || mode === "loading") {
@@ -85,23 +85,23 @@ export default function VaultUnlockPage() {
           vaultStatus={vaultStatus}
           onUnlockPassword={async (password) => {
             await unlockFromVaultPassword(password);
-            router.push("/letters");
+            router.push("/notes");
           }}
           onUnlockRecoveryPhrase={async (phrase) => {
             await unlockFromRecoveryPhrase(phrase);
-            router.push("/letters");
+            router.push("/notes");
           }}
           onUnlockLegacyDevice={async () => {
             await unlockFromDevice();
-            router.push("/letters");
+            router.push("/notes");
           }}
           onUnlockLegacyPasskey={async () => {
             await unlockFromPasskey();
-            router.push("/letters");
+            router.push("/notes");
           }}
           onUnlockLegacyRecoveryCode={async (code) => {
             await unlockFromRecoveryCode(code);
-            router.push("/letters");
+            router.push("/notes");
           }}
         />
       )}
@@ -117,15 +117,15 @@ export default function VaultUnlockPage() {
           onInit={handleLegacyInit}
           onUnlockDevice={async () => {
             await unlockFromDevice();
-            router.push("/letters");
+            router.push("/notes");
           }}
           onUnlockPasskey={async () => {
             await unlockFromPasskey();
-            router.push("/letters");
+            router.push("/notes");
           }}
           onUnlockRecovery={async () => {
             await unlockFromRecoveryCode(legacyRecoveryCode);
-            router.push("/letters");
+            router.push("/notes");
           }}
           onShowRecovery={() => setMode("legacy-unlock")}
           onBackFromRecovery={() => setMode("legacy-unlock")}

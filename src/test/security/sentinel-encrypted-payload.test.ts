@@ -1,15 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { encryptLetter } from "@/lib/crypto-client/letters";
+import { encryptNote } from "@/lib/crypto-client/notes";
 import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
 import { SENTINEL_PHRASE } from "./sentinel-phrase.test";
-import { USER_ID, LETTER_ID } from "@/test/helpers/fixtures";
+import { USER_ID, NOTE_ID } from "@/test/helpers/fixtures";
 
 describe("sentinel phrase encrypted payload leakage", () => {
   it("does not expose sentinel phrase outside ciphertext fields", async () => {
     const vaultKey = await generateUserVaultKey();
     setSessionVaultKey(vaultKey);
 
-    const payload = await encryptLetter(USER_ID, LETTER_ID, SENTINEL_PHRASE, SENTINEL_PHRASE);
+    const payload = await encryptNote(USER_ID, NOTE_ID, {
+      title: SENTINEL_PHRASE,
+      body: SENTINEL_PHRASE,
+    });
     const serialized = JSON.stringify(payload);
 
     expect(serialized).not.toContain(`"title":"${SENTINEL_PHRASE}"`);

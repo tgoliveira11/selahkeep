@@ -24,7 +24,7 @@ export default function VaultSetupPage() {
     if (status !== "authenticated") return;
 
     if (isVaultUnlocked()) {
-      router.push("/letters");
+      router.push("/notes");
       return;
     }
 
@@ -40,7 +40,7 @@ export default function VaultSetupPage() {
 
   async function handleComplete() {
     await setup.completeSetup();
-    router.push("/letters");
+    router.push("/notes");
   }
 
   if (status === "loading") {

@@ -8,7 +8,7 @@ import {
   isVaultUnlocked,
   setSessionVaultKey,
   getSessionVaultKey,
-  generateDefaultTitle,
+  generateDefaultNoteTitle,
 } from "@/lib/crypto-client/vault";
 import { generateRecoveryCode } from "@/lib/crypto-client/recovery-code";
 import { USER_ID } from "@/test/helpers/fixtures";
@@ -103,7 +103,7 @@ describe("vault key lifecycle", () => {
     expect(storeLocalVaultEnvelope).toHaveBeenCalled();
   });
 
-  it("generateDefaultTitle uses readable date format", () => {
-    expect(generateDefaultTitle()).toMatch(/^Letter from /);
+  it("generateDefaultNoteTitle uses readable date format", () => {
+    expect(generateDefaultNoteTitle()).toMatch(/^Note from /);
   });
 });

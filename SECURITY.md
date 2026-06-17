@@ -75,16 +75,20 @@ Trusted device records store display metadata only (`deviceName`, browser, platf
 
 Residual risk: a malicious script running on this origin (XSS) or compromised browser profile on an unlocked session can still decrypt notes and letters. That is inherent to client-side encryption; depth-in-defense is CSP + minimal persistence + non-extractable keys + Markdown sanitization on preview.
 
-## Notes (Phase 2)
+## Notes (Phase 2–3)
 
 - Note title lives in **encrypted metadata** (`note_metadata` AAD); body is Markdown encrypted under Note Key (`note_body` AAD).
 - Note Key is wrapped by User Vault Key (`note_key` AAD) — never sent to API in plaintext.
-- Vault index (list titles) is client-encrypted under UVK; server stores ciphertext only.
+- Vault index (list titles, categories, tags, answered flags) is client-encrypted under UVK; server stores ciphertext only.
+- Category and tag **names** live only in the encrypted vault index (v2); never in database columns or API plaintext fields.
+- Answered status is stored only in encrypted note metadata and vault index — not in database columns.
+- **Search and filters** run client-side in memory after vault unlock; there is no server search endpoint and queries never leave the browser.
+- Vault setting `unlockBehavior`: `metadata_only` (default) or `decrypt_all` (eager body decrypt after unlock) — stored in encrypted vault settings.
 - Markdown preview uses `dompurify` allowlist before `dangerouslySetInnerHTML`.
-- Note APIs reject plaintext `title`, `body`, `markdown`, `tags`, `categoryId`, `noteKey`, etc.
-- Soft delete (`deleted_at`) + index `archived` flag; no plaintext search indexes.
+- Note APIs reject plaintext `title`, `body`, `markdown`, `tags`, `categoryId`, `categoryName`, `tagNames`, `answered`, `noteKey`, etc.
+- Soft delete (`deleted_at` on notes + `deletedAt` in vault index); no plaintext search indexes.
 
-Migration: [`docs/LETTERS_TO_NOTES_MIGRATION.md`](./docs/LETTERS_TO_NOTES_MIGRATION.md).
+Letters domain removed in Phase 3 (`letters` table dropped via `0010_drop_letters.sql`).
 
 ## Observability
 

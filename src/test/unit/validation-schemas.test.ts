@@ -6,7 +6,7 @@ import {
   twoFactorVerifySchema,
   totpCodeSchema,
 } from "@/lib/validation/two-factor";
-import { createLetterInput, encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
+import { createNoteInput, encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 describe("validation schemas", () => {
   it("vaultInitSchema accepts trusted device envelope", () => {
@@ -64,9 +64,9 @@ describe("validation schemas", () => {
     ).toBe(true);
   });
 
-  it("createLetterInput fixture matches createLetterSchema", async () => {
-    const { createLetterSchema } = await import("@/lib/validation/letters");
-    expect(createLetterSchema.safeParse(createLetterInput()).success).toBe(true);
+  it("createNoteInput fixture matches createNoteSchema", async () => {
+    const { createNoteSchema } = await import("@/lib/validation/notes");
+    expect(createNoteSchema.safeParse(createNoteInput()).success).toBe(true);
   });
 
   it("twoFactorVerifySchema accepts TOTP or backup code", () => {

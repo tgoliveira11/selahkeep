@@ -1,4 +1,5 @@
 import { isVaultUnlocked, lockVault, setSessionVaultKey } from "./vault";
+import { clearNoteBodyCache } from "@/features/notes/eager-decrypt-notes";
 
 export const VAULT_INACTIVITY_MS = 15 * 60 * 1000;
 
@@ -60,6 +61,7 @@ export function unlockVaultSession(vaultKey: CryptoKey): void {
 /** Manual or inactivity lock — keeps IndexedDB but blocks silent re-unlock until explicit unlock. */
 export function lockVaultSession(): void {
   clearVaultAutoLockTimer();
+  clearNoteBodyCache();
   lockVault();
   manuallyLocked = true;
   notifyVaultSessionChange();

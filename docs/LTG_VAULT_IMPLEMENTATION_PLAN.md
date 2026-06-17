@@ -482,12 +482,15 @@ Categories (one per note), tags (many per note), answered status in encrypted me
 
 ### 11. Acceptance criteria
 
-- [ ] One category per note; multiple tags per note  
-- [ ] Answered status works and appears in filters  
-- [ ] Search after unlock by title, tag, category  
-- [ ] Default unlock behavior: metadata only  
-- [ ] Optional decrypt-all setting works  
-- [ ] No plaintext category/tag/title in database  
+- [x] One category per note; multiple tags per note  
+- [x] Answered status works and appears in filters  
+- [x] Search after unlock by title, tag, category  
+- [x] Default unlock behavior: metadata only  
+- [x] Optional decrypt-all setting works  
+- [x] No plaintext category/tag/title in database  
+- [x] Letters domain removed (`/letters`, `/api/letters`, `letters` table)  
+- [x] `GET`/`PATCH /api/vault/settings` for encrypted vault settings  
+- [x] Guard test `no-letters-domain.test.ts`
 
 ### 12. Risks
 

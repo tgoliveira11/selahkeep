@@ -107,4 +107,17 @@ export const vaultRepository = {
       .returning();
     return vault ?? null;
   },
+
+  async updateVaultSettings(
+    userId: string,
+    encryptedVaultSettings: EncryptedPayload,
+    client: DbClient = db
+  ) {
+    const [vault] = await client
+      .update(userVaults)
+      .set({ encryptedVaultSettings, updatedAt: new Date() })
+      .where(eq(userVaults.userId, userId))
+      .returning();
+    return vault ?? null;
+  },
 };

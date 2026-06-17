@@ -121,16 +121,16 @@ describe("vault unlock branch coverage", () => {
     await expect(unlockVaultFromDeviceEnvelopes(USER_ID)).rejects.toThrow(/recovery code/);
   });
 
-  it("reuses session vault key when sample letter key already decrypts", async () => {
+  it("reuses session vault key when sample note key already decrypts", async () => {
     const vaultKey = await generateUserVaultKey();
     setSessionVaultKey(vaultKey);
-    const { encryptLetter } = await import("@/lib/crypto-client/letters");
-    const { LETTER_ID } = await import("@/test/helpers/fixtures");
-    const letter = await encryptLetter(USER_ID, LETTER_ID, "Title", "Body");
+    const { encryptNote } = await import("@/lib/crypto-client/notes");
+    const { NOTE_ID } = await import("@/test/helpers/fixtures");
+    const note = await encryptNote(USER_ID, NOTE_ID, { title: "Title", body: "Body" });
     const { encryptedVaultKey } = await buildDeviceVaultEnvelope(vaultKey, USER_ID, USER_ID);
     storage.localEnvelope = encryptedVaultKey;
 
-    const result = await unlockVaultFromDeviceEnvelopes(USER_ID, letter.encryptedLetterKey);
+    const result = await unlockVaultFromDeviceEnvelopes(USER_ID, note.encryptedWrappedNoteKey);
     expect(result.vaultKey).toBe(vaultKey);
   });
 

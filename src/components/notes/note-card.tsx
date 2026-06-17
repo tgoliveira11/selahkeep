@@ -7,10 +7,20 @@ interface NoteCardProps {
   title: string;
   createdAt: string;
   answered: boolean;
+  categoryName?: string | null;
+  tagNames?: string[];
   locked?: boolean;
 }
 
-export function NoteCard({ id, title, createdAt, answered, locked }: NoteCardProps) {
+export function NoteCard({
+  id,
+  title,
+  createdAt,
+  answered,
+  categoryName,
+  tagNames = [],
+  locked,
+}: NoteCardProps) {
   return (
     <Link
       href={`/notes/${id}`}
@@ -23,7 +33,15 @@ export function NoteCard({ id, title, createdAt, answered, locked }: NoteCardPro
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className={cn("truncate font-medium", locked && "text-[var(--muted)]")}>{title}</p>
-          <p className="mt-1 text-sm text-[var(--muted)]">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {categoryName && <Badge variant="muted">{categoryName}</Badge>}
+            {tagNames.map((name) => (
+              <Badge key={name} variant="muted">
+                {name}
+              </Badge>
+            ))}
+          </div>
+          <p className="mt-2 text-sm text-[var(--muted)]">
             {new Date(createdAt).toLocaleDateString(undefined, {
               year: "numeric",
               month: "short",

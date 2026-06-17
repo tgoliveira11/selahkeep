@@ -8,7 +8,8 @@ describe("GET /api/openapi", () => {
     const spec = await response.json();
     expect(spec.openapi).toMatch(/^3\.0/);
     expect(spec.info.title).toContain("Letters to God");
-    expect(spec.paths["/api/letters"]).toBeDefined();
+    expect(spec.paths["/api/notes"]).toBeDefined();
+    expect(spec.paths["/api/vault/settings"]).toBeDefined();
     expect(spec.paths["/api/vault/status"]).toBeDefined();
     expect(spec.components.schemas.EncryptedPayload).toBeDefined();
   });

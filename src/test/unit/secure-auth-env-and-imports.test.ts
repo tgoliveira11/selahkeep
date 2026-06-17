@@ -151,7 +151,7 @@ describe("buildSecureAuthConfigFromEnv", () => {
 
     expect(config.appName).toBe("Letters to God");
     expect(config.passwordPolicy.minLength).toBe(10);
-    expect(config.paths.afterLogin).toBe("/letters");
+    expect(config.paths.afterLogin).toBe("/notes");
     expect(config.messages.loginDescription).toBe("Sign in to continue to your account.");
   });
 

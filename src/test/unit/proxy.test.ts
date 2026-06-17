@@ -41,7 +41,7 @@ describe("proxy two-factor gating", () => {
   it("redirects pending 2FA sessions away from protected routes", async () => {
     getToken.mockResolvedValue({ twoFactorPending: true, twoFactorVerified: false });
     const { proxy } = await import("@/proxy");
-    const response = await proxy(new NextRequest("http://localhost:3001/letters"));
+    const response = await proxy(new NextRequest("http://localhost:3001/notes"));
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toContain("/login/2fa");
   });
@@ -58,7 +58,7 @@ describe("proxy two-factor gating", () => {
   it("passes through verified sessions", async () => {
     getToken.mockResolvedValue({ twoFactorPending: false, twoFactorVerified: true });
     const { proxy } = await import("@/proxy");
-    const response = await proxy(new NextRequest("http://localhost:3001/letters"));
+    const response = await proxy(new NextRequest("http://localhost:3001/notes"));
     expect(response.headers.get("location")).toBeNull();
   });
 });

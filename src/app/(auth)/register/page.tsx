@@ -3,5 +3,5 @@
 import { RegisterPage } from "@tgoliveira/secure-auth/react";
 
 export default function Page() {
-  return <RegisterPage afterLoginPath="/letters" />;
+  return <RegisterPage afterLoginPath="/notes" />;
 }

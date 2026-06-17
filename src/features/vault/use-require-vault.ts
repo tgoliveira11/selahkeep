@@ -9,6 +9,7 @@ import {
   subscribeVaultSession,
   unlockVaultSession,
 } from "@/lib/crypto-client/vault-session";
+import { applyUnlockBehavior, clearNoteBodyCache } from "@/features/notes/eager-decrypt-notes";
 
 type VaultGateState =
   | { status: "loading" }
@@ -37,6 +38,7 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
 
   useEffect(() => {
     return subscribeVaultSession(() => {
+      clearNoteBodyCache();
       setRecheckToken((token) => token + 1);
     });
   }, []);
@@ -81,6 +83,10 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
 
       if (!cancelled) {
         setReadyState({ status: "ready", userId, vaultUnlocked });
+      }
+
+      if (vaultUnlocked && !cancelled) {
+        void applyUnlockBehavior(userId).catch(() => undefined);
       }
     }
 

@@ -1,5 +1,5 @@
 import { userRepository } from "@/server/repositories/user-repository";
-import { letterRepository } from "@/server/repositories/letter-repository";
+import { noteRepository } from "@/server/repositories/note-repository";
 import { trustedDeviceRepository } from "@/server/repositories/trusted-device-repository";
 import { vaultRepository } from "@/server/repositories/vault-repository";
 
@@ -8,7 +8,8 @@ export const adminService = {
     const user = await userRepository.findById(userId);
     if (!user) return null;
 
-    const letterCount = await letterRepository.countByUserId(userId);
+    const vault = await vaultRepository.findVaultByUserId(userId);
+    const noteCount = vault ? await noteRepository.countByVaultId(vault.id) : 0;
     const trustedDeviceCount = await trustedDeviceRepository.countActiveByUserId(userId);
     const envelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
     const methods = envelopes.map((e) => e.method);
@@ -18,7 +19,7 @@ export const adminService = {
       email: user.email,
       authProvider: user.authProvider,
       createdAt: user.createdAt,
-      letterCount,
+      noteCount,
       trustedDeviceCount,
       recoveryMethods: methods,
     };

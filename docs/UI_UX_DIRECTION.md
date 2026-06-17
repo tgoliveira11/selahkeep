@@ -88,7 +88,9 @@ Account auth UI comes from `@tgoliveira/secure-auth/react`. Style integration po
 
 **In Phase 1:** tokens, vault setup/unlock, light marketing copy toward “vault” language.
 
-**Later phases:** full LTG rebrand, notes editor, categories/tags UI, passkey vault settings polish.
+**Phase 3 (complete):** notes list search/filters, category picker, tag chips, answered badge, `/vault/settings` unlock behavior (`metadata_only` vs `decrypt_all`).
+
+**Later phases:** full LTG rebrand, passkey vault settings polish.
 
 ---
 

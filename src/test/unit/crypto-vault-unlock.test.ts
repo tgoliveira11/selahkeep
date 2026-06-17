@@ -5,8 +5,8 @@ import {
   generateUserVaultKey,
   setSessionVaultKey,
 } from "@/lib/crypto-client/vault";
-import { encryptLetter } from "@/lib/crypto-client/letters";
-import { USER_ID, LETTER_ID } from "@/test/helpers/fixtures";
+import { encryptNote } from "@/lib/crypto-client/notes";
+import { USER_ID, NOTE_ID } from "@/test/helpers/fixtures";
 
 const storage = vi.hoisted(() => ({
   localEnvelope: null as Awaited<ReturnType<typeof buildDeviceVaultEnvelope>>["encryptedVaultKey"] | null,
@@ -69,16 +69,16 @@ describe("vault unlock from device envelopes", () => {
     );
   });
 
-  it("selects vault key that decrypts sample letter key", async () => {
+  it("selects vault key that decrypts sample note key", async () => {
     const vaultKey = await generateUserVaultKey();
     setSessionVaultKey(vaultKey);
-    const letter = await encryptLetter(USER_ID, LETTER_ID, "Title", "Body");
+    const note = await encryptNote(USER_ID, NOTE_ID, { title: "Title", body: "Body" });
     const wrongKey = await generateUserVaultKey();
     const wrongEnvelope = await buildDeviceVaultEnvelope(wrongKey, USER_ID, USER_ID);
     storage.localEnvelope = wrongEnvelope.encryptedVaultKey;
 
     const restored = (
-      await unlockVaultFromDeviceEnvelopes(USER_ID, letter.encryptedLetterKey)
+      await unlockVaultFromDeviceEnvelopes(USER_ID, note.encryptedWrappedNoteKey)
     ).vaultKey;
     expect(await crypto.subtle.exportKey("raw", restored)).toEqual(
       await crypto.subtle.exportKey("raw", vaultKey)

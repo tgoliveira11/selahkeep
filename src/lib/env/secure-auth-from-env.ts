@@ -33,7 +33,7 @@ function parseSecureAuthEnv(
   const nextAuthSecret = readEnv(env, "NEXTAUTH_SECRET");
   const twoFactorEncryptionKey = readEnv(env, "TWO_FACTOR_SECRET_ENCRYPTION_KEY");
 
-  const afterLoginPath = readEnv(env, "AUTH_AFTER_LOGIN_PATH") ?? "/letters";
+  const afterLoginPath = readEnv(env, "AUTH_AFTER_LOGIN_PATH") ?? "/notes";
   const afterLogoutPath = readEnv(env, "AUTH_AFTER_LOGOUT_PATH") ?? "/login";
 
   const requireEmailVerificationBeforeSignIn = readBoolEnv(

@@ -34,7 +34,7 @@ export const testSecureAuthUiConfig: SecureAuthUIPublicConfig = {
     verifyEmail: "/verify-email",
     loginTwoFactor: "/login/2fa",
     loginComplete: "/login/complete",
-    afterLogin: "/letters",
+    afterLogin: "/notes",
     accountDeleted: "/account-deleted",
     accountSettings: "/settings/account",
     securitySettings: "/settings/account",

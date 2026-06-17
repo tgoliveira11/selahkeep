@@ -13,7 +13,14 @@ const PLAINTEXT_FORBIDDEN_VAULT_FIELDS = [
   "content",
   "message",
   "tags",
+  "tagIds",
+  "tagNames",
   "category",
+  "categoryId",
+  "categoryName",
+  "answered",
+  "unlockBehavior",
+  "categories",
   "plaintextTitle",
   "plaintextBody",
 ] as const;
@@ -111,6 +118,11 @@ export const unlockWithRecoveryCodeSchema = z.object({
   kdfMetadata: kdfMetadataSchema,
 });
 
+export const vaultSettingsUpdateSchema = z.object({
+  encryptedVaultSettings: encryptedPayloadSchema,
+});
+
+export type VaultSettingsUpdateInput = z.infer<typeof vaultSettingsUpdateSchema>;
 export type VaultSetupInput = z.infer<typeof vaultSetupSchema>;
 export type VaultInitInput = z.infer<typeof vaultInitSchema>;
 export type RecoveryCodeInput = z.infer<typeof recoveryCodeSchema>;

@@ -18,7 +18,7 @@ servers:
     description: Local development (default port)
 tags:
   - name: Auth
-  - name: Letters
+  - name: Notes
   - name: Vault
   - name: TrustedDevices
   - name: Passkeys
@@ -102,71 +102,61 @@ components:
               type: string
             iterations:
               type: integer
-    Letter:
+    Note:
       type: object
       properties:
         id:
           type: string
           format: uuid
-        userId:
+        vaultId:
           type: string
           format: uuid
-        encryptedTitle:
+        encryptedMetadata:
           $ref: '#/components/schemas/EncryptedPayload'
         encryptedBody:
           $ref: '#/components/schemas/EncryptedPayload'
-        encryptedLetterKey:
+        encryptedWrappedNoteKey:
           $ref: '#/components/schemas/EncryptedPayload'
-        encryptionVersion:
+        bodyEncryptionVersion:
           type: string
-        answered:
-          type: boolean
-        answeredAt:
-          type: string
-          format: date-time
-          nullable: true
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-    CreateLetterRequest:
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+    CreateNoteRequest:
       type: object
-      required: [id, encryptedTitle, encryptedBody, encryptedLetterKey, encryptionVersion]
+      required: [id, encryptedMetadata, encryptedBody, encryptedWrappedNoteKey, bodyEncryptionVersion]
       properties:
         id:
           type: string
           format: uuid
-          description: Client-generated letter UUID (used in AAD resourceId)
-        encryptedTitle:
+          description: Client-generated note UUID (used in AAD resourceId)
+        encryptedMetadata:
           $ref: '#/components/schemas/EncryptedPayload'
         encryptedBody:
           $ref: '#/components/schemas/EncryptedPayload'
-        encryptedLetterKey:
+        encryptedWrappedNoteKey:
           $ref: '#/components/schemas/EncryptedPayload'
-        encryptionVersion:
+        bodyEncryptionVersion:
           type: string
           enum: [enc-v1]
-        answered:
-          type: boolean
-    UpdateLetterRequest:
+    UpdateNoteRequest:
       type: object
       properties:
-        encryptedTitle:
+        encryptedMetadata:
           $ref: '#/components/schemas/EncryptedPayload'
         encryptedBody:
           $ref: '#/components/schemas/EncryptedPayload'
-        encryptedLetterKey:
+        encryptedWrappedNoteKey:
           $ref: '#/components/schemas/EncryptedPayload'
-        encryptionVersion:
+        bodyEncryptionVersion:
           type: string
-        answered:
-          type: boolean
-        answeredAt:
-          type: string
-          format: date-time
-          nullable: true
     TwoFactorStatus:
       type: object
       properties:
@@ -491,26 +481,26 @@ paths:
           description: Invalid code
         '429':
           description: Rate limited
-  /api/letters:
+  /api/notes:
     get:
-      tags: [Letters]
-      summary: List encrypted letters for the authenticated user
+      tags: [Notes]
+      summary: List encrypted notes for the authenticated user's vault
       security:
         - sessionCookie: []
       responses:
         '200':
-          description: Encrypted letter list
+          description: Encrypted note list
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Letter'
+                  $ref: '#/components/schemas/Note'
         '401':
           description: Unauthorized
     post:
-      tags: [Letters]
-      summary: Create an encrypted letter
+      tags: [Notes]
+      summary: Create an encrypted note
       security:
         - sessionCookie: []
       requestBody:
@@ -518,15 +508,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateLetterRequest'
+              $ref: '#/components/schemas/CreateNoteRequest'
       responses:
         '201':
-          description: Letter created
+          description: Note created
         '400':
           description: Plaintext rejected or invalid payload
         '401':
           description: Unauthorized
-  /api/letters/{id}:
+  /api/notes/{id}:
     parameters:
       - name: id
         in: path
@@ -535,39 +525,39 @@ paths:
           type: string
           format: uuid
     get:
-      tags: [Letters]
-      summary: Get one encrypted letter
+      tags: [Notes]
+      summary: Get one encrypted note
       security:
         - sessionCookie: []
       responses:
         '200':
-          description: Encrypted letter
+          description: Encrypted note
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Letter'
+                $ref: '#/components/schemas/Note'
         '404':
           description: Not found
     put:
-      tags: [Letters]
-      summary: Update encrypted letter fields or answered metadata
+      tags: [Notes]
+      summary: Update encrypted note payloads
       security:
         - sessionCookie: []
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateLetterRequest'
+              $ref: '#/components/schemas/UpdateNoteRequest'
       responses:
         '200':
-          description: Updated letter
+          description: Updated note
         '400':
           description: Plaintext rejected or invalid payload
         '404':
           description: Not found
     delete:
-      tags: [Letters]
-      summary: Permanently delete a letter
+      tags: [Notes]
+      summary: Soft-delete a note
       security:
         - sessionCookie: []
       responses:
@@ -575,6 +565,44 @@ paths:
           description: Deleted
         '404':
           description: Not found
+  /api/vault/index:
+    get:
+      tags: [Vault]
+      summary: Get encrypted vault index
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Encrypted vault index blob
+    patch:
+      tags: [Vault]
+      summary: Update encrypted vault index
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Updated encrypted vault index
+        '400':
+          description: Plaintext rejected
+  /api/vault/settings:
+    get:
+      tags: [Vault]
+      summary: Get encrypted vault settings
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Encrypted vault settings blob
+    patch:
+      tags: [Vault]
+      summary: Update encrypted vault settings (unlock behavior, etc.)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Updated encrypted vault settings
+        '400':
+          description: Plaintext rejected
   /api/vault/init:
     post:
       tags: [Vault]

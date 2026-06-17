@@ -72,13 +72,8 @@ describe("module boundary imports (Phase 1 + Phase 2)", () => {
     });
   }
 
-  it("letters module must not import database clients directly in components", () => {
+  it("notes module is removed (letters domain retired)", () => {
     const lettersDir = join(MODULE_ROOT, "letters");
-    if (!statSync(lettersDir).isDirectory()) return;
-    const files = collectSourceFiles(lettersDir).filter((f) => f.includes("/components/"));
-    for (const file of files) {
-      const source = readFileSync(file, "utf8");
-      expect(source).not.toMatch(/@\/lib\/db/);
-    }
+    expect(statSync(lettersDir, { throwIfNoEntry: false })?.isDirectory()).toBeFalsy();
   });
 });

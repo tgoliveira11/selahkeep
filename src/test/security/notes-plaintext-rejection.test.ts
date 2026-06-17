@@ -4,7 +4,7 @@ import { assertNoPlaintextNoteFields, PlaintextRejectionError } from "@/modules/
 
 describe("notes plaintext rejection", () => {
   it("rejects forbidden plaintext fields", () => {
-    const fields = ["title", "body", "markdown", "tags", "categoryId", "noteKey", "metadata"] as const;
+    const fields = ["title", "body", "markdown", "tags", "categoryId", "categoryName", "tagNames", "answered", "noteKey", "metadata"] as const;
     for (const field of fields) {
       expect(rejectPlaintextNoteFields({ [field]: "secret" })).toContain(field);
     }

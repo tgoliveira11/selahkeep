@@ -219,6 +219,26 @@ export const vaultService = {
     return { encryptedVaultIndex: updated.encryptedVaultIndex };
   },
 
+  async getSettings(userId: string) {
+    const vault = await vaultRepository.findVaultByUserId(userId);
+    if (!vault) throw new NotFoundError("Vault not initialized");
+    return { encryptedVaultSettings: vault.encryptedVaultSettings };
+  },
+
+  async updateSettings(
+    userId: string,
+    encryptedVaultSettings: import("@/lib/validation/encrypted-payload").EncryptedPayload
+  ) {
+    const vault = await vaultRepository.findVaultByUserId(userId);
+    if (!vault) throw new NotFoundError("Vault not initialized");
+
+    assertVaultSettingsAad(userId, encryptedVaultSettings);
+
+    const updated = await vaultRepository.updateVaultSettings(userId, encryptedVaultSettings);
+    if (!updated) throw new NotFoundError("Vault not initialized");
+    return { encryptedVaultSettings: updated.encryptedVaultSettings };
+  },
+
   async getUnlockEnvelope(userId: string, method: string, ip?: string) {
     try {
       await enforceRateLimit({

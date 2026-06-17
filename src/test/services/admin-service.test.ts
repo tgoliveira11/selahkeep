@@ -4,7 +4,8 @@ import { USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
   findById: vi.fn(),
-  countByUserId: vi.fn(),
+  findVaultByUserId: vi.fn(),
+  countByVaultId: vi.fn(),
   countActiveByUserId: vi.fn(),
   findActiveEnvelopesByUserId: vi.fn(),
 }));
@@ -13,8 +14,8 @@ vi.mock("@/server/repositories/user-repository", () => ({
   userRepository: { findById: mocks.findById },
 }));
 
-vi.mock("@/server/repositories/letter-repository", () => ({
-  letterRepository: { countByUserId: mocks.countByUserId },
+vi.mock("@/server/repositories/note-repository", () => ({
+  noteRepository: { countByVaultId: mocks.countByVaultId },
 }));
 
 vi.mock("@/server/repositories/trusted-device-repository", () => ({
@@ -22,7 +23,10 @@ vi.mock("@/server/repositories/trusted-device-repository", () => ({
 }));
 
 vi.mock("@/server/repositories/vault-repository", () => ({
-  vaultRepository: { findActiveEnvelopesByUserId: mocks.findActiveEnvelopesByUserId },
+  vaultRepository: {
+    findVaultByUserId: mocks.findVaultByUserId,
+    findActiveEnvelopesByUserId: mocks.findActiveEnvelopesByUserId,
+  },
 }));
 
 describe("admin service", () => {
@@ -33,14 +37,15 @@ describe("admin service", () => {
     await expect(adminService.getUserSummary(USER_ID)).resolves.toBeNull();
   });
 
-  it("returns metadata without letter content", async () => {
+  it("returns metadata without note content", async () => {
     mocks.findById.mockResolvedValue({
       id: USER_ID,
       email: "user@example.com",
       authProvider: "credentials",
       createdAt: new Date("2024-01-01"),
     });
-    mocks.countByUserId.mockResolvedValue(3);
+    mocks.findVaultByUserId.mockResolvedValue({ id: "vault-1" });
+    mocks.countByVaultId.mockResolvedValue(3);
     mocks.countActiveByUserId.mockResolvedValue(1);
     mocks.findActiveEnvelopesByUserId.mockResolvedValue([{ method: "recovery_code" }]);
 
@@ -49,7 +54,7 @@ describe("admin service", () => {
       email: "user@example.com",
       authProvider: "credentials",
       createdAt: new Date("2024-01-01"),
-      letterCount: 3,
+      noteCount: 3,
       trustedDeviceCount: 1,
       recoveryMethods: ["recovery_code"],
     });
