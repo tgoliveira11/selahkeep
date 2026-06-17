@@ -204,6 +204,18 @@ When the current profile is not registered and the vault is unlocked, the primar
 
 `last_used_at` updates automatically after each successful vault unlock.
 
+Run `npm run db:migrate` after pulling LTG vault schema updates (`0008_ltg_vault_settings_index.sql`, `0009_notes.sql`).
+
+## Notes (LTG Vault Phase 2)
+
+Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**. Legacy `/letters*` routes redirect permanently to notes equivalents.
+
+- **Markdown editor** with sanitized preview (`dompurify` + `marked`)
+- **Encrypted metadata** (title, category, tags, answered) + **encrypted body** per note
+- **Vault index** (`GET/PATCH /api/vault/index`) updated client-side on create/update/delete
+- **API:** `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted payloads only
+- Legacy `letters` table and `/api/letters` remain for read-only historical data — see [`docs/LETTERS_TO_NOTES_MIGRATION.md`](./docs/LETTERS_TO_NOTES_MIGRATION.md)
+
 ## Commands
 
 | Command | Description |
@@ -227,8 +239,8 @@ All tests run through **Vitest** (`src/test/`). Browser E2E (Playwright) was int
 |------|----------|----------------|
 | **Unit** | `src/test/unit/` | Crypto helpers, vault unlock, PRF/WebAuthn option preparation, validation, rate limits, API client, logger, env loading |
 | **Security** | `src/test/security/` | Plaintext rejection, boundaries, sentinel phrase (static + runtime integration), AAD, WebAuthn challenges, audit redaction |
-| **Services** | `src/test/services/` | Business logic with mocked repositories (letters, vault, passkeys, trusted devices, admin) |
-| **API routes** | `src/test/api/` | Route handlers with mocked auth + services (letters, vault, passkeys, recovery, register, admin) |
+| **Services** | `src/test/services/` | Business logic with mocked repositories (letters, notes, vault, passkeys, trusted devices, admin) |
+| **API routes** | `src/test/api/` | Route handlers with mocked auth + services (letters, notes, vault, passkeys, recovery, register, admin) |
 | **Features** | `src/test/features/` | Client feature flows (passkey unlock, site layout shell, UI pages, accessibility) |
 
 Recent passkey-related coverage includes:

@@ -383,12 +383,12 @@ Implement encrypted **notes** (evolving from letters): per-note keys wrapped by 
 
 ### 11. Acceptance criteria
 
-- [ ] User with unlocked vault can create/edit/delete Markdown notes  
-- [ ] Each note has unique Note Key wrapped by User Vault Key  
-- [ ] Title and body encrypted at rest; APIs receive encrypted payloads only  
-- [ ] Encrypted vault index updated on note changes  
-- [ ] `/letters` routes redirect or alias to notes  
-- [ ] All note security tests pass; coverage thresholds met  
+- [x] User with unlocked vault can create/edit/delete Markdown notes  
+- [x] Each note has unique Note Key wrapped by User Vault Key  
+- [x] Title and body encrypted at rest; APIs receive encrypted payloads only  
+- [x] Encrypted vault index updated on note changes  
+- [x] `/letters` routes redirect or alias to notes  
+- [x] All note security tests pass; coverage thresholds met  
 
 ### 12. Risks
 

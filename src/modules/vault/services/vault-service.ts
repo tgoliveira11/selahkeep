@@ -202,6 +202,23 @@ export const vaultService = {
       }));
   },
 
+  async getIndex(userId: string) {
+    const vault = await vaultRepository.findVaultByUserId(userId);
+    if (!vault) throw new NotFoundError("Vault not initialized");
+    return { encryptedVaultIndex: vault.encryptedVaultIndex };
+  },
+
+  async updateIndex(userId: string, encryptedVaultIndex: import("@/lib/validation/encrypted-payload").EncryptedPayload) {
+    const vault = await vaultRepository.findVaultByUserId(userId);
+    if (!vault) throw new NotFoundError("Vault not initialized");
+
+    assertVaultIndexAad(userId, encryptedVaultIndex);
+
+    const updated = await vaultRepository.updateVaultIndex(userId, encryptedVaultIndex);
+    if (!updated) throw new NotFoundError("Vault not initialized");
+    return { encryptedVaultIndex: updated.encryptedVaultIndex };
+  },
+
   async getUnlockEnvelope(userId: string, method: string, ip?: string) {
     try {
       await enforceRateLimit({

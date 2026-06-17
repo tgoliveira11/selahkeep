@@ -14,8 +14,8 @@ import { useVaultSessionUnlocked } from "@/features/vault/use-vault-session-unlo
 import { cn } from "@/lib/ui/cn";
 
 const navLinks = [
-  { href: "/letters", label: "My letters" },
-  { href: "/letters/new", label: "Write" },
+  { href: "/notes", label: "My notes" },
+  { href: "/notes/new", label: "Write" },
   { href: "/vault/devices", label: "Devices" },
   { href: "/vault/recovery", label: "Recovery" },
   { href: "/settings/account", label: "Account" },
@@ -67,7 +67,7 @@ export function Nav() {
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-sm)]">
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
         <Link
-          href={session ? "/letters" : "/"}
+          href={session ? "/notes" : "/"}
           className="flex items-center gap-2 text-lg font-semibold text-[var(--primary)]"
         >
           <AppMark size={28} />

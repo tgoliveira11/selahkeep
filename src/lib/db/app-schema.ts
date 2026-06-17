@@ -102,6 +102,25 @@ export const letters = pgTable(
   ]
 );
 
+export const notes = pgTable(
+  "notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    vaultId: uuid("vault_id")
+      .notNull()
+      .references(() => userVaults.id, { onDelete: "cascade" }),
+    encryptedMetadata: jsonb("encrypted_metadata").notNull(),
+    encryptedWrappedNoteKey: jsonb("encrypted_wrapped_note_key").notNull(),
+    encryptedBody: jsonb("encrypted_body").notNull(),
+    bodyEncryptionVersion: text("body_encryption_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [index("idx_notes_vault_id_created_at").on(table.vaultId, table.createdAt)]
+);
+
 export type Letter = typeof letters.$inferSelect;
+export type Note = typeof notes.$inferSelect;
 export type TrustedDevice = typeof trustedDevices.$inferSelect;
 export type VaultEnvelope = typeof vaultEnvelopes.$inferSelect;

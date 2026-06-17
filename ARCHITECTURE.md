@@ -13,7 +13,7 @@
 
 This project uses an **internal modular monolith** per `docs/ADR-004_Modularization_and_Reusability_Strategy.md`.
 
-- Business logic lives under `src/modules/{auth,account,sessions,two-factor,passkeys,email,audit,rate-limit,security,vault,letters,ui}`.
+- Business logic lives under `src/modules/{auth,account,sessions,two-factor,passkeys,email,audit,rate-limit,security,vault,letters,notes,ui}`.
 - **Phase 2** isolates pure utilities in subfolders (`security/logger`, `email/core`, `rate-limit/adapters`, `ui/primitives`, …). See `docs/UTILITY_EXTRACTION_INVENTORY.md`.
 - Next.js routes stay in `src/app/api` and delegate to module services.
 - Legacy paths (`src/server/services`, `src/lib/auth`, …) re-export from `src/modules/*` during migration.
@@ -39,7 +39,7 @@ React UI (src/app, src/components, src/features)
 src/
   modules/             # Phase 1 domain modules (see MODULE_BOUNDARIES.md)
     auth/ account/ sessions/ two-factor/ passkeys/
-    email/ audit/ rate-limit/ security/ vault/ letters/ ui/
+    email/ audit/ rate-limit/ security/ vault/ letters/ notes/ ui/
   app/
     (public)/          # Landing, marketing
     (auth)/            # Login, signup
@@ -48,7 +48,8 @@ src/
   components/          # App shell + domain components (migrating to modules)
     ui/                # Re-exports from modules/ui
     layout/            # SiteShell, Nav, SiteFooter, PageLayout
-    letters/           # LetterCard
+    letters/           # LetterCard (legacy)
+    notes/             # NoteCard
   features/            # Client feature flows (passkey, vault)
   lib/
     crypto-client/     # Client-side encryption ONLY (vault boundary)
@@ -74,7 +75,9 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - `client_device_id` column on `trusted_devices` with partial unique index for active devices
 - WebAuthn challenge indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
 
-- `POST/GET /api/letters`, `GET/PUT/DELETE /api/letters/:id`
+- `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted notes (Markdown body, metadata blob)
+- `GET/PATCH /api/vault/index` — encrypted vault index blob
+- `POST/GET /api/letters`, `GET/PUT/DELETE /api/letters/:id` — legacy letters (read-only migration path; `/letters` redirects to `/notes`)
 - `POST /api/vault/setup` — LTG vault-v2 setup (encrypted settings, index, password + recovery phrase envelopes)
 - `POST /api/vault/init`, `GET /api/vault/status`
 - `POST /api/vault/unlock-envelope` — fetch encrypted envelope for password / recovery phrase unlock
@@ -115,7 +118,9 @@ Changing or resetting the account password does **not** unlock, recover, or rota
 ## Envelope Encryption
 
 ```text
-Letter title/body -> Letter Key -> User Vault Key -> vault envelopes
+Note metadata/body -> Note Key -> User Vault Key -> vault envelopes
+Vault index (titles for list) -> User Vault Key
+Legacy letter title/body -> Letter Key -> User Vault Key
 ```
 
 Vault envelope methods: `trusted_device`, `passkey_authorized_device`, `recovery_code`
@@ -128,7 +133,7 @@ Vault envelope methods: `trusted_device`, `passkey_authorized_device`, `recovery
 - **Vault setup:** `/vault/setup` — LTG vault password + BIP39 recovery phrase wizard (purple primary CTAs)
 - **Vault unlock:** shared `VaultUnlockPanel` / `LtgVaultUnlockPanel` used by `/vault/unlock` and `VaultAccessGate`
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + sage primary)
-- **Security UX:** no plaintext letters in URLs/titles; recovery code cleared after confirm; `ConfirmDialog` for destructive actions
+- **Security UX:** no plaintext notes/letters in URLs/titles; recovery phrase cleared after confirm; `ConfirmDialog` for destructive actions; Markdown preview sanitized (`dompurify` + `marked`)
 
 ## AAD binding (ADR-001)
 

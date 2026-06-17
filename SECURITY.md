@@ -58,7 +58,7 @@ Allowed in IndexedDB (per ADR-002):
 
 Forbidden in browser persistence:
 
-- Plaintext User Vault Key, Letter Key, recovery code, or letter title/body
+- Plaintext User Vault Key, Letter Key, Note Key, recovery code, or note/letter title/body
 - Exportable/raw device secret strings (legacy v1 storage was migrated away on DB upgrade)
 
 ### Threat model (local storage)
@@ -73,11 +73,22 @@ Forbidden in browser persistence:
 
 Trusted device records store display metadata only (`deviceName`, browser, platform, form factor, `devicePublicKey.deviceId`). They must not store exportable key bytes. Re-registering the same active client `deviceId` returns the existing server row idempotently (no duplicate active rows). The server never mutates an existing active row's `clientDeviceId` based on metadata alone.
 
-Residual risk: a malicious script running on this origin (XSS) or compromised browser profile on an unlocked session can still decrypt letters. That is inherent to client-side encryption; depth-in-defense is CSP + minimal persistence + non-extractable keys.
+Residual risk: a malicious script running on this origin (XSS) or compromised browser profile on an unlocked session can still decrypt notes and letters. That is inherent to client-side encryption; depth-in-defense is CSP + minimal persistence + non-extractable keys + Markdown sanitization on preview.
+
+## Notes (Phase 2)
+
+- Note title lives in **encrypted metadata** (`note_metadata` AAD); body is Markdown encrypted under Note Key (`note_body` AAD).
+- Note Key is wrapped by User Vault Key (`note_key` AAD) — never sent to API in plaintext.
+- Vault index (list titles) is client-encrypted under UVK; server stores ciphertext only.
+- Markdown preview uses `dompurify` allowlist before `dangerouslySetInnerHTML`.
+- Note APIs reject plaintext `title`, `body`, `markdown`, `tags`, `categoryId`, `noteKey`, etc.
+- Soft delete (`deleted_at`) + index `archived` flag; no plaintext search indexes.
+
+Migration: [`docs/LETTERS_TO_NOTES_MIGRATION.md`](./docs/LETTERS_TO_NOTES_MIGRATION.md).
 
 ## Observability
 
-Never log: plaintext title/body, User Vault Key, Letter Key, recovery code, decrypted payloads.
+Never log: plaintext title/body, User Vault Key, Letter Key, Note Key, recovery code, decrypted payloads.
 
 Error tracking must strip request/response bodies and sensitive headers.
 

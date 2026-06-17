@@ -24,4 +24,15 @@ describe("database schema has no plaintext letter columns", () => {
     expect(lettersSection).toContain("encryptedBody");
     expect(lettersSection).toContain("encryptedLetterKey");
   });
+
+  it("notes table stores only encrypted fields", () => {
+    const schema = readFileSync(join(process.cwd(), "src/lib/db/app-schema.ts"), "utf-8");
+    const notesSection = schema.slice(schema.indexOf('export const notes'));
+
+    expect(notesSection).toContain("encryptedMetadata");
+    expect(notesSection).toContain("encryptedWrappedNoteKey");
+    expect(notesSection).toContain("encryptedBody");
+    expect(notesSection).not.toMatch(/\btitle:\s/);
+    expect(notesSection).not.toMatch(/\bbody:\s/);
+  });
 });

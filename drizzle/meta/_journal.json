@@ -64,6 +64,13 @@
       "when": 1781220000000,
       "tag": "0008_ltg_vault_settings_index",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1781230000000,
+      "tag": "0009_notes",
+      "breakpoints": true
     }
   ]
 }

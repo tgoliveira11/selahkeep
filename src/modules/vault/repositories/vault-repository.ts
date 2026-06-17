@@ -98,4 +98,13 @@ export const vaultRepository = {
       .returning();
     return envelope ?? null;
   },
+
+  async updateVaultIndex(userId: string, encryptedVaultIndex: EncryptedPayload, client: DbClient = db) {
+    const [vault] = await client
+      .update(userVaults)
+      .set({ encryptedVaultIndex, updatedAt: new Date() })
+      .where(eq(userVaults.userId, userId))
+      .returning();
+    return vault ?? null;
+  },
 };

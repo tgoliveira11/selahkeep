@@ -6,7 +6,17 @@ export const ENCRYPTION_ALG = "AES-GCM";
 const aadSchema = z.object({
   userId: z.string().uuid(),
   resourceId: z.string().uuid(),
-  field: z.enum(["title", "body", "letter_key", "vault_key", "vault_settings", "vault_index"]),
+  field: z.enum([
+    "title",
+    "body",
+    "letter_key",
+    "note_metadata",
+    "note_body",
+    "note_key",
+    "vault_key",
+    "vault_settings",
+    "vault_index",
+  ]),
 });
 
 export const encryptedPayloadSchema = z.object({

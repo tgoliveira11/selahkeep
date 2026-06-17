@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   countActiveByUserId: vi.fn(),
   createDevice: vi.fn(),
   record: vi.fn(),
+  updateVaultIndex: vi.fn(),
 }));
 
 vi.mock("@/server/repositories/vault-repository", () => ({
@@ -23,6 +24,7 @@ vi.mock("@/server/repositories/vault-repository", () => ({
     revokeEnvelope: mocks.revokeEnvelope,
     createVault: mocks.createVault,
     createEnvelope: mocks.createEnvelope,
+    updateVaultIndex: mocks.updateVaultIndex,
   },
 }));
 
@@ -195,5 +197,20 @@ describe("vault service extended", () => {
     });
     const envelope = await vaultService.getUnlockEnvelope(USER_ID, "password");
     expect(envelope.encryptedVaultKey).toBeDefined();
+  });
+
+  it("getIndex returns encrypted vault index", async () => {
+    const index = encryptedPayload("vault_index", USER_ID);
+    mocks.findVaultByUserId.mockResolvedValue({ encryptedVaultIndex: index });
+    await expect(vaultService.getIndex(USER_ID)).resolves.toEqual({ encryptedVaultIndex: index });
+  });
+
+  it("updateIndex validates AAD and persists", async () => {
+    const index = encryptedPayload("vault_index", USER_ID);
+    mocks.findVaultByUserId.mockResolvedValue({ id: "vault-1" });
+    mocks.updateVaultIndex.mockResolvedValue({ encryptedVaultIndex: index });
+    await expect(vaultService.updateIndex(USER_ID, index)).resolves.toEqual({
+      encryptedVaultIndex: index,
+    });
   });
 });

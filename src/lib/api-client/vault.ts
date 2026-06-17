@@ -71,4 +71,12 @@ export const vaultApi = {
         createdAt: string;
       }>
     >("/api/vault/device-envelopes"),
+
+  getIndex: () =>
+    apiClient.get<{ encryptedVaultIndex: EncryptedPayload | null }>("/api/vault/index"),
+
+  updateIndex: (encryptedVaultIndex: EncryptedPayload) =>
+    apiClient.patch<{ encryptedVaultIndex: EncryptedPayload | null }>("/api/vault/index", {
+      encryptedVaultIndex,
+    }),
 };

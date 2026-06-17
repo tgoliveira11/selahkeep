@@ -50,10 +50,10 @@ export type VaultSettingsPlaintext = {
   recoveryPhraseLength: 12 | 24;
 };
 
-export type VaultIndexPlaintext = {
-  version: 1;
-  noteIds: string[];
-};
+import type { VaultIndexPlaintext } from "./vault-index-types";
+import { createEmptyVaultIndex, encryptVaultIndex } from "./vault-index";
+
+export type { VaultIndexPlaintext, VaultIndexEntry } from "./vault-index-types";
 
 /** Encrypt vault settings under the User Vault Key (client-only plaintext). */
 export async function createEncryptedVaultSettings(
@@ -68,17 +68,12 @@ export async function createEncryptedVaultSettings(
   });
 }
 
-/** Empty encrypted vault index placeholder for Phase 2 notes. */
 export async function createEmptyEncryptedVaultIndex(
   vaultKey: CryptoKey,
   userId: string
 ): Promise<import("@/lib/validation/encrypted-payload").EncryptedPayload> {
-  const index: VaultIndexPlaintext = { version: 1, noteIds: [] };
-  return encryptField(JSON.stringify(index), vaultKey, {
-    userId,
-    resourceId: userId,
-    field: "vault_index",
-  });
+  const index = createEmptyVaultIndex();
+  return encryptVaultIndex(index, userId, vaultKey);
 }
 
 export async function generateUserVaultKey(): Promise<CryptoKey> {
@@ -182,6 +177,19 @@ export async function unwrapVaultKeyFromRecovery(
   const { recordTrustedDeviceUnlock } = await import("./record-device-unlock");
   void recordTrustedDeviceUnlock(encryptedVaultKey.aad.userId);
   return vaultKey;
+}
+
+export function generateDefaultNoteTitle(): string {
+  const now = new Date();
+  const formatted = now.toLocaleString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `Note from ${formatted}`;
 }
 
 export function generateDefaultTitle(): string {

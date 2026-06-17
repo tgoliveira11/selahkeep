@@ -7,6 +7,13 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      { source: "/letters", destination: "/notes", permanent: true },
+      { source: "/letters/new", destination: "/notes/new", permanent: true },
+      { source: "/letters/:id", destination: "/notes/:id", permanent: true },
+    ];
+  },
   headers: async () => [
     {
       source: "/((?!_next/static|_next/image|favicon.ico).*)",

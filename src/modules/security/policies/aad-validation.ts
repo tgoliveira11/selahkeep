@@ -1,5 +1,6 @@
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import type { CreateLetterInput, UpdateLetterInput } from "@/lib/validation/letters";
+import type { CreateNoteInput, UpdateNoteInput } from "@/lib/validation/notes";
 
 export class AadValidationError extends Error {
   constructor(message: string) {
@@ -57,4 +58,22 @@ export function assertVaultSettingsAad(userId: string, payload: EncryptedPayload
 
 export function assertVaultIndexAad(userId: string, payload: EncryptedPayload): void {
   assertPayloadAad(payload, { userId, resourceId: userId, field: "vault_index" });
+}
+
+export function assertNoteCreateAad(userId: string, noteId: string, input: CreateNoteInput): void {
+  assertPayloadAad(input.encryptedMetadata, { userId, resourceId: noteId, field: "note_metadata" });
+  assertPayloadAad(input.encryptedBody, { userId, resourceId: noteId, field: "note_body" });
+  assertPayloadAad(input.encryptedWrappedNoteKey, { userId, resourceId: noteId, field: "note_key" });
+}
+
+export function assertNoteUpdateAad(userId: string, noteId: string, input: UpdateNoteInput): void {
+  if (input.encryptedMetadata) {
+    assertPayloadAad(input.encryptedMetadata, { userId, resourceId: noteId, field: "note_metadata" });
+  }
+  if (input.encryptedBody) {
+    assertPayloadAad(input.encryptedBody, { userId, resourceId: noteId, field: "note_body" });
+  }
+  if (input.encryptedWrappedNoteKey) {
+    assertPayloadAad(input.encryptedWrappedNoteKey, { userId, resourceId: noteId, field: "note_key" });
+  }
 }

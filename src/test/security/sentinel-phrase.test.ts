@@ -28,4 +28,12 @@ describe("sentinel phrase not in static artifacts", () => {
     expect(letterRepo).not.toMatch(/\btitle:\s/);
     expect(letterRepo).not.toMatch(/\bbody:\s/);
   });
+
+  it("note repository uses encrypted field names only", () => {
+    const noteRepo = readModuleSource("src/server/repositories/note-repository.ts");
+    expect(noteRepo).toContain("encryptedMetadata");
+    expect(noteRepo).toContain("encryptedWrappedNoteKey");
+    expect(noteRepo).not.toMatch(/\btitle:\s/);
+    expect(noteRepo).not.toMatch(/\bbody:\s/);
+  });
 });

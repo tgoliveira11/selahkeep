@@ -75,7 +75,7 @@ Implementation: `src/lib/crypto-client/argon2id.ts`, `src/lib/crypto-client/vaul
 | Lifetime in memory | Session only via `vault-session.ts`; cleared on lock, logout (`clearVaultClientState`), tab close guard |
 | Wrapping | AES-GCM envelopes with keys derived from vault password or recovery phrase |
 | Server | Never transmitted; only encrypted envelopes stored |
-| Note Keys (Phase 2+) | Per-note AES keys wrapped by UVK — not implemented in Phase 1 except type placeholders |
+| Note Keys (Phase 2+) | Per-note AES keys wrapped by UVK — see §9 |
 
 ---
 
@@ -139,7 +139,7 @@ Unchanged core from ADR-001:
   "aad": {
     "userId": "<uuid>",
     "resourceId": "<uuid>",
-    "field": "vault_key | vault_settings | vault_index | title | body | letter_key"
+    "field": "vault_key | vault_settings | vault_index | title | body | letter_key | note_metadata | note_body | note_key"
   }
 }
 ```
@@ -155,15 +155,84 @@ Opaque JSON encrypted under UVK at setup, e.g. `{ setupVersion: 1, recoveryPhras
 
 ### Vault index placeholder (client-encrypted)
 
-Empty encrypted structure for Phase 2 note index. Stored in `user_vaults.encrypted_vault_index`.
+Encrypted structure for note list metadata. Stored in `user_vaults.encrypted_vault_index`. See §8.
 
 ---
 
-## 7. No-plaintext API contract
+## 7. Note Keys (Phase 2)
+
+Each note has a unique **Note Key** (AES-256-GCM, 256-bit CSPRNG).
+
+| Property | Decision |
+|----------|----------|
+| Generation | `generateNoteKey()` — same as letter key pattern |
+| Wrapping | Note Key exported as base64url, encrypted under UVK with AAD `field: note_key` |
+| Server storage | `notes.encrypted_wrapped_note_key` (JSON `enc-v1` payload only) |
+| Transport | Note Key **never** sent to API in plaintext |
+
+Implementation: `src/lib/crypto-client/note-key.ts`.
+
+### Encrypted note metadata (`note_metadata`)
+
+JSON encrypted under Note Key:
+
+```json
+{
+  "title": "...",
+  "categoryId": null,
+  "tagIds": [],
+  "answered": false,
+  "createdAt": "ISO-8601",
+  "updatedAt": "ISO-8601"
+}
+```
+
+Stored in `notes.encrypted_metadata`. Title is **never** a plaintext DB column.
+
+### Encrypted note body (`note_body`)
+
+Markdown plaintext encrypted under Note Key. Stored in `notes.encrypted_body`. Version in `notes.body_encryption_version` (`enc-v1`).
+
+Implementation: `src/lib/crypto-client/notes.ts`.
+
+---
+
+## 8. Vault index (Phase 2)
+
+Client-encrypted JSON under UVK (`field: vault_index`, `resourceId: userId`):
+
+```json
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "<note-uuid>",
+      "title": "...",
+      "categoryId": null,
+      "tagIds": [],
+      "answered": false,
+      "createdAt": "ISO-8601",
+      "updatedAt": "ISO-8601",
+      "archived": false
+    }
+  ]
+}
+```
+
+- Updated client-side on note create/update/delete (archive on soft delete).
+- List UI decrypts index when vault unlocked — no server-side decryption.
+- `rebuildVaultIndexFromNotes()` can reconstruct from decrypted note metadata if index corrupt.
+
+Implementation: `src/lib/crypto-client/vault-index.ts`, `GET/PATCH /api/vault/index`.
+
+---
+
+## 9. No-plaintext API contract
 
 ### APIs may receive
 
 - `encryptedVaultSettings`, `encryptedVaultIndex`
+- `encryptedMetadata`, `encryptedBody`, `encryptedWrappedNoteKey`
 - `encryptedVaultKey` (envelope ciphertext)
 - `kdfMetadata` / `kdf_params`
 - `publicMetadata`, envelope `method`
@@ -176,18 +245,20 @@ Empty encrypted structure for Phase 2 note index. Stored in `user_vaults.encrypt
 - Plaintext `title`, `body`, `content`, `tags`, `category`
 - Passkey PRF output
 
-Validation: `rejectVaultPlaintextFields()` in `src/lib/validation/vault.ts`.
+Validation: `rejectVaultPlaintextFields()` in `src/lib/validation/vault.ts`; `rejectPlaintextNoteFields()` in `src/lib/validation/notes.ts`.
 
 ---
 
-## 8. Consequences
+## 10. Consequences
 
 - New vaults use `vault-v2` + `password` + `recovery_phrase` envelopes.
 - Legacy `vault-v1` flows remain until migrated.
 - Phase 4 implements `passkey_prf` envelope per ADR-002 evolution.
-- Phase 2 adds Note Keys wrapped by UVK.
+- Phase 2 adds Note Keys wrapped by UVK (`notes` table, `/api/notes`, vault index).
 
 ```text
 TODO_SECURITY_REVIEW_REQUIRED:
 Production migration from vault-v1 + recovery_code to vault-v2 + recovery_phrase requires a human-reviewed data migration plan before bulk user conversion.
+
+Letters-to-notes bulk migration (Option B coexistence) requires human review before production rollout — see docs/LETTERS_TO_NOTES_MIGRATION.md.
 ```

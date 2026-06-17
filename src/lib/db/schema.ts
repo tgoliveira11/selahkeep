@@ -18,7 +18,9 @@ export {
   vaultEnvelopes,
   trustedDevices,
   letters,
+  notes,
   type Letter,
+  type Note,
   type TrustedDevice,
   type VaultEnvelope,
 } from "./app-schema";
