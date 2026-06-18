@@ -1,11 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/ui/cn";
 import {
   MARKDOWN_WRAP_ACTIONS,
   type WrapAction,
 } from "@/lib/notes/markdown-actions";
+import { EditorLinkPopover } from "@/components/notes/editor-link-popover";
+import {
+  IconBold,
+  IconChecklist,
+  IconCode,
+  IconH1,
+  IconH2,
+  IconItalic,
+  IconLink,
+  IconList,
+  IconMarkdown,
+  IconQuote,
+} from "@/components/notes/editor-toolbar-icons";
+import type { NoteEditorMode } from "@/features/notes/markdown-editor";
 
 export const EDITOR_TOOLBAR_ACTIONS = [
   "Bold",
@@ -21,12 +36,54 @@ export const EDITOR_TOOLBAR_ACTIONS = [
 
 type ToolbarActionLabel = (typeof EDITOR_TOOLBAR_ACTIONS)[number];
 
+const ACTION_ICONS: Record<ToolbarActionLabel, React.ComponentType<{ className?: string }>> = {
+  Bold: IconBold,
+  Italic: IconItalic,
+  H1: IconH1,
+  H2: IconH2,
+  Quote: IconQuote,
+  List: IconList,
+  Checklist: IconChecklist,
+  Link: IconLink,
+  Code: IconCode,
+};
+
+const HEADING_ACTIONS: ToolbarActionLabel[] = ["H1", "H2"];
+const FORMAT_ACTIONS: ToolbarActionLabel[] = ["Bold", "Italic", "Code"];
+const BLOCK_ACTIONS: ToolbarActionLabel[] = ["Quote", "List", "Checklist"];
+const INSERT_ACTIONS: ToolbarActionLabel[] = ["Link"];
+
 function findWrapAction(label: ToolbarActionLabel): WrapAction {
   const action = MARKDOWN_WRAP_ACTIONS.find((item) => item.label === label);
   if (!action) {
     throw new Error(`Missing markdown action: ${label}`);
   }
   return action;
+}
+
+function isVisualActive(editor: Editor, label: ToolbarActionLabel): boolean {
+  switch (label) {
+    case "Bold":
+      return editor.isActive("bold");
+    case "Italic":
+      return editor.isActive("italic");
+    case "H1":
+      return editor.isActive("heading", { level: 1 });
+    case "H2":
+      return editor.isActive("heading", { level: 2 });
+    case "Quote":
+      return editor.isActive("blockquote");
+    case "List":
+      return editor.isActive("bulletList");
+    case "Checklist":
+      return editor.isActive("taskList");
+    case "Code":
+      return editor.isActive("code");
+    case "Link":
+      return editor.isActive("link");
+    default:
+      return false;
+  }
 }
 
 function runVisualAction(editor: Editor, label: ToolbarActionLabel): void {
@@ -57,53 +114,128 @@ function runVisualAction(editor: Editor, label: ToolbarActionLabel): void {
     case "Code":
       chain.toggleCode().run();
       return;
-    case "Link": {
-      const previous = editor.getAttributes("link").href as string | undefined;
-      const url = window.prompt("Link URL", previous ?? "https://");
-      if (url === null) return;
-      if (url === "") {
-        chain.extendMarkRange("link").unsetLink().run();
-        return;
-      }
-      if (!/^https?:\/\//i.test(url)) return;
-      chain.extendMarkRange("link").setLink({ href: url }).run();
-      return;
-    }
     default:
       return;
   }
 }
 
-interface EditorToolbarProps {
-  mode: "visual" | "markdown";
-  editor?: Editor | null;
-  onMarkdownAction?: (action: WrapAction) => void;
+interface ToolbarButtonProps {
+  label: ToolbarActionLabel;
+  active?: boolean;
+  onClick: () => void;
 }
 
-export function EditorToolbar({ mode, editor, onMarkdownAction }: EditorToolbarProps) {
+function ToolbarButton({ label, active, onClick }: ToolbarButtonProps) {
+  const Icon = ACTION_ICONS[label];
   return (
-    <div className="markdown-editor-toolbar flex flex-wrap items-center gap-2">
-      {EDITOR_TOOLBAR_ACTIONS.map((label) => (
-        <Button
-          key={label}
-          type="button"
-          variant="secondary"
-          className="text-xs"
-          aria-label={label}
-          onClick={() => {
-            if (mode === "visual" && editor) {
-              runVisualAction(editor, label);
-              return;
-            }
-            onMarkdownAction?.(findWrapAction(label));
-          }}
-        >
-          {label}
-        </Button>
-      ))}
-      <span className="ml-auto hidden text-xs text-[var(--muted)] sm:inline">
-        ⌘/Ctrl+S save · B bold · I italic · K link · E code · ⇧8 list · ⇧C checklist
-      </span>
+    <button
+      type="button"
+      className={cn("note-editor-toolbar__btn", active && "note-editor-toolbar__btn--active")}
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      data-testid={`toolbar-${label.toLowerCase()}`}
+    >
+      <Icon />
+      <span className="sr-only">{label}</span>
+    </button>
+  );
+}
+
+function ToolbarDivider() {
+  return <div className="note-editor-toolbar__divider" aria-hidden="true" />;
+}
+
+interface EditorToolbarProps {
+  mode: NoteEditorMode;
+  editor?: Editor | null;
+  onMarkdownAction?: (action: WrapAction) => void;
+  onModeToggle?: () => void;
+}
+
+export function EditorToolbar({ mode, editor, onMarkdownAction, onModeToggle }: EditorToolbarProps) {
+  const [linkOpen, setLinkOpen] = useState(false);
+
+  function handleAction(label: ToolbarActionLabel) {
+    if (label === "Link") {
+      if (mode === "visual" && editor) {
+        setLinkOpen(true);
+        return;
+      }
+      onMarkdownAction?.(findWrapAction(label));
+      return;
+    }
+
+    if (mode === "visual" && editor) {
+      runVisualAction(editor, label);
+      return;
+    }
+    onMarkdownAction?.(findWrapAction(label));
+  }
+
+  function renderGroup(actions: ToolbarActionLabel[]) {
+    return actions.map((label) => (
+      <ToolbarButton
+        key={label}
+        label={label}
+        active={mode === "visual" && editor ? isVisualActive(editor, label) : false}
+        onClick={() => handleAction(label)}
+      />
+    ));
+  }
+
+  return (
+    <div className="note-editor-toolbar" data-testid="note-editor-toolbar">
+      <div className="note-editor-toolbar__scroll">
+        <div className="note-editor-toolbar__group" role="group" aria-label="Headings">
+          {renderGroup(HEADING_ACTIONS)}
+        </div>
+        <ToolbarDivider />
+        <div className="note-editor-toolbar__group" role="group" aria-label="Text formatting">
+          {renderGroup(FORMAT_ACTIONS)}
+        </div>
+        <ToolbarDivider />
+        <div className="note-editor-toolbar__group" role="group" aria-label="Blocks">
+          {renderGroup(BLOCK_ACTIONS)}
+        </div>
+        <ToolbarDivider />
+        <div className="note-editor-toolbar__group" role="group" aria-label="Insert">
+          {renderGroup(INSERT_ACTIONS)}
+        </div>
+        {linkOpen && mode === "visual" && editor ? (
+          <EditorLinkPopover
+            initialUrl={(editor.getAttributes("link").href as string | undefined) ?? ""}
+            onApply={(url) => {
+              editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+            }}
+            onRemove={() => {
+              editor.chain().focus().extendMarkRange("link").unsetLink().run();
+            }}
+            onClose={() => setLinkOpen(false)}
+          />
+        ) : null}
+      </div>
+      {onModeToggle ? (
+        <div className="note-editor-toolbar__mode">
+          <button
+            type="button"
+            className={cn(
+              "note-editor-toolbar__mode-btn",
+              mode === "markdown" && "note-editor-toolbar__mode-btn--active"
+            )}
+            aria-label={mode === "visual" ? "Switch to Markdown source" : "Switch to visual editor"}
+            aria-pressed={mode === "markdown"}
+            title={mode === "visual" ? "Markdown source" : "Visual editor"}
+            data-testid="editor-mode-markdown"
+            onClick={onModeToggle}
+          >
+            <IconMarkdown />
+            <span className="note-editor-toolbar__mode-label">
+              {mode === "visual" ? "Markdown" : "Visual"}
+            </span>
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

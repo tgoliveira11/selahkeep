@@ -54,6 +54,7 @@ export default function NewNotePage() {
   const [titleError, setTitleError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [draftPrompt, setDraftPrompt] = useState<NoteDraftPlaintext | null>(null);
+  const [draftSaved, setDraftSaved] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [baseline, setBaseline] = useState(JSON.stringify(EMPTY_FORM));
 
@@ -85,6 +86,7 @@ export default function NewNotePage() {
       updatedAt: new Date().toISOString(),
     };
     await saveEncryptedNoteDraft(userId, NEW_NOTE_DRAFT_KEY, draft);
+    setDraftSaved(true);
   }, [body, categoryId, dirty, tagIds, title, userId]);
 
   useAutosaveTimer(Boolean(userId && dirty), persistDraft);
@@ -98,6 +100,7 @@ export default function NewNotePage() {
       setTitleError(null);
       setError(null);
       setDraftPrompt(null);
+      setDraftSaved(false);
       setHydrated(false);
       setBaseline(JSON.stringify(EMPTY_FORM));
     });
@@ -122,12 +125,14 @@ export default function NewNotePage() {
   }, [userId, canWrite]);
 
   function applyTemplate(id: NoteTemplateId) {
+    if (id === templateId) return;
+    if (body.trim() && typeof window !== "undefined") {
+      const confirmed = window.confirm("Replace current note content with this template?");
+      if (!confirmed) return;
+    }
     setTemplateId(id);
     const template = getNoteTemplate(id);
     setBody(template.body);
-    if (!title.trim()) {
-      setTitle("");
-    }
   }
 
   function restoreDraft() {
@@ -241,13 +246,12 @@ export default function NewNotePage() {
         )}
 
         {dirty && (
-          <p className="text-sm text-[var(--muted)]" role="status">
+          <p className="text-sm text-[var(--muted)] sr-only" role="status">
             You have unsaved changes.
           </p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <NoteTemplatePicker value={templateId} onChange={applyTemplate} disabled={busy} />
           <FormField id="note-title" label="Title" hint="Required">
             <Input
               id="note-title"
@@ -268,6 +272,7 @@ export default function NewNotePage() {
               </p>
             )}
           </FormField>
+          <NoteTemplatePicker value={templateId} onChange={applyTemplate} disabled={busy} />
           <CategoryTagFields
             mode="create"
             categories={categories}
@@ -280,7 +285,14 @@ export default function NewNotePage() {
             onCreateTag={createTag}
           />
           <FormField id="note-body" label="Your note">
-            <MarkdownEditor value={body} onChange={setBody} onSave={() => void handleSubmit()} />
+            <MarkdownEditor
+              value={body}
+              onChange={setBody}
+              onSave={() => void handleSubmit()}
+              status={
+                busy ? "saving" : dirty ? "unsaved" : draftSaved ? "draft-saved" : "idle"
+              }
+            />
           </FormField>
           {displayError && (
             <p className="text-sm text-[var(--danger)]" role="alert">

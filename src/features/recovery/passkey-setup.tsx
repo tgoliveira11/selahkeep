@@ -17,11 +17,19 @@ import {
 import { apiClient } from "@/lib/api-client/client";
 import { passkeysApi } from "@/lib/api-client/passkeys";
 import { prepareRegistrationOptions } from "@/lib/passkey/prepare-webauthn-options";
-import { detectPasskeyPrfSupport } from "@/lib/passkey/prf-support";
+import {
+  getPasskeyPrfDiagnosticHeadline,
+  getPasskeyPrfDiagnosticMessage,
+  isCeremonyCancellation,
+  probePasskeyPrfEnvironmentAsync,
+  resolveCeremonyDiagnosticReason,
+  resolvePreCeremonyDiagnosticReason,
+  shouldBlockPasskeyVaultSetupBeforeCeremony,
+  type PasskeyPrfDiagnosticReason,
+} from "@/lib/passkey/passkey-prf-diagnostics";
 import { setPasskeyLoginHint } from "@/lib/passkey/login-hint";
 import {
   PASSKEY_ORPHAN_CREDENTIAL_NOTE,
-  PASSKEY_PRF_UNAVAILABLE_HEADLINE,
   PASSKEY_VAULT_REGISTERED_MESSAGE,
   type PasskeySetupOutcome,
 } from "@/lib/passkey/messages";
@@ -32,23 +40,21 @@ interface PasskeySetupProps {
   onStatusChange: () => void;
 }
 
-function isUserCancellation(error: unknown): boolean {
-  return error instanceof Error && error.name === "NotAllowedError";
-}
-
 export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetupProps) {
   const [loading, setLoading] = useState(false);
   const [outcome, setOutcome] = useState<PasskeySetupOutcome>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [diagnosticReason, setDiagnosticReason] = useState<PasskeyPrfDiagnosticReason | null>(null);
   const [showOrphanNote, setShowOrphanNote] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
 
-  function showPrfUnavailable(options: { attemptedRegistration: boolean }) {
+  function showDiagnosticOutcome(reason: PasskeyPrfDiagnosticReason, options?: { attemptedRegistration?: boolean }) {
     setOutcome("prf-unavailable");
+    setDiagnosticReason(reason);
     setError(null);
-    setMessage(PASSKEY_PRF_UNAVAILABLE_HEADLINE);
-    setShowOrphanNote(options.attemptedRegistration);
+    setMessage(getPasskeyPrfDiagnosticMessage(reason));
+    setShowOrphanNote(Boolean(options?.attemptedRegistration));
   }
 
   async function handleRegisterPasskey() {
@@ -57,6 +63,7 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
     setMessage(null);
     setShowOrphanNote(false);
     setOutcome("idle");
+    setDiagnosticReason(null);
 
     try {
       const vaultKey = getSessionVaultKey();
@@ -64,9 +71,10 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         throw new Error("Unlock your vault before setting up a passkey.");
       }
 
-      const prfSupport = await detectPasskeyPrfSupport();
-      if (prfSupport === "unsupported") {
-        showPrfUnavailable({ attemptedRegistration: false });
+      const environment = await probePasskeyPrfEnvironmentAsync();
+      if (shouldBlockPasskeyVaultSetupBeforeCeremony(environment)) {
+        const reason = resolvePreCeremonyDiagnosticReason(environment)!;
+        showDiagnosticOutcome(reason);
         return;
       }
 
@@ -74,13 +82,26 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         action: "options",
       })) as PublicKeyCredentialCreationOptionsJSON;
 
-      const attestation = await startRegistration({
-        optionsJSON: prepareRegistrationOptions(options),
-      });
+      let attestation;
+      try {
+        attestation = await startRegistration({
+          optionsJSON: prepareRegistrationOptions(options),
+        });
+      } catch (ceremonyError) {
+        if (isCeremonyCancellation(ceremonyError)) {
+          setOutcome("cancelled");
+          setError(getPasskeyPrfDiagnosticMessage("ceremony_cancelled"));
+          return;
+        }
+        throw ceremonyError;
+      }
+
       const prfOutput = extractPasskeyPrfOutput(attestation.clientExtensionResults);
 
       if (!prfOutput) {
-        showPrfUnavailable({ attemptedRegistration: true });
+        showDiagnosticOutcome(resolveCeremonyDiagnosticReason({ prfOutputPresent: false }), {
+          attemptedRegistration: true,
+        });
         return;
       }
 
@@ -111,13 +132,13 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         onStatusChange();
       }
     } catch (e) {
-      if (isUserCancellation(e)) {
+      if (isCeremonyCancellation(e)) {
         setOutcome("cancelled");
-        setError("Passkey setup was cancelled.");
+        setError(getPasskeyPrfDiagnosticMessage("ceremony_cancelled"));
         return;
       }
       if (e instanceof Error && e.name === "NotSupportedError") {
-        showPrfUnavailable({ attemptedRegistration: false });
+        showDiagnosticOutcome("webauthn_unavailable");
         return;
       }
       setOutcome("failed");
@@ -188,8 +209,8 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         {loading ? "Working…" : "Set up passkey"}
       </Button>
       {outcome === "vault-registered" && message && <SuccessState message={message} />}
-      {outcome === "prf-unavailable" && message && (
-        <Alert variant="warning" title="Passkey unlock not available here">
+      {outcome === "prf-unavailable" && message && diagnosticReason && (
+        <Alert variant="warning" title={getPasskeyPrfDiagnosticHeadline(diagnosticReason)}>
           {message}
           {showOrphanNote && (
             <span className="mt-2 block text-[var(--muted)]">{PASSKEY_ORPHAN_CREDENTIAL_NOTE}</span>

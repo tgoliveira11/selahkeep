@@ -114,7 +114,7 @@ describe("RecoveryPage", () => {
     render(<RecoveryPage />);
 
     expect(screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")).toBe(
-      "/vault/unlock"
+      "/vault/unlock?returnTo=%2Fvault%2Frecovery"
     );
   });
 
@@ -126,7 +126,10 @@ describe("RecoveryPage", () => {
 
     expect(screen.getByText(/recovery phrase is configured/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /replace recovery phrase/i })).toBeTruthy();
-    expect(screen.getByTestId("passkey-setup")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /passkey vault unlock/i }).getAttribute("href")).toBe(
+      "/vault/settings"
+    );
+    expect(screen.queryByTestId("passkey-setup")).toBeNull();
     expect(screen.queryByText(/generate recovery code/i)).toBeNull();
     expect(screen.queryByText(/private letters/i)).toBeNull();
   });

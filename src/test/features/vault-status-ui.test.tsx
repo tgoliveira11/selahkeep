@@ -44,6 +44,10 @@ vi.mock("@/features/notes/use-vault-index", () => ({
   useVaultIndex: vi.fn(() => ({ index: null, loading: false, error: null })),
 }));
 
+vi.mock("@/features/passkey/passkey-vault-unlock-setup", () => ({
+  PasskeyVaultUnlockSetup: () => <div data-testid="passkey-vault-unlock-setup" />,
+}));
+
 vi.mock("@/features/notes/use-vault-settings", () => ({
   useVaultSettings: vi.fn(() => ({
     settings: null,
@@ -139,7 +143,7 @@ describe("vault status UI", () => {
     render(<NotesPage />);
     expect(await screen.findByText("Vault closed")).toBeTruthy();
     expect(screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")).toBe(
-      "/vault/unlock"
+      "/vault/unlock?returnTo=%2Fnotes"
     );
   });
 
@@ -174,6 +178,16 @@ describe("vault status UI", () => {
     expect(screen.queryByText(/unlock to read/i)).toBeNull();
   });
 
+  it("vault settings locked prompt links to unlock with returnTo", async () => {
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
+
+    render(<VaultSettingsPage />);
+    expect(
+      screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")
+    ).toBe("/vault/unlock?returnTo=%2Fvault%2Fsettings");
+  });
+
   it("vault settings shows unlock prompt when vault is locked", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
@@ -199,7 +213,34 @@ describe("vault status UI", () => {
 
     render(<VaultSettingsPage />);
     expect(await screen.findByText("Metadata only (recommended)")).toBeTruthy();
+    expect(screen.getByTestId("passkey-vault-unlock-setup")).toBeTruthy();
     expect(screen.queryByText(/set up your vault/i)).toBeNull();
+  });
+
+  it("vault unlock already unlocked uses sanitized returnTo link", async () => {
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    const { useSearchParams } = await import("next/navigation");
+    vi.mocked(useSearchParams).mockReturnValue(
+      new URLSearchParams("returnTo=%2Fvault%2Fsettings") as ReturnType<typeof useSearchParams>
+    );
+    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
+
+    render(<VaultUnlockPage />);
+    expect(screen.getByRole("link", { name: /go to notes/i }).getAttribute("href")).toBe(
+      "/vault/settings"
+    );
+  });
+
+  it("vault unlock rejects unsafe returnTo and defaults to notes", async () => {
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    const { useSearchParams } = await import("next/navigation");
+    vi.mocked(useSearchParams).mockReturnValue(
+      new URLSearchParams("returnTo=https%3A%2F%2Fevil.test") as ReturnType<typeof useSearchParams>
+    );
+    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
+
+    render(<VaultUnlockPage />);
+    expect(screen.getByRole("link", { name: /go to notes/i }).getAttribute("href")).toBe("/notes");
   });
 
   it("vault unlock shows setup-first state when vault is not configured", async () => {
@@ -226,14 +267,31 @@ describe("vault status UI", () => {
     expect(screen.queryByLabelText(/vault password/i)).toBeNull();
   });
 
-  it("vault unlock shows unlock methods when vault is locked", async () => {
+  it("vault unlock hides passkey when no passkey envelope exists", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
-    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
+    vi.mocked(useVaultClientStatus).mockReturnValue(
+      mockClientStatus("locked", {
+        availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: false },
+        hasPasskey: false,
+      })
+    );
 
     render(<VaultUnlockPage />);
     expect(await screen.findByText(/Unlock SelahKeep/i)).toBeTruthy();
-    expect(screen.getByLabelText(/vault password/i)).toBeTruthy();
-    expect(screen.getByRole("button", { name: /recovery phrase/i })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /unlock with passkey/i })).toBeNull();
+  });
+
+  it("vault unlock shows passkey when passkey envelope exists", async () => {
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    vi.mocked(useVaultClientStatus).mockReturnValue(
+      mockClientStatus("locked", {
+        availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: true },
+        hasPasskey: true,
+      })
+    );
+
+    render(<VaultUnlockPage />);
+    expect(await screen.findByRole("button", { name: /unlock with passkey/i })).toBeTruthy();
   });
 
   it("vault unlock shows already unlocked state when vault is unlocked", async () => {

@@ -127,10 +127,11 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 - **Layout:** `SiteShell` (`Nav` + `SiteFooter`) on `(public)`, `(auth)`, and `(vault)` route groups; `PageLayout` for content width; responsive mobile menu in `Nav`. Auth pages use package UI inside the shell.
 - **Public marketing:** Home page sections and copy in `src/lib/marketing/home-copy.ts`
 - **Vault setup:** `/vault/setup` — `PasswordSetupFields` (secure-auth) + BIP39 recovery phrase wizard; policy from `src/lib/config/vault-password-policy.ts`
-- **Recovery management:** `/vault/recovery` — status-gated recovery phrase replace + passkey setup (no initial phrase generation post-setup)
+- **Recovery management:** `/vault/recovery` — status-gated recovery phrase replace (no initial phrase generation post-setup); link to `/vault/settings` for optional passkey vault unlock
+- **Passkey vault unlock:** `/vault/settings` — `PasskeyVaultUnlockSetup`; PRF diagnostics in `src/lib/passkey/passkey-prf-diagnostics.ts`
 - **Vault unlock:** `LtgVaultUnlockPanel` on `/vault/unlock`; `NotesVaultIndicator` on `/notes` and `/notes/[id]` (closed state + unlock CTA with optional `returnTo`; no inline decrypt on locked detail)
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + **purple** primary)
-- **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview; visual note editor (Tiptap) with Markdown canonical storage — see [`docs/EDITOR_IMPLEMENTATION_DECISION.md`](./docs/EDITOR_IMPLEMENTATION_DECISION.md); tag normalization before encrypted index write
+- **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview; visual note editor (Tiptap) with Markdown canonical storage — see [`docs/EDITOR_IMPLEMENTATION_DECISION.md`](./docs/EDITOR_IMPLEMENTATION_DECISION.md) and [`docs/EDITOR_UI_UX_REDESIGN_DECISION.md`](./docs/EDITOR_UI_UX_REDESIGN_DECISION.md); tag normalization before encrypted index write
 
 ## AAD binding (ADR-005)
 

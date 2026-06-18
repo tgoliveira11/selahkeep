@@ -141,7 +141,7 @@ export default function NotesPage() {
               title="Notes"
               description="Private encrypted notes — prayers, reflections, and journaling in one vault."
             />
-            <NotesVaultIndicator clientStatus={clientStatus} />
+            <NotesVaultIndicator clientStatus={clientStatus} returnTo="/notes" />
           </>
         )}
       </PageLayout>
@@ -160,7 +160,7 @@ export default function NotesPage() {
         }
       />
 
-      {clientStatus && <NotesVaultIndicator clientStatus={clientStatus} />}
+      {clientStatus && <NotesVaultIndicator clientStatus={clientStatus} returnTo="/notes" />}
 
       {error && (
         <div className="mb-6">

@@ -19,6 +19,7 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 | [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md) | Logged-in nav structure |
 | [`PRIVATE_USABILITY_TEST_SCRIPT.md`](./PRIVATE_USABILITY_TEST_SCRIPT.md) | Private usability test script |
 | [`PASSKEY_LOGIN_VAULT_UNLOCK.md`](./PASSKEY_LOGIN_VAULT_UNLOCK.md) | Passkey login vs vault unlock integration |
+| [`PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`](./PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md) | PRF diagnostics, Brave/macOS, capability vs ceremony |
 | [`AUTH_RESET_TO_SECURE_AUTH.md`](./AUTH_RESET_TO_SECURE_AUTH.md) | Auth boundary (`@tgoliveira/secure-auth`) |
 | [`MODULE_BOUNDARIES.md`](./MODULE_BOUNDARIES.md) | Module dependency rules |
 | [`TESTING_STRATEGY.md`](./TESTING_STRATEGY.md) | Test layers and coverage |

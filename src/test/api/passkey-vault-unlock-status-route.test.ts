@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mocks = vi.hoisted(() => ({
   requireSessionUser: vi.fn(),
   getVaultUnlockStatus: vi.fn(),
-  disableVaultUnlock: vi.fn(),
+  getManageVaultUnlockAuthOptions: vi.fn(),
+  disableVaultUnlockWithProof: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
@@ -13,7 +14,8 @@ vi.mock("@/lib/auth/session", () => ({
 vi.mock("@/server/services/passkey-vault-envelope-service", () => ({
   passkeyVaultEnvelopeService: {
     getVaultUnlockStatus: mocks.getVaultUnlockStatus,
-    disableVaultUnlock: mocks.disableVaultUnlock,
+    getManageVaultUnlockAuthOptions: mocks.getManageVaultUnlockAuthOptions,
+    disableVaultUnlockWithProof: mocks.disableVaultUnlockWithProof,
   },
 }));
 
@@ -27,7 +29,8 @@ describe("passkey vault unlock status route", () => {
       prfSupported: true,
       credentialId: "cred-1",
     });
-    mocks.disableVaultUnlock.mockResolvedValue({ success: true });
+    mocks.getManageVaultUnlockAuthOptions.mockResolvedValue({ challenge: "abc" });
+    mocks.disableVaultUnlockWithProof.mockResolvedValue({ success: true });
   });
 
   it("GET returns vault unlock status for passkey", async () => {
@@ -39,12 +42,84 @@ describe("passkey vault unlock status route", () => {
     expect(mocks.getVaultUnlockStatus).toHaveBeenCalledWith("user-1", "db-id-1");
   });
 
-  it("DELETE revokes passkey vault unlock envelope", async () => {
+  it("DELETE without PRF proof is rejected", async () => {
     const { DELETE } = await import("@/app/api/account/passkeys/[id]/vault-unlock/route");
-    const res = await DELETE(new Request("http://localhost"), {
-      params: Promise.resolve({ id: "db-id-1" }),
-    });
+    const res = await DELETE(
+      new Request("http://localhost", { method: "DELETE", body: "{}" }),
+      { params: Promise.resolve({ id: "db-id-1" }) }
+    );
+    expect(res.status).toBe(400);
+    expect(mocks.disableVaultUnlockWithProof).not.toHaveBeenCalled();
+  });
+
+  it("DELETE with PRF proof revokes passkey vault unlock envelope", async () => {
+    const { DELETE } = await import("@/app/api/account/passkeys/[id]/vault-unlock/route");
+    const res = await DELETE(
+      new Request("http://localhost", {
+        method: "DELETE",
+        body: JSON.stringify({
+          prfVaultEnvelope: true,
+          response: { id: "cred-1", response: {}, clientExtensionResults: { prf: { results: { first: "x" } } } },
+        }),
+      }),
+      { params: Promise.resolve({ id: "db-id-1" }) }
+    );
     expect(res.status).toBe(200);
-    expect(mocks.disableVaultUnlock).toHaveBeenCalledWith("user-1", "db-id-1");
+    expect(mocks.disableVaultUnlockWithProof).toHaveBeenCalledWith(
+      "user-1",
+      "db-id-1",
+      expect.objectContaining({ id: "cred-1" })
+    );
+  });
+
+  it("POST disable-options returns management auth options", async () => {
+    const { POST } = await import("@/app/api/account/passkeys/[id]/vault-unlock/route");
+    const res = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({ action: "disable-options" }),
+      }),
+      { params: Promise.resolve({ id: "db-id-1" }) }
+    );
+    expect(res.status).toBe(200);
+    expect(mocks.getManageVaultUnlockAuthOptions).toHaveBeenCalledWith(
+      "user-1",
+      "db-id-1",
+      expect.anything()
+    );
+  });
+
+  it("POST disable-verify revokes passkey vault unlock with PRF proof", async () => {
+    const { POST } = await import("@/app/api/account/passkeys/[id]/vault-unlock/route");
+    const res = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({
+          action: "disable-verify",
+          prfVaultEnvelope: true,
+          response: { id: "cred-1", response: {}, clientExtensionResults: { prf: { results: { first: "x" } } } },
+        }),
+      }),
+      { params: Promise.resolve({ id: "db-id-1" }) }
+    );
+    expect(res.status).toBe(200);
+    expect(mocks.disableVaultUnlockWithProof).toHaveBeenCalled();
+  });
+
+  it("rejects disable-verify when forbidden plaintext fields are present", async () => {
+    const { POST } = await import("@/app/api/account/passkeys/[id]/vault-unlock/route");
+    const res = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({
+          action: "disable-verify",
+          prfVaultEnvelope: true,
+          prfOutput: "secret",
+          response: { id: "cred-1" },
+        }),
+      }),
+      { params: Promise.resolve({ id: "db-id-1" }) }
+    );
+    expect(res.status).toBe(400);
   });
 });

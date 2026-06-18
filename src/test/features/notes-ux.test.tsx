@@ -234,7 +234,7 @@ describe("notes UX", () => {
       expect(screen.getByText("Vault open")).toBeTruthy();
     });
 
-    it("routes locked vault CTA to /vault/unlock", async () => {
+    it("routes locked vault CTA to /vault/unlock with returnTo", async () => {
       const { useRequireVault } = await import("@/features/vault/use-require-vault");
       const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
       vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(false));
@@ -243,7 +243,7 @@ describe("notes UX", () => {
       render(<NotesPage />);
       expect(
         screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")
-      ).toBe("/vault/unlock");
+      ).toBe("/vault/unlock?returnTo=%2Fnotes");
     });
 
     it("shows notes counter", async () => {
@@ -445,7 +445,8 @@ describe("notes UX", () => {
 
     it("shows template picker on new note page", () => {
       render(<NewNotePage />);
-      expect(screen.getByLabelText(/template/i)).toBeTruthy();
+      expect(screen.getByTestId("note-template-picker")).toBeTruthy();
+      expect(screen.getByRole("radio", { name: /prayer/i })).toBeTruthy();
     });
 
     it("sanitizes unsafe markdown preview content", () => {

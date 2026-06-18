@@ -17,7 +17,7 @@
 1. **Account session** — `@tgoliveira/secure-auth`; does not decrypt notes.
 2. **Vault password** — Argon2id envelope wraps User Vault Key (UVK); client-only.
 3. **Recovery phrase** — BIP39 12/24 words; Argon2id envelope wraps UVK; created at setup; replaceable while unlocked.
-4. **Passkey (PRF)** — optional second unlock method; configured on `/vault/recovery` while vault unlocked.
+4. **Passkey (PRF)** — optional vault unlock method; configured on `/vault/settings` while vault unlocked (separate from account passkey sign-in).
 
 Plaintext recovery phrase and UVK **never** leave the browser. APIs accept only encrypted envelopes + KDF metadata.
 
@@ -46,7 +46,7 @@ A configured vault **cannot** be complete without a `recovery_phrase` envelope.
 | `not_configured` | Prompt → CTA `/vault/setup` |
 | `setup_incomplete` | Prompt → CTA `/vault/setup` |
 | `locked` | Prompt → CTA `/vault/unlock` |
-| `unlocked` | Recovery phrase status (dates, length) + **Replace recovery phrase** + passkey setup |
+| `unlocked` | Recovery phrase status (dates, length) + **Replace recovery phrase** + link to vault settings for passkey vault unlock |
 
 No "Do this later" or initial phrase generation on this page — phrase is created at setup.
 

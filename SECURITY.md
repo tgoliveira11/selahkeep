@@ -229,7 +229,9 @@ Safe audit events only (no plaintext letters, recovery codes, keys, or ciphertex
 - Vault envelopes use WebAuthn **PRF** output as key-wrapping key (not raw signature bytes)
 - PRF required for passkey envelopes; **no registration fallback** to device-secret wrapping
 - If PRF is unavailable at registration, passkey vault envelope is **not** created and existing passkey envelopes are **not** revoked
-- Passkey-based vault unlock requires PRF support. If PRF is unavailable, the app must not create a passkey vault envelope and must not present that passkey as a recovery method.
+- PRF diagnostics: `src/lib/passkey/passkey-prf-diagnostics.ts`; audit `docs/PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`
+- Primary UX: `/vault/settings` (not `/vault/recovery`) for enable/test/replace/disable; PRF-unsupported browsers see read-only status and cannot disable/replace without a PRF ceremony proof
+- Vault unlock `returnTo` query param is sanitized (`sanitizeVaultReturnTo`) to internal paths only (`/notes`, `/vault/settings`, `/vault/recovery`, `/settings/account`); disabling passkey vault unlock requires DELETE/POST with verified WebAuthn assertion including PRF client extension results
 - WebAuthn challenges consumed atomically via `consumeValidChallenge()` (`DELETE … RETURNING` with expiry/user/type checks). **`findValidChallenge` is removed** — all flows must use atomic consumption.
 - Indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
 

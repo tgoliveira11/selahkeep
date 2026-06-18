@@ -73,6 +73,8 @@ export function LtgVaultUnlockPanel({
 
   const displayError = mapUnlockError(error);
   const showLegacy = vaultStatus?.hasRecoveryCode ?? false;
+  const passkeyVaultUnlockAvailable =
+    vaultStatus?.availableUnlockMethods?.passkey ?? vaultStatus?.hasPasskey ?? false;
 
   return (
     <Card className="space-y-5 p-6">
@@ -80,13 +82,13 @@ export function LtgVaultUnlockPanel({
         <h2 className="text-lg font-semibold text-[var(--foreground)]">Unlock {PRODUCT_NAME}</h2>
         <p className="text-sm leading-relaxed text-[var(--muted)]">
           Your account is signed in, but your vault stays locked until you enter your vault password
-          or recovery phrase.
+          or recovery phrase. Account passkey sign-in is separate from passkey vault unlock.
         </p>
       </div>
 
       {passkeyNotice && <Alert variant="muted">{passkeyNotice}</Alert>}
 
-      {isLtg && onUnlockPasskey && vaultStatus?.hasPasskey && (
+      {isLtg && onUnlockPasskey && passkeyVaultUnlockAvailable && (
         <Button className="w-full" variant="secondary" disabled={loading} onClick={onUnlockPasskey}>
           {loading ? "Unlocking…" : "Unlock with passkey"}
         </Button>
@@ -169,7 +171,7 @@ export function LtgVaultUnlockPanel({
       {mode === "legacy" && (
         <div className="space-y-3">
           <p className="text-sm text-[var(--muted)]">Legacy recovery code from an earlier setup.</p>
-          {onUnlockLegacyPasskey && vaultStatus?.hasPasskey && (
+          {onUnlockLegacyPasskey && passkeyVaultUnlockAvailable && (
             <Button className="w-full" variant="secondary" disabled={loading} onClick={onUnlockLegacyPasskey}>
               Unlock with passkey
             </Button>

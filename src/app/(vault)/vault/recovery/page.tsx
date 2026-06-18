@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -10,7 +11,6 @@ import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
 import { RecoveryPhraseReplace } from "@/features/recovery/recovery-phrase-replace";
-import { PasskeySetup } from "@/features/recovery/passkey-setup";
 import { getRecoveryStateLabel } from "@/modules/vault/lib/recovery-state-labels";
 
 export default function RecoveryPage() {
@@ -57,7 +57,11 @@ export default function RecoveryPage() {
           title="Recovery options"
           description="Manage ways to unlock your vault on a new device."
         />
-        <VaultStatusPrompt clientStatus={clientStatus} context="recovery" />
+        <VaultStatusPrompt
+          clientStatus={clientStatus}
+          context="recovery"
+          returnTo="/vault/recovery"
+        />
       </PageLayout>
     );
   }
@@ -70,7 +74,7 @@ export default function RecoveryPage() {
     <PageLayout width="medium">
       <PageHeader
         title="Recovery options"
-        description="Manage ways to unlock your vault on a new device."
+        description="Manage your recovery phrase — the primary way to restore vault access on a new device."
       />
 
       <div className="space-y-8">
@@ -102,23 +106,6 @@ export default function RecoveryPage() {
           )}
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Passkey</CardTitle>
-            <CardDescription>
-              Use your device PIN, fingerprint, or face recognition to unlock your vault on a new
-              device — when your browser supports it.
-            </CardDescription>
-          </CardHeader>
-          {userId && (
-            <PasskeySetup
-              userId={userId}
-              hasPasskey={serverStatus?.hasPasskey ?? false}
-              onStatusChange={() => vaultClient.recheck()}
-            />
-          )}
-        </Card>
-
         {hasLegacyRecoveryCode && (
           <Card>
             <CardHeader>
@@ -130,6 +117,16 @@ export default function RecoveryPage() {
               </CardDescription>
             </CardHeader>
           </Card>
+        )}
+
+        {userId && (
+          <p className="text-sm text-[var(--muted)]">
+            Optional: configure{" "}
+            <Link href="/vault/settings" className="text-[var(--primary)] underline">
+              passkey vault unlock
+            </Link>{" "}
+            in vault settings (separate from account passkey sign-in).
+          </p>
         )}
       </div>
     </PageLayout>

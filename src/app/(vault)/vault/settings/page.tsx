@@ -15,6 +15,8 @@ import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
 import { useVaultSettings } from "@/features/notes/use-vault-settings";
 import type { VaultUnlockBehavior } from "@/lib/crypto-client/vault-settings";
 import { applyUnlockBehavior } from "@/features/notes/eager-decrypt-notes";
+import { PasskeyVaultUnlockSetup } from "@/features/passkey/passkey-vault-unlock-setup";
+import { PASSKEY_VAULT_UNLOCK_ACCOUNT_LOGIN_NOTE } from "@/lib/passkey/messages";
 
 const OPTIONS: Array<{
   value: VaultUnlockBehavior;
@@ -96,7 +98,11 @@ export default function VaultSettingsPage() {
           title="Vault settings"
           description="Control how your vault behaves after unlock on this device."
         />
-        <VaultStatusPrompt clientStatus={clientStatus} context="settings" />
+        <VaultStatusPrompt
+          clientStatus={clientStatus}
+          context="settings"
+          returnTo="/vault/settings"
+        />
       </PageLayout>
     );
   }
@@ -125,10 +131,18 @@ export default function VaultSettingsPage() {
           )}
 
           <Card className="space-y-3 border-dashed">
-            <h2 className="font-medium">Recovery and passkey</h2>
+            <h2 className="font-medium">Passkey vault unlock</h2>
+            <p className="text-sm text-[var(--muted)]">{PASSKEY_VAULT_UNLOCK_ACCOUNT_LOGIN_NOTE}</p>
+            {userId && (
+              <PasskeyVaultUnlockSetup userId={userId} vaultUnlocked={vaultUnlocked} />
+            )}
+          </Card>
+
+          <Card className="space-y-3 border-dashed">
+            <h2 className="font-medium">Recovery phrase</h2>
             <p className="text-sm text-[var(--muted)]">
-              Your recovery phrase is created during vault setup. You can replace it or set up
-              passkey vault unlock from the recovery page while your vault is unlocked.
+              Your recovery phrase is created during vault setup. Replace it from the recovery page
+              while your vault is unlocked.
             </p>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Link href="/vault/recovery">

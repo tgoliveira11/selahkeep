@@ -103,14 +103,19 @@ Copy in `src/lib/passkey/messages.ts`. Outcomes stored in `sessionStorage` under
 
 ## 13. Browser / provider limitations
 
-`detectPasskeyPrfSupport()` and `prf-support.ts` gate envelope creation. Safari and some providers may lack PRF — fail closed, no fake envelopes.
+`detectPasskeyPrfSupport()` and `passkey-prf-diagnostics.ts` gate envelope creation. Pre-ceremony `getClientCapabilities()["extension:prf"]` is a hint only — **`unknown` does not block setup**. Post-ceremony `clientExtensionResults.prf` is authoritative. Safari and some providers may lack PRF — fail closed, no fake envelopes. See `docs/PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`.
 
-## 14. Tests proving auth / vault separation
+## 14. Vault settings UX
+
+Primary passkey vault unlock management: `/vault/settings` (`PasskeyVaultUnlockSetup`). States: not configured, configured, unsupported (with diagnostic reason), unknown capability (try allowed). CTAs: Set up, Test, Replace, Disable.
+
+## 15. Tests proving auth / vault separation
 
 - `passkey-login-vault-unlock.test.ts` — verify route stays package-only; vault metadata on separate route
 - `passkey-login-with-vault-unlock.test.ts` — cases A–D client flow
 - `passkey-login-boundary.test.ts` — sign-in vs vault capability labels
 - Security: PRF/UVK never in API payloads (`passkey-vault-plaintext-rejection.test.ts`)
+- PRF diagnostics: `src/test/unit/passkey-prf-diagnostics.test.ts`, `src/test/features/passkey-vault-unlock-settings.test.tsx`
 
 ---
 

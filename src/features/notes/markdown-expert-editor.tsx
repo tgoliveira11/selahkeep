@@ -1,14 +1,11 @@
 "use client";
 
-import { useCallback } from "react";
 import { MarkdownPreview } from "@/components/notes/markdown-preview";
-import { EditorToolbar } from "@/components/notes/editor-toolbar";
 import { Textarea } from "@/components/ui/textarea";
 import {
   applyMarkdownWrap,
   resolveMarkdownShortcut,
   shortcutToWrapAction,
-  type WrapAction,
 } from "@/lib/notes/markdown-actions";
 
 interface MarkdownExpertEditorProps {
@@ -30,28 +27,6 @@ export function MarkdownExpertEditor({
   onSave,
   checklistsDisabled = false,
 }: MarkdownExpertEditorProps) {
-  const applyWrap = useCallback(
-    (action: WrapAction) => {
-      const el = document.getElementById(id) as HTMLTextAreaElement | null;
-      if (!el) return;
-
-      const { next, cursor } = applyMarkdownWrap(
-        value,
-        action,
-        el.selectionStart,
-        el.selectionEnd,
-        maxLength
-      );
-      onChange(next);
-
-      requestAnimationFrame(() => {
-        el.focus();
-        el.setSelectionRange(cursor, cursor);
-      });
-    },
-    [id, maxLength, onChange, value]
-  );
-
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     const shortcut = resolveMarkdownShortcut(event.nativeEvent);
     if (!shortcut) return;
@@ -67,14 +42,24 @@ export function MarkdownExpertEditor({
     const action = shortcutToWrapAction(shortcut);
     if (action) {
       event.preventDefault();
-      applyWrap(action);
+      const el = event.currentTarget;
+      const { next, cursor } = applyMarkdownWrap(
+        value,
+        action,
+        el.selectionStart,
+        el.selectionEnd,
+        maxLength
+      );
+      onChange(next);
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(cursor, cursor);
+      });
     }
   }
 
   return (
-    <div className="space-y-4" data-testid="markdown-expert-editor">
-      <EditorToolbar mode="markdown" onMarkdownAction={applyWrap} />
-
+    <div className="note-editor-markdown-mode" data-testid="markdown-expert-editor">
       <Textarea
         id={id}
         value={value}
@@ -82,20 +67,21 @@ export function MarkdownExpertEditor({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         maxLength={maxLength}
-        rows={12}
-        className="font-mono text-sm"
+        rows={14}
+        className="note-editor-markdown-textarea font-mono text-sm"
         data-testid="markdown-expert-textarea"
+        aria-label="Markdown source"
       />
 
-      <div>
-        <p className="mb-2 text-sm font-medium text-[var(--muted)]">Preview</p>
+      <details className="note-editor-markdown-preview">
+        <summary className="note-editor-markdown-preview__summary">Preview</summary>
         <MarkdownPreview
           markdown={value}
           onMarkdownChange={onChange}
           checklistsDisabled={checklistsDisabled}
-          className="min-h-[8rem] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card-muted)] p-4 text-sm leading-relaxed"
+          className="note-editor-markdown-preview__content prose-note"
         />
-      </div>
+      </details>
     </div>
   );
 }

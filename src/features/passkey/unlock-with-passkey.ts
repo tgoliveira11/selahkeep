@@ -5,7 +5,12 @@ import {
 import { apiClient } from "@/lib/api-client/client";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import {
+  getPasskeyPrfDiagnosticMessage,
+  resolveCeremonyDiagnosticReason,
+} from "@/lib/passkey/passkey-prf-diagnostics";
+import {
   extractPasskeyPrfOutput,
+  PasskeyPrfRequiredError,
   unlockVaultFromPasskeyEnvelope,
 } from "@/lib/crypto-client/passkey-vault";
 import { logPasskeyLoginVaultEvent } from "@/features/passkey/passkey-login-audit";
@@ -52,8 +57,8 @@ export async function unlockVaultWithPasskey(userId: string): Promise<CryptoKey>
       method: "passkey",
       errorCode: error instanceof Error && error.name === "PasskeyPrfRequiredError" ? "prf_required" : "unwrap_failed",
     });
-    if (error instanceof Error && error.name === "PasskeyPrfRequiredError") {
-      throw error;
+    if (error instanceof PasskeyPrfRequiredError) {
+      throw new Error(getPasskeyPrfDiagnosticMessage(resolveCeremonyDiagnosticReason({ prfOutputPresent: false })));
     }
     throw new Error(
       "Could not decrypt your vault with this passkey. Use your vault password or recovery phrase, or set up your passkey again from a PRF-capable browser."

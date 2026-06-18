@@ -4,14 +4,13 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { PasskeySetup } from "@/features/recovery/passkey-setup";
 import {
   PASSKEY_ORPHAN_CREDENTIAL_NOTE,
-  PASSKEY_PRF_UNAVAILABLE_HEADLINE,
   PASSKEY_VAULT_REGISTERED_MESSAGE,
 } from "@/lib/passkey/messages";
 import { USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
   getSessionVaultKey: vi.fn(),
-  detectPasskeyPrfSupport: vi.fn(),
+  probeEnvironment: vi.fn(),
   apiPost: vi.fn(),
   startRegistration: vi.fn(),
   extractPasskeyPrfOutput: vi.fn(),
@@ -23,9 +22,13 @@ vi.mock("@/lib/crypto-client/vault", () => ({
   getSessionVaultKey: mocks.getSessionVaultKey,
 }));
 
-vi.mock("@/lib/passkey/prf-support", () => ({
-  detectPasskeyPrfSupport: mocks.detectPasskeyPrfSupport,
-}));
+vi.mock("@/lib/passkey/passkey-prf-diagnostics", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/passkey/passkey-prf-diagnostics")>();
+  return {
+    ...actual,
+    probePasskeyPrfEnvironmentAsync: mocks.probeEnvironment,
+  };
+});
 
 vi.mock("@/lib/passkey/login-hint", () => ({
   setPasskeyLoginHint: vi.fn(),
@@ -56,11 +59,24 @@ vi.mock("@/lib/passkey/prepare-webauthn-options", () => ({
   prepareRegistrationOptions: (options: unknown) => options,
 }));
 
+function mockEnvironment(overrides: Record<string, unknown> = {}) {
+  return {
+    userAgent: "vitest",
+    secureContext: true,
+    webauthnAvailable: true,
+    credentialsApiAvailable: true,
+    clientCapabilitiesAvailable: true,
+    clientCapabilitiesPrf: null,
+    capabilityProbe: "supported" as const,
+    ...overrides,
+  };
+}
+
 describe("PasskeySetup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getSessionVaultKey.mockReturnValue({} as CryptoKey);
-    mocks.detectPasskeyPrfSupport.mockResolvedValue("supported");
+    mocks.probeEnvironment.mockResolvedValue(mockEnvironment());
     mocks.apiPost
       .mockResolvedValueOnce({ challenge: "reg-challenge" })
       .mockResolvedValueOnce({ verified: true, credentialId: "cred-id" });
@@ -91,16 +107,27 @@ describe("PasskeySetup", () => {
     expect(onStatusChange).toHaveBeenCalled();
   });
 
-  it("does not register when PRF is unsupported before WebAuthn registration", async () => {
-    mocks.detectPasskeyPrfSupport.mockResolvedValue("unsupported");
+  it("shows unsupported diagnostic when PRF capability is explicitly denied", async () => {
+    mocks.probeEnvironment.mockResolvedValue(
+      mockEnvironment({ capabilityProbe: "unsupported", clientCapabilitiesPrf: false })
+    );
 
     render(<PasskeySetup userId={USER_ID} hasPasskey={false} onStatusChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /set up passkey/i }));
 
-    expect(await screen.findByText(PASSKEY_PRF_UNAVAILABLE_HEADLINE)).toBeTruthy();
+    expect(await screen.findByText(/PRF extension is not supported/i)).toBeTruthy();
     expect(mocks.startRegistration).not.toHaveBeenCalled();
     expect(mocks.apiPost).not.toHaveBeenCalled();
     expect(screen.queryByText(PASSKEY_ORPHAN_CREDENTIAL_NOTE)).toBeNull();
+  });
+
+  it("allows ceremony when capability probe is unknown", async () => {
+    mocks.probeEnvironment.mockResolvedValue(mockEnvironment({ capabilityProbe: "unknown" }));
+
+    render(<PasskeySetup userId={USER_ID} hasPasskey={false} onStatusChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /set up passkey/i }));
+
+    await waitFor(() => expect(mocks.startRegistration).toHaveBeenCalled());
   });
 
   it("does not send vault envelope when PRF output is missing after registration", async () => {
@@ -114,7 +141,9 @@ describe("PasskeySetup", () => {
     });
     expect(mocks.wrapVaultKeyForPasskey).not.toHaveBeenCalled();
     expect(mocks.apiPost).toHaveBeenCalledTimes(1);
-    expect(await screen.findByText(PASSKEY_PRF_UNAVAILABLE_HEADLINE)).toBeTruthy();
+    expect(
+      await screen.findByText(/Authentication completed, but your passkey or browser did not return PRF output/i)
+    ).toBeTruthy();
     expect(screen.getByText(PASSKEY_ORPHAN_CREDENTIAL_NOTE)).toBeTruthy();
     expect(screen.queryByText(PASSKEY_VAULT_REGISTERED_MESSAGE)).toBeNull();
   });
@@ -125,17 +154,19 @@ describe("PasskeySetup", () => {
     render(<PasskeySetup userId={USER_ID} hasPasskey={false} onStatusChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /set up passkey/i }));
 
-    expect(await screen.findByText(/passkey setup was cancelled/i)).toBeTruthy();
-    expect(screen.queryByText(PASSKEY_PRF_UNAVAILABLE_HEADLINE)).toBeNull();
+    expect(await screen.findByText(/passkey prompt was dismissed/i)).toBeTruthy();
+    expect(screen.queryByText(/did not return PRF output/i)).toBeNull();
   });
 
   it("does not present passkey as vault recovery when PRF is unavailable", async () => {
-    mocks.detectPasskeyPrfSupport.mockResolvedValue("unsupported");
+    mocks.probeEnvironment.mockResolvedValue(
+      mockEnvironment({ capabilityProbe: "unsupported", clientCapabilitiesPrf: false })
+    );
 
     render(<PasskeySetup userId={USER_ID} hasPasskey={false} onStatusChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /set up passkey/i }));
 
-    await screen.findByText(PASSKEY_PRF_UNAVAILABLE_HEADLINE);
+    await screen.findByText(/PRF extension is not supported/i);
     expect(screen.queryByText(PASSKEY_VAULT_REGISTERED_MESSAGE)).toBeNull();
     expect(mocks.wrapVaultKeyForPasskey).not.toHaveBeenCalled();
   });

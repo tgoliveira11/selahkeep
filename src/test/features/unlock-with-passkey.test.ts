@@ -69,7 +69,7 @@ describe("unlockVaultWithPasskey", () => {
         encryptedVaultKey: { version: "enc-v1" },
         prfRequired: true,
       });
-    await expect(unlockVaultWithPasskey(USER_ID)).rejects.toThrow("PRF support");
+    await expect(unlockVaultWithPasskey(USER_ID)).rejects.toThrow("did not return PRF output");
   });
 
   it("fails when decrypting the passkey envelope fails", async () => {

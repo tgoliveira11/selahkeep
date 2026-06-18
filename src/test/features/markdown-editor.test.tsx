@@ -18,21 +18,30 @@ describe("MarkdownEditor", () => {
     expect(screen.getByTestId("visual-note-editor")).toBeTruthy();
     expect(screen.queryByText("Preview")).toBeNull();
     expect(screen.queryByTestId("markdown-expert-textarea")).toBeNull();
+    expect(screen.getByTestId("note-editor-toolbar")).toBeTruthy();
   });
 
-  it("switches to markdown expert mode with textarea and preview", () => {
+  it("shows editor status bar with visual mode label", () => {
+    render(<MarkdownEditor value="" onChange={vi.fn()} status="unsaved" />);
+    expect(screen.getByTestId("editor-status-bar")).toBeTruthy();
+    expect(screen.getByTestId("editor-status-mode")).toHaveTextContent("Visual editor");
+    expect(screen.getByTestId("editor-status-message")).toHaveTextContent("Unsaved changes");
+  });
+
+  it("switches to markdown expert mode with textarea and collapsible preview", () => {
     const onChange = vi.fn();
     render(<MarkdownEditor value="# Hello" onChange={onChange} id="test-md" />);
     switchToMarkdownMode();
     expect(screen.getByTestId("markdown-expert-textarea")).toBeTruthy();
     expect(screen.getByText("Preview")).toBeTruthy();
     expect(screen.queryByTestId("visual-note-editor")).toBeNull();
+    expect(screen.getByTestId("editor-status-mode")).toHaveTextContent("Markdown source");
   });
 
   it("shows conversion warning when switching to visual with unsupported markdown", () => {
     render(<MarkdownEditor value="### heading" onChange={vi.fn()} id="test-md" />);
     switchToMarkdownMode();
-    fireEvent.click(screen.getByTestId("editor-mode-visual"));
+    fireEvent.click(screen.getByTestId("editor-mode-markdown"));
     expect(screen.getByTestId("editor-conversion-warning")).toBeTruthy();
   });
 
@@ -42,7 +51,7 @@ describe("MarkdownEditor", () => {
     switchToMarkdownMode();
     const textarea = document.getElementById("test-md-bold") as HTMLTextAreaElement;
     textarea.setSelectionRange(0, 4);
-    fireEvent.click(screen.getByRole("button", { name: "Bold" }));
+    fireEvent.click(screen.getByTestId("toolbar-bold"));
     expect(onChange).toHaveBeenCalledWith("**word**");
   });
 
@@ -52,7 +61,7 @@ describe("MarkdownEditor", () => {
     switchToMarkdownMode();
     const textarea = document.getElementById("test-md-code") as HTMLTextAreaElement;
     textarea.setSelectionRange(0, 4);
-    fireEvent.click(screen.getByRole("button", { name: "Code" }));
+    fireEvent.click(screen.getByTestId("toolbar-code"));
     expect(onChange).toHaveBeenCalledWith("`code`");
   });
 
@@ -65,10 +74,18 @@ describe("MarkdownEditor", () => {
     expect(onSave).toHaveBeenCalled();
   });
 
-  it("renders all toolbar actions including Code", () => {
+  it("renders grouped toolbar actions with accessible labels", () => {
     render(<MarkdownEditor value="" onChange={vi.fn()} />);
     for (const label of ["Bold", "Italic", "H1", "H2", "Quote", "List", "Checklist", "Link", "Code"]) {
       expect(screen.getByRole("button", { name: label })).toBeTruthy();
     }
+    expect(screen.getByRole("group", { name: "Headings" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Text formatting" })).toBeTruthy();
+  });
+
+  it("toolbar scroll container avoids page-level overflow class", () => {
+    render(<MarkdownEditor value="" onChange={vi.fn()} />);
+    const toolbar = screen.getByTestId("note-editor-toolbar");
+    expect(toolbar.querySelector(".note-editor-toolbar__scroll")).toBeTruthy();
   });
 });

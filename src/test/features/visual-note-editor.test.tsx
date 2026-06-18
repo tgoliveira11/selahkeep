@@ -4,11 +4,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { VisualNoteEditor } from "@/features/notes/visual-note-editor";
 
 describe("VisualNoteEditor", () => {
-  it("renders visual editor shell and toolbar", () => {
+  it("renders visual editor canvas", () => {
     render(<VisualNoteEditor value="" onChange={vi.fn()} id="visual-test" />);
     expect(screen.getByTestId("visual-note-editor-shell")).toBeTruthy();
     expect(screen.getByTestId("visual-note-editor")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Code" })).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "Note body" })).toBeTruthy();
   });
 
   it("calls onSave for Cmd+S", () => {

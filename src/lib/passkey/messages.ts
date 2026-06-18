@@ -1,5 +1,14 @@
+import {
+  getPasskeyPrfDiagnosticMessage,
+  type PasskeyPrfDiagnosticReason,
+} from "@/lib/passkey/passkey-prf-diagnostics";
+
 export const PASSKEY_PRF_UNAVAILABLE_HEADLINE =
   "This browser or passkey provider does not support vault unlock with passkey. Your vault was not linked to this passkey. Use your vault password or recovery phrase to unlock.";
+
+export function passkeyPrfDiagnosticMessage(reason: PasskeyPrfDiagnosticReason): string {
+  return getPasskeyPrfDiagnosticMessage(reason);
+}
 
 export const PASSKEY_ORPHAN_CREDENTIAL_NOTE =
   "Your device may still show a passkey created by the browser, but it was not registered by this app for vault recovery.";
@@ -42,3 +51,15 @@ export const PASSKEY_UNLOCK_PRF_UNAVAILABLE_MESSAGE =
 
 export const PASSKEY_UNLOCK_DECRYPT_FAILED_MESSAGE =
   "We could not unlock your vault with this passkey. Use your vault password or recovery phrase.";
+
+export const PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE =
+  "Passkey test succeeded. This browser returned PRF output for your vault unlock passkey.";
+
+export const PASSKEY_VAULT_UNLOCK_ACCOUNT_LOGIN_NOTE =
+  "Account passkey sign-in and passkey vault unlock are separate. Signing in does not unlock your vault unless vault unlock is configured here.";
+
+export const PASSKEY_VAULT_UNLOCK_READONLY_HEADLINE =
+  "Passkey vault unlock is enabled, but cannot be managed in this browser.";
+
+export const PASSKEY_VAULT_UNLOCK_READONLY_MESSAGE =
+  "This browser supports passkeys for sign-in, but it does not report PRF support. PRF is required to test, replace, or disable passkey vault unlock. Use a PRF-compatible browser where vault unlock was configured, or unlock with your vault password or recovery phrase.";

@@ -113,6 +113,300 @@ body {
   min-width: 2.75rem;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.note-editor-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+
+.note-editor-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card-muted) 70%, var(--card));
+  padding: 0.5rem;
+}
+
+.note-editor-toolbar__scroll {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.25rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.note-editor-toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.note-editor-toolbar__divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 0.25rem 0.125rem;
+  background: var(--border);
+}
+
+.note-editor-toolbar__btn {
+  display: inline-flex;
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--foreground);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.note-editor-toolbar__btn:hover {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+.note-editor-toolbar__btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.note-editor-toolbar__btn--active {
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+  color: var(--primary);
+}
+
+.note-editor-toolbar__mode {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding-left: 0.25rem;
+  border-left: 1px solid var(--border);
+}
+
+.note-editor-toolbar__mode-btn {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 0 0.65rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.note-editor-toolbar__mode-btn--active {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+  background: color-mix(in srgb, var(--primary) 10%, var(--card));
+  color: var(--primary);
+}
+
+.note-editor-toolbar__mode-label {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .note-editor-toolbar__mode-label {
+    display: inline;
+  }
+}
+
+.note-editor-link-popover {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 5;
+  width: min(18rem, 80vw);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 0.75rem;
+  box-shadow: var(--shadow-md);
+}
+
+.note-editor-link-popover__label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.note-editor-link-popover__form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.note-editor-link-popover__error {
+  font-size: 0.75rem;
+  color: var(--danger);
+}
+
+.note-editor-link-popover__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.note-editor-card__warning {
+  margin: 0.75rem 0.75rem 0;
+}
+
+.note-editor-card__body {
+  padding: 0.75rem;
+}
+
+.note-editor-canvas {
+  min-height: 16rem;
+}
+
+.note-editor-canvas .ProseMirror {
+  min-height: 14rem;
+}
+
+.note-editor-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  border-top: 1px solid var(--border);
+  background: var(--card-muted);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.note-editor-status__mode {
+  color: var(--muted);
+}
+
+.note-editor-status__message {
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+.note-editor-status__message--muted {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.note-editor-markdown-mode {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.note-editor-markdown-textarea {
+  min-height: 14rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+  padding: 0.875rem 1rem;
+  line-height: 1.6;
+}
+
+.note-editor-markdown-preview {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--card-muted) 60%, var(--card));
+}
+
+.note-editor-markdown-preview__summary {
+  cursor: pointer;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.note-editor-markdown-preview__content {
+  border-top: 1px solid var(--border);
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+.note-template-picker {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.note-template-picker__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+}
+
+.note-template-picker__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.note-template-picker__hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.note-template-picker__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.note-template-picker__chip {
+  min-height: 2.25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8125rem;
+  color: var(--foreground);
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.note-template-picker__chip:hover {
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+}
+
+.note-template-picker__chip:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.note-template-picker__chip--selected {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+  background: color-mix(in srgb, var(--primary) 10%, var(--card));
+  color: var(--primary);
+  font-weight: 600;
+}
+
 .prose-note {
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -253,6 +547,11 @@ body {
 .visual-note-editor-content {
   overflow-wrap: anywhere;
   word-break: break-word;
+  min-height: 14rem;
+  padding: 1rem 1.125rem;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--foreground);
 }
 
 .visual-note-editor-content:focus {

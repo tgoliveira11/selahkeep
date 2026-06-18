@@ -450,6 +450,7 @@ export default function NoteDetailPage() {
               id="edit-note-markdown"
               onSave={() => void handleSave()}
               checklistsDisabled={busy}
+              status={busy ? "saving" : dirty ? "unsaved" : "idle"}
             />
           </FormField>
           <div className="flex flex-col gap-3 sm:flex-row">

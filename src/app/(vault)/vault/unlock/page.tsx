@@ -16,14 +16,14 @@ import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
 import { LtgVaultUnlockPanel } from "@/features/vault/ltg-vault-unlock-panel";
 import { VaultUnlockPanel } from "@/features/vault/vault-unlock-panel";
 import { getVaultStatusCopy } from "@/lib/vault/vault-status";
-import { safeNotesReturnTo } from "@/lib/notes/safe-return-to";
+import { sanitizeVaultReturnTo } from "@/lib/notes/safe-return-to";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 export default function VaultUnlockPage() {
   const { status: authStatus } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const afterUnlockPath = safeNotesReturnTo(searchParams.get("returnTo")) ?? "/notes";
+  const afterUnlockPath = sanitizeVaultReturnTo(searchParams.get("returnTo")) ?? "/notes";
   const vaultClient = useVaultClientStatus();
   const {
     loading,

@@ -77,8 +77,9 @@ Production hides `/api-docs` unless `ENABLE_API_DOCS=true` in `.env.local`.
 ## Passkeys (sign-in and vault unlock)
 
 - **Sign in with passkey** on `/login` — phishing-resistant account authentication; does not require TOTP even when 2FA is enabled
-- **Account settings → Passkeys** — register sign-in passkeys (package); **Passkey vault unlock** section enables/disables vault unlock per passkey when vault is unlocked and PRF is supported
-- **Recovery page** — register passkey + PRF vault envelope while vault is unlocked
+- **Account settings → Passkeys** — register sign-in passkeys (package)
+- **`/vault/settings` → Passkey vault unlock** — enable, test, replace, or disable vault unlock per account passkey (requires unlocked vault + WebAuthn PRF)
+- **`/vault/recovery`** — recovery phrase management; optional link to vault settings for passkey vault unlock
 - **Passkey sign-in** may auto-unlock the vault when a compatible PRF envelope exists; otherwise you remain signed in and are guided to `/vault/unlock`
 - Details: [`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`](docs/PASSKEY_LOGIN_VAULT_UNLOCK.md)
 
@@ -236,9 +237,9 @@ Run `npm run db:migrate` after pulling vault schema updates (`0008`–`0011`, in
 Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings`**.
 
 - **Resolved status** — user-facing “resolved” maps to internal encrypted `answered` metadata; icon toggle on list cards and detail view; edit-mode toggle in category fields; filters use resolved/unresolved
-- **Note editor** — visual (WYSIWYG) by default via Tiptap; Markdown remains canonical encrypted body; expert `</>` mode for raw Markdown + preview. Interactive checklists, keyboard shortcuts, sanitized preview in expert mode and read-only view.
+- **Note editor** — polished visual editor card (grouped toolbar, canvas, status) by default via Tiptap; Markdown remains canonical encrypted body; discreet **Markdown** toggle for source + collapsible preview. See `docs/EDITOR_UI_UX_REDESIGN_DECISION.md`.
 - **Notes list** — created + updated dates on every card, sort (last modified/created/title), filtered counter (`4 of 12 notes`), resolved/unresolved badges
-- **Vault indicator** on `/notes` and `/notes/[id]` — open/closed state with real inactivity countdown (`Auto-locks in 14:32`); lock control here only (not top nav); detail unlock CTA preserves `returnTo` for post-unlock navigation
+- **Vault indicator** on `/notes` and `/notes/[id]` — open/closed state with real inactivity countdown (`Auto-locks in 14:32`); lock control here only (not top nav); unlock links preserve safe `returnTo` for post-unlock navigation (`/notes`, `/vault/settings`, `/vault/recovery`, `/settings/account`)
 - **Encrypted local drafts** — autosaved in IndexedDB wrapped by User Vault Key (`note_draft` field); never plaintext
 - **Title required** on `/notes/new` (trimmed, non-empty); still encrypted in metadata at rest
 - **Encrypted metadata** (title, category, tags, answered) + **encrypted body** per note
@@ -297,6 +298,8 @@ Recent passkey-related coverage includes:
 - PRF salt derivation (`src/test/security/passkey-prf.test.ts`)
 - PRF support pre-check (`src/test/unit/prf-support.test.ts`)
 - Passkey setup UX when PRF unavailable (`src/test/features/passkey-setup.test.tsx`)
+- Passkey vault unlock settings (`src/test/features/passkey-vault-unlock-settings.test.tsx`)
+- PRF diagnostics (`src/test/unit/passkey-prf-diagnostics.test.ts`, `docs/PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`)
 - WebAuthn JSON → `ArrayBuffer` conversion for PRF extensions (`src/test/unit/prepare-webauthn-options.test.ts`)
 - Passkey registration/authentication services and routes
 - Passkey removal (`DELETE /api/passkeys`)

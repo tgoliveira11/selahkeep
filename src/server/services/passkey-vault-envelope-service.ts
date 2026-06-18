@@ -21,6 +21,73 @@ import { ChallengeError, NotFoundError } from "@/server/services/passkey-service
 const rpID = getWebAuthnRpId();
 const origins = getWebAuthnOrigins();
 
+function assertPrfInAuthenticationResponse(response: AuthenticationResponseJSON): void {
+  const extensions = response.clientExtensionResults as
+    | { prf?: { results?: { first?: unknown } } }
+    | undefined;
+  if (!extensions?.prf?.results?.first) {
+    throw new ChallengeError(
+      "PRF output is required to manage passkey vault unlock from this browser."
+    );
+  }
+}
+
+async function verifyPasskeyAuthentication(
+  userId: string,
+  credentialDbId: string,
+  response: AuthenticationResponseJSON
+) {
+  const credential = await passkeyRepository.findByIdForUser(credentialDbId, userId);
+  if (!credential) {
+    throw new NotFoundError("Passkey not found");
+  }
+
+  const clientData = JSON.parse(
+    Buffer.from(response.response.clientDataJSON, "base64url").toString()
+  );
+
+  let challengeRecord;
+  try {
+    challengeRecord = await passkeyRepository.consumeValidChallenge(
+      clientData.challenge,
+      "authentication",
+      userId
+    );
+  } catch {
+    throw new ChallengeError("Invalid or expired challenge");
+  }
+
+  if (response.id !== credential.credentialId) {
+    throw new ChallengeError("Passkey mismatch. Try again with the selected passkey.");
+  }
+
+  let verification;
+  try {
+    verification = await verifyAuthenticationResponse({
+      response,
+      expectedChallenge: challengeRecord.challenge,
+      expectedOrigin: origins,
+      expectedRPID: rpID,
+      credential: {
+        id: credential.credentialId,
+        publicKey: new Uint8Array(Buffer.from(credential.publicKey, "base64url")),
+        counter: Number.parseInt(credential.counter, 10) || 0,
+        transports: (credential.transports as AuthenticatorTransport[]) ?? undefined,
+      },
+    });
+  } catch (error) {
+    throw new ChallengeError(toPasskeyVerificationErrorMessage(error));
+  }
+
+  if (!verification.verified) {
+    throw new ChallengeError("Passkey verification failed. Try again.");
+  }
+
+  assertPrfInAuthenticationResponse(response);
+
+  return { credential, verification };
+}
+
 /** Product-only: enable vault unlock on an account passkey registered via @tgoliveira/secure-auth. */
 export const passkeyVaultEnvelopeService = {
   async getVaultUnlockAuthOptions(userId: string, credentialDbId: string, ip?: string) {
@@ -125,6 +192,8 @@ export const passkeyVaultEnvelopeService = {
       throw new ChallengeError("Passkey verification failed. Try again.");
     }
 
+    assertPrfInAuthenticationResponse(response);
+
     await runInTransaction(async (tx) => {
       await passkeyRepository.updateCounter(
         credential.credentialId,
@@ -195,11 +264,51 @@ export const passkeyVaultEnvelopeService = {
     };
   },
 
-  async disableVaultUnlock(userId: string, credentialDbId: string) {
+  async getManageVaultUnlockAuthOptions(userId: string, credentialDbId: string, ip?: string) {
     const credential = await passkeyRepository.findByIdForUser(credentialDbId, userId);
     if (!credential) {
       throw new NotFoundError("Passkey not found");
     }
+    if (!credential.vaultUnlockEnabled) {
+      throw new ChallengeError("Passkey vault unlock is not enabled for this passkey.");
+    }
+
+    await enforceRateLimit({
+      operation: "passkey.authenticate",
+      userId,
+      ip,
+      endpoint: "/api/account/passkeys/vault-unlock-manage",
+    });
+
+    const options = await generateAuthenticationOptions({
+      rpID,
+      allowCredentials: [
+        {
+          id: credential.credentialId,
+          transports: (credential.transports as AuthenticatorTransport[]) ?? undefined,
+        },
+      ],
+      userVerification: "required",
+      extensions: passkeyPrfExtensions(userId),
+    });
+
+    await passkeyRepository.storeChallenge({
+      userId,
+      challenge: options.challenge,
+      type: "authentication",
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+
+    return options;
+  },
+
+  async disableVaultUnlockWithProof(
+    userId: string,
+    credentialDbId: string,
+    response: AuthenticationResponseJSON
+  ) {
+    const { credential } = await verifyPasskeyAuthentication(userId, credentialDbId, response);
+
     if (!credential.vaultUnlockEnabled) {
       throw new ChallengeError("Passkey vault unlock is not enabled for this passkey.");
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { NOTE_TEMPLATES, type NoteTemplateId } from "@/lib/notes/note-templates";
-import { FormField } from "@/components/ui/form-field";
+import { cn } from "@/lib/ui/cn";
 
 interface NoteTemplatePickerProps {
   value: NoteTemplateId;
@@ -11,20 +11,38 @@ interface NoteTemplatePickerProps {
 
 export function NoteTemplatePicker({ value, onChange, disabled }: NoteTemplatePickerProps) {
   return (
-    <FormField id="note-template" label="Template" hint="Optional starter content">
-      <select
-        id="note-template"
-        className="w-full min-h-11 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value as NoteTemplateId)}
+    <div className="note-template-picker" data-testid="note-template-picker">
+      <div className="note-template-picker__header">
+        <p className="note-template-picker__label" id="note-template-label">
+          Template
+        </p>
+        <p className="note-template-picker__hint">Optional starter content</p>
+      </div>
+      <div
+        className="note-template-picker__options"
+        role="radiogroup"
+        aria-labelledby="note-template-label"
       >
-        {NOTE_TEMPLATES.map((template) => (
-          <option key={template.id} value={template.id}>
-            {template.label}
-          </option>
-        ))}
-      </select>
-    </FormField>
+        {NOTE_TEMPLATES.map((template) => {
+          const selected = value === template.id;
+          return (
+            <button
+              key={template.id}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              disabled={disabled}
+              className={cn(
+                "note-template-picker__chip",
+                selected && "note-template-picker__chip--selected"
+              )}
+              onClick={() => onChange(template.id)}
+            >
+              {template.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
