@@ -110,7 +110,7 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 
 - **Search/filters** on `/notes` appear only after at least one category or tag exists; helper copy when none exist.
 - **Vault status dock** (`VaultStatusDock` inside authenticated `Nav` header): collapsed = tiny centered handle (`Vault` or `mm:ss` + chevron); expanded locked = quick password/passkey unlock + **Open full unlock page**; expanded open = compact row with **Lock now**. Recovery phrase only on `/vault/unlock`. Top nav shows only Notes, Vault, Account, Sign out.
-- **New note:** title required; category dropdown only when categories exist; no resolved toggle on create. **Visual editor** default in a unified editor card (grouped toolbar, writing canvas, status bar); discreet **Markdown** toggle for source mode.
+- **New note:** title required; category dropdown only when categories exist; no resolved toggle on create. **Visual editor** default in a unified editor card (grouped toolbar, `+ Insert` quick menu, writing canvas, status bar); discreet **Markdown** toggle for source mode. **14 templates**, **focus mode**, **daily note** action, encrypted local drafts with restore/discard.
 - **Tags:** chip input with normalization; display `#tag`, store `tag` (max 32 chars).
 - **Detail:** title row with resolved/unresolved badge + resolve icon (same as list); category pill without `#`; tag chips with `#`; created + updated dates; interactive checklist toggles in view/edit preview (persist on view via encrypted update).
 - **List:** resolve/unresolve icon button per card (`stopPropagation`, does not navigate); resolved/unresolved badges; created + updated dates (`text-xs`); sort + filtered note counter.

@@ -12,6 +12,11 @@ import {
   type WrapAction,
 } from "@/lib/notes/markdown-actions";
 import { getMarkdownConversionWarning } from "@/lib/notes/markdown-roundtrip";
+import {
+  getQuickInsertSnippet,
+  insertSnippetIntoMarkdown,
+  type QuickInsertId,
+} from "@/lib/notes/quick-insert-snippets";
 
 export type NoteEditorMode = "visual" | "markdown";
 
@@ -62,6 +67,34 @@ export function MarkdownEditor({
     [id, maxLength, onChange, value]
   );
 
+  const applyQuickInsert = useCallback(
+    (insertId: QuickInsertId) => {
+      const snippet = getQuickInsertSnippet(insertId);
+
+      if (mode === "visual" && visualEditor) {
+        visualEditor.chain().focus().insertContent(snippet).run();
+        return;
+      }
+
+      const el = document.getElementById(id) as HTMLTextAreaElement | null;
+      if (!el) return;
+
+      const { next, cursor } = insertSnippetIntoMarkdown(
+        value,
+        snippet,
+        el.selectionStart,
+        el.selectionEnd,
+        maxLength
+      );
+      onChange(next);
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(cursor, cursor);
+      });
+    },
+    [id, maxLength, mode, onChange, value, visualEditor]
+  );
+
   function switchMode() {
     const next: NoteEditorMode = mode === "visual" ? "markdown" : "visual";
     if (next === "visual") {
@@ -79,6 +112,7 @@ export function MarkdownEditor({
           mode={mode}
           editor={mode === "visual" ? visualEditor : null}
           onMarkdownAction={mode === "markdown" ? applyMarkdownAction : undefined}
+          onQuickInsert={applyQuickInsert}
           onModeToggle={switchMode}
         />
 

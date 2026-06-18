@@ -14,6 +14,8 @@ import { FormField } from "@/components/ui/form-field";
 import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
+import type { EditorStatus } from "@/components/notes/editor-status-bar";
+import { NoteFocusModeToggle } from "@/features/notes/note-focus-mode-toggle";
 import { CategoryTagFields } from "@/features/notes/category-tag-fields";
 import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
 import { MarkdownPreview } from "@/components/notes/markdown-preview";
@@ -41,6 +43,7 @@ import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { getCachedNoteBody } from "@/features/notes/eager-decrypt-notes";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
+import { cn } from "@/lib/ui/cn";
 
 function editSnapshot(metadata: NoteMetadataPlaintext, body: string): string {
   return JSON.stringify({
@@ -71,6 +74,9 @@ export default function NoteDetailPage() {
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const [resolving, setResolving] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
   const checklistSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clientStatus =
@@ -101,6 +107,7 @@ export default function NoteDetailPage() {
       updatedAt: new Date().toISOString(),
     };
     await saveEncryptedNoteDraft(vaultUserId, id, draft);
+    setDraftSaved(true);
   }, [body, dirty, id, metadata, vaultUserId]);
 
   useAutosaveTimer(Boolean(vaultUserId && editing && dirty), persistDraft);
@@ -284,6 +291,8 @@ export default function NoteDetailPage() {
       }
       setDraftPrompt(null);
       setEditing(false);
+      setSavedFlash(true);
+      window.setTimeout(() => setSavedFlash(false), 2000);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save");
     }
@@ -391,8 +400,20 @@ export default function NoteDetailPage() {
 
   const displayError = error ?? notesError;
 
+  const editorStatus: EditorStatus = busy
+    ? "saving"
+    : displayError && dirty
+      ? "save-failed"
+      : savedFlash
+        ? "saved"
+        : dirty
+          ? "unsaved"
+          : draftSaved
+            ? "draft-saved"
+            : "idle";
+
   return (
-    <PageLayout>
+    <PageLayout className={cn(editing && focusMode && "note-page--focus")}>
       {backLink}
 
       {draftPrompt && !editing && (
@@ -412,11 +433,16 @@ export default function NoteDetailPage() {
 
       {editing ? (
         <Card className="space-y-5">
-          {dirty && (
-            <p className="text-sm text-[var(--muted)]" role="status">
-              You have unsaved changes.
-            </p>
-          )}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {dirty ? (
+              <p className="text-sm text-[var(--muted)]" role="status">
+                You have unsaved changes.
+              </p>
+            ) : (
+              <span />
+            )}
+            <NoteFocusModeToggle active={focusMode} onToggle={() => setFocusMode((v) => !v)} />
+          </div>
           <FormField id="edit-title" label="Title">
             <Input
               id="edit-title"
@@ -425,19 +451,21 @@ export default function NoteDetailPage() {
               maxLength={200}
             />
           </FormField>
-          <CategoryTagFields
-            mode="edit"
-            categories={categories}
-            tags={tags}
-            categoryId={metadata.categoryId}
-            tagIds={metadata.tagIds}
-            answered={metadata.answered}
-            onCategoryChange={(categoryId) => setMetadata({ ...metadata, categoryId })}
-            onTagIdsChange={(tagIds) => setMetadata({ ...metadata, tagIds })}
-            onAnsweredChange={(answered) => setMetadata({ ...metadata, answered })}
-            onCreateCategory={createCategory}
-            onCreateTag={createTag}
-          />
+          <div className={cn(focusMode && "note-focus-hide")}>
+            <CategoryTagFields
+              mode="edit"
+              categories={categories}
+              tags={tags}
+              categoryId={metadata.categoryId}
+              tagIds={metadata.tagIds}
+              answered={metadata.answered}
+              onCategoryChange={(categoryId) => setMetadata({ ...metadata, categoryId })}
+              onTagIdsChange={(tagIds) => setMetadata({ ...metadata, tagIds })}
+              onAnsweredChange={(answered) => setMetadata({ ...metadata, answered })}
+              onCreateCategory={createCategory}
+              onCreateTag={createTag}
+            />
+          </div>
           <FormField id="edit-body" label="Your note">
             <MarkdownEditor
               value={body}
@@ -445,7 +473,7 @@ export default function NoteDetailPage() {
               id="edit-note-markdown"
               onSave={() => void handleSave()}
               checklistsDisabled={busy}
-              status={busy ? "saving" : dirty ? "unsaved" : "idle"}
+              status={editorStatus}
             />
           </FormField>
           <div className="flex flex-col gap-3 sm:flex-row">

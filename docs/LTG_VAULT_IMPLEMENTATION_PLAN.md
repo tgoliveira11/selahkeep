@@ -4,6 +4,7 @@
 
 **Status:** Phases 0–5 **complete** (historical planning tables retained below for traceability)  
 **Priority Track 1** (Security, Recovery, and Trust): **mostly complete** — `/vault/security` shipped 2026-06-16  
+**Priority Track 2** (Writing Experience and Editor Quality): **mostly complete** — visual editor, drafts, templates, quick insert, focus mode, daily note shipped 2026-06-16  
 **Active routes:** `/notes`, `/api/notes`, `/vault/*` — **letters domain removed**
 
 ---
@@ -844,115 +845,47 @@ CTA: **Manage passkey vault unlock** → `/vault/settings`.
 
 ### Priority Track 2 — Writing Experience and Editor Quality
 
+**Track status:** **Mostly complete** on `main` (2026-06-16). See `docs/EDITOR_EXPERIENCE_TRACK_2_IMPLEMENTATION.md`.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Polished Visual Editor | ✅ Done | Tiptap 3 default; Markdown toggle |
+| Save and Draft Status | ✅ Done | `EditorStatusBar` incl. save-failed |
+| Encrypted Local Drafts | ✅ Done | IndexedDB AES-GCM (`note-drafts.ts`) |
+| Expanded Note Templates | ✅ Done | 14 local templates |
+| Quick Insert Menu | ✅ Done | `+ Insert` toolbar menu |
+| Focus Mode | ✅ Done | Toggle on new/edit pages |
+| Daily Note | ✅ Done | `/notes` → index lookup or `?daily=1` |
+
 These items improve the core daily-use experience.
 
-#### Polished Visual Editor
+#### Polished Visual Editor ✅
 
-The visual editor should continue to evolve into a polished writing surface inspired by familiar tools such as Google Docs, Microsoft Word, Notion, Apple Notes, Bear, and Craft, without copying them directly.
+Tiptap 3 visual editor is default on `/notes/new` and edit mode. Markdown/source via toolbar toggle. Canonical body format remains Markdown (encrypted client-side). Compact toolbar, purple SelahKeep styling, sanitized paste/preview.
 
-Desired qualities:
+#### Save and Draft Status ✅
 
-- visual editing by default;
-- Markdown/source mode as an advanced option;
-- compact and accessible toolbar;
-- beautiful typography;
-- mobile-friendly layout;
-- preserved Markdown canonical storage;
-- sanitized rendering;
-- encrypted persistence.
+States: Saved, Saving…, Unsaved changes, Draft saved on this device, Save failed. Status reflects encrypted persistence only.
 
-This is one of the highest-impact product areas because the editor is the core user experience.
+#### Better Encrypted Local Drafts ✅
 
-#### Save and Draft Status
+Encrypted IndexedDB drafts; restore/discard UX; cleared on successful save. No plaintext at rest.
 
-Improve the editor status indicators.
+#### Note Templates ✅
 
-Potential states:
+14 local templates (Blank through Goal). Selector on new note; replace confirmation when content exists.
 
-- Saved
-- Saving...
-- Unsaved changes
-- Draft saved on this device
-- Save failed
+#### Quick Insert Menu ✅
 
-The status must reflect real encrypted persistence. The app must not claim a note is saved before encrypted storage succeeds.
+`+ Insert` menu: heading, checklist, quote, divider, prayer section, gratitude list, decision block, reflection section, action items.
 
-#### Better Encrypted Local Drafts
+#### Focus Mode ✅
 
-If not already fully implemented, persistent drafts should be encrypted locally before storage.
+Distraction-free toggle hides non-essential chrome; save/status and vault dock remain available.
 
-Requirements:
+#### Daily Note ✅
 
-- no plaintext note body, title, tags, category, or metadata in localStorage, sessionStorage, or IndexedDB;
-- drafts restored only after vault unlock;
-- draft deletion after successful save;
-- explicit restore/discard UX.
-
-If encrypted persistent drafts are not feasible in the short term, use session-only drafts and document the limitation.
-
-#### Note Templates
-
-Expand templates beyond the initial set.
-
-Possible templates:
-
-- Blank note
-- Prayer
-- Reflection
-- Gratitude
-- Decision
-- Checklist
-- Journal
-- Sermon Notes
-- Bible Study
-- Confession
-- Anxiety Dump
-- Dream
-- Meeting Notes
-- Goal
-
-Templates should remain local starter content only. They should not require a server-side template table in the near term.
-
-#### Quick Insert Menu
-
-Add a lightweight insert menu inside the editor.
-
-Possible blocks:
-
-- Heading
-- Checklist
-- Quote
-- Divider
-- Prayer section
-- Gratitude list
-- Decision block
-
-This should remain simple and should not become a complex block editor unless a future ADR approves that direction.
-
-#### Focus Mode
-
-Add a distraction-free writing mode.
-
-Possible behavior:
-
-- hide navigation/sidebar/filter UI;
-- center the editor;
-- preserve save/draft status;
-- keep the vault auto-lock visible but subtle;
-- allow easy exit.
-
-This would fit the reflective nature of SelahKeep.
-
-#### Daily Note
-
-Add a “New daily note” action.
-
-Possible behavior:
-
-- creates a note for today;
-- uses a daily reflection template;
-- optionally reopens the existing note for the same day;
-- stores everything as encrypted note content/metadata.
+**New daily note** on `/notes` opens `Daily note — YYYY-MM-DD` from decrypted index or creates draft with Journal template.
 
 ---
 

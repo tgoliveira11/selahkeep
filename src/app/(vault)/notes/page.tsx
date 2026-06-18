@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -32,9 +33,11 @@ import {
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { NotesWelcome } from "@/features/vault/notes-welcome";
+import { findDailyNoteIdForDate } from "@/lib/notes/daily-note";
 
 export default function NotesPage() {
   const vault = useRequireVault();
+  const router = useRouter();
   const vaultClient = useVaultClientStatus();
   const vaultUserId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
@@ -106,6 +109,16 @@ export default function NotesPage() {
     [index?.entries, mutateIndex, toggleNoteResolved]
   );
 
+  const openDailyNote = useCallback(() => {
+    if (!index) return;
+    const existingId = findDailyNoteIdForDate(index.entries);
+    if (existingId) {
+      router.push(`/notes/${existingId}`);
+      return;
+    }
+    router.push("/notes/new?daily=1");
+  }, [index, router]);
+
   if (vault.status === "loading" || vault.status === "redirecting" || vaultClient.status === "loading" || loading) {
     return (
       <PageLayout>
@@ -154,9 +167,20 @@ export default function NotesPage() {
         title="Notes"
         description="Private encrypted notes — prayers, reflections, and journaling in one vault."
         action={
-          <Link href="/notes/new">
-            <Button className="w-full sm:w-auto">New note</Button>
-          </Link>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full sm:w-auto"
+              data-testid="new-daily-note"
+              onClick={openDailyNote}
+            >
+              New daily note
+            </Button>
+            <Link href="/notes/new">
+              <Button className="w-full sm:w-auto">New note</Button>
+            </Link>
+          </div>
         }
       />
 

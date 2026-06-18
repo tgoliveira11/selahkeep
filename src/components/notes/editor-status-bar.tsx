@@ -1,9 +1,12 @@
+import { cn } from "@/lib/ui/cn";
+
 export type EditorStatus =
   | "idle"
   | "unsaved"
   | "saving"
   | "saved"
-  | "draft-saved";
+  | "draft-saved"
+  | "save-failed";
 
 interface EditorStatusBarProps {
   status: EditorStatus;
@@ -16,6 +19,7 @@ const STATUS_COPY: Record<EditorStatus, string | null> = {
   saving: "Saving…",
   saved: "Saved",
   "draft-saved": "Draft saved on this device",
+  "save-failed": "Save failed",
 };
 
 export function EditorStatusBar({ status, mode }: EditorStatusBarProps) {
@@ -33,7 +37,13 @@ export function EditorStatusBar({ status, mode }: EditorStatusBarProps) {
         {modeLabel}
       </span>
       {message ? (
-        <span className="note-editor-status__message" data-testid="editor-status-message">
+        <span
+          className={cn(
+            "note-editor-status__message",
+            status === "save-failed" && "note-editor-status__message--danger"
+          )}
+          data-testid="editor-status-message"
+        >
           {message}
         </span>
       ) : (

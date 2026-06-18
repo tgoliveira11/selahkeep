@@ -20,6 +20,11 @@ import {
   IconMarkdown,
   IconQuote,
 } from "@/components/notes/editor-toolbar-icons";
+import { EditorQuickInsert } from "@/components/notes/editor-quick-insert";
+import {
+  getQuickInsertSnippet,
+  type QuickInsertId,
+} from "@/lib/notes/quick-insert-snippets";
 import type { NoteEditorMode } from "@/features/notes/markdown-editor";
 
 export const EDITOR_TOOLBAR_ACTIONS = [
@@ -150,10 +155,17 @@ interface EditorToolbarProps {
   mode: NoteEditorMode;
   editor?: Editor | null;
   onMarkdownAction?: (action: WrapAction) => void;
+  onQuickInsert?: (id: QuickInsertId) => void;
   onModeToggle?: () => void;
 }
 
-export function EditorToolbar({ mode, editor, onMarkdownAction, onModeToggle }: EditorToolbarProps) {
+export function EditorToolbar({
+  mode,
+  editor,
+  onMarkdownAction,
+  onQuickInsert,
+  onModeToggle,
+}: EditorToolbarProps) {
   const [linkOpen, setLinkOpen] = useState(false);
 
   function handleAction(label: ToolbarActionLabel) {
@@ -200,6 +212,23 @@ export function EditorToolbar({ mode, editor, onMarkdownAction, onModeToggle }: 
         </div>
         <ToolbarDivider />
         <div className="note-editor-toolbar__group" role="group" aria-label="Insert">
+          <EditorQuickInsert
+            onSelect={(id) => {
+              if (onQuickInsert) {
+                onQuickInsert(id);
+                return;
+              }
+              if (mode === "markdown" && onMarkdownAction) {
+                const snippet = getQuickInsertSnippet(id);
+                onMarkdownAction({
+                  label: "Quick insert",
+                  prefix: snippet,
+                  suffix: "",
+                  block: true,
+                });
+              }
+            }}
+          />
           {renderGroup(INSERT_ACTIONS)}
         </div>
         {linkOpen && mode === "visual" && editor ? (

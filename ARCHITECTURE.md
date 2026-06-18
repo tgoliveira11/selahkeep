@@ -133,7 +133,7 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 - **Vault security review:** `/vault/security` — health summary, protection indicators, local recovery phrase drill (`verifyRecoveryPhraseDrill`), passkey compatibility guide, safe audit event log (`GET/POST /api/vault/security-events`); see `docs/VAULT_SECURITY_REVIEW_IMPLEMENTATION.md`
 - **Vault unlock:** `VaultDockQuickUnlock` in `VaultStatusDock` (vault password + passkey PRF when available); full `LtgVaultUnlockPanel` on `/vault/unlock` (password, recovery phrase, passkey PRF). Dock links to full page for recovery/fallback; no duplicate unlock form on `/vault/unlock`. Collapsed handle shows `Vault` or countdown; expanded open state is compact with **Lock now**; auto-collapse via `useVaultDockDismiss`.
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + **purple** primary)
-- **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview; visual note editor (Tiptap) with Markdown canonical storage — see [`docs/EDITOR_IMPLEMENTATION_DECISION.md`](./docs/EDITOR_IMPLEMENTATION_DECISION.md) and [`docs/EDITOR_UI_UX_REDESIGN_DECISION.md`](./docs/EDITOR_UI_UX_REDESIGN_DECISION.md); tag normalization before encrypted index write
+- **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview; visual note editor (Tiptap) with Markdown canonical storage — see [`docs/EDITOR_EXPERIENCE_TRACK_2_IMPLEMENTATION.md`](./docs/EDITOR_EXPERIENCE_TRACK_2_IMPLEMENTATION.md); encrypted IndexedDB drafts; quick insert, focus mode, daily note; tag normalization before encrypted index write
 
 ## AAD binding (ADR-005)
 

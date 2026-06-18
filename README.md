@@ -240,7 +240,7 @@ Run `npm run db:migrate` after pulling vault schema updates (`0008`–`0011`, in
 Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings`**, **`/vault/security`**.
 
 - **Resolved status** — user-facing “resolved” maps to internal encrypted `answered` metadata; icon toggle on list cards and detail view; edit-mode toggle in category fields; filters use resolved/unresolved
-- **Note editor** — polished visual editor card (grouped toolbar, canvas, status) by default via Tiptap; Markdown remains canonical encrypted body; discreet **Markdown** toggle for source + collapsible preview. See `docs/EDITOR_UI_UX_REDESIGN_DECISION.md`.
+- **Note editor** — polished visual editor card (grouped toolbar, canvas, status) by default via Tiptap; Markdown remains canonical encrypted body; discreet **Markdown** toggle for source + collapsible preview. **Quick insert**, **focus mode**, **14 templates**, **daily note**, encrypted local drafts, and save/draft status. See `docs/EDITOR_EXPERIENCE_TRACK_2_IMPLEMENTATION.md`.
 - **Notes list** — created + updated dates on every card, sort (last modified/created/title), filtered counter (`4 of 12 notes`), resolved/unresolved badges
 - **Vault indicator** on `/notes` and `/notes/[id]` — open/closed state with real inactivity countdown (`Auto-locks in 14:32`); lock control here only (not top nav); unlock links preserve safe `returnTo` for post-unlock navigation (`/notes`, `/vault/settings`, `/vault/recovery`, `/settings/account`)
 - **Encrypted local drafts** — autosaved in IndexedDB wrapped by User Vault Key (`note_draft` field); never plaintext

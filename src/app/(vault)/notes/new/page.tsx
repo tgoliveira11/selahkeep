@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
+import type { EditorStatus } from "@/components/notes/editor-status-bar";
+import { NoteFocusModeToggle } from "@/features/notes/note-focus-mode-toggle";
 import { CategoryTagFields } from "@/features/notes/category-tag-fields";
 import { NoteTemplatePicker } from "@/features/notes/note-template-picker";
 import { useCategoriesTags } from "@/features/notes/use-categories-tags";
@@ -30,7 +32,13 @@ import {
   saveEncryptedNoteDraft,
   type NoteDraftPlaintext,
 } from "@/lib/crypto-client/note-drafts";
-import { getNoteTemplate, type NoteTemplateId } from "@/lib/notes/note-templates";
+import {
+  DAILY_NOTE_TEMPLATE_ID,
+  getNoteTemplate,
+  type NoteTemplateId,
+} from "@/lib/notes/note-templates";
+import { formatDailyNoteTitle } from "@/lib/notes/daily-note";
+import { cn } from "@/lib/ui/cn";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { VaultAccessGate } from "@/features/vault/vault-access-gate";
 
@@ -46,11 +54,18 @@ const EMPTY_FORM = {
 export default function NewNotePage() {
   const vault = useRequireVault();
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
+  const searchParams = useSearchParams();
+  const isDailyNote = searchParams.get("daily") === "1";
+  const [focusMode, setFocusMode] = useState(false);
+  const [title, setTitle] = useState(() => (isDailyNote ? formatDailyNoteTitle() : ""));
+  const [body, setBody] = useState(() =>
+    isDailyNote ? getNoteTemplate(DAILY_NOTE_TEMPLATE_ID).body : ""
+  );
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [tagIds, setTagIds] = useState<string[]>([]);
-  const [templateId, setTemplateId] = useState<NoteTemplateId>("blank");
+  const [templateId, setTemplateId] = useState<NoteTemplateId>(() =>
+    isDailyNote ? DAILY_NOTE_TEMPLATE_ID : "blank"
+  );
   const [titleError, setTitleError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [draftPrompt, setDraftPrompt] = useState<NoteDraftPlaintext | null>(null);
@@ -220,15 +235,34 @@ export default function NewNotePage() {
 
   const displayError = error ?? notesError;
 
+  const editorStatus: EditorStatus = busy
+    ? "saving"
+    : displayError && dirty
+      ? "save-failed"
+      : dirty
+        ? "unsaved"
+        : draftSaved
+          ? "draft-saved"
+          : "idle";
+
   return (
-    <PageLayout>
+    <PageLayout className={cn(focusMode && "note-page--focus")}>
       <PageHeader
         title="New note"
-        description="Write your note. It is encrypted before it leaves this device."
+        description={
+          focusMode
+            ? undefined
+            : "Write your note. It is encrypted before it leaves this device."
+        }
+        action={
+          <NoteFocusModeToggle active={focusMode} onToggle={() => setFocusMode((v) => !v)} />
+        }
       />
 
       <Card className="space-y-6">
-        <PrivacyNotice compact />
+        <div className={cn(focusMode && "note-focus-hide")}>
+          <PrivacyNotice compact />
+        </div>
 
         {draftPrompt && (
           <Alert variant="info" role="status">
@@ -272,8 +306,11 @@ export default function NewNotePage() {
               </p>
             )}
           </FormField>
-          <NoteTemplatePicker value={templateId} onChange={applyTemplate} disabled={busy} />
-          <CategoryTagFields
+          <div className={cn(focusMode && "note-focus-hide")}>
+            <NoteTemplatePicker value={templateId} onChange={applyTemplate} disabled={busy} />
+          </div>
+          <div className={cn(focusMode && "note-focus-hide")}>
+            <CategoryTagFields
             mode="create"
             categories={categories}
             tags={tags}
@@ -283,15 +320,14 @@ export default function NewNotePage() {
             onTagIdsChange={setTagIds}
             onCreateCategory={createCategory}
             onCreateTag={createTag}
-          />
+            />
+          </div>
           <FormField id="note-body" label="Your note">
             <MarkdownEditor
               value={body}
               onChange={setBody}
               onSave={() => void handleSubmit()}
-              status={
-                busy ? "saving" : dirty ? "unsaved" : draftSaved ? "draft-saved" : "idle"
-              }
+              status={editorStatus}
             />
           </FormField>
           {displayError && (

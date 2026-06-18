@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { NOTE_TEMPLATES, getNoteTemplate } from "@/lib/notes/note-templates";
+import { NOTE_TEMPLATES, getNoteTemplate, REQUIRED_TEMPLATE_IDS } from "@/lib/notes/note-templates";
 import { RESOLVED_COPY, isNoteResolved } from "@/lib/notes/resolved-labels";
 
 describe("note templates", () => {
-  it("includes required starter templates", () => {
+  it("includes all required starter templates", () => {
     const ids = NOTE_TEMPLATES.map((t) => t.id);
-    expect(ids).toEqual(["blank", "prayer", "reflection", "gratitude", "decision", "checklist"]);
+    expect(ids).toEqual(REQUIRED_TEMPLATE_IDS);
+    expect(ids).toHaveLength(14);
   });
 
   it("prayer template includes markdown headings", () => {
