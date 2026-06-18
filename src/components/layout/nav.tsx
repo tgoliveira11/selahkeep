@@ -15,6 +15,7 @@ import {
 } from "@/lib/navigation/logged-in-nav";
 import { cn } from "@/lib/ui/cn";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
+import { VaultStatusDock } from "@/features/vault/vault-status-dock";
 
 export function Nav() {
   const { data: session } = useSession();
@@ -42,7 +43,12 @@ export function Nav() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-sm)]">
+    <header
+      className={cn(
+        "bg-[var(--card)] border-b border-[var(--border)]",
+        session && "authenticated-header"
+      )}
+    >
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
         <Link
           href={session ? "/notes" : "/"}
@@ -185,6 +191,7 @@ export function Nav() {
           </div>
         </nav>
       )}
+      {session ? <VaultStatusDock /> : null}
     </header>
   );
 }

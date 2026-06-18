@@ -47,9 +47,10 @@ describe("notes pages", () => {
     });
   });
 
-  it("renders notes list with vault locked message", async () => {
+  it("renders notes list with protected message when vault is locked", async () => {
     render(<NotesPage />);
     expect(await screen.findByText("Notes")).toBeTruthy();
-    expect(screen.getByText("Vault closed")).toBeTruthy();
+    expect(screen.getByTestId("notes-vault-protected-message")).toBeTruthy();
+    expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
   });
 });

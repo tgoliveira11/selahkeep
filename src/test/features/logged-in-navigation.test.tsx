@@ -28,9 +28,36 @@ vi.mock("@/features/vault/use-vault-client-status", () => ({
     status: "ready",
     clientStatus: "locked",
     setupPhase: "complete",
-    serverStatus: { initialized: true, setupPhase: "complete" },
+    serverStatus: {
+      initialized: true,
+      setupPhase: "complete",
+      setupComplete: true,
+      vaultVersion: "vault-v2",
+      ltgSetupComplete: true,
+      hasVaultPassword: true,
+      availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: false },
+    },
     recheck: vi.fn(),
   })),
+}));
+
+vi.mock("@/features/vault/use-vault", () => ({
+  useVault: vi.fn(() => ({
+    loading: false,
+    error: null,
+    unlockFromPasskey: vi.fn(),
+    unlockFromRecoveryCode: vi.fn(),
+    unlockFromVaultPassword: vi.fn(),
+    unlockFromRecoveryPhrase: vi.fn(),
+    lockVault: vi.fn(),
+  })),
+}));
+
+vi.mock("@/lib/crypto-client/vault-session", () => ({
+  subscribeVaultSession: vi.fn(() => () => {}),
+  subscribeVaultActivityTimer: vi.fn(() => () => {}),
+  getVaultAutoLockRemainingMs: vi.fn(() => 14 * 60 * 1000 + 32 * 1000),
+  lockVaultSession: vi.fn(),
 }));
 
 describe("logged-in navigation", () => {
@@ -81,7 +108,7 @@ describe("logged-in navigation", () => {
     expect(within(header).queryByRole("link", { name: /^write$/i })).toBeNull();
   });
 
-  it("does not show vault lock or status controls in the header when signed in", async () => {
+  it("shows vault status bar below header when signed in and locked", async () => {
     const { useSession } = await import("next-auth/react");
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useSession).mockReturnValue({
@@ -93,7 +120,54 @@ describe("logged-in navigation", () => {
       status: "ready",
       clientStatus: "locked",
       setupPhase: "complete",
-      serverStatus: { initialized: true, setupPhase: "complete" },
+      serverStatus: {
+        initialized: true,
+        setupPhase: "complete",
+        setupComplete: true,
+        vaultVersion: "vault-v2",
+        ltgSetupComplete: true,
+        hasVaultPassword: true,
+        availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: false },
+      },
+      recheck: vi.fn(),
+    });
+
+    render(
+      <SiteShell>
+        <HomePage />
+      </SiteShell>
+    );
+
+    const header = screen.getByRole("banner");
+    const handle = within(header).getByTestId("vault-status-dock-handle");
+    expect(within(header).queryByRole("link", { name: /unlock vault/i })).toBeNull();
+    expect(within(handle).getByText("Vault")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
+    const dock = screen.getByTestId("vault-status-dock");
+    expect(within(dock).getByLabelText(/vault password/i)).toBeTruthy();
+  });
+
+  it("does not show vault lock controls in header when signed in", async () => {
+    const { useSession } = await import("next-auth/react");
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    vi.mocked(useSession).mockReturnValue({
+      data: { user: { id: "user-1", email: "user@example.com" } },
+      status: "authenticated",
+      update: vi.fn(),
+    });
+    vi.mocked(useVaultClientStatus).mockReturnValue({
+      status: "ready",
+      clientStatus: "locked",
+      setupPhase: "complete",
+      serverStatus: {
+        initialized: true,
+        setupPhase: "complete",
+        setupComplete: true,
+        vaultVersion: "vault-v2",
+        ltgSetupComplete: true,
+        hasVaultPassword: true,
+        availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: false },
+      },
       recheck: vi.fn(),
     });
 
@@ -112,7 +186,7 @@ describe("logged-in navigation", () => {
     expect(within(header).queryByText(/setup incomplete/i)).toBeNull();
   });
 
-  it("does not show vault lock controls when vault is unlocked", async () => {
+  it("shows lock now in status bar when vault is unlocked", async () => {
     const { useSession } = await import("next-auth/react");
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useSession).mockReturnValue({
@@ -124,7 +198,52 @@ describe("logged-in navigation", () => {
       status: "ready",
       clientStatus: "unlocked",
       setupPhase: "complete",
-      serverStatus: { initialized: true, setupPhase: "complete" },
+      serverStatus: {
+        initialized: true,
+        setupPhase: "complete",
+        setupComplete: true,
+        vaultVersion: "vault-v2",
+        ltgSetupComplete: true,
+        hasVaultPassword: true,
+        availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: false },
+      },
+      recheck: vi.fn(),
+    });
+
+    render(
+      <SiteShell>
+        <HomePage />
+      </SiteShell>
+    );
+
+    const header = screen.getByRole("banner");
+    expect(within(header).queryByRole("button", { name: /lock vault/i })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
+    const dock = screen.getByTestId("vault-status-dock");
+    expect(within(dock).getByRole("button", { name: /lock now/i })).toBeTruthy();
+  });
+
+  it("does not show vault lock controls in header when vault is unlocked", async () => {
+    const { useSession } = await import("next-auth/react");
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    vi.mocked(useSession).mockReturnValue({
+      data: { user: { id: "user-1", email: "user@example.com" } },
+      status: "authenticated",
+      update: vi.fn(),
+    });
+    vi.mocked(useVaultClientStatus).mockReturnValue({
+      status: "ready",
+      clientStatus: "unlocked",
+      setupPhase: "complete",
+      serverStatus: {
+        initialized: true,
+        setupPhase: "complete",
+        setupComplete: true,
+        vaultVersion: "vault-v2",
+        ltgSetupComplete: true,
+        hasVaultPassword: true,
+        availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: false },
+      },
       recheck: vi.fn(),
     });
 

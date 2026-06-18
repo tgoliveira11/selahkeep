@@ -84,11 +84,11 @@ Account auth UI comes from `@tgoliveira/secure-auth/react`. Style integration po
 
 See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 
-- **Primary (signed in):** Notes · Vault · Account
-- **Conditional vault action:** Set up vault / Continue setup / Unlock vault / Lock vault — driven by vault client status
+- **Primary (signed in):** Notes · Vault · Account · Sign out (no vault lock/status in header)
+- **Global vault status dock:** narrow compact popover (`max-width: 480px`) on authenticated header; collapsed handle (`Vault` when locked, `mm:ss` when open); expanded locked = `VaultDockQuickUnlock` (password + passkey PRF when available) + **Open full unlock page** (recovery phrase on full page); expanded open = single compact row + **Lock now**. No duplicate unlock form on `/vault/unlock`.
 - **Brand mark:** Purple SK monogram in header and favicon (no green envelope)
 - **Account vs vault:** `/settings/account` = sign-in security; `/vault/*` = note encryption protection
-- Footer attribution unchanged; vault status badge in header (`Vault not set up`, `Setup incomplete`, `Vault locked`, `Vault unlocked`)
+- Footer attribution unchanged
 
 ### Vault status prompts
 
@@ -96,13 +96,13 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 |--------|-------------------|----------|
 | `not_configured` | Set up your vault → `/vault/setup` | Same |
 | `setup_incomplete` | Complete your vault setup → `/vault/setup` | Same |
-| `locked` | Unlock your vault → `/vault/unlock` | Same |
-| `unlocked` | Unlock behavior settings | Notes list + sort/counter/filters; vault open indicator with auto-lock countdown on `/notes` and `/notes/[id]` |
+| `locked` | Unlock via dock inline or `/vault/unlock` | Same |
+| `unlocked` | Unlock behavior settings | Notes list + sort/counter/filters; dock shows open state + auto-lock countdown |
 
 ### `/notes`, `/notes/new`, `/notes/[id]`
 
 - **Search/filters** on `/notes` appear only after at least one category or tag exists; helper copy when none exist.
-- **Vault indicator** on `/notes` and `/notes/[id]`: **Vault closed** + unlock CTA when locked (detail hides decrypted title/body/metadata); **Vault open** + inactivity countdown + **Lock vault** when unlocked. Top nav shows only Notes, Vault, Account, Sign out (no vault lock/status badges).
+- **Vault status dock** (`VaultStatusDock` inside authenticated `Nav` header): collapsed = tiny centered handle (`Vault` or `mm:ss` + chevron); expanded locked = quick password/passkey unlock + **Open full unlock page**; expanded open = compact row with **Lock now**. Recovery phrase only on `/vault/unlock`. Top nav shows only Notes, Vault, Account, Sign out.
 - **New note:** title required; category dropdown only when categories exist; no resolved toggle on create. **Visual editor** default in a unified editor card (grouped toolbar, writing canvas, status bar); discreet **Markdown** toggle for source mode.
 - **Tags:** chip input with normalization; display `#tag`, store `tag` (max 32 chars).
 - **Detail:** title row with resolved/unresolved badge + resolve icon (same as list); category pill without `#`; tag chips with `#`; created + updated dates; interactive checklist toggles in view/edit preview (persist on view via encrypted update).

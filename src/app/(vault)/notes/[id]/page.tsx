@@ -18,7 +18,7 @@ import { CategoryTagFields } from "@/features/notes/category-tag-fields";
 import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
 import { MarkdownPreview } from "@/components/notes/markdown-preview";
 import { NoteResolvedToggle } from "@/components/notes/note-resolved-toggle";
-import { NotesVaultIndicator } from "@/features/notes/notes-vault-indicator";
+import { NotesVaultProtectedMessage } from "@/features/notes/notes-vault-protected-message";
 import { useCategoriesTags } from "@/features/notes/use-categories-tags";
 import { useNotes } from "@/features/notes/use-notes";
 import {
@@ -58,8 +58,6 @@ export default function NoteDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-  const noteReturnTo = `/notes/${id}`;
-
   const [metadata, setMetadata] = useState<NoteMetadataPlaintext | null>(null);
   const [body, setBody] = useState("");
   const [wrappedKey, setWrappedKey] = useState<EncryptedPayload | null>(null);
@@ -368,7 +366,7 @@ export default function NoteDetailPage() {
     return (
       <PageLayout>
         {backLink}
-        <NotesVaultIndicator clientStatus={clientStatus} returnTo={noteReturnTo} />
+        {clientStatus === "locked" && <NotesVaultProtectedMessage />}
       </PageLayout>
     );
   }
@@ -377,7 +375,7 @@ export default function NoteDetailPage() {
     return (
       <PageLayout>
         {backLink}
-        <NotesVaultIndicator clientStatus="locked" returnTo={noteReturnTo} />
+        <NotesVaultProtectedMessage />
       </PageLayout>
     );
   }
@@ -386,7 +384,6 @@ export default function NoteDetailPage() {
     return (
       <PageLayout>
         {backLink}
-        {clientStatus && <NotesVaultIndicator clientStatus={clientStatus} />}
         <LoadingState label="Opening your note" />
       </PageLayout>
     );
@@ -397,8 +394,6 @@ export default function NoteDetailPage() {
   return (
     <PageLayout>
       {backLink}
-
-      {clientStatus && <NotesVaultIndicator clientStatus={clientStatus} returnTo={noteReturnTo} />}
 
       {draftPrompt && !editing && (
         <Alert variant="info" role="status" className="mb-4">

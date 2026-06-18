@@ -33,7 +33,7 @@ This document audits SelahKeep logged-in navigation after Phases 0–5 and recor
 | Continue setup | `/vault/setup` | — | No | When setup incomplete | — | — | Resume setup | **Keep (conditional)** | Replaces unlock link when setup incomplete |
 | Lock vault | (action) | — | No | When unlocked | No | Yes | Lock in-memory vault | **Keep (conditional)** | Does not sign out |
 | Sign out | (action) | — | No | Yes | Yes | Yes | End account session | **Keep** | Locks vault first |
-| Vault status badge | — | — | No | Yes | Four states | Four states | State indicator | **Keep** | `Vault not set up` / `Setup incomplete` / `Vault locked` / `Vault unlocked` |
+| Vault status bar | — | — | No | Yes | Four states | Four states | State indicator | **Keep** | Global bar below header: `Vault not set up` / `Vault setup incomplete` / `Vault closed` / `Vault open` + countdown |
 
 \*Notes and Vault settings show state-specific prompts; decrypted content requires `unlocked` status.
 
@@ -71,28 +71,36 @@ This document audits SelahKeep logged-in navigation after Phases 0–5 and recor
 ### Desktop (signed in)
 
 ```text
-[SelahKeep]   Notes | Vault | Account | [Unlock vault?]   [Lock vault?] Sign out [Badge]
+[SelahKeep]   Notes | Vault | Account                    Sign out
+─────────────────────────────────────────────────────────────────
+[Vault status bar: setup / unlock / open + countdown / Lock now]
+[Page content]
 ```
 
 ### Mobile (signed in)
 
 ```text
+[SelahKeep]                                              Menu
+─────────────────────────────────────────────────────────────────
+[Vault status bar]
+[Page content]
+
 Menu →
-  Workspace: Notes, [Unlock vault?]
-  Vault protection: Vault, [Lock vault?]
+  Workspace: Notes
+  Vault protection: Vault
   Account security: Account
-  Sign out + vault status
+  Sign out
 ```
 
 ### Visibility rules
 
 | Element | Rule |
 |---------|------|
-| Notes, Vault, Account | Always when signed in |
-| Unlock vault | Signed in && vault locked |
-| Lock vault | Signed in && vault unlocked |
-| Sign out | Always when signed in |
-| Vault badge | Always when signed in |
+| Notes, Vault, Account | Always when signed in (header) |
+| Vault status bar | Always when signed in (below header) |
+| Unlock vault (bar CTA) | Signed in && vault locked |
+| Lock now (bar CTA) | Signed in && vault unlocked |
+| Sign out | Always when signed in (header) |
 
 ---
 

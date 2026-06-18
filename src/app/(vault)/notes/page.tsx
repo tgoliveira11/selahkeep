@@ -17,7 +17,7 @@ import {
   noteFiltersToSearch,
   type NoteFilterState,
 } from "@/features/notes/note-filters";
-import { NotesVaultIndicator } from "@/features/notes/notes-vault-indicator";
+import { NotesVaultProtectedMessage } from "@/features/notes/notes-vault-protected-message";
 import { useVaultIndex } from "@/features/notes/use-vault-index";
 import { useNotes } from "@/features/notes/use-notes";
 import { searchVaultIndex, searchVaultIndexWhenLocked } from "@/lib/crypto-client/note-search";
@@ -141,7 +141,7 @@ export default function NotesPage() {
               title="Notes"
               description="Private encrypted notes — prayers, reflections, and journaling in one vault."
             />
-            <NotesVaultIndicator clientStatus={clientStatus} returnTo="/notes" />
+            {clientStatus === "locked" && <NotesVaultProtectedMessage />}
           </>
         )}
       </PageLayout>
@@ -159,8 +159,6 @@ export default function NotesPage() {
           </Link>
         }
       />
-
-      {clientStatus && <NotesVaultIndicator clientStatus={clientStatus} returnTo="/notes" />}
 
       {error && (
         <div className="mb-6">

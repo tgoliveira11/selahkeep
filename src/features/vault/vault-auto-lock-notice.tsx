@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Alert } from "@/components/ui/alert";
-import { configureVaultAutoLock } from "@/lib/crypto-client/vault-session";
+import { isVaultUnlocked } from "@/lib/crypto-client/vault";
+import {
+  configureVaultAutoLock,
+  subscribeVaultSession,
+} from "@/lib/crypto-client/vault-session";
 
 export const VAULT_INACTIVITY_LOCK_MESSAGE =
   "Your vault was locked to protect your private notes.";
@@ -13,7 +17,17 @@ export function VaultAutoLockNotice() {
 
   useEffect(() => {
     configureVaultAutoLock(() => setVisible(true));
-    return () => configureVaultAutoLock();
+
+    const unsubscribe = subscribeVaultSession(() => {
+      if (isVaultUnlocked()) {
+        setVisible(false);
+      }
+    });
+
+    return () => {
+      configureVaultAutoLock();
+      unsubscribe();
+    };
   }, []);
 
   if (!visible) return null;
@@ -21,7 +35,16 @@ export function VaultAutoLockNotice() {
   return (
     <div className="vault-auto-lock-notice" role="status" aria-live="polite">
       <Alert variant="info" title="Vault locked">
-        {VAULT_INACTIVITY_LOCK_MESSAGE}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p>{VAULT_INACTIVITY_LOCK_MESSAGE}</p>
+          <button
+            type="button"
+            className="shrink-0 text-sm font-medium underline underline-offset-2"
+            onClick={() => setVisible(false)}
+          >
+            Dismiss
+          </button>
+        </div>
       </Alert>
     </div>
   );

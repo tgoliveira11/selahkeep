@@ -241,9 +241,11 @@ Challenges scoped by user ID and type; expire after 5 minutes; deleted on use vi
 
 ## Vault session hardening
 
-- **15-minute inactivity** auto-lock (`VAULT_INACTIVITY_MS` in `vault-session.ts`) — resets on click, pointer, keyboard, input, focus, scroll, and touch activity via `useVaultActivity` in `(vault)/layout.tsx`; remaining time exposed for notes vault indicator countdown
-- **Vault status UI:** `GET /api/vault/status` exposes `setupPhase`; product pages combine it with the in-browser UVK session (`useVaultClientStatus`) to show `not_configured`, `setup_incomplete`, `locked`, or `unlocked`. `NotesVaultIndicator` on `/notes` and `/notes/[id]`; `/notes/[id]` never renders decrypted content when locked.
-- Manual **Lock vault** clears in-memory key, note body cache, and sets a session lock flag; note pages hide decrypted content until explicit unlock
+- **15-minute inactivity** auto-lock — remaining time shown in collapsed dock handle (`mm:ss`) and expanded open dock (`Vault open · Auto-locks in mm:ss`)
+- **Vault status UI:** global `VaultStatusDock` inside authenticated header when signed in (no note title/body/category/tag or vault secrets in the dock); collapsed handle shows `Closed` when locked or countdown when open
+- **Inline unlock:** expanded locked dock embeds `VaultDockQuickUnlock` — vault password and passkey PRF (when envelope exists and browser is not PRF-unsupported). Recovery phrase unlock is only on `/vault/unlock`. Same client-only unlock services as the full page; secrets never sent to the server. Dock shows status-only message on `/vault/unlock` (no duplicate form).
+- Dock auto-collapses on outside click, Escape, or focus leaving the panel (not during unlock submission or while a form control inside the dock is focused)
+- Manual **Lock now** (expanded open dock) clears in-memory key, note body cache, and sets a session lock flag; note pages hide decrypted content until explicit unlock
 - In-memory User Vault Key cleared on lock, sign out, and `pagehide` (best effort)
 
 ## Import / export (MVP)

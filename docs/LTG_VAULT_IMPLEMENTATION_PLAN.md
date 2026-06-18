@@ -720,6 +720,669 @@ When scheduled, each requires a new TDR amendment + implementation plan addendum
 
 ---
 
+## Future Product Expansion Opportunities
+
+This section captures future opportunities for SelahKeep after the current MVP has stabilized. These items are **not** part of the immediate MVP unless explicitly promoted into a future implementation phase. The purpose of this section is to provide a structured backlog for product, security, and user-experience evolution while preserving SelahKeep’s core principles: private-by-default writing, client-side encryption, clear vault/account separation, and a calm reflective user experience.
+
+### Guiding Principles
+
+Future enhancements should follow these principles:
+
+1. **Privacy remains the product foundation.** Private note content, note metadata, tags, categories, titles, recovery material, User Vault Keys, Note Keys, and passkey PRF output must never be exposed to the server in plaintext.
+2. **Account authentication and vault unlock remain separate.** Signing in proves account ownership; unlocking the vault grants access to encrypted private notes.
+3. **Markdown remains the canonical portable content format** unless explicitly changed through an ADR.
+4. **User trust is more important than feature breadth.** Features that weaken privacy, introduce ambiguous data handling, or confuse vault security should be deferred.
+5. **SelahKeep should not become a generic notes clone.** Its differentiation should come from private encrypted writing, spiritual/reflective workflows, recovery confidence, and a polished writing experience.
+6. **AI features must be opt-in and privacy-explicit.** No decrypted note content should be sent to an AI provider without clear user consent.
+
+---
+
+### Priority Track 1 — Security, Recovery, and Trust
+
+These items strengthen user confidence and reduce the risk of data loss.
+
+#### Security Review Mode
+
+Add a dedicated security overview screen, likely under `/vault/security` or `/vault/settings`, showing the current protection status of the vault.
+
+Potential indicators:
+
+- Vault password configured
+- Recovery phrase configured
+- Recovery phrase last replaced date
+- Passkey vault unlock configured / unavailable / unsupported in this browser
+- Auto-lock enabled and timeout value
+- Last vault unlock method, if safely tracked
+- Export/import availability status
+- Account/vault separation reminder
+
+The goal is to make the user understand whether their vault is well protected without exposing any secret material.
+
+#### Vault Health Summary
+
+Provide a human-friendly summary such as:
+
+- Protection: Strong
+- Recovery: Configured
+- Passkey vault unlock: Not available in this browser
+- Auto-lock: Enabled
+
+This should not be gamified excessively. It should support clarity and trust.
+
+#### Recovery Phrase Checkup
+
+Periodically prompt the user to confirm that they still have access to their recovery phrase. This must be implemented carefully.
+
+Possible approach:
+
+- Ask the user to confirm selected word positions, such as word 3 and word 9.
+- Never display or transmit the full phrase.
+- Never store the phrase in plaintext.
+- Do not lock the user out if they skip the checkup, but warn clearly.
+
+#### Recovery Drill
+
+Add a safe “Test my recovery phrase” flow. This should verify that the recovery phrase can unwrap the recovery envelope without replacing it.
+
+The flow should:
+
+- require account authentication;
+- require a configured vault;
+- never send the recovery phrase to the server;
+- confirm whether the phrase works;
+- not rotate or invalidate the phrase.
+
+This is a strong trust-building feature and should be prioritized before public beta.
+
+#### Security Event Log
+
+Add a safe audit-style view for vault security events.
+
+Possible events:
+
+- Vault unlocked with password
+- Vault unlocked with recovery phrase
+- Vault unlocked with passkey PRF
+- Recovery phrase replaced
+- Passkey vault unlock setup failed due to PRF unsupported
+- Vault auto-locked due to inactivity
+
+The event log must never include note content, decrypted metadata, PRF output, recovery phrase, vault password, User Vault Key, or Note Keys.
+
+#### Passkey Compatibility Guide
+
+Create a user-facing explanation of why passkey sign-in may work while passkey vault unlock may not.
+
+The guide should explain:
+
+- account passkey login is different from vault passkey unlock;
+- vault passkey unlock requires WebAuthn PRF;
+- some browsers/providers may support passkeys but not PRF;
+- vault password and recovery phrase remain fallback methods.
+
+---
+
+### Priority Track 2 — Writing Experience and Editor Quality
+
+These items improve the core daily-use experience.
+
+#### Polished Visual Editor
+
+The visual editor should continue to evolve into a polished writing surface inspired by familiar tools such as Google Docs, Microsoft Word, Notion, Apple Notes, Bear, and Craft, without copying them directly.
+
+Desired qualities:
+
+- visual editing by default;
+- Markdown/source mode as an advanced option;
+- compact and accessible toolbar;
+- beautiful typography;
+- mobile-friendly layout;
+- preserved Markdown canonical storage;
+- sanitized rendering;
+- encrypted persistence.
+
+This is one of the highest-impact product areas because the editor is the core user experience.
+
+#### Save and Draft Status
+
+Improve the editor status indicators.
+
+Potential states:
+
+- Saved
+- Saving...
+- Unsaved changes
+- Draft saved on this device
+- Save failed
+
+The status must reflect real encrypted persistence. The app must not claim a note is saved before encrypted storage succeeds.
+
+#### Better Encrypted Local Drafts
+
+If not already fully implemented, persistent drafts should be encrypted locally before storage.
+
+Requirements:
+
+- no plaintext note body, title, tags, category, or metadata in localStorage, sessionStorage, or IndexedDB;
+- drafts restored only after vault unlock;
+- draft deletion after successful save;
+- explicit restore/discard UX.
+
+If encrypted persistent drafts are not feasible in the short term, use session-only drafts and document the limitation.
+
+#### Note Templates
+
+Expand templates beyond the initial set.
+
+Possible templates:
+
+- Blank note
+- Prayer
+- Reflection
+- Gratitude
+- Decision
+- Checklist
+- Journal
+- Sermon Notes
+- Bible Study
+- Confession
+- Anxiety Dump
+- Dream
+- Meeting Notes
+- Goal
+
+Templates should remain local starter content only. They should not require a server-side template table in the near term.
+
+#### Quick Insert Menu
+
+Add a lightweight insert menu inside the editor.
+
+Possible blocks:
+
+- Heading
+- Checklist
+- Quote
+- Divider
+- Prayer section
+- Gratitude list
+- Decision block
+
+This should remain simple and should not become a complex block editor unless a future ADR approves that direction.
+
+#### Focus Mode
+
+Add a distraction-free writing mode.
+
+Possible behavior:
+
+- hide navigation/sidebar/filter UI;
+- center the editor;
+- preserve save/draft status;
+- keep the vault auto-lock visible but subtle;
+- allow easy exit.
+
+This would fit the reflective nature of SelahKeep.
+
+#### Daily Note
+
+Add a “New daily note” action.
+
+Possible behavior:
+
+- creates a note for today;
+- uses a daily reflection template;
+- optionally reopens the existing note for the same day;
+- stores everything as encrypted note content/metadata.
+
+---
+
+### Priority Track 3 — Organization, Views, and Note Lifecycle
+
+These items help users manage a growing vault.
+
+#### Pinned Notes
+
+Allow users to pin important notes to the top of the list.
+
+Pinned state must be stored only in encrypted metadata/index.
+
+#### Favorites
+
+Add a separate favorite marker for notes that are important but not necessarily resolved.
+
+This should be distinct from “resolved”.
+
+#### Archive
+
+Allow users to archive notes without deleting them.
+
+Archived notes should remain encrypted and retrievable through a filter.
+
+#### Trash / Recently Deleted
+
+Add a recoverable delete flow.
+
+Possible behavior:
+
+- deleted notes move to Trash;
+- Trash retains encrypted notes for a defined period or until manually emptied;
+- permanent delete requires confirmation.
+
+This should be considered before public beta to reduce accidental data loss.
+
+#### Smart Local Filters
+
+Add local filters based on decrypted index data after unlock.
+
+Possible filters:
+
+- Recently updated
+- Resolved
+- Unresolved
+- No category
+- No tags
+- Pinned
+- Checklist notes
+- Archived
+- Drafts
+
+No plaintext server-side filtering should be added for encrypted metadata.
+
+#### Saved Views
+
+Allow users to save common filter combinations locally or in encrypted vault settings.
+
+Examples:
+
+- Unresolved prayer notes
+- Reflections this month
+- Work notes
+- Bible study notes
+
+Saved views must not expose plaintext criteria to the server unless encrypted.
+
+#### Compact/List View
+
+Add a display mode for users with many notes.
+
+Possible modes:
+
+- Card view
+- Compact list view
+
+This should improve scalability without changing the data model.
+
+#### Duplicate Note
+
+Add a “Duplicate note” action.
+
+The duplicated note should receive a new Note Key and a new encrypted note body/metadata payload.
+
+---
+
+### Priority Track 4 — Search and Discovery
+
+These items increase usefulness once users have many notes.
+
+#### Local Full-Text Search After Unlock
+
+Add local search over decrypted note bodies after vault unlock.
+
+Important requirements:
+
+- search happens only client-side after vault unlock;
+- no plaintext search query is sent to the server;
+- decrypted note bodies are searched only in memory;
+- search state is cleared when the vault locks.
+
+#### Encrypted Local Search Index
+
+Create an encrypted search index that can be stored with the vault.
+
+Possible model:
+
+- build index client-side;
+- encrypt index with vault material;
+- store encrypted index server-side;
+- decrypt index after unlock;
+- search locally.
+
+This would improve performance for larger vaults.
+
+#### Search Result Highlighting
+
+Highlight matching terms in search results and note view.
+
+Highlighting must happen client-side after unlock.
+
+#### Recently Viewed Notes
+
+Add a local or encrypted record of recently viewed notes.
+
+If persisted, the recently viewed list must be encrypted because it may reveal sensitive behavior.
+
+---
+
+### Priority Track 5 — Reflective and Spiritual Workflows
+
+These features give SelahKeep a stronger product identity beyond generic notes.
+
+#### Resolved Reflection
+
+When marking a note as resolved, optionally prompt the user:
+
+- What changed?
+- How was this resolved?
+- What do you want to remember?
+
+This turns resolved notes into a reflective record rather than a simple status toggle.
+
+#### Prayer / Reflection Timeline
+
+Add a timeline view showing note lifecycle events:
+
+- Created
+- Updated
+- Resolved
+- Reopened
+- Archived
+
+The timeline should be generated from encrypted metadata after vault unlock.
+
+#### Remembrance Mode
+
+Add a view for revisiting resolved notes.
+
+Possible copy:
+
+- Things you once carried
+- Things you want to remember
+- Resolved reflections
+
+This feature aligns strongly with the “Selah” concept of pause and reflection.
+
+#### Weekly Reflection
+
+Provide a weekly review experience.
+
+Possible sections:
+
+- Notes created this week
+- Notes resolved this week
+- Gratitude notes
+- Open reflections
+- What should I carry forward?
+
+All processing should happen locally after unlock unless future AI features are explicitly opted in.
+
+#### Prompt Cards
+
+Offer optional writing prompts.
+
+Examples:
+
+- What am I grateful for today?
+- What am I avoiding?
+- What do I need to surrender?
+- What should I remember from today?
+- What decision needs clarity?
+
+Prompt cards should not require AI and should not send content anywhere.
+
+---
+
+### Priority Track 6 — Export, Import, and Portability
+
+Export/import is deferred from the MVP, but it is important before public beta.
+
+#### Encrypted Export
+
+Support an encrypted SelahKeep export file.
+
+Potential format:
+
+- `.selahkeep`
+- encrypted vault metadata
+- encrypted notes
+- encrypted categories/tags/index
+- versioned manifest
+- no plaintext by default
+
+This should allow users to back up their vault without exposing private content.
+
+#### Decrypted Markdown Export
+
+Offer plain Markdown export only after strong warnings.
+
+The user must understand that decrypted export files are no longer protected by SelahKeep encryption.
+
+#### Import Markdown
+
+Allow importing Markdown files as encrypted notes.
+
+Imported content should be encrypted before being persisted.
+
+#### Future Imports
+
+Possible future imports:
+
+- Obsidian
+- Notion Markdown export
+- Apple Notes export, if feasible
+- Generic ZIP of Markdown files
+
+These should not be prioritized before encrypted export.
+
+---
+
+### Priority Track 7 — Multi-Device and Passkey Experience
+
+These items improve reliability across browsers and devices.
+
+#### New Device Setup Flow
+
+When a user signs in from a new browser:
+
+- explain that the account is signed in but the vault remains locked;
+- guide the user to unlock with vault password or recovery phrase;
+- explain passkey PRF availability if relevant.
+
+#### Passkey PRF Compatibility UX
+
+Show browser/provider diagnostic results in a user-friendly way.
+
+Example:
+
+- Passkeys for sign-in: available
+- Passkey vault unlock: unavailable here
+- Reason: PRF not supported by this browser/provider
+
+This should reduce confusion.
+
+#### Passkey Vault Unlock Test
+
+Allow users to test whether an existing passkey vault unlock still works, without changing configuration.
+
+This must never delete, replace, or invalidate a passkey PRF envelope from a browser that cannot use PRF.
+
+#### Do Not Reintroduce Trusted Devices
+
+Trusted Devices were intentionally removed. They should not return as a shortcut for multi-device convenience.
+
+The preferred path is:
+
+- vault password;
+- recovery phrase;
+- passkey PRF where supported;
+- clear new-device UX.
+
+---
+
+### Priority Track 8 — AI Features, Only With Explicit Privacy Controls
+
+AI features may be valuable but should be deferred until the privacy model is explicit and trusted.
+
+Possible AI features:
+
+- Suggest title
+- Summarize note
+- Extract action items
+- Turn note into checklist
+- Suggest reflection prompts
+- Rewrite as prayer
+- Identify themes across notes
+
+However, these features should only be implemented if one of the following is true:
+
+1. processing happens locally/on-device; or
+2. the user explicitly opts in to sending decrypted content to an AI provider; or
+3. the feature does not use decrypted note content.
+
+Required UX for cloud AI:
+
+- clear warning before sending decrypted content;
+- explicit user action;
+- no default background AI processing;
+- provider disclosure;
+- privacy documentation.
+
+AI should not be added until the core product trust model is mature.
+
+---
+
+### Priority Track 9 — Commercial and Product Packaging
+
+These ideas are only relevant if SelahKeep becomes a public product.
+
+#### Free / Pro Plan Structure
+
+Possible free tier:
+
+- limited notes;
+- basic encrypted vault;
+- manual recovery;
+- no advanced export/search.
+
+Possible paid tier:
+
+- more notes/storage;
+- encrypted export;
+- advanced local search;
+- additional templates;
+- timeline/reflection features;
+- priority security features.
+
+Plan limits must not compromise access to already-created private notes.
+
+#### Local-First Positioning
+
+Marketing can emphasize:
+
+- private notes encrypted before leaving the browser;
+- account login is separate from vault unlock;
+- recovery phrase ownership;
+- no server-side access to note content.
+
+Avoid overclaiming security guarantees.
+
+---
+
+### Priority Track 10 — Technical and Operational Hardening
+
+These items improve maintainability and confidence.
+
+#### Stronger No-Plaintext Tests
+
+Expand automated tests to prove that plaintext titles, body, tags, categories, recovery phrase, vault password, User Vault Key, Note Keys, and PRF output do not appear in:
+
+- API payloads;
+- server logs;
+- database fields;
+- local persistent drafts.
+
+#### Crypto Version Dashboard
+
+Add a dev-only view showing:
+
+- vault encryption version;
+- note encryption version;
+- KDF parameters;
+- envelope types;
+- migration status.
+
+No secrets should be displayed.
+
+#### Migration Framework
+
+Because encrypted data is difficult to migrate, build a careful migration framework for future crypto or metadata changes.
+
+Requirements:
+
+- versioned payloads;
+- client-side migration where needed;
+- safe backup/export path before major migrations;
+- explicit tests for old payload compatibility.
+
+#### Security Review Checklist
+
+Maintain a checklist for future feature reviews:
+
+- Does this feature expose decrypted content?
+- Does it require server-side plaintext?
+- Does it change vault unlock?
+- Does it affect recovery?
+- Does it persist local plaintext?
+- Does it interact with account authentication?
+- Does it require a new ADR?
+
+---
+
+### Features Explicitly Deferred
+
+The following should remain out of scope until explicitly promoted:
+
+- social/community features;
+- public prayer wall;
+- sharing notes;
+- collaboration;
+- comments;
+- attachments;
+- images;
+- AI reading note content by default;
+- Trusted Devices;
+- complex permissions;
+- folders + spaces + categories all at once;
+- native mobile app;
+- real-time sync/collaboration;
+- import/export before security design is complete.
+
+---
+
+### Suggested Near-Term Prioritization
+
+Recommended order after the current editor polish work:
+
+1. Recovery phrase test flow.
+2. Security review / vault health screen.
+3. Stronger encrypted local draft behavior.
+4. Local full-text body search after unlock.
+5. Pinned notes, favorites, archive, and trash.
+6. Reflection/timeline/remembrance workflows.
+7. Encrypted export.
+8. Passkey PRF compatibility UX improvements.
+9. Compact list view for large vaults.
+10. AI features only after explicit privacy design.
+
+The strongest near-term product differentiation is likely to come from the combination of:
+
+- polished visual editor;
+- reliable recovery experience;
+- strong encrypted local search;
+- reflection/remembrance workflows;
+- clear privacy and security posture.
+
+---
+
 ## Cross-cutting migration strategy
 
 ```text

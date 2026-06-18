@@ -157,14 +157,16 @@ Email/password accounts are **unverified by default** until the user opens the l
 |--------|---------|-------------|
 | `not_configured` | Signed in, no vault record | Set up vault → `/vault/setup` |
 | `setup_incomplete` | Vault record started, missing required pieces | Continue setup → `/vault/setup` |
-| `locked` | Setup complete, UVK not in this browser session | Unlock vault → `/vault/unlock` |
-| `unlocked` | Setup complete, UVK in session | Lock vault on `/notes` vault indicator (not top nav) |
+| `locked` | Setup complete, UVK not in this browser session | Expand **Vault Status Dock** → inline unlock; fallback `/vault/unlock` |
+| `unlocked` | Setup complete, UVK in session | **Lock now** in expanded dock; countdown on collapsed handle |
 
 `/notes` and `/vault/settings` show state-specific prompts instead of unlock panels when no vault exists.
 
 **Vault setup password UI:** `/vault/setup` uses `PasswordSetupFields` from `@tgoliveira/secure-auth` with an app-owned vault password policy (`VAULT_PASSWORD_*` env vars → `src/lib/config/vault-password-policy.ts`). The vault password is validated client-side only and never sent to the server; Argon2id wraps the User Vault Key after validation.
 
-**Vault inactivity lock:** while the vault is unlocked, **15 minutes** of no click, pointer, keyboard, input, focus, scroll, or touch activity auto-locks the vault, clears decrypted note bodies from memory, and shows: *“Your vault was locked to protect your private notes.”* Manual **Lock vault** on the `/notes` vault indicator has the same effect without the banner. The top navigation no longer shows vault lock/status controls — only Notes, Vault, Account, and Sign out.
+**Vault inactivity lock:** while the vault is unlocked, **15 minutes** of no click, pointer, keyboard, input, focus, scroll, or touch activity auto-locks the vault, clears decrypted note bodies from memory, and shows: *“Your vault was locked to protect your private notes.”* Manual **Lock now** in the expanded **Vault Status Dock** (or **Lock vault** on `/notes` when shown) has the same effect without the banner. The top navigation shows only Notes, Vault, Account, and Sign out — vault lock/unlock lives in the dock.
+
+**Vault Status Dock:** on every authenticated page, a small header-attached handle shows vault state (`Vault` when locked, `mm:ss` countdown when open). Expand it for **quick unlock** with vault password or passkey PRF (when configured and available in this browser). Recovery phrase unlock is on the full **`/vault/unlock`** page (`Open full unlock page` link). The dock does not duplicate unlock forms on `/vault/unlock`. Auto-collapses on outside click, Escape, or focus leaving the panel. No vault secrets or decrypted note content are sent to the server or shown in the dock.
 
 **Import / export:** bulk import and export of decrypted notes are **not available** in this MVP. See `/vault/settings` and the public home page.
 
@@ -248,7 +250,7 @@ Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings
 - **Tags** normalized client-side (`normalizeTagInput`, max **32** chars); displayed with `#`, stored without `#`
 - **Category vs tags:** category pill (no `#`); tag chips with `#`
 - **Client-side search/filters** after unlock — shown only when at least one category or tag exists; no server search
-- **Vault status on notes pages:** `NotesVaultIndicator` on `/notes` and `/notes/[id]` — closed vault visual + unlock CTA when locked (no decrypted content on detail); open vault visual + inactivity countdown + manual lock when unlocked
+- **Vault status dock:** `VaultStatusDock` in `AppHeaderChrome` / authenticated `Nav` header (collapsed handle + expanded panel, signed-in only) — compact handle when locked/unlocked; full panel for setup states and on expand; inactivity countdown in handle (`mm:ss`) and expanded copy; **Lock now** / unlock only when expanded; unlock links use safe `returnTo` (`safe-return-to.ts`).
 - **Unlock behavior** (`GET/PATCH /api/vault/settings`): `metadata_only` (default) or `decrypt_all`
 - **API:** `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted payloads only
 - **Removed (Phase 3):** `/letters`, `/api/letters`, `letters` table

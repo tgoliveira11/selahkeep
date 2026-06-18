@@ -11,7 +11,7 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 | Document | Purpose |
 |----------|---------|
 | [`TDR_LTG_Vault_MVP.md`](./TDR_LTG_Vault_MVP.md) | Product and architecture direction |
-| [`LTG_VAULT_IMPLEMENTATION_PLAN.md`](./LTG_VAULT_IMPLEMENTATION_PLAN.md) | Phased engineering plan (completed) |
+| [`LTG_VAULT_IMPLEMENTATION_PLAN.md`](./LTG_VAULT_IMPLEMENTATION_PLAN.md) | Phased engineering plan (completed); [Future Product Expansion Opportunities](./LTG_VAULT_IMPLEMENTATION_PLAN.md#future-product-expansion-opportunities) |
 | [`ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md`](./ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md) | Vault crypto, note keys, recovery phrase |
 | [`ADR-006_LTG_Vault_Passkey_PRF_Unlock.md`](./ADR-006_LTG_Vault_Passkey_PRF_Unlock.md) | Passkey PRF vault unlock |
 | [`LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md`](./LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md) | MVP acceptance traceability |

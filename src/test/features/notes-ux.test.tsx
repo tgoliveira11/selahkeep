@@ -215,35 +215,34 @@ describe("notes UX", () => {
       expect(await screen.findByLabelText(/search/i)).toBeTruthy();
     });
 
-    it("shows closed vault visual when vault is locked", async () => {
+    it("shows protected message without decrypted content when locked", async () => {
       const { useRequireVault } = await import("@/features/vault/use-require-vault");
       const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
       vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(false));
       vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
       render(<NotesPage />);
-      const indicator = await screen.findByTestId("notes-vault-indicator");
-      expect(indicator.getAttribute("data-vault-state")).toBe("closed");
-      expect(screen.getByText("Vault closed")).toBeTruthy();
+      expect(await screen.findByTestId("notes-vault-protected-message")).toBeTruthy();
+      expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
+      expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
     });
 
-    it("shows open vault visual when vault is unlocked", async () => {
+    it("does not show page-level vault open indicator when unlocked", async () => {
       render(<NotesPage />);
-      const indicator = await screen.findByTestId("notes-vault-indicator");
-      expect(indicator.getAttribute("data-vault-state")).toBe("open");
-      expect(screen.getByText("Vault open")).toBeTruthy();
+      expect(await screen.findByRole("link", { name: /new note/i })).toBeTruthy();
+      expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
+      expect(screen.queryByText("Vault open")).toBeNull();
     });
 
-    it("routes locked vault CTA to /vault/unlock with returnTo", async () => {
+    it("does not duplicate unlock CTA on notes page when locked", async () => {
       const { useRequireVault } = await import("@/features/vault/use-require-vault");
       const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
       vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(false));
       vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
       render(<NotesPage />);
-      expect(
-        screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")
-      ).toBe("/vault/unlock?returnTo=%2Fnotes");
+      await screen.findByTestId("notes-vault-protected-message");
+      expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
     });
 
     it("shows notes counter", async () => {
@@ -502,38 +501,25 @@ describe("notes UX", () => {
       });
     });
 
-    it("shows closed vault panel without decrypted content when locked", async () => {
+    it("shows protected message without decrypted content when locked", async () => {
       const { useRequireVault } = await import("@/features/vault/use-require-vault");
       const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
       vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(false));
       vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
       render(<NoteDetailPage />);
-      const indicator = await screen.findByTestId("notes-vault-indicator");
-      expect(indicator.getAttribute("data-vault-state")).toBe("closed");
-      expect(screen.getByText("Vault closed")).toBeTruthy();
+      expect(await screen.findByTestId("notes-vault-protected-message")).toBeTruthy();
+      expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
       expect(screen.queryByText("Prayer note")).toBeNull();
       expect(screen.queryByTestId("markdown-preview")).toBeNull();
+      expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
     });
 
-    it("routes detail unlock CTA with returnTo note path", async () => {
-      const { useRequireVault } = await import("@/features/vault/use-require-vault");
-      const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
-      vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(false));
-      vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
-
-      render(<NoteDetailPage />);
-      expect(
-        screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")
-      ).toBe(`/vault/unlock?returnTo=${encodeURIComponent(`/notes/${NOTE_ID}`)}`);
-    });
-
-    it("shows vault open indicator when unlocked", async () => {
+    it("does not show page-level vault open indicator when unlocked", async () => {
       render(<NoteDetailPage />);
       await screen.findByText("Prayer note");
-      const indicator = screen.getByTestId("notes-vault-indicator");
-      expect(indicator.getAttribute("data-vault-state")).toBe("open");
-      expect(screen.getByText("Vault open")).toBeTruthy();
+      expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
+      expect(screen.queryByText("Vault open")).toBeNull();
     });
 
     it("shows created and updated dates in detail metadata", async () => {

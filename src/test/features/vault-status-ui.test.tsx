@@ -1,6 +1,6 @@
 /** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import NotesPage from "@/app/(vault)/notes/page";
 import VaultSettingsPage from "@/app/(vault)/vault/settings/page";
 import VaultUnlockPage from "@/app/(vault)/vault/unlock/page";
@@ -130,21 +130,18 @@ describe("vault status UI", () => {
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("setup_incomplete"));
 
     render(<NotesPage />);
-    expect(await screen.findByText("Vault setup incomplete")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /continue setup/i }).getAttribute("href")).toBe(
-      "/vault/setup"
-    );
+    expect(await screen.findByText("Notes")).toBeTruthy();
+    expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
   });
 
-  it("notes page shows unlock prompt when vault is locked", async () => {
+  it("notes page shows protected message when vault is locked", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
     render(<NotesPage />);
-    expect(await screen.findByText("Vault closed")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")).toBe(
-      "/vault/unlock?returnTo=%2Fnotes"
-    );
+    expect(await screen.findByTestId("notes-vault-protected-message")).toBeTruthy();
+    expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
+    expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
   });
 
   it("notes page shows notes when vault is unlocked", async () => {
@@ -294,6 +291,15 @@ describe("vault status UI", () => {
     expect(await screen.findByRole("button", { name: /unlock with passkey/i })).toBeTruthy();
   });
 
+  it("vault unlock still shows recovery phrase when vault is locked", async () => {
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
+
+    render(<VaultUnlockPage />);
+    expect(await screen.findByRole("tab", { name: /^recovery phrase$/i })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /^vault password$/i })).toBeTruthy();
+  });
+
   it("vault unlock shows already unlocked state when vault is unlocked", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
@@ -304,12 +310,12 @@ describe("vault status UI", () => {
   });
 });
 
-describe("nav vault status badge", () => {
+describe("nav vault status dock", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("does not show vault setup link in header when vault is not configured", async () => {
+  it("shows vault status bar below header when vault is not configured", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("not_configured"));
 
@@ -319,13 +325,17 @@ describe("nav vault status badge", () => {
       </SiteShell>
     );
 
-    expect(screen.queryByRole("link", { name: /set up vault/i })).toBeNull();
-    expect(screen.queryByText("Vault not set up")).toBeNull();
-    expect(screen.queryByRole("link", { name: /^unlock$/i })).toBeNull();
-    expect(screen.queryByRole("link", { name: /^unlock vault$/i })).toBeNull();
+    const header = screen.getByRole("banner");
+    const dock = screen.getByTestId("vault-status-dock");
+    const mainNav = within(header).getByRole("navigation", { name: /main navigation/i });
+    expect(within(mainNav).queryByRole("link", { name: /set up vault/i })).toBeNull();
+    expect(within(dock).getByText("Vault not set up")).toBeTruthy();
+    expect(within(dock).getByRole("link", { name: /set up vault/i }).getAttribute("href")).toBe(
+      "/vault/setup"
+    );
   });
 
-  it("does not show continue setup in header when setup is incomplete", async () => {
+  it("shows continue setup in status bar when setup is incomplete", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("setup_incomplete"));
 
@@ -335,11 +345,16 @@ describe("nav vault status badge", () => {
       </SiteShell>
     );
 
-    expect(screen.queryByRole("link", { name: /continue setup/i })).toBeNull();
-    expect(screen.queryByText("Vault setup incomplete")).toBeNull();
+    const dock = screen.getByTestId("vault-status-dock");
+    const mainNav = within(screen.getByRole("banner")).getByRole("navigation", {
+      name: /main navigation/i,
+    });
+    expect(within(dock).getByText("Setup incomplete")).toBeTruthy();
+    expect(within(dock).getByRole("link", { name: /continue setup/i })).toBeTruthy();
+    expect(within(mainNav).queryByText("Setup incomplete")).toBeNull();
   });
 
-  it("does not show unlock vault in header when vault is locked", async () => {
+  it("shows unlock vault in status bar when vault is locked", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
@@ -349,11 +364,21 @@ describe("nav vault status badge", () => {
       </SiteShell>
     );
 
+    const handle = within(screen.getByRole("banner")).getByTestId("vault-status-dock-handle");
+    expect(within(handle).getByText("Vault")).toBeTruthy();
     expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
-    expect(screen.queryByText("Vault locked")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
+    const dock = screen.getByTestId("vault-status-dock");
+    expect(within(dock).getByText(/Vault closed/)).toBeTruthy();
+    expect(within(dock).getByLabelText(/vault password/i)).toBeTruthy();
+    expect(within(dock).queryByRole("tab", { name: /recovery phrase/i })).toBeNull();
+    const mainNav = within(screen.getByRole("banner")).getByRole("navigation", {
+      name: /main navigation/i,
+    });
+    expect(within(mainNav).queryByRole("link", { name: /unlock vault/i })).toBeNull();
   });
 
-  it("does not show lock vault in header when vault is unlocked", async () => {
+  it("shows lock now in status bar when vault is unlocked", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
 
@@ -363,12 +388,17 @@ describe("nav vault status badge", () => {
       </SiteShell>
     );
 
-    expect(screen.queryByRole("button", { name: /lock vault/i })).toBeNull();
-    expect(screen.queryByText("Vault unlocked")).toBeNull();
-    expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
+    const handle = within(screen.getByRole("banner")).getByTestId("vault-status-dock-handle");
+    expect(within(handle).getByText(/14:32/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /lock now/i })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
+    const dock = screen.getByTestId("vault-status-dock");
+    expect(within(dock).getByText(/Vault open · Auto-locks in 14:32/i)).toBeTruthy();
+    expect(within(dock).getByRole("button", { name: /lock now/i })).toBeTruthy();
+    expect(within(screen.getByRole("banner")).queryByRole("button", { name: /lock vault/i })).toBeNull();
   });
 
-  it("does not render private letters copy in active vault UI", async () => {
+  it("does not render private letters copy in vault status bar", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
