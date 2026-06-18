@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
@@ -13,11 +13,12 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormField } from "@/components/ui/form-field";
 import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
-import { SuccessState } from "@/components/ui/success-state";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
 import { CategoryTagFields } from "@/features/notes/category-tag-fields";
 import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
 import { MarkdownPreview } from "@/components/notes/markdown-preview";
+import { NoteResolvedToggle } from "@/components/notes/note-resolved-toggle";
+import { NotesVaultIndicator } from "@/features/notes/notes-vault-indicator";
 import { useCategoriesTags } from "@/features/notes/use-categories-tags";
 import { useNotes } from "@/features/notes/use-notes";
 import {
@@ -34,9 +35,10 @@ import {
   type NoteDraftPlaintext,
 } from "@/lib/crypto-client/note-drafts";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
+import { formatNoteListDates } from "@/lib/notes/note-dates";
 import { RESOLVED_COPY, isNoteResolved } from "@/lib/notes/resolved-labels";
 import { useRequireVault } from "@/features/vault/use-require-vault";
-import { VaultAccessGate } from "@/features/vault/vault-access-gate";
+import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { getCachedNoteBody } from "@/features/notes/eager-decrypt-notes";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
@@ -52,9 +54,11 @@ function editSnapshot(metadata: NoteMetadataPlaintext, body: string): string {
 
 export default function NoteDetailPage() {
   const vault = useRequireVault();
+  const vaultClient = useVaultClientStatus();
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const noteReturnTo = `/notes/${id}`;
 
   const [metadata, setMetadata] = useState<NoteMetadataPlaintext | null>(null);
   const [body, setBody] = useState("");
@@ -65,11 +69,19 @@ export default function NoteDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState<NoteDraftPlaintext | null>(null);
   const [baseline, setBaseline] = useState("");
+  const [checklistSaveState, setChecklistSaveState] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [resolving, setResolving] = useState(false);
+  const checklistSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const canRead = vault.status === "ready" && vault.vaultUnlocked;
+  const clientStatus =
+    vaultClient.status === "ready" ? vaultClient.clientStatus : null;
+  const canRead =
+    vault.status === "ready" && vault.vaultUnlocked && clientStatus === "unlocked";
   const vaultUserId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
-  const { updateNote, deleteNote, busy, error: notesError } = useNotes(vaultUserId);
+  const { updateNote, deleteNote, toggleNoteResolved, busy, error: notesError } = useNotes(vaultUserId);
   const { categories, tags, createCategory, createTag } = useCategoriesTags(vaultUserId, vaultUnlocked);
 
   const editSnapshotValue = useMemo(
@@ -165,10 +177,42 @@ export default function NoteDetailPage() {
     };
   }, [canRead, vaultUserId, id]);
 
-  function handleAccessGranted() {
-    vault.recheckVault();
-    setLoading(true);
-  }
+  useEffect(() => {
+    return () => {
+      if (checklistSaveTimer.current) {
+        clearTimeout(checklistSaveTimer.current);
+      }
+    };
+  }, []);
+
+  const persistChecklistToggle = useCallback(
+    (nextBody: string) => {
+      if (!metadata || !wrappedKey) return;
+
+      setBody(nextBody);
+      setChecklistSaveState("saving");
+
+      if (checklistSaveTimer.current) {
+        clearTimeout(checklistSaveTimer.current);
+      }
+
+      checklistSaveTimer.current = setTimeout(() => {
+        void (async () => {
+          try {
+            await updateNote(id, metadata, nextBody, wrappedKey);
+            const nextMeta = { ...metadata, updatedAt: new Date().toISOString() };
+            setMetadata(nextMeta);
+            setChecklistSaveState("saved");
+            window.setTimeout(() => setChecklistSaveState("idle"), 2000);
+          } catch (e) {
+            setChecklistSaveState("error");
+            setError(e instanceof Error ? e.message : "Failed to save checklist");
+          }
+        })();
+      }, 500);
+    },
+    [id, metadata, updateNote, wrappedKey]
+  );
 
   function startEditing() {
     if (!metadata) return;
@@ -247,16 +291,22 @@ export default function NoteDetailPage() {
     }
   }
 
-  async function handleMarkResolved() {
+  async function handleToggleResolved() {
     if (!metadata || !wrappedKey) return;
+    setResolving(true);
     setError(null);
+    const nextAnswered = !metadata.answered;
+    const previous = metadata;
+    setMetadata({ ...metadata, answered: nextAnswered });
     try {
-      const next = { ...metadata, answered: true, updatedAt: new Date().toISOString() };
-      await updateNote(id, next, body, wrappedKey);
-      setMetadata(next);
-      setBaseline(editSnapshot(next, body));
+      const updated = await toggleNoteResolved(id, nextAnswered);
+      setMetadata(updated);
+      setBaseline(editSnapshot(updated, body));
     } catch (e) {
+      setMetadata(previous);
       setError(e instanceof Error ? e.message : "Failed to update");
+    } finally {
+      setResolving(false);
     }
   }
 
@@ -274,7 +324,11 @@ export default function NoteDetailPage() {
     }
   }
 
-  if (vault.status === "loading" || vault.status === "redirecting") {
+  if (
+    vault.status === "loading" ||
+    vault.status === "redirecting" ||
+    vaultClient.status === "loading"
+  ) {
     return (
       <PageLayout>
         <LoadingState label="Opening your note" />
@@ -282,10 +336,39 @@ export default function NoteDetailPage() {
     );
   }
 
-  if (vault.status === "error") {
+  if (vault.status === "error" || vaultClient.status === "error") {
     return (
       <PageLayout>
-        <ErrorState message={vault.message} />
+        <ErrorState
+          message={
+            vault.status === "error"
+              ? vault.message
+              : vaultClient.status === "error"
+                ? vaultClient.message
+                : "Failed to open note"
+          }
+        />
+      </PageLayout>
+    );
+  }
+
+  const backLink = (
+    <div className="mb-6">
+      <button
+        type="button"
+        className="text-sm font-medium text-[var(--primary)] hover:underline"
+        onClick={() => requestLeave(() => router.push("/notes"))}
+      >
+        ← Back to my notes
+      </button>
+    </div>
+  );
+
+  if (clientStatus && clientStatus !== "unlocked") {
+    return (
+      <PageLayout>
+        {backLink}
+        <NotesVaultIndicator clientStatus={clientStatus} returnTo={noteReturnTo} />
       </PageLayout>
     );
   }
@@ -293,9 +376,8 @@ export default function NoteDetailPage() {
   if (!canRead) {
     return (
       <PageLayout>
-        <Card>
-          <VaultAccessGate purpose="read" onAccessGranted={handleAccessGranted} />
-        </Card>
+        {backLink}
+        <NotesVaultIndicator clientStatus="locked" returnTo={noteReturnTo} />
       </PageLayout>
     );
   }
@@ -303,6 +385,8 @@ export default function NoteDetailPage() {
   if (loading || !metadata) {
     return (
       <PageLayout>
+        {backLink}
+        {clientStatus && <NotesVaultIndicator clientStatus={clientStatus} />}
         <LoadingState label="Opening your note" />
       </PageLayout>
     );
@@ -312,15 +396,9 @@ export default function NoteDetailPage() {
 
   return (
     <PageLayout>
-      <div className="mb-6">
-        <button
-          type="button"
-          className="text-sm font-medium text-[var(--primary)] hover:underline"
-          onClick={() => requestLeave(() => router.push("/notes"))}
-        >
-          ← Back to my notes
-        </button>
-      </div>
+      {backLink}
+
+      {clientStatus && <NotesVaultIndicator clientStatus={clientStatus} returnTo={noteReturnTo} />}
 
       {draftPrompt && !editing && (
         <Alert variant="info" role="status" className="mb-4">
@@ -371,6 +449,7 @@ export default function NoteDetailPage() {
               onChange={setBody}
               id="edit-note-markdown"
               onSave={() => void handleSave()}
+              checklistsDisabled={busy}
             />
           </FormField>
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -388,53 +467,62 @@ export default function NoteDetailPage() {
       ) : (
         <article className="space-y-6">
           <header className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">{metadata.title}</h1>
-              {isNoteResolved(metadata.answered) && (
-                <Badge variant="success">{RESOLVED_COPY.resolvedBadge}</Badge>
-              )}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl font-semibold tracking-tight">{metadata.title}</h1>
+                  {isNoteResolved(metadata.answered) ? (
+                    <Badge variant="success">{RESOLVED_COPY.resolvedBadge}</Badge>
+                  ) : (
+                    <Badge variant="muted">{RESOLVED_COPY.unresolved}</Badge>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {metadata.categoryId && (
+                    <NoteCategoryLabel
+                      name={
+                        categories.find((category) => category.id === metadata.categoryId)?.name ??
+                        "Category"
+                      }
+                    />
+                  )}
+                  {metadata.tagIds.map((tagId) => {
+                    const tag = tags.find((item) => item.id === tagId);
+                    return tag ? <NoteTagChip key={tagId} name={tag.name} /> : null;
+                  })}
+                </div>
+                <p className="text-xs text-[var(--muted)]" data-testid="note-detail-dates">
+                  {formatNoteListDates(metadata.createdAt, metadata.updatedAt)}
+                </p>
+              </div>
+              <NoteResolvedToggle
+                answered={metadata.answered}
+                resolving={resolving}
+                onToggle={() => void handleToggleResolved()}
+              />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {metadata.categoryId && (
-                <NoteCategoryLabel
-                  name={
-                    categories.find((category) => category.id === metadata.categoryId)?.name ??
-                    "Category"
-                  }
-                />
-              )}
-              {metadata.tagIds.map((tagId) => {
-                const tag = tags.find((item) => item.id === tagId);
-                return tag ? <NoteTagChip key={tagId} name={tag.name} /> : null;
-              })}
-            </div>
-            <p className="text-sm text-[var(--muted)]">
-              Updated{" "}
-              {new Date(metadata.updatedAt).toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
           </header>
 
           <Card muted className="p-6">
-            <MarkdownPreview markdown={body} className="text-base leading-relaxed text-[var(--foreground)]" />
+            {checklistSaveState !== "idle" && (
+              <p className="mb-3 text-sm text-[var(--muted)]" role="status" data-testid="checklist-save-state">
+                {checklistSaveState === "saving" && "Saving…"}
+                {checklistSaveState === "saved" && "Saved"}
+                {checklistSaveState === "error" && "Could not save checklist changes"}
+              </p>
+            )}
+            <MarkdownPreview
+              markdown={body}
+              onMarkdownChange={persistChecklistToggle}
+              checklistsDisabled={checklistSaveState === "saving" || busy}
+              className="text-base leading-relaxed text-[var(--foreground)]"
+            />
           </Card>
-
-          {isNoteResolved(metadata.answered) && (
-            <SuccessState message={RESOLVED_COPY.resolvedSuccess} />
-          )}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Button variant="secondary" onClick={startEditing}>
               Edit
             </Button>
-            {!isNoteResolved(metadata.answered) && (
-              <Button variant="secondary" onClick={() => void handleMarkResolved()} disabled={busy}>
-                {RESOLVED_COPY.markResolved}
-              </Button>
-            )}
             <Button variant="danger" onClick={() => setDeleteOpen(true)}>
               Delete note
             </Button>

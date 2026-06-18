@@ -1,11 +1,17 @@
 "use client";
 
+import { useMemo, useCallback } from "react";
 import { renderSanitizedMarkdown } from "@/features/notes/sanitize-markdown";
+import { toggleChecklistAtIndex } from "@/lib/notes/markdown-checklist";
 
 interface MarkdownPreviewProps {
   markdown: string;
   emptyMessage?: string;
   className?: string;
+  /** When set, checklist items are interactive and update markdown source via this callback. */
+  onMarkdownChange?: (markdown: string) => void;
+  /** Disables checklist toggles while a save is in progress. */
+  checklistsDisabled?: boolean;
 }
 
 /**
@@ -16,16 +22,44 @@ export function MarkdownPreview({
   markdown,
   emptyMessage = "Nothing to preview yet.",
   className = "",
+  onMarkdownChange,
+  checklistsDisabled = false,
 }: MarkdownPreviewProps) {
   const trimmed = markdown.trim();
-  const html = trimmed ? renderSanitizedMarkdown(trimmed) : "";
+  const interactive = Boolean(onMarkdownChange);
+  const html = useMemo(
+    () => (trimmed ? renderSanitizedMarkdown(trimmed, { interactiveChecklists: interactive }) : ""),
+    [trimmed, interactive]
+  );
+
+  const handleClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!onMarkdownChange || checklistsDisabled) return;
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      if (target.type !== "checkbox") return;
+
+      event.preventDefault();
+      const rawIndex = target.getAttribute("data-checklist-index");
+      if (rawIndex === null) return;
+
+      const itemIndex = Number.parseInt(rawIndex, 10);
+      if (Number.isNaN(itemIndex)) return;
+
+      onMarkdownChange(toggleChecklistAtIndex(markdown, itemIndex));
+    },
+    [checklistsDisabled, markdown, onMarkdownChange]
+  );
 
   return (
     <div
       className={`prose-note ${className}`.trim()}
       data-testid="markdown-preview"
+      onClick={interactive ? handleClick : undefined}
       dangerouslySetInnerHTML={{
-        __html: html || `<p class="text-[var(--muted)]">${emptyMessage}</p>`,
+        __html:
+          html ||
+          `<p class="text-[var(--muted)]">${emptyMessage}</p>`,
       }}
     />
   );

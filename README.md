@@ -157,13 +157,13 @@ Email/password accounts are **unverified by default** until the user opens the l
 | `not_configured` | Signed in, no vault record | Set up vault → `/vault/setup` |
 | `setup_incomplete` | Vault record started, missing required pieces | Continue setup → `/vault/setup` |
 | `locked` | Setup complete, UVK not in this browser session | Unlock vault → `/vault/unlock` |
-| `unlocked` | Setup complete, UVK in session | Lock vault (nav action) |
+| `unlocked` | Setup complete, UVK in session | Lock vault on `/notes` vault indicator (not top nav) |
 
 `/notes` and `/vault/settings` show state-specific prompts instead of unlock panels when no vault exists.
 
 **Vault setup password UI:** `/vault/setup` uses `PasswordSetupFields` from `@tgoliveira/secure-auth` with an app-owned vault password policy (`VAULT_PASSWORD_*` env vars → `src/lib/config/vault-password-policy.ts`). The vault password is validated client-side only and never sent to the server; Argon2id wraps the User Vault Key after validation.
 
-**Vault inactivity lock:** while the vault is unlocked, **15 minutes** of no pointer/keyboard/touch/scroll activity auto-locks the vault, clears decrypted note bodies from memory, and shows: *“Your vault was locked to protect your private notes.”* Manual **Lock vault** in the nav has the same effect without the banner.
+**Vault inactivity lock:** while the vault is unlocked, **15 minutes** of no click, pointer, keyboard, input, focus, scroll, or touch activity auto-locks the vault, clears decrypted note bodies from memory, and shows: *“Your vault was locked to protect your private notes.”* Manual **Lock vault** on the `/notes` vault indicator has the same effect without the banner. The top navigation no longer shows vault lock/status controls — only Notes, Vault, Account, and Sign out.
 
 **Import / export:** bulk import and export of decrypted notes are **not available** in this MVP. See `/vault/settings` and the public home page.
 
@@ -235,17 +235,19 @@ Run `npm run db:migrate` after pulling vault schema updates (`0008`–`0011`, in
 
 Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings`**.
 
-- **Resolved status** — user-facing “resolved” maps to internal encrypted `answered` metadata; set on edit/detail only
-- **Markdown editor** with checklists, keyboard shortcuts, and client-side sanitized preview
+- **Resolved status** — user-facing “resolved” maps to internal encrypted `answered` metadata; icon toggle on list cards and detail view; edit-mode toggle in category fields; filters use resolved/unresolved
+- **Markdown editor** with interactive checklists (source-of-truth toggles in Markdown), keyboard shortcuts, and client-side sanitized preview
+- **Notes list** — created + updated dates on every card, sort (last modified/created/title), filtered counter (`4 of 12 notes`), resolved/unresolved badges
+- **Vault indicator** on `/notes` and `/notes/[id]` — open/closed state with real inactivity countdown (`Auto-locks in 14:32`); lock control here only (not top nav); detail unlock CTA preserves `returnTo` for post-unlock navigation
 - **Encrypted local drafts** — autosaved in IndexedDB wrapped by User Vault Key (`note_draft` field); never plaintext
 - **Title required** on `/notes/new` (trimmed, non-empty); still encrypted in metadata at rest
 - **Encrypted metadata** (title, category, tags, answered) + **encrypted body** per note
-- **Answered** marker available on `/notes/[id]` edit/detail only; new notes default to `answered: false`
+- **Answered** marker on list/detail icon toggle and edit fields; new notes default to `answered: false`
 - **Vault index v2** (`GET/PATCH /api/vault/index`) — note entries plus encrypted category/tag definitions
 - **Tags** normalized client-side (`normalizeTagInput`, max **32** chars); displayed with `#`, stored without `#`
 - **Category vs tags:** category pill (no `#`); tag chips with `#`
 - **Client-side search/filters** after unlock — shown only when at least one category or tag exists; no server search
-- **Vault status on `/notes`:** closed vault visual + unlock CTA when locked; open vault visual + manual lock when unlocked
+- **Vault status on notes pages:** `NotesVaultIndicator` on `/notes` and `/notes/[id]` — closed vault visual + unlock CTA when locked (no decrypted content on detail); open vault visual + inactivity countdown + manual lock when unlocked
 - **Unlock behavior** (`GET/PATCH /api/vault/settings`): `metadata_only` (default) or `decrypt_all`
 - **API:** `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted payloads only
 - **Removed (Phase 3):** `/letters`, `/api/letters`, `letters` table

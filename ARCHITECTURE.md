@@ -128,7 +128,7 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 - **Public marketing:** Home page sections and copy in `src/lib/marketing/home-copy.ts`
 - **Vault setup:** `/vault/setup` — `PasswordSetupFields` (secure-auth) + BIP39 recovery phrase wizard; policy from `src/lib/config/vault-password-policy.ts`
 - **Recovery management:** `/vault/recovery` — status-gated recovery phrase replace + passkey setup (no initial phrase generation post-setup)
-- **Vault unlock:** `LtgVaultUnlockPanel` / `VaultAccessGate` on `/vault/unlock` and note pages
+- **Vault unlock:** `LtgVaultUnlockPanel` on `/vault/unlock`; `NotesVaultIndicator` on `/notes` and `/notes/[id]` (closed state + unlock CTA with optional `returnTo`; no inline decrypt on locked detail)
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + **purple** primary)
 - **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview; tag normalization before encrypted index write
 
@@ -186,7 +186,7 @@ Passkey sign-in follows package rules when 2FA is enabled (pending challenge unt
 
 ## Vault session
 
-`src/lib/crypto-client/vault-session.ts` — inactivity auto-lock (15 min), manual lock, unload guard.
+`src/lib/crypto-client/vault-session.ts` — inactivity auto-lock (15 min), manual lock, unload guard, `getVaultAutoLockRemainingMs()` for notes vault indicator countdown on `/notes` and `/notes/[id]`.
 
 ## Beta documentation
 

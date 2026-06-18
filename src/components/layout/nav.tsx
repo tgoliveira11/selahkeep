@@ -6,12 +6,9 @@ import { useSession } from "next-auth/react";
 import { signOutAccount } from "@/lib/auth/sign-out-client";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { AppMark } from "@/components/ui/app-mark";
 import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { lockVaultSession } from "@/lib/crypto-client/vault-session";
-import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
-import { getVaultStatusCopy } from "@/lib/vault/vault-status";
 import {
   isLoggedInNavLinkActive,
   LOGGED_IN_NAV_LINKS,
@@ -24,20 +21,10 @@ export function Nav() {
   const router = useRouter();
   const pathname = usePathname();
   const menuId = useId();
-  const vaultClient = useVaultClientStatus();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const clientStatus = vaultClient.status === "ready" ? vaultClient.clientStatus : null;
-  const vaultCopy = clientStatus ? getVaultStatusCopy(clientStatus) : null;
-  const showVaultAction = clientStatus && clientStatus !== "unlocked";
-  const showLockVault = clientStatus === "unlocked";
 
   function closeMenu() {
     setMenuOpen(false);
-  }
-
-  function handleLockVault() {
-    lockVaultSession();
   }
 
   async function handleSignOut() {
@@ -52,13 +39,6 @@ export function Nav() {
     }
     await signOutAccount();
     router.push("/");
-  }
-
-  function badgeVariant(): "success" | "info" | "muted" {
-    if (!clientStatus) return "muted";
-    if (clientStatus === "unlocked") return "success";
-    if (clientStatus === "locked") return "info";
-    return "muted";
   }
 
   return (
@@ -92,28 +72,12 @@ export function Nav() {
                   {link.label}
                 </Link>
               ))}
-              {showVaultAction && vaultCopy && (
-                <Link
-                  href={vaultCopy.actionHref}
-                  className="rounded-[var(--radius)] px-3 py-2 text-sm font-medium text-[var(--warning)] hover:bg-[var(--card-muted)]"
-                >
-                  {vaultCopy.actionLabel}
-                </Link>
-              )}
             </nav>
 
             <div className="hidden items-center gap-2 md:flex">
-              {showLockVault && (
-                <Button variant="secondary" onClick={handleLockVault}>
-                  Lock vault
-                </Button>
-              )}
               <Button variant="secondary" onClick={handleSignOut}>
                 Sign out
               </Button>
-              {vaultCopy && (
-                <Badge variant={badgeVariant()}>{vaultCopy.badgeLabel}</Badge>
-              )}
             </div>
 
             <button
@@ -168,17 +132,6 @@ export function Nav() {
                 </Link>
               </li>
             ))}
-            {showVaultAction && vaultCopy && (
-              <li>
-                <Link
-                  href={vaultCopy.actionHref}
-                  onClick={closeMenu}
-                  className="block rounded-[var(--radius)] px-3 py-3 text-sm font-medium text-[var(--warning)]"
-                >
-                  {vaultCopy.actionLabel}
-                </Link>
-              </li>
-            )}
           </ul>
 
           <p className="mt-4 px-3 pb-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
@@ -201,20 +154,6 @@ export function Nav() {
                 </Link>
               </li>
             ))}
-            {showLockVault && (
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleLockVault();
-                    closeMenu();
-                  }}
-                  className="block w-full rounded-[var(--radius)] px-3 py-3 text-left text-sm"
-                >
-                  Lock vault
-                </button>
-              </li>
-            )}
           </ul>
 
           <p className="mt-4 px-3 pb-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
@@ -239,13 +178,10 @@ export function Nav() {
             ))}
           </ul>
 
-          <div className="mt-4 space-y-2 border-t border-[var(--border)] pt-4">
+          <div className="mt-4 border-t border-[var(--border)] pt-4">
             <Button variant="secondary" className="w-full" onClick={handleSignOut}>
               Sign out
             </Button>
-            {vaultCopy && (
-              <p className="px-1 text-xs text-[var(--muted)]">Vault status: {vaultCopy.badgeLabel}</p>
-            )}
           </div>
         </nav>
       )}

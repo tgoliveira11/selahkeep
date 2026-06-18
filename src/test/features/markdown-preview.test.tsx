@@ -1,6 +1,6 @@
 /** @vitest-environment happy-dom */
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MarkdownPreview } from "@/components/notes/markdown-preview";
 
 describe("MarkdownPreview", () => {
@@ -33,5 +33,20 @@ describe("MarkdownPreview", () => {
   it("shows empty message when markdown is blank", () => {
     render(<MarkdownPreview markdown="   " emptyMessage="Empty preview" />);
     expect(screen.getByText("Empty preview")).toBeTruthy();
+  });
+
+  it("toggles checklist items when interactive", () => {
+    const onMarkdownChange = vi.fn();
+    render(<MarkdownPreview markdown="- [ ] task" onMarkdownChange={onMarkdownChange} />);
+    const checkbox = screen.getByTestId("markdown-preview").querySelector("input") as HTMLInputElement;
+    expect(checkbox).toBeTruthy();
+    fireEvent.click(checkbox);
+    expect(onMarkdownChange).toHaveBeenCalledWith("- [x] task");
+  });
+
+  it("does not render disabled checkboxes when interactive", () => {
+    render(<MarkdownPreview markdown="- [ ] task" onMarkdownChange={vi.fn()} />);
+    const checkbox = screen.getByTestId("markdown-preview").querySelector("input");
+    expect(checkbox?.hasAttribute("disabled")).toBe(false);
   });
 });

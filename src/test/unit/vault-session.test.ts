@@ -8,6 +8,8 @@ import {
   isVaultManuallyLocked,
   subscribeVaultSession,
   VAULT_INACTIVITY_MS,
+  getVaultAutoLockRemainingMs,
+  subscribeVaultActivityTimer,
   clearVaultAutoLockTimer,
 } from "@/lib/crypto-client/vault-session";
 import { generateUserVaultKey, isVaultUnlocked, setSessionVaultKey } from "@/lib/crypto-client/vault";
@@ -61,6 +63,34 @@ describe("vault session auto-lock", () => {
     scheduleVaultAutoLock();
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
     expect(isVaultUnlocked()).toBe(false);
+  });
+
+  it("returns null remaining time when vault is locked", async () => {
+    lockVaultSession();
+    expect(getVaultAutoLockRemainingMs()).toBeNull();
+  });
+
+  it("notifies activity timer subscribers on touch", async () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeVaultActivityTimer(listener);
+    unlockVaultSession(await generateUserVaultKey());
+    expect(listener).toHaveBeenCalled();
+    touchVaultSession();
+    expect(listener.mock.calls.length).toBeGreaterThanOrEqual(2);
+    unsubscribe();
+  });
+
+  it("returns remaining time while unlocked", async () => {
+    const key = await generateUserVaultKey();
+    unlockVaultSession(key);
+    const remaining = getVaultAutoLockRemainingMs();
+    expect(remaining).not.toBeNull();
+    expect(remaining).toBeGreaterThan(VAULT_INACTIVITY_MS - 1000);
+    vi.advanceTimersByTime(60_000);
+    touchVaultSession();
+    const afterTouch = getVaultAutoLockRemainingMs();
+    expect(afterTouch).not.toBeNull();
+    expect(afterTouch!).toBeGreaterThan(remaining! - 60_000);
   });
 
   it("touchVaultSession resets inactivity timer", async () => {

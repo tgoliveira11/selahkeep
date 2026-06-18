@@ -55,6 +55,8 @@ vi.mock("@/features/notes/use-vault-settings", () => ({
 
 vi.mock("@/lib/crypto-client/vault-session", () => ({
   subscribeVaultSession: vi.fn(() => () => {}),
+  subscribeVaultActivityTimer: vi.fn(() => () => {}),
+  getVaultAutoLockRemainingMs: vi.fn(() => 14 * 60 * 1000 + 32 * 1000),
 }));
 
 function mockVaultReady(unlocked: boolean) {
@@ -135,7 +137,7 @@ describe("vault status UI", () => {
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
     render(<NotesPage />);
-    expect(await screen.findByText("Vault locked")).toBeTruthy();
+    expect(await screen.findByText("Vault closed")).toBeTruthy();
     expect(screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")).toBe(
       "/vault/unlock"
     );
@@ -249,7 +251,7 @@ describe("nav vault status badge", () => {
     vi.clearAllMocks();
   });
 
-  it("shows Set up vault when vault is not configured", async () => {
+  it("does not show vault setup link in header when vault is not configured", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("not_configured"));
 
@@ -259,15 +261,13 @@ describe("nav vault status badge", () => {
       </SiteShell>
     );
 
-    expect(screen.getByRole("link", { name: /set up vault/i }).getAttribute("href")).toBe(
-      "/vault/setup"
-    );
-    expect(screen.getByText("Vault not set up")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /set up vault/i })).toBeNull();
+    expect(screen.queryByText("Vault not set up")).toBeNull();
     expect(screen.queryByRole("link", { name: /^unlock$/i })).toBeNull();
     expect(screen.queryByRole("link", { name: /^unlock vault$/i })).toBeNull();
   });
 
-  it("shows Continue setup when setup is incomplete", async () => {
+  it("does not show continue setup in header when setup is incomplete", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("setup_incomplete"));
 
@@ -277,13 +277,11 @@ describe("nav vault status badge", () => {
       </SiteShell>
     );
 
-    expect(screen.getByRole("link", { name: /continue setup/i }).getAttribute("href")).toBe(
-      "/vault/setup"
-    );
-    expect(screen.getByText("Vault setup incomplete")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /continue setup/i })).toBeNull();
+    expect(screen.queryByText("Vault setup incomplete")).toBeNull();
   });
 
-  it("shows Unlock vault when vault is locked and complete", async () => {
+  it("does not show unlock vault in header when vault is locked", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
@@ -293,13 +291,11 @@ describe("nav vault status badge", () => {
       </SiteShell>
     );
 
-    expect(screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")).toBe(
-      "/vault/unlock"
-    );
-    expect(screen.getByText("Vault locked")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
+    expect(screen.queryByText("Vault locked")).toBeNull();
   });
 
-  it("shows Lock vault when vault is unlocked", async () => {
+  it("does not show lock vault in header when vault is unlocked", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
 
@@ -309,8 +305,8 @@ describe("nav vault status badge", () => {
       </SiteShell>
     );
 
-    expect(screen.getByRole("button", { name: /lock vault/i })).toBeTruthy();
-    expect(screen.getByText("Vault unlocked")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /lock vault/i })).toBeNull();
+    expect(screen.queryByText("Vault unlocked")).toBeNull();
     expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
   });
 

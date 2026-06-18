@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { notesApi } from "@/lib/api-client/notes";
 import { vaultApi } from "@/lib/api-client/vault";
 import {
+  decryptNote,
   encryptNote,
   reencryptNoteWithUpdatedMetadata,
   type EncryptNoteInput,
@@ -145,5 +146,47 @@ export function useNotes(userId: string | null) {
     [userId]
   );
 
-  return { createNote, updateNote, deleteNote, busy, error };
+  const toggleNoteResolved = useCallback(
+    async (noteId: string, answered: boolean) => {
+      if (!userId) throw new Error("Not authenticated");
+      setBusy(true);
+      setError(null);
+      try {
+        const note = await notesApi.get(noteId);
+        const decrypted = await decryptNote(
+          note.encryptedMetadata,
+          note.encryptedBody,
+          note.encryptedWrappedNoteKey
+        );
+        const updatedMetadata = {
+          ...decrypted.metadata,
+          answered,
+          updatedAt: new Date().toISOString(),
+        };
+        const payload = await reencryptNoteWithUpdatedMetadata(
+          userId,
+          noteId,
+          updatedMetadata,
+          decrypted.body,
+          note.encryptedWrappedNoteKey
+        );
+        await notesApi.update(noteId, payload);
+
+        await syncVaultIndex(userId, (index) =>
+          updateVaultIndexEntry(index, noteId, metadataToIndexEntry(noteId, updatedMetadata))
+        );
+
+        return updatedMetadata;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to update note";
+        setError(message);
+        throw e;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [userId]
+  );
+
+  return { createNote, updateNote, deleteNote, toggleNoteResolved, busy, error };
 }

@@ -34,11 +34,13 @@ See `docs/VAULT_RECOVERY_FLOW_AUDIT.md`.
 ## Notes UX (`/notes`, `/notes/new`, `/notes/[id]`)
 
 - **Title required** on create; validated client-side before `encryptNote`.
-- **Answered** defaults to `false` on create; toggle only on detail/edit.
-- **Search/filters** on `/notes` when ≥1 category or tag exists (`hasNoteOrganizers`).
+- **Resolved** maps to internal `answered`; list + detail icon toggle (`NoteResolvedToggle`); edit-mode toggle in category fields; encrypted metadata + vault index update via `toggleNoteResolved`.
+- **Search/filters** on `/notes` when ≥1 category or tag exists (`hasNoteOrganizers`); note counter (`formatNoteCount`) and sort (`note-sort.ts`) always when unlocked.
 - **Tags:** `src/lib/notes/tag-normalization.ts` — max **32** chars; display `#` prefix only in UI.
-- **Vault indicator:** `NotesVaultIndicator` on `/notes` for locked/open states.
-- **Markdown preview:** `sanitize-markdown.ts` (`marked` + `dompurify`) and `MarkdownPreview` component — client-side only after vault unlock; no crypto changes.
+- **Vault indicator:** `NotesVaultIndicator` on `/notes` and `/notes/[id]` (not top nav) — open/closed copy, inactivity countdown (`useVaultAutoLockCountdown`), manual lock when open; detail unlock links include safe `returnTo` (`safe-return-to.ts`).
+- **Top nav:** Notes, Vault, Account, Sign out only — no lock/unlock badges or vault status text.
+- **Markdown preview:** `sanitize-markdown.ts` + `MarkdownPreview` — interactive checklists toggle `[ ]` ↔ `[x]` in source via `markdown-checklist.ts`; view mode persists through `updateNote`; new/edit preview updates editor only.
+- **Inactivity:** `useVaultActivity` resets `touchVaultSession` on click, keydown, input, focusin, scroll, pointerdown, touchstart.
 
 ## Related docs
 

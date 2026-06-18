@@ -6,7 +6,9 @@ export const VAULT_INACTIVITY_MS = 15 * 60 * 1000;
 let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
 let onAutoLock: (() => void) | null = null;
 let manuallyLocked = false;
+let lastActivityAt = 0;
 const listeners = new Set<() => void>();
+const activityListeners = new Set<() => void>();
 
 function notifyVaultSessionChange(): void {
   for (const listener of listeners) {
@@ -35,9 +37,29 @@ export function clearVaultAutoLockTimer(): void {
   }
 }
 
+function notifyActivityChange(): void {
+  for (const listener of activityListeners) {
+    listener();
+  }
+}
+
+/** Milliseconds until auto-lock, or `null` when the vault is not in an active unlocked session. */
+export function getVaultAutoLockRemainingMs(): number | null {
+  if (!isVaultUnlocked() || manuallyLocked || lastActivityAt === 0) return null;
+  return Math.max(0, VAULT_INACTIVITY_MS - (Date.now() - lastActivityAt));
+}
+
+/** Subscribe to inactivity timer resets (for countdown UI). */
+export function subscribeVaultActivityTimer(listener: () => void): () => void {
+  activityListeners.add(listener);
+  return () => activityListeners.delete(listener);
+}
+
 export function scheduleVaultAutoLock(): void {
   if (!isVaultUnlocked() || manuallyLocked) return;
   clearVaultAutoLockTimer();
+  lastActivityAt = Date.now();
+  notifyActivityChange();
   inactivityTimer = setTimeout(() => {
     lockVaultSession();
     onAutoLock?.();
@@ -61,6 +83,8 @@ export function unlockVaultSession(vaultKey: CryptoKey): void {
 /** Manual or inactivity lock — keeps IndexedDB but blocks silent re-unlock until explicit unlock. */
 export function lockVaultSession(): void {
   clearVaultAutoLockTimer();
+  lastActivityAt = 0;
+  notifyActivityChange();
   clearNoteBodyCache();
   lockVault();
   manuallyLocked = true;
@@ -71,6 +95,8 @@ export function lockVaultSession(): void {
 export function resetVaultSessionLockState(): void {
   manuallyLocked = false;
   clearVaultAutoLockTimer();
+  lastActivityAt = 0;
+  notifyActivityChange();
   notifyVaultSessionChange();
 }
 

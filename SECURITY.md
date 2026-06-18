@@ -238,8 +238,8 @@ Challenges scoped by user ID and type; expire after 5 minutes; deleted on use vi
 
 ## Vault session hardening
 
-- **15-minute inactivity** auto-lock (`VAULT_INACTIVITY_MS` in `vault-session.ts`) — resets on pointer, keyboard, touch, and scroll activity via `use-vault-activity.ts`
-- **Vault status UI:** `GET /api/vault/status` exposes `setupPhase`; product pages combine it with the in-browser UVK session (`useVaultClientStatus`) to show `not_configured`, `setup_incomplete`, `locked`, or `unlocked`. Recovery-state labels appear only when setup is complete.
+- **15-minute inactivity** auto-lock (`VAULT_INACTIVITY_MS` in `vault-session.ts`) — resets on click, pointer, keyboard, input, focus, scroll, and touch activity via `useVaultActivity` in `(vault)/layout.tsx`; remaining time exposed for notes vault indicator countdown
+- **Vault status UI:** `GET /api/vault/status` exposes `setupPhase`; product pages combine it with the in-browser UVK session (`useVaultClientStatus`) to show `not_configured`, `setup_incomplete`, `locked`, or `unlocked`. `NotesVaultIndicator` on `/notes` and `/notes/[id]`; `/notes/[id]` never renders decrypted content when locked.
 - Manual **Lock vault** clears in-memory key, note body cache, and sets a session lock flag; note pages hide decrypted content until explicit unlock
 - In-memory User Vault Key cleared on lock, sign out, and `pagehide` (best effort)
 

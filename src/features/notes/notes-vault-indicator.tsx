@@ -3,13 +3,17 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { lockVaultSession } from "@/lib/crypto-client/vault-session";
+import { buildVaultUnlockHref } from "@/lib/notes/safe-return-to";
 import type { VaultClientStatus } from "@/lib/vault/vault-status";
 import { getVaultStatusCopy } from "@/lib/vault/vault-status";
+import { useVaultAutoLockCountdown } from "@/features/vault/use-vault-auto-lock-countdown";
 import { cn } from "@/lib/ui/cn";
 
 interface NotesVaultIndicatorProps {
   clientStatus: VaultClientStatus;
   className?: string;
+  /** After unlock, return to this notes route when safe. */
+  returnTo?: string;
 }
 
 function statusLabel(clientStatus: VaultClientStatus): string {
@@ -17,9 +21,9 @@ function statusLabel(clientStatus: VaultClientStatus): string {
     case "unlocked":
       return "Vault open";
     case "locked":
-      return "Vault locked";
+      return "Vault closed";
     case "not_configured":
-      return "Vault not set up";
+      return "Set up your vault";
     case "setup_incomplete":
       return "Vault setup incomplete";
   }
@@ -41,10 +45,13 @@ function VaultGlyph({ open }: { open: boolean }) {
   );
 }
 
-export function NotesVaultIndicator({ clientStatus, className }: NotesVaultIndicatorProps) {
+export function NotesVaultIndicator({ clientStatus, className, returnTo }: NotesVaultIndicatorProps) {
   const copy = getVaultStatusCopy(clientStatus, "notes");
   const label = statusLabel(clientStatus);
   const isOpen = clientStatus === "unlocked";
+  const countdown = useVaultAutoLockCountdown(isOpen);
+  const unlockHref =
+    clientStatus === "locked" ? buildVaultUnlockHref(returnTo) : copy.actionHref;
 
   if (clientStatus === "unlocked") {
     return (
@@ -60,7 +67,11 @@ export function NotesVaultIndicator({ clientStatus, className }: NotesVaultIndic
           <VaultGlyph open />
           <div>
             <p className="font-medium text-[var(--foreground)]">{label}</p>
-            <p className="text-sm text-[var(--muted)]">Your private notes are available on this device.</p>
+            <p className="text-sm text-[var(--muted)]">
+              {countdown
+                ? `Auto-locks in ${countdown}`
+                : "Your private notes are available on this device."}
+            </p>
           </div>
         </div>
         <Button type="button" variant="secondary" onClick={() => lockVaultSession()}>
@@ -80,15 +91,22 @@ export function NotesVaultIndicator({ clientStatus, className }: NotesVaultIndic
       data-vault-state="closed"
     >
       <div className="flex items-center gap-3">
-        <Link href={copy.actionHref} className="rounded-[var(--radius)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]">
+        <Link
+          href={unlockHref}
+          className="rounded-[var(--radius)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+        >
           <VaultGlyph open={false} />
         </Link>
         <div>
           <p className="font-medium text-[var(--foreground)]">{label}</p>
-          <p className="text-sm text-[var(--muted)]">{copy.promptDescription}</p>
+          <p className="text-sm text-[var(--muted)]">
+            {clientStatus === "locked"
+              ? "Unlock your vault to read and write private notes on this device."
+              : copy.promptDescription}
+          </p>
         </div>
       </div>
-      <Link href={copy.actionHref}>
+      <Link href={unlockHref}>
         <Button className="w-full sm:w-auto">{copy.promptCta}</Button>
       </Link>
     </div>

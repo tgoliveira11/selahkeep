@@ -81,7 +81,7 @@ describe("logged-in navigation", () => {
     expect(within(header).queryByRole("link", { name: /^write$/i })).toBeNull();
   });
 
-  it("shows Unlock vault when signed in and vault is locked", async () => {
+  it("does not show vault lock or status controls in the header when signed in", async () => {
     const { useSession } = await import("next-auth/react");
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useSession).mockReturnValue({
@@ -103,11 +103,16 @@ describe("logged-in navigation", () => {
       </SiteShell>
     );
 
-    expect(screen.getByRole("link", { name: /unlock vault/i })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /lock vault/i })).toBeNull();
+    const header = screen.getByRole("banner");
+    expect(within(header).queryByRole("link", { name: /unlock vault/i })).toBeNull();
+    expect(within(header).queryByRole("button", { name: /lock vault/i })).toBeNull();
+    expect(within(header).queryByText(/vault locked/i)).toBeNull();
+    expect(within(header).queryByText(/vault unlocked/i)).toBeNull();
+    expect(within(header).queryByText(/vault not set up/i)).toBeNull();
+    expect(within(header).queryByText(/setup incomplete/i)).toBeNull();
   });
 
-  it("shows Lock vault when vault is unlocked", async () => {
+  it("does not show vault lock controls when vault is unlocked", async () => {
     const { useSession } = await import("next-auth/react");
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useSession).mockReturnValue({
@@ -129,8 +134,9 @@ describe("logged-in navigation", () => {
       </SiteShell>
     );
 
-    expect(screen.getByRole("button", { name: /lock vault/i })).toBeTruthy();
-    expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
+    const header = screen.getByRole("banner");
+    expect(within(header).queryByRole("button", { name: /lock vault/i })).toBeNull();
+    expect(within(header).queryByText(/vault unlocked/i)).toBeNull();
   });
 
   it("mobile menu includes Notes, Vault, Account, and Sign out", async () => {

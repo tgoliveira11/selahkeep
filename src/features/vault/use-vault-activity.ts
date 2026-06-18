@@ -3,7 +3,15 @@
 import { useEffect } from "react";
 import { touchVaultSession } from "@/lib/crypto-client/vault-session";
 
-const ACTIVITY_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"] as const;
+const ACTIVITY_EVENTS = [
+  "click",
+  "keydown",
+  "input",
+  "focusin",
+  "scroll",
+  "pointerdown",
+  "touchstart",
+] as const;
 
 /** Resets the vault inactivity timer while the vault is unlocked. */
 export function useVaultActivity(): void {

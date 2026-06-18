@@ -19,6 +19,7 @@ interface MarkdownEditorProps {
   maxLength?: number;
   id?: string;
   onSave?: () => void;
+  checklistsDisabled?: boolean;
 }
 
 export function MarkdownEditor({
@@ -28,6 +29,7 @@ export function MarkdownEditor({
   maxLength = 50_000,
   id = "note-markdown",
   onSave,
+  checklistsDisabled = false,
 }: MarkdownEditorProps) {
   const applyWrap = useCallback(
     (action: WrapAction) => {
@@ -104,6 +106,8 @@ export function MarkdownEditor({
         <p className="mb-2 text-sm font-medium text-[var(--muted)]">Preview</p>
         <MarkdownPreview
           markdown={value}
+          onMarkdownChange={onChange}
+          checklistsDisabled={checklistsDisabled}
           className="min-h-[8rem] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card-muted)] p-4 text-sm leading-relaxed"
         />
       </div>

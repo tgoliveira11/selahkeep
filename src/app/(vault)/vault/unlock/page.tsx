@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -16,11 +16,14 @@ import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
 import { LtgVaultUnlockPanel } from "@/features/vault/ltg-vault-unlock-panel";
 import { VaultUnlockPanel } from "@/features/vault/vault-unlock-panel";
 import { getVaultStatusCopy } from "@/lib/vault/vault-status";
+import { safeNotesReturnTo } from "@/lib/notes/safe-return-to";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 export default function VaultUnlockPage() {
   const { status: authStatus } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const afterUnlockPath = safeNotesReturnTo(searchParams.get("returnTo")) ?? "/notes";
   const vaultClient = useVaultClientStatus();
   const {
     loading,
@@ -66,7 +69,7 @@ export default function VaultUnlockPage() {
             <h2 className="text-lg font-semibold text-[var(--foreground)]">{copy.promptTitle}</h2>
             <p className="text-sm leading-relaxed text-[var(--muted)]">{copy.promptDescription}</p>
           </div>
-          <Link href="/notes">
+          <Link href={afterUnlockPath}>
             <Button className="w-full sm:w-auto">{copy.promptCta}</Button>
           </Link>
         </Card>
@@ -99,23 +102,23 @@ export default function VaultUnlockPage() {
           vaultStatus={serverStatus}
           onUnlockPassword={async (password) => {
             await unlockFromVaultPassword(password);
-            router.push("/notes");
+            router.push(afterUnlockPath);
           }}
           onUnlockRecoveryPhrase={async (phrase) => {
             await unlockFromRecoveryPhrase(phrase);
-            router.push("/notes");
+            router.push(afterUnlockPath);
           }}
           onUnlockPasskey={async () => {
             await unlockFromPasskey();
-            router.push("/notes");
+            router.push(afterUnlockPath);
           }}
           onUnlockLegacyPasskey={async () => {
             await unlockFromPasskey();
-            router.push("/notes");
+            router.push(afterUnlockPath);
           }}
           onUnlockLegacyRecoveryCode={async (code) => {
             await unlockFromRecoveryCode(code);
-            router.push("/notes");
+            router.push(afterUnlockPath);
           }}
         />
       )}
@@ -129,11 +132,11 @@ export default function VaultUnlockPage() {
           onRecoveryCodeChange={setLegacyRecoveryCode}
           onUnlockPasskey={async () => {
             await unlockFromPasskey();
-            router.push("/notes");
+            router.push(afterUnlockPath);
           }}
           onUnlockRecovery={async () => {
             await unlockFromRecoveryCode(legacyRecoveryCode);
-            router.push("/notes");
+            router.push(afterUnlockPath);
           }}
           onShowRecovery={() => undefined}
           onBackFromRecovery={() => undefined}

@@ -1,0 +1,51 @@
+/** @vitest-environment happy-dom */
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render } from "@testing-library/react";
+import { useVaultActivity } from "@/features/vault/use-vault-activity";
+import * as vaultSession from "@/lib/crypto-client/vault-session";
+import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+
+function ActivityProbe() {
+  useVaultActivity();
+  return <div data-testid="probe" />;
+}
+
+describe("useVaultActivity", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vaultSession.clearVaultAutoLockTimer();
+    setSessionVaultKey(null);
+    vi.spyOn(vaultSession, "touchVaultSession");
+  });
+
+  afterEach(() => {
+    vaultSession.lockVaultSession();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it("resets inactivity timer on click, keydown, input, focusin, scroll, pointerdown, and touchstart", async () => {
+    const key = await generateUserVaultKey();
+    vaultSession.unlockVaultSession(key);
+
+    render(<ActivityProbe />);
+
+    const events = [
+      "click",
+      "keydown",
+      "input",
+      "focusin",
+      "scroll",
+      "pointerdown",
+      "touchstart",
+    ] as const;
+
+    for (const type of events) {
+      vi.advanceTimersByTime(60_000);
+      window.dispatchEvent(new Event(type, { bubbles: true }));
+    }
+
+    expect(vaultSession.touchVaultSession).toHaveBeenCalled();
+    expect(vaultSession.touchVaultSession.mock.calls.length).toBeGreaterThanOrEqual(events.length);
+  });
+});

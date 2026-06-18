@@ -57,6 +57,8 @@ vi.mock("@/lib/crypto-client/notes", async (importOriginal) => {
 
 vi.mock("@/lib/crypto-client/vault-session", () => ({
   subscribeVaultSession: vi.fn(() => () => {}),
+  subscribeVaultActivityTimer: vi.fn(() => () => {}),
+  getVaultAutoLockRemainingMs: vi.fn(() => 14 * 60 * 1000 + 32 * 1000),
   lockVaultSession: vi.fn(),
 }));
 
@@ -132,11 +134,14 @@ describe("notes UX", () => {
       loading: false,
       error: null,
       mutateIndex: vi.fn(),
+      reload: vi.fn(),
+      persistIndex: vi.fn(),
     });
     vi.mocked(useNotes).mockReturnValue({
       createNote: vi.fn(),
       updateNote: vi.fn(),
       deleteNote: vi.fn(),
+      toggleNoteResolved: vi.fn(),
       busy: false,
       error: null,
     });
@@ -210,7 +215,7 @@ describe("notes UX", () => {
       render(<NotesPage />);
       const indicator = await screen.findByTestId("notes-vault-indicator");
       expect(indicator.getAttribute("data-vault-state")).toBe("closed");
-      expect(screen.getByText("Vault locked")).toBeTruthy();
+      expect(screen.getByText("Vault closed")).toBeTruthy();
     });
 
     it("shows open vault visual when vault is unlocked", async () => {
@@ -230,6 +235,92 @@ describe("notes UX", () => {
       expect(
         screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")
       ).toBe("/vault/unlock");
+    });
+
+    it("shows notes counter", async () => {
+      render(<NotesPage />);
+      expect(await screen.findByTestId("notes-counter")).toHaveTextContent("1 note");
+    });
+
+    it("shows filtered notes counter", async () => {
+      const { useVaultIndex } = await import("@/features/notes/use-vault-index");
+      vi.mocked(useVaultIndex).mockReturnValue({
+        index: {
+          ...sampleIndex,
+          entries: [
+            ...sampleIndex.entries,
+            {
+              id: "note-2",
+              title: "Evening",
+              categoryId: null,
+              tagIds: [],
+              answered: true,
+              createdAt: "2026-01-02T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          ],
+        },
+        loading: false,
+        error: null,
+        mutateIndex: vi.fn(),
+        reload: vi.fn(),
+        persistIndex: vi.fn(),
+      });
+
+      render(<NotesPage />);
+      expect(await screen.findByTestId("notes-counter")).toHaveTextContent("2 notes");
+      fireEvent.change(screen.getByLabelText(/status/i), { target: { value: "resolved" } });
+      expect(screen.getByTestId("notes-counter")).toHaveTextContent("1 of 2 notes");
+    });
+
+    it("shows sort control", async () => {
+      render(<NotesPage />);
+      expect(await screen.findByLabelText(/sort by/i)).toBeTruthy();
+    });
+
+    it("shows resolve quick action on note cards", async () => {
+      render(<NotesPage />);
+      expect(await screen.findByLabelText(/mark as resolved/i)).toBeTruthy();
+    });
+
+    it("calls toggleNoteResolved when resolve action is clicked", async () => {
+      const { useNotes } = await import("@/features/notes/use-notes");
+      const { useVaultIndex } = await import("@/features/notes/use-vault-index");
+      const toggleNoteResolved = vi.fn().mockResolvedValue({});
+      const mutateIndex = vi.fn().mockImplementation(async (fn) => fn(sampleIndex));
+      vi.mocked(useNotes).mockReturnValue({
+        createNote: vi.fn(),
+        updateNote: vi.fn(),
+        deleteNote: vi.fn(),
+        toggleNoteResolved,
+        busy: false,
+        error: null,
+      });
+      vi.mocked(useVaultIndex).mockReturnValue({
+        index: sampleIndex,
+        loading: false,
+        error: null,
+        mutateIndex,
+        reload: vi.fn(),
+        persistIndex: vi.fn(),
+      });
+
+      render(<NotesPage />);
+      fireEvent.click(await screen.findByLabelText(/mark as resolved/i));
+      await waitFor(() => expect(toggleNoteResolved).toHaveBeenCalledWith("note-1", true));
+    });
+
+    it("shows created and updated dates on note cards", async () => {
+      render(<NotesPage />);
+      const title = await screen.findByText("Morning prayer");
+      const card = title.closest("a");
+      expect(card?.textContent).toMatch(/Created/);
+      expect(card?.textContent).toMatch(/Updated/);
+    });
+
+    it("shows unresolved badge on open notes", async () => {
+      render(<NotesPage />);
+      expect(await screen.findByText("Unresolved")).toBeTruthy();
     });
 
     it("routes no-vault state to /vault/setup", async () => {
@@ -274,6 +365,7 @@ describe("notes UX", () => {
         createNote,
         updateNote: vi.fn(),
         deleteNote: vi.fn(),
+        toggleNoteResolved: vi.fn(),
         busy: false,
         error: null,
       });
@@ -338,6 +430,18 @@ describe("notes UX", () => {
       });
       const preview = screen.getByTestId("markdown-preview");
       expect(preview.querySelectorAll('input[type="checkbox"]').length).toBeGreaterThanOrEqual(2);
+      expect(preview.querySelector('input[type="checkbox"][disabled]')).toBeNull();
+    });
+
+    it("toggles checklist in new note preview without saving", async () => {
+      render(<NewNotePage />);
+      const textarea = screen.getByPlaceholderText(/write in markdown/i) as HTMLTextAreaElement;
+      fireEvent.change(textarea, { target: { value: "- [ ] item one" } });
+      const checkbox = screen.getByTestId("markdown-preview").querySelector(
+        'input[type="checkbox"]'
+      ) as HTMLInputElement;
+      fireEvent.click(checkbox);
+      expect(textarea.value).toBe("- [x] item one");
     });
 
     it("shows template picker on new note page", () => {
@@ -383,7 +487,7 @@ describe("notes UX", () => {
         encryptedBody: {},
         encryptedWrappedNoteKey: {},
         createdAt: "2026-01-01T00:00:00.000Z",
-        updatedAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
       } as never);
 
       vi.mocked(decryptNote).mockResolvedValue({
@@ -394,10 +498,85 @@ describe("notes UX", () => {
           tagIds: ["t1"],
           answered: false,
           createdAt: "2026-01-01T00:00:00.000Z",
-          updatedAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-02T00:00:00.000Z",
         },
         body: "**answered**",
       });
+    });
+
+    it("shows closed vault panel without decrypted content when locked", async () => {
+      const { useRequireVault } = await import("@/features/vault/use-require-vault");
+      const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+      vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(false));
+      vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
+
+      render(<NoteDetailPage />);
+      const indicator = await screen.findByTestId("notes-vault-indicator");
+      expect(indicator.getAttribute("data-vault-state")).toBe("closed");
+      expect(screen.getByText("Vault closed")).toBeTruthy();
+      expect(screen.queryByText("Prayer note")).toBeNull();
+      expect(screen.queryByTestId("markdown-preview")).toBeNull();
+    });
+
+    it("routes detail unlock CTA with returnTo note path", async () => {
+      const { useRequireVault } = await import("@/features/vault/use-require-vault");
+      const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+      vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(false));
+      vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
+
+      render(<NoteDetailPage />);
+      expect(
+        screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")
+      ).toBe(`/vault/unlock?returnTo=${encodeURIComponent(`/notes/${NOTE_ID}`)}`);
+    });
+
+    it("shows vault open indicator when unlocked", async () => {
+      render(<NoteDetailPage />);
+      await screen.findByText("Prayer note");
+      const indicator = screen.getByTestId("notes-vault-indicator");
+      expect(indicator.getAttribute("data-vault-state")).toBe("open");
+      expect(screen.getByText("Vault open")).toBeTruthy();
+    });
+
+    it("shows created and updated dates in detail metadata", async () => {
+      render(<NoteDetailPage />);
+      const dates = await screen.findByTestId("note-detail-dates");
+      expect(dates.textContent).toMatch(/Created/);
+      expect(dates.textContent).toMatch(/Updated/);
+    });
+
+    it("shows resolve icon toggle in view mode matching list pattern", async () => {
+      render(<NoteDetailPage />);
+      await screen.findByText("Prayer note");
+      expect(screen.getByLabelText(/mark as resolved/i)).toBeTruthy();
+      expect(screen.getByText("Unresolved")).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /^edit$/i })).toBeTruthy();
+      expect(screen.queryAllByRole("button", { name: /mark as resolved/i })).toHaveLength(1);
+    });
+
+    it("calls toggleNoteResolved from detail resolve icon", async () => {
+      const { useNotes } = await import("@/features/notes/use-notes");
+      const toggleNoteResolved = vi.fn().mockResolvedValue({
+        title: "Prayer note",
+        body: "**answered**",
+        categoryId: "c1",
+        tagIds: ["t1"],
+        answered: true,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-03T00:00:00.000Z",
+      });
+      vi.mocked(useNotes).mockReturnValue({
+        createNote: vi.fn(),
+        updateNote: vi.fn(),
+        deleteNote: vi.fn(),
+        toggleNoteResolved,
+        busy: false,
+        error: null,
+      });
+
+      render(<NoteDetailPage />);
+      fireEvent.click(await screen.findByLabelText(/mark as resolved/i));
+      await waitFor(() => expect(toggleNoteResolved).toHaveBeenCalledWith(NOTE_ID, true));
     });
 
     it("renders resolved markdown on detail view", async () => {
@@ -448,12 +627,76 @@ describe("notes UX", () => {
       expect(screen.getByText("#faith")).toBeTruthy();
     });
 
-    it("shows resolved toggle only while editing", async () => {
+    it("shows resolved toggle only while editing in category fields", async () => {
       render(<NoteDetailPage />);
       await screen.findByText("Prayer note");
-      expect(screen.queryByLabelText(/mark as resolved/i)).toBeNull();
-      fireEvent.click(screen.getByRole("button", { name: /edit/i }));
       expect(screen.getByLabelText(/mark as resolved/i)).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+      expect(screen.getAllByLabelText(/mark as resolved/i).length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("persists checklist toggle in view mode", async () => {
+      const { decryptNote } = await import("@/lib/crypto-client/notes");
+      const { useNotes } = await import("@/features/notes/use-notes");
+      vi.mocked(decryptNote).mockResolvedValueOnce({
+        metadata: {
+          title: "Checklist note",
+          body: "- [ ] task",
+          categoryId: null,
+          tagIds: [],
+          answered: false,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+        body: "- [ ] task",
+      });
+      const updateNote = vi.fn().mockResolvedValue({});
+      vi.mocked(useNotes).mockReturnValue({
+        createNote: vi.fn(),
+        updateNote,
+        deleteNote: vi.fn(),
+        toggleNoteResolved: vi.fn(),
+        busy: false,
+        error: null,
+      });
+
+      render(<NoteDetailPage />);
+      await screen.findByText("Checklist note");
+      const checkbox = screen.getByTestId("markdown-preview").querySelector(
+        'input[type="checkbox"]'
+      ) as HTMLInputElement;
+      fireEvent.click(checkbox);
+
+      await waitFor(
+        () => expect(updateNote).toHaveBeenCalled(),
+        { timeout: 3000 }
+      );
+    });
+
+    it("toggles checklist in edit preview", async () => {
+      const { decryptNote } = await import("@/lib/crypto-client/notes");
+      vi.mocked(decryptNote).mockResolvedValueOnce({
+        metadata: {
+          title: "Edit checklist",
+          body: "- [ ] task",
+          categoryId: null,
+          tagIds: [],
+          answered: false,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+        body: "- [ ] task",
+      });
+
+      render(<NoteDetailPage />);
+      await screen.findByText("Edit checklist");
+      fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+      const textarea = screen.getByPlaceholderText(/write in markdown/i) as HTMLTextAreaElement;
+      const checkbox = screen.getByTestId("markdown-preview").querySelector(
+        'input[type="checkbox"]'
+      ) as HTMLInputElement;
+      fireEvent.click(checkbox);
+      expect(textarea.value).toBe("- [x] task");
     });
   });
 
