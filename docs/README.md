@@ -27,6 +27,7 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 | [`API_REFERENCE.md`](./API_REFERENCE.md) | API overview |
 | [`LTG_VAULT_AGENT_IMPLEMENTATION_GUIDE.md`](./LTG_VAULT_AGENT_IMPLEMENTATION_GUIDE.md) | Agent notes for vault + secure-auth integration |
 | [`VAULT_AUTO_LOCK_NORMALIZATION.md`](./VAULT_AUTO_LOCK_NORMALIZATION.md) | Auto-lock config, activity, locked-state UI, draft hooks |
+| [`NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md`](./NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md) | Encrypted drafts, autosave rules, template switching |
 | [`EDITOR_IMPLEMENTATION_DECISION.md`](./EDITOR_IMPLEMENTATION_DECISION.md) | Visual note editor (Tiptap) decision and boundaries |
 
 ## Root-level docs

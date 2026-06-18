@@ -99,7 +99,19 @@ Drafts filter uses encrypted draft keys from IndexedDB (`listEncryptedNoteDraftK
 | Vault index v3 | `src/lib/crypto-client/vault-index-types.ts`, `vault-index.ts` |
 | Note hooks | `src/features/notes/use-notes.ts` |
 | Notes list UI | `src/app/(vault)/notes/page.tsx` |
-| Note detail lifecycle | `src/app/(vault)/notes/[id]/page.tsx` |
+| Note detail lifecycle | `src/app/(vault)/notes/[id]/page.tsx`, `src/components/notes/note-reading-view.tsx`, `note-more-actions-menu.tsx` |
+
+### Note detail reading view (UI)
+
+`/notes/[id]` view mode uses `NoteReadingView`:
+
+- **Edit** primary; **More actions** menu for pin, favorite, archive, duplicate, move to trash
+- Fixed `NoteStateIndicators` (`interactive`) — pin → favorite → resolved
+- Editorial `note-reading-surface` for Markdown body
+- Archived/trash banners with adapted actions
+- Locked: `VaultLockedState` (`read-note`) — no decrypted metadata
+
+See [`UI_UX_DIRECTION.md`](./UI_UX_DIRECTION.md) — Note Reading View Pattern.
 
 ## Tests
 
@@ -107,7 +119,7 @@ Drafts filter uses encrypted draft keys from IndexedDB (`listEncryptedNoteDraftK
 |-------|-------|
 | Unit | `note-metadata.test.ts`, `smart-filters.test.ts`, `saved-views.test.ts`, `note-view-mode.test.ts`, `duplicate-note.test.ts`, updated `vault-index.test.ts`, `note-sort.test.ts` |
 | Security | `note-org-metadata.test.ts` |
-| Features | Updated `notes-ux.test.tsx`, `vault-status-ui.test.tsx`, `editor-track-2.test.tsx`, `notes-toolbar-refinement.test.tsx` |
+| Features | Updated `notes-ux.test.tsx`, `note-detail-reading-view.test.tsx`, `vault-status-ui.test.tsx`, `editor-track-2.test.tsx`, `notes-toolbar-refinement.test.tsx` |
 
 ## Validation
 
@@ -141,6 +153,15 @@ Visibility (`shouldShowNotesListControls`): organizers (categories/tags), ≥1 n
 ### Note state indicators
 
 `NoteStateIndicators` (`src/components/notes/note-state-indicators.tsx`) provides accessible icon-only labels for resolved, pinned, favorite, archived, and trash. Pinned/favorite are suppressed when archived or trashed.
+
+### `/notes/new` field priority and template categories
+
+Field order: **Template → Category (blank note only) → Title → Editor → Tags**.
+
+- Non-blank templates show a read-only template-assigned category; manual category controls are hidden.
+- Template categories are created/reused on **note save** via `resolveTemplateCategoryId`, not on template selection.
+- Blank-note manual dropdown lists user-created categories only (`filterUserCreatedCategories`).
+- Reserved template names are blocked for manual category creation (`reserved-category-names.ts`).
 
 ## Remaining risks / follow-ups
 

@@ -128,27 +128,26 @@ describe("notes refinements", () => {
   });
 
   describe("template category", () => {
-    it("assigns Prayer category and locks it when Prayer template is selected", async () => {
+    it("shows locked Prayer category when Prayer template is selected", async () => {
       render(<NewNotePage />);
       fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
 
-      await waitFor(() => {
-        expect(createCategory).toHaveBeenCalledWith("Prayer");
-      });
-
-      const locked = screen.getByTestId("template-locked-category");
-      expect(locked).toBeTruthy();
+      const locked = await screen.findByTestId("template-locked-category");
       expect(locked.textContent).toMatch(/Prayer/);
-      expect(locked.textContent).toMatch(/assigned by the template/i);
+      expect(locked.textContent).toMatch(/assigned automatically/i);
+    });
+
+    it("does not create category when Prayer template is selected", async () => {
+      render(<NewNotePage />);
+      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
+      await screen.findByTestId("template-locked-category");
+      expect(createCategory).not.toHaveBeenCalled();
     });
 
     it("does not autosave after template selection alone", async () => {
       render(<NewNotePage />);
       fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-
-      await waitFor(() => {
-        expect(createCategory).toHaveBeenCalled();
-      });
+      await screen.findByTestId("template-locked-category");
 
       vi.advanceTimersByTime(3000);
       expect(saveEncryptedNoteDraft).not.toHaveBeenCalled();
@@ -157,10 +156,7 @@ describe("notes refinements", () => {
     it("starts autosave after user edits body", async () => {
       render(<NewNotePage />);
       fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-
-      await waitFor(() => {
-        expect(createCategory).toHaveBeenCalled();
-      });
+      await screen.findByTestId("template-locked-category");
 
       fireEvent.click(screen.getByTestId("editor-mode-markdown"));
       fireEvent.change(screen.getByTestId("markdown-expert-textarea"), { target: { value: "extra" } });
@@ -179,6 +175,7 @@ describe("notes refinements", () => {
 
       fireEvent.click(screen.getByRole("radio", { name: /blank note/i }));
       expect(screen.queryByTestId("template-locked-category")).toBeNull();
+      expect(screen.getByPlaceholderText(/new category name/i)).toBeTruthy();
     });
   });
 

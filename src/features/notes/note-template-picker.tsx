@@ -16,7 +16,7 @@ export function NoteTemplatePicker({ value, onChange, disabled }: NoteTemplatePi
         <p className="note-template-picker__label" id="note-template-label">
           Template
         </p>
-        <p className="note-template-picker__hint">Optional starter content</p>
+        <p className="note-template-picker__hint">Choose a starter structure for this note.</p>
       </div>
       <div
         className="note-template-picker__options"

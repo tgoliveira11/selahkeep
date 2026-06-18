@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { RESOLVED_COPY, isNoteResolved } from "@/lib/notes/resolved-labels";
+import { isNoteResolved } from "@/lib/notes/resolved-labels";
 import { formatNoteUpdatedShort } from "@/lib/notes/note-dates";
 import { NoteStateIndicators } from "@/components/notes/note-state-indicators";
 import { NoteResolvedToggle } from "@/components/notes/note-resolved-toggle";
@@ -45,33 +45,17 @@ export function NoteListRow({
     >
       <Link
         href={`/notes/${id}`}
-        className="note-list-row__hit"
+        className={cn("note-list-row__title", locked && "text-[var(--muted)]")}
         aria-label={`Open note: ${title}`}
       >
-        <span
-          className={cn(
-            "note-list-row__status",
-            resolved ? "note-list-row__status--resolved" : "note-list-row__status--open"
-          )}
-        >
-          <span aria-hidden>{resolved ? "✓" : "○"}</span>
-          <span className="sr-only">
-            {resolved ? RESOLVED_COPY.resolvedBadge : RESOLVED_COPY.unresolved}
-          </span>
-        </span>
-
-        <span className={cn("note-list-row__title", locked && "text-[var(--muted)]")}>
-          {title}
-        </span>
-
-        <span className="note-list-row__category">
-          {categoryName ?? ""}
-        </span>
-
-        <time className="note-list-row__date" dateTime={updatedAt}>
-          {formatNoteUpdatedShort(updatedAt)}
-        </time>
+        {title}
       </Link>
+
+      <span className="note-list-row__category">{categoryName ?? ""}</span>
+
+      <time className="note-list-row__date" dateTime={updatedAt}>
+        {formatNoteUpdatedShort(updatedAt)}
+      </time>
 
       <NoteStateIndicators
         answered={answered}

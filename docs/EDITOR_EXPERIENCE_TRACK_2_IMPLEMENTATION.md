@@ -42,9 +42,13 @@ Restore/discard banners on new and edit pages. Drafts cleared on successful save
 
 ## Templates
 
-14 local templates in `src/lib/notes/note-templates.ts` (no server table). Selector on `/notes/new`; header **New note ▾** menu can open `/notes/new?template=<id>` for core templates. Replace confirmation when body has content.
+14 local templates in `src/lib/notes/note-templates.ts` (no server table). Selector on `/notes/new`; header **New note ▾** menu can open `/notes/new?template=<id>` for core templates. **Template switching is immediate** — no blocking confirmation modal. If the user has already edited, the current editor state is flushed to the encrypted draft before the new template is applied.
 
-**Template categories (refinement):** Non-blank templates assign a locked category matching the template name (e.g. Prayer → category Prayer), created/reused via encrypted vault index. Blank note does not auto-create a category. Category is read-only during creation when assigned by template.
+See [`NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md`](./NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md) for full autosave/draft rules.
+
+**Template categories (refinement):** Non-blank templates assign a locked category matching the template label (e.g. Prayer → category Prayer). Template/system categories are hidden from the blank-note manual dropdown. User-created categories cannot use reserved template names. The template category is created/reused through the encrypted vault index **when the note is saved**, not when the template is selected. Blank note does not auto-create a category.
+
+**`/notes/new` field priority:** Template → Category (blank only) → Title → Editor → Tags.
 
 **Autosave activation (refinement):** Encrypted autosave and unsaved-change warnings start only after user-originated edits (title, body, tags, manual category). Template prefill alone does not activate autosave.
 
@@ -77,4 +81,7 @@ Restore/discard banners on new and edit pages. Drafts cleared on successful save
 - `src/test/features/editor-track-2.test.tsx`
 - `src/test/unit/quick-insert-snippets.test.ts`
 - `src/test/unit/daily-note.test.ts`
-- Updated `note-templates.test.ts`, `markdown-editor.test.tsx`
+- `src/test/features/notes-autosave-template-switch.test.tsx`
+- `src/test/features/notes-new-field-order.test.tsx`
+- `src/test/unit/reserved-category-names.test.ts`
+- Updated `note-templates.test.ts`, `markdown-editor.test.tsx`, `notes-refinements.test.tsx`

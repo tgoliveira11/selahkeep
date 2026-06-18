@@ -15,7 +15,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
 import type { EditorStatus } from "@/components/notes/editor-status-bar";
 import { NoteFocusModeToggle } from "@/features/notes/note-focus-mode-toggle";
-import { CategoryTagFields } from "@/features/notes/category-tag-fields";
+import { NoteCategoryField } from "@/features/notes/category-tag-fields";
+import { TagChipInput } from "@/features/notes/tag-chip-input";
 import { NoteTemplatePicker } from "@/features/notes/note-template-picker";
 import { useCategoriesTags } from "@/features/notes/use-categories-tags";
 import { useNotes } from "@/features/notes/use-notes";
@@ -39,8 +40,14 @@ import {
   type NoteTemplateId,
 } from "@/lib/notes/note-templates";
 import { formatDailyNoteTitle } from "@/lib/notes/daily-note";
-import { isDraftActivatedByUser } from "@/lib/notes/draft-user-activation";
 import {
+  activateDraftField,
+  EMPTY_DRAFT_USER_ACTIVATION,
+  isDraftActivatedByUser,
+  type DraftUserActivation,
+} from "@/lib/notes/draft-user-activation";
+import {
+  filterUserCreatedCategories,
   getTemplateCategoryName,
   isTemplateWithLockedCategory,
   resolveTemplateCategoryId,
@@ -51,7 +58,6 @@ import { VaultLockedState } from "@/features/vault/vault-locked-state";
 import { useNoteVaultBeforeAutoLock } from "@/features/notes/use-note-vault-before-auto-lock";
 import { useVaultAutoLockedCopy } from "@/features/vault/use-vault-auto-locked-copy";
 import { touchVaultActivity } from "@/features/vault/use-vault-activity";
-import type { VaultCategory } from "@/lib/crypto-client/vault-index-types";
 
 const TITLE_REQUIRED_MESSAGE = "Add a title before saving your note.";
 
@@ -88,18 +94,27 @@ export default function NewNotePage() {
   const [error, setError] = useState<string | null>(null);
   const [draftPrompt, setDraftPrompt] = useState<NoteDraftPlaintext | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
-  const [userStartedDraft, setUserStartedDraft] = useState(false);
-  const templateCategoryApplied = useRef(false);
+  const [draftActivation, setDraftActivation] = useState<DraftUserActivation>(
+    EMPTY_DRAFT_USER_ACTIVATION
+  );
+  const applyingTemplateRef = useRef(false);
 
   const userId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
   const { createNote, busy, error: notesError } = useNotes(userId);
   const { categories, tags, createCategory, createTag } = useCategoriesTags(userId, vaultUnlocked);
 
+  const userCategories = useMemo(
+    () => filterUserCreatedCategories(categories),
+    [categories]
+  );
+
   const autoLocked = useVaultAutoLockedCopy();
   const trimmedTitle = title.trim();
   const canSave = Boolean(trimmedTitle && body.trim());
-  const dirty = isDraftActivatedByUser(userStartedDraft);
+  const dirty = isDraftActivatedByUser(draftActivation);
+  const showManualCategory = templateId === "blank";
+  const showTemplateCategory = categoryLocked && isTemplateWithLockedCategory(templateId);
 
   useUnsavedChangesWarning(dirty);
   const { requestLeave, confirmDialog } = useConfirmLeave(dirty);
@@ -123,38 +138,9 @@ export default function NewNotePage() {
   useNoteVaultBeforeAutoLock(dirty, persistDraft);
   useAutosaveTimer(Boolean(userId && dirty), persistDraft);
 
-  const markUserEdit = useCallback(() => {
-    setUserStartedDraft(true);
+  const activateDraft = useCallback((field: keyof DraftUserActivation) => {
+    setDraftActivation((current) => activateDraftField(current, field));
   }, []);
-
-  const assignTemplateCategory = useCallback(
-    async (
-      id: NoteTemplateId,
-      currentCategories: VaultCategory[],
-      currentTitle: string,
-      _currentBody: string,
-      _currentTagIds: string[]
-    ) => {
-      if (!isTemplateWithLockedCategory(id)) {
-        setCategoryLocked(false);
-        setCategoryId(null);
-        return;
-      }
-
-      const nextCategoryId = await resolveTemplateCategoryId(
-        id,
-        currentCategories,
-        createCategory
-      );
-      const template = getNoteTemplate(id);
-      if (!currentTitle.trim()) {
-        setTitle(template.label);
-      }
-      setCategoryId(nextCategoryId);
-      setCategoryLocked(true);
-    },
-    [createCategory]
-  );
 
   useEffect(() => {
     return subscribeVaultSession(() => {
@@ -168,8 +154,7 @@ export default function NewNotePage() {
       setError(null);
       setDraftPrompt(null);
       setDraftSaved(false);
-      setUserStartedDraft(false);
-      templateCategoryApplied.current = false;
+      setDraftActivation(EMPTY_DRAFT_USER_ACTIVATION);
     });
   }, []);
 
@@ -190,42 +175,11 @@ export default function NewNotePage() {
     };
   }, [userId, canWrite]);
 
-  useEffect(() => {
-    if (!canWrite || !isDailyNote || templateCategoryApplied.current) return;
-    templateCategoryApplied.current = true;
-    void assignTemplateCategory(
-      DAILY_NOTE_TEMPLATE_ID,
-      categories,
-      title,
-      body,
-      tagIds
-    );
-  }, [assignTemplateCategory, body, canWrite, categories, isDailyNote, tagIds, title]);
-
-  useEffect(() => {
-    if (!canWrite || isDailyNote || !templateFromQuery || templateCategoryApplied.current) return;
-    if (!isTemplateWithLockedCategory(templateFromQuery)) return;
-    templateCategoryApplied.current = true;
-    void assignTemplateCategory(templateFromQuery, categories, title, body, tagIds);
-  }, [
-    assignTemplateCategory,
-    body,
-    canWrite,
-    categories,
-    isDailyNote,
-    tagIds,
-    templateFromQuery,
-    title,
-  ]);
-
-  async function applyTemplate(id: NoteTemplateId) {
+  function applyTemplate(id: NoteTemplateId) {
     touchVaultActivity();
     if (id === templateId) return;
-    if (body.trim() && typeof window !== "undefined") {
-      const confirmed = window.confirm("Replace current note content with this template?");
-      if (!confirmed) return;
-    }
 
+    applyingTemplateRef.current = true;
     const template = getNoteTemplate(id);
     setTemplateId(id);
     setBody(template.body);
@@ -233,16 +187,18 @@ export default function NewNotePage() {
     if (id === "blank") {
       setCategoryLocked(false);
       setCategoryId(null);
+      requestAnimationFrame(() => {
+        applyingTemplateRef.current = false;
+      });
       return;
     }
 
-    const nextCategoryId = await resolveTemplateCategoryId(id, categories, createCategory);
-    if (!title.trim()) {
-      setTitle(template.label);
-    }
-
-    setCategoryId(nextCategoryId);
+    setTitle(template.label);
+    setCategoryId(null);
     setCategoryLocked(true);
+    requestAnimationFrame(() => {
+      applyingTemplateRef.current = false;
+    });
   }
 
   function restoreDraft() {
@@ -252,8 +208,9 @@ export default function NewNotePage() {
     setCategoryId(draftPrompt.categoryId);
     setTagIds(draftPrompt.tagIds);
     setDraftPrompt(null);
-    setUserStartedDraft(true);
+    setDraftActivation(activateDraftField(EMPTY_DRAFT_USER_ACTIVATION, "content"));
     setCategoryLocked(false);
+    setTemplateId("blank");
   }
 
   async function discardDraft() {
@@ -273,17 +230,26 @@ export default function NewNotePage() {
     }
 
     try {
+      let resolvedCategoryId = categoryId;
+      if (categoryLocked && isTemplateWithLockedCategory(templateId)) {
+        resolvedCategoryId = await resolveTemplateCategoryId(
+          templateId,
+          categories,
+          createCategory
+        );
+      }
+
       const note = await createNote({
         title: trimmedTitle,
         body,
-        categoryId,
+        categoryId: resolvedCategoryId,
         tagIds,
         answered: false,
       });
       if (userId) {
         await deleteEncryptedNoteDraft(userId, NEW_NOTE_DRAFT_KEY);
       }
-      setUserStartedDraft(false);
+      setDraftActivation(EMPTY_DRAFT_USER_ACTIVATION);
       router.push(`/notes/${note.id}`);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Failed to save note");
@@ -314,7 +280,7 @@ export default function NewNotePage() {
   if (!canWrite) {
     return (
       <AuthenticatedPage width="editor">
-      <PageHeader title="New note" description="Unlock your vault to begin writing." />
+        <PageHeader title="New note" description="Unlock your vault to begin writing." />
         <VaultLockedState
           variant="write"
           autoLocked={autoLocked}
@@ -377,16 +343,57 @@ export default function NewNotePage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <FormField id="note-title" label="Title" hint="Required">
-            <Input
+          <div
+            className={cn(focusMode && "note-focus-hide")}
+            data-testid="new-note-template-section"
+          >
+            <NoteTemplatePicker
+              value={templateId}
+              onChange={(id) => applyTemplate(id)}
+              disabled={busy}
+            />
+          </div>
+
+          {(showManualCategory || showTemplateCategory) && (
+            <div
+              className={cn(focusMode && "note-focus-hide")}
+              data-testid="new-note-category-section"
+            >
+              {showTemplateCategory ? (
+                <NoteCategoryField
+                  categories={[]}
+                  categoryId={null}
+                  categoryLocked
+                  lockedCategoryName={lockedCategoryName}
+                  onCategoryChange={() => {}}
+                />
+              ) : (
+                <NoteCategoryField
+                  categories={userCategories}
+                  categoryId={categoryId}
+                  onCategoryChange={(value) => {
+                    touchVaultActivity();
+                    activateDraft("manualCategory");
+                    setCategoryId(value);
+                  }}
+                  onCreateCategory={createCategory}
+                />
+              )}
+            </div>
+          )}
+
+          <div data-testid="new-note-title-field">
+            <FormField id="note-title" label="Title" hint="Required">
+              <Input
               id="note-title"
               value={title}
               onChange={(e) => {
                 touchVaultActivity();
-                markUserEdit();
+                activateDraft("title");
                 setTitle(e.target.value);
                 if (titleError) setTitleError(null);
               }}
+              onPaste={() => activateDraft("title")}
               placeholder={getNoteTemplate(templateId).titlePlaceholder}
               maxLength={200}
               required
@@ -398,49 +405,42 @@ export default function NewNotePage() {
                 {titleError}
               </p>
             )}
-          </FormField>
-          <div className={cn(focusMode && "note-focus-hide")}>
-            <NoteTemplatePicker
-              value={templateId}
-              onChange={(id) => void applyTemplate(id)}
-              disabled={busy}
-            />
+            </FormField>
           </div>
-          <div className={cn(focusMode && "note-focus-hide")}>
-            <CategoryTagFields
-              mode="create"
-              categories={categories}
-              tags={tags}
-              categoryId={categoryId}
-              tagIds={tagIds}
-              categoryLocked={categoryLocked}
-              lockedCategoryName={lockedCategoryName}
-              onCategoryChange={(value) => {
-                if (categoryLocked) return;
-                touchVaultActivity();
-                markUserEdit();
-                setCategoryId(value);
-              }}
-              onTagIdsChange={(value) => {
-                touchVaultActivity();
-                markUserEdit();
-                setTagIds(value);
-              }}
-              onCreateCategory={createCategory}
-              onCreateTag={createTag}
-            />
-          </div>
-          <FormField id="note-body" label="Your note">
-            <MarkdownEditor
+
+          <div data-testid="new-note-editor-field">
+            <FormField id="note-body" label="Your note">
+              <MarkdownEditor
               value={body}
               onChange={(value) => {
-                markUserEdit();
                 setBody(value);
+                if (applyingTemplateRef.current) return;
+                activateDraft("content");
               }}
               onSave={() => void handleSubmit()}
               status={editorStatus}
             />
-          </FormField>
+            </FormField>
+          </div>
+
+          <div
+            className={cn(focusMode && "note-focus-hide")}
+            data-testid="new-note-tags-field"
+          >
+            <FormField id="note-tags" label="Tags">
+              <TagChipInput
+                tags={tags}
+                tagIds={tagIds}
+                onTagIdsChange={(value) => {
+                  touchVaultActivity();
+                  activateDraft("tags");
+                  setTagIds(value);
+                }}
+                onCreateTag={createTag}
+              />
+            </FormField>
+          </div>
+
           {displayError && (
             <p className="text-sm text-[var(--danger)]" role="alert">
               {displayError}

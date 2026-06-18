@@ -2,12 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { PageLayout } from "@/components/layout/page-layout";
+import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormField } from "@/components/ui/form-field";
@@ -17,10 +15,7 @@ import { MarkdownEditor } from "@/features/notes/markdown-editor";
 import type { EditorStatus } from "@/components/notes/editor-status-bar";
 import { NoteFocusModeToggle } from "@/features/notes/note-focus-mode-toggle";
 import { CategoryTagFields } from "@/features/notes/category-tag-fields";
-import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
-import { MarkdownPreview } from "@/components/notes/markdown-preview";
-import { NoteLifecycleActions } from "@/components/notes/note-lifecycle-actions";
-import { NoteResolvedToggle } from "@/components/notes/note-resolved-toggle";
+import { NoteReadingView } from "@/components/notes/note-reading-view";
 import { useNoteVaultBeforeAutoLock } from "@/features/notes/use-note-vault-before-auto-lock";
 import { useVaultAutoLockedCopy } from "@/features/vault/use-vault-auto-locked-copy";
 import { touchVaultActivity } from "@/features/vault/use-vault-activity";
@@ -41,8 +36,6 @@ import {
   type NoteDraftPlaintext,
 } from "@/lib/crypto-client/note-drafts";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
-import { formatNoteListDates } from "@/lib/notes/note-dates";
-import { RESOLVED_COPY, isNoteResolved } from "@/lib/notes/resolved-labels";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { getCachedNoteBody } from "@/features/notes/eager-decrypt-notes";
@@ -57,6 +50,20 @@ function editSnapshot(metadata: NoteMetadataPlaintext, body: string): string {
     answered: metadata.answered,
     body,
   });
+}
+
+function NoteDetailPageShell({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <AuthenticatedPage width="editor" className={className}>
+      {children}
+    </AuthenticatedPage>
+  );
 }
 
 export default function NoteDetailPage() {
@@ -382,15 +389,15 @@ export default function NoteDetailPage() {
     vaultClient.status === "loading"
   ) {
     return (
-      <PageLayout>
+      <NoteDetailPageShell>
         <LoadingState label="Opening your note" />
-      </PageLayout>
+      </NoteDetailPageShell>
     );
   }
 
   if (vault.status === "error" || vaultClient.status === "error") {
     return (
-      <PageLayout>
+      <NoteDetailPageShell>
         <ErrorState
           message={
             vault.status === "error"
@@ -400,7 +407,7 @@ export default function NoteDetailPage() {
                 : "Failed to open note"
           }
         />
-      </PageLayout>
+      </NoteDetailPageShell>
     );
   }
 
@@ -411,14 +418,14 @@ export default function NoteDetailPage() {
         className="text-sm font-medium text-[var(--primary)] hover:underline"
         onClick={() => requestLeave(() => router.push("/notes"))}
       >
-        ← Back to my notes
+        ← Back to notes
       </button>
     </div>
   );
 
   if (clientStatus && clientStatus !== "unlocked") {
     return (
-      <PageLayout>
+      <NoteDetailPageShell>
         {backLink}
         {clientStatus === "locked" ? (
           <VaultLockedState
@@ -427,25 +434,25 @@ export default function NoteDetailPage() {
             returnTo={`/notes/${id}`}
           />
         ) : null}
-      </PageLayout>
+      </NoteDetailPageShell>
     );
   }
 
   if (!canRead) {
     return (
-      <PageLayout>
+      <NoteDetailPageShell>
         {backLink}
         <VaultLockedState variant="read-note" returnTo={`/notes/${id}`} />
-      </PageLayout>
+      </NoteDetailPageShell>
     );
   }
 
   if (loading || !metadata) {
     return (
-      <PageLayout>
+      <NoteDetailPageShell>
         {backLink}
         <LoadingState label="Opening your note" />
-      </PageLayout>
+      </NoteDetailPageShell>
     );
   }
 
@@ -464,7 +471,7 @@ export default function NoteDetailPage() {
             : "idle";
 
   return (
-    <PageLayout className={cn(editing && focusMode && "note-page--focus")}>
+    <NoteDetailPageShell className={cn(editing && focusMode && "note-page--focus")}>
       {backLink}
 
       {draftPrompt && !editing && (
@@ -552,86 +559,25 @@ export default function NoteDetailPage() {
           </div>
         </Card>
       ) : (
-        <article className="space-y-6">
-          <header className="space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1 space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-semibold tracking-tight">{metadata.title}</h1>
-                  {isNoteResolved(metadata.answered) ? (
-                    <Badge variant="success">{RESOLVED_COPY.resolvedBadge}</Badge>
-                  ) : (
-                    <Badge variant="muted">{RESOLVED_COPY.unresolved}</Badge>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {metadata.categoryId && (
-                    <NoteCategoryLabel
-                      name={
-                        categories.find((category) => category.id === metadata.categoryId)?.name ??
-                        "Category"
-                      }
-                    />
-                  )}
-                  {metadata.tagIds.map((tagId) => {
-                    const tag = tags.find((item) => item.id === tagId);
-                    return tag ? <NoteTagChip key={tagId} name={tag.name} /> : null;
-                  })}
-                </div>
-                <p className="text-xs text-[var(--muted)]" data-testid="note-detail-dates">
-                  {formatNoteListDates(metadata.createdAt, metadata.updatedAt)}
-                </p>
-              </div>
-              <NoteResolvedToggle
-                answered={metadata.answered}
-                resolving={resolving}
-                onToggle={() => void handleToggleResolved()}
-              />
-            </div>
-          </header>
-
-          <Card muted className="p-6">
-            {checklistSaveState !== "idle" && (
-              <p className="mb-3 text-sm text-[var(--muted)]" role="status" data-testid="checklist-save-state">
-                {checklistSaveState === "saving" && "Saving…"}
-                {checklistSaveState === "saved" && "Saved"}
-                {checklistSaveState === "error" && "Could not save checklist changes"}
-              </p>
-            )}
-            <MarkdownPreview
-              markdown={body}
-              onMarkdownChange={persistChecklistToggle}
-              checklistsDisabled={checklistSaveState === "saving" || busy}
-              className="text-base leading-relaxed text-[var(--foreground)]"
-            />
-          </Card>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button variant="secondary" onClick={startEditing}>
-              Edit
-            </Button>
-            <NoteLifecycleActions
-              pinned={metadata.pinned}
-              favorite={metadata.favorite}
-              archived={metadata.archived}
-              trashed={metadata.trashed}
-              busy={busy}
-              onTogglePinned={() =>
-                void toggleNotePinned(id, !metadata.pinned).then(setMetadata)
-              }
-              onToggleFavorite={() =>
-                void toggleNoteFavorite(id, !metadata.favorite).then(setMetadata)
-              }
-              onToggleArchived={() =>
-                void toggleNoteArchived(id, !metadata.archived).then(setMetadata)
-              }
-              onMoveToTrash={() => setDeleteOpen(true)}
-              onRestoreFromTrash={() => void handleRestoreFromTrash()}
-              onPermanentDelete={() => setPermanentDeleteOpen(true)}
-              onDuplicate={() => void handleDuplicate()}
-            />
-          </div>
-        </article>
+        <NoteReadingView
+          metadata={metadata}
+          body={body}
+          categories={categories}
+          tags={tags}
+          busy={busy}
+          resolving={resolving}
+          checklistSaveState={checklistSaveState}
+          onEdit={startEditing}
+          onToggleResolved={() => void handleToggleResolved()}
+          onTogglePinned={() => void toggleNotePinned(id, !metadata.pinned).then(setMetadata)}
+          onToggleFavorite={() => void toggleNoteFavorite(id, !metadata.favorite).then(setMetadata)}
+          onToggleArchived={() => void toggleNoteArchived(id, !metadata.archived).then(setMetadata)}
+          onDuplicate={() => void handleDuplicate()}
+          onMoveToTrash={() => setDeleteOpen(true)}
+          onRestoreFromTrash={() => void handleRestoreFromTrash()}
+          onPermanentDelete={() => setPermanentDeleteOpen(true)}
+          onChecklistChange={persistChecklistToggle}
+        />
       )}
 
       {displayError && (
@@ -644,8 +590,8 @@ export default function NoteDetailPage() {
 
       <ConfirmDialog
         open={deleteOpen}
-        title="Move to trash?"
-        description="This note will move to Trash. You can restore it later or delete it permanently."
+        title="Move note to trash?"
+        description="You can restore this note from Trash later."
         confirmLabel="Move to trash"
         loading={busy}
         onConfirm={handleMoveToTrash}
@@ -654,13 +600,13 @@ export default function NoteDetailPage() {
       <ConfirmDialog
         open={permanentDeleteOpen}
         title="Delete permanently?"
-        description="This permanently removes the note from your vault. This cannot be undone."
+        description="This will permanently delete this encrypted note. This action cannot be undone."
         confirmLabel="Delete permanently"
         loading={busy}
         onConfirm={handlePermanentDelete}
         onCancel={() => setPermanentDeleteOpen(false)}
       />
       {confirmDialog}
-    </PageLayout>
+    </NoteDetailPageShell>
   );
 }

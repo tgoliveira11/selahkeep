@@ -15,14 +15,79 @@ interface NoteStateIndicatorsProps {
   favorite?: boolean;
   archived?: boolean;
   trashed?: boolean;
-  /** When true, include resolved/unresolved icon in the cluster (card mode). */
-  includeResolved?: boolean;
   className?: string;
+  /** When set, slots become toggle buttons (detail view). */
+  interactive?: boolean;
+  resolving?: boolean;
+  onTogglePinned?: () => void;
+  onToggleFavorite?: () => void;
+  onToggleResolved?: () => void;
+}
+
+interface StateSlotProps {
+  active: boolean;
+  activeLabel: string;
+  inactiveLabel: string;
+  activeTestId: string;
+  inactiveTestId: string;
+  activeIcon: React.ReactNode;
+  inactiveIcon?: React.ReactNode;
+  hideWhenInactive?: boolean;
+  onClick?: () => void;
+  disabled?: boolean;
+}
+
+function StateSlot({
+  active,
+  activeLabel,
+  inactiveLabel,
+  activeTestId,
+  inactiveTestId,
+  activeIcon,
+  inactiveIcon,
+  hideWhenInactive = false,
+  onClick,
+  disabled = false,
+}: StateSlotProps) {
+  const icon = active ? activeIcon : (inactiveIcon ?? activeIcon);
+  const className = cn(
+    "note-state-indicators__slot",
+    active ? "note-state-indicators__slot--active" : "note-state-indicators__slot--inactive",
+    hideWhenInactive && !active && "note-state-indicators__slot--hidden",
+    onClick && "note-state-indicators__slot--interactive"
+  );
+  const label = active ? activeLabel : inactiveLabel;
+  const testId = active ? activeTestId : inactiveTestId;
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={className}
+        data-testid={testId}
+        aria-label={label}
+        disabled={disabled}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onClick();
+        }}
+      >
+        {icon}
+      </button>
+    );
+  }
+
+  return (
+    <span className={className} data-testid={testId} aria-label={label}>
+      {icon}
+    </span>
+  );
 }
 
 /**
- * Compact lifecycle indicators shared by card and list note surfaces.
- * Pinned/favorite only show for active notes; archived/trash show when applicable.
+ * Fixed-order lifecycle indicators: pinned → favorite → resolved/unresolved.
+ * Archived/trash render after the fixed trio without shifting slot positions.
  */
 export function NoteStateIndicators({
   answered,
@@ -30,76 +95,80 @@ export function NoteStateIndicators({
   favorite = false,
   archived = false,
   trashed = false,
-  includeResolved = false,
   className,
+  interactive = false,
+  resolving = false,
+  onTogglePinned,
+  onToggleFavorite,
+  onToggleResolved,
 }: NoteStateIndicatorsProps) {
   const resolved = isNoteResolved(answered);
   const showActiveMarkers = !archived && !trashed;
-  const items: Array<{ key: string; label: string; icon: React.ReactNode; testId: string }> = [];
-
-  if (includeResolved) {
-    items.push({
-      key: "resolved",
-      label: resolved ? RESOLVED_COPY.resolvedBadge : RESOLVED_COPY.unresolved,
-      icon: resolved ? <IconResolved /> : <IconUnresolved />,
-      testId: resolved ? "note-resolved-indicator" : "note-unresolved-indicator",
-    });
-  }
-
-  if (showActiveMarkers && pinned) {
-    items.push({
-      key: "pinned",
-      label: "Pinned note",
-      icon: <IconPin />,
-      testId: "note-pinned-badge",
-    });
-  }
-
-  if (showActiveMarkers && favorite) {
-    items.push({
-      key: "favorite",
-      label: "Favorite note",
-      icon: <IconStar />,
-      testId: "note-favorite-badge",
-    });
-  }
-
-  if (archived) {
-    items.push({
-      key: "archived",
-      label: "Archived note",
-      icon: <IconArchive />,
-      testId: "note-archived-badge",
-    });
-  }
-
-  if (trashed) {
-    items.push({
-      key: "trashed",
-      label: "Note in trash",
-      icon: <IconTrash />,
-      testId: "note-trashed-badge",
-    });
-  }
-
-  if (items.length === 0) return null;
 
   return (
     <span
-      className={cn("note-state-indicators", className)}
+      className={cn("note-state-indicators note-state-indicators--fixed", className)}
       data-testid="note-state-indicators"
     >
-      {items.map((item) => (
+      <span className="note-state-indicators__core" data-testid="note-state-indicators-core">
+        <StateSlot
+          active={showActiveMarkers && pinned}
+          activeLabel="Pinned note"
+          inactiveLabel="Not pinned"
+          activeTestId="note-pinned-badge"
+          inactiveTestId="note-pinned-slot"
+          activeIcon={<IconPin />}
+          hideWhenInactive={!showActiveMarkers && !interactive}
+          onClick={interactive ? onTogglePinned : undefined}
+          disabled={resolving}
+        />
+        <StateSlot
+          active={showActiveMarkers && favorite}
+          activeLabel="Favorite note"
+          inactiveLabel="Not favorite"
+          activeTestId="note-favorite-badge"
+          inactiveTestId="note-favorite-slot"
+          activeIcon={<IconStar />}
+          hideWhenInactive={!showActiveMarkers && !interactive}
+          onClick={interactive ? onToggleFavorite : undefined}
+          disabled={resolving}
+        />
+        <StateSlot
+          active={resolved}
+          activeLabel={
+            interactive
+              ? RESOLVED_COPY.markUnresolved
+              : RESOLVED_COPY.resolvedBadge
+          }
+          inactiveLabel={interactive ? RESOLVED_COPY.markResolved : RESOLVED_COPY.unresolved}
+          activeTestId="note-resolved-indicator"
+          inactiveTestId="note-unresolved-indicator"
+          activeIcon={<IconResolved />}
+          inactiveIcon={<IconUnresolved />}
+          onClick={interactive ? onToggleResolved : undefined}
+          disabled={resolving}
+        />
+      </span>
+      {archived && (
         <span
-          key={item.key}
-          className="note-state-indicators__item"
-          data-testid={item.testId}
-          title={item.label}
-          aria-label={item.label}
+          className="note-state-indicators__lifecycle"
+          data-testid="note-archived-badge"
+          aria-label="Archived note"
+          title="Archived note"
         >
-          {item.icon}
+          <IconArchive />
         </span>
-      ))}
+      )}
+      {trashed && (
+        <span
+          className="note-state-indicators__lifecycle"
+          data-testid="note-trashed-badge"
+          aria-label="Note in trash"
+          title="Note in trash"
+        >
+          <IconTrash />
+        </span>
+      )}
     </span>
   );
 }

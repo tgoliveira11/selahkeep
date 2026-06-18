@@ -29,4 +29,15 @@ describe("note view mode preference", () => {
 
     vi.unstubAllGlobals();
   });
+
+  it("defaults invalid localStorage values to cards", () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => "invalid",
+        setItem: vi.fn(),
+      },
+    });
+    expect(readNoteViewMode()).toBe("cards");
+    vi.unstubAllGlobals();
+  });
 });

@@ -20,7 +20,6 @@ export function NotesListGrid({ viewMode, children, className }: NotesListGridPr
   return (
     <div className={cn("notes-list-grid", className)} data-testid="notes-list-grid">
       <div className="notes-list-grid__header" aria-hidden="true">
-        <span />
         <span>Title</span>
         <span>Category</span>
         <span>Updated</span>

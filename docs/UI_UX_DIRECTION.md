@@ -121,17 +121,18 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 - **View mode** — Cards (rich metadata cards) / List (compact scan rows); preference in `localStorage` (`selahkeep:notes:view-mode`, non-sensitive).
 - **Controls visibility:** entire toolbar hidden when zero notes and no organizers/saved views/active filters; shown for one or more notes.
 - **Vault status dock** (`VaultStatusDock` inside authenticated `Nav` header): collapsed = tiny centered handle (`Vault` or `mm:ss` + chevron); expanded locked = quick password/passkey unlock + **Open full unlock page**; expanded open = compact row with **Lock now**. Recovery phrase only on `/vault/unlock`. Top nav shows only Notes, Vault, Account, Sign out.
-- **New note:** title required; category dropdown only when categories exist; non-blank templates assign a **locked category** matching the template name; template can be chosen from header menu (`/notes/new?template=…`) or picker on create screen. Autosave starts only after user edits, not template prefill.
+- **New note field order:** Template → Category (blank note only) → Title → Editor → Tags → Save. Template is first; tags are last optional organization step.
+- **New note:** title required; **blank note** shows manual category selection/creation (user-created categories only); non-blank templates hide manual category controls and show a read-only template-assigned category indicator; template category is created/reused **on save**, not on template selection. Reserved template names cannot be used for user-created categories. Autosave starts only after user edits, not template prefill.
 - **Tags:** chip input with normalization; display `#tag`, store `tag` (max 32 chars).
-- **Detail:** title row with resolved/unresolved badge + resolve icon (same as list); category pill without `#`; tag chips with `#`; created + updated dates; interactive checklist toggles in view/edit preview (persist on view via encrypted update).
+- **Detail:** reading view (`NoteReadingView`) — back link, title row with **Edit** + **More actions** menu; fixed state indicators (pin → favorite → resolved); category pill without `#`; tag chips with `#`; created + updated dates; editorial reading surface (`note-reading-surface`); secondary lifecycle actions in menu; destructive trash inside menu only.
 - **List:** compact rows with resolve marker, title, category/tags, updated date; quick resolve action does not navigate.
 - **Cards:** richer cards with badges, metadata, comfortable spacing; resolved notes subtly distinct without washed-out text.
 - **Empty state:** “Start your first private note” with calm copy and New note action.
-- **Detail lifecycle:** Pin, Favorite, Archive, Move to trash, Restore, Delete permanently (confirmation), Duplicate note.
+- **Detail lifecycle:** Pin, Favorite, Archive, Duplicate in **More actions** menu; Move to trash (destructive, menu + confirmation); archived/trash detail banners; Restore / Delete permanently in trash context.
 - **Resolved:** user-facing label; internal encrypted metadata uses `answered`.
 - **Markdown:** interactive checklists in preview (toggle `[ ]` ↔ `[x]` in source only), shortcuts, sanitized `MarkdownPreview`.
 - **Drafts:** encrypted local autosave; restore/discard on return.
-- **Templates:** chip-style picker on `/notes/new`; confirms before replacing existing body.
+- **Templates:** chip-style picker on `/notes/new`; switches apply immediately (no confirmation modal). If the user has edited, encrypted draft is flushed before the new template is applied. See [`NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md`](./NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md).
 
 ---
 
@@ -193,7 +194,8 @@ Primary lifecycle filters render as spaced pill chips (`SmartFilterChips`) with 
 ### Card/List View Pattern
 
 - **Cards** (`NoteCard`): category, tags, state indicators (resolved, pinned, favorite), comfortable spacing.
-- **List** (`NotesListGrid` + `NoteListRow`): column header + aligned rows (status, title, category, updated, state indicators, resolve action) — not raw text lines.
+- **List** (`NotesListGrid` + `NoteListRow`): Title | Category | Updated | States (fixed pin → favorite → resolved slots) + resolve action — not raw text lines.
+- **View mode:** defaults to **Cards**; preference stored in `localStorage` key `selahkeep:notes:view-mode` (`cards` | `list` only — no private metadata).
 - **List mode shows category only** — tags are hidden in list rows for scanability; tags remain visible in card mode.
 
 ### Toolbar layering and sizing
@@ -209,23 +211,16 @@ All toolbar controls share height via `--toolbar-control-height` (2.5rem / 40px)
 
 ### Note state indicators
 
-Shared component: `NoteStateIndicators` (`@/components/notes/note-state-indicators`) with inline SVG icons (`note-state-icons.tsx`).
+Shared component: `NoteStateIndicators` with inline SVG icons. **Fixed order:** pinned → favorite → resolved/unresolved. Inactive pin/favorite slots stay aligned (muted/hidden). Archived/trash icons append after the core trio.
 
 | State | Indicator | Accessible label |
 |-------|-----------|------------------|
-| Resolved | check circle | `Resolved` |
-| Unresolved | empty circle | `Unresolved` |
-| Pinned | pin icon | `Pinned note` |
-| Favorite | star icon | `Favorite note` |
-| Archived | archive icon | `Archived note` |
-| Trash | trash icon | `Note in trash` |
-
-Rules:
-
-- **Card mode:** resolved/unresolved icon in indicator cluster; pinned/favorite when active.
-- **List mode:** resolved/unresolved in status column (○/✓); pin/favorite/archive/trash in separate States column.
-- Pinned/favorite are **not shown** when a note is archived or trashed.
-- Archived/trash indicators appear when viewing those filters/views.
+| Pinned | pin icon (slot 1) | `Pinned note` / `Not pinned` |
+| Favorite | star icon (slot 2) | `Favorite note` / `Not favorite` |
+| Resolved | check circle (slot 3) | `Resolved` |
+| Unresolved | empty circle (slot 3) | `Unresolved` |
+| Archived | archive icon (lifecycle) | `Archived note` |
+| Trash | trash icon (lifecycle) | `Note in trash` |
 
 ### Settings Section Pattern
 
@@ -268,7 +263,116 @@ Use `AuthenticatedPage` from `@/components/layout/authenticated-page` for standa
 | `EmptyState` | `@/components/ui/empty-state` |
 | `NoteCard` / `NoteListRow` | `@/components/notes/*` |
 | `NoteStateIndicators` | `@/components/notes/note-state-indicators` |
+| `NoteReadingView` | `@/components/notes/note-reading-view` |
+| `NoteMoreActionsMenu` | `@/components/notes/note-more-actions-menu` |
 
+
+### Controls Toolbar Pattern
+
+Same as **Compact Controls Region Pattern** — search, Views, Filters, Sort, Cards/List in one toolbar shell. Dropdowns portal to `document.body` with `toolbar-menu-panel`.
+
+### Note Card Pattern
+
+`NoteCard`: title link, category, tags (card mode), metadata dates, fixed state indicators outside navigation link. Resolved notes subtly distinct without washed-out body text.
+
+### Note List/Grid Pattern
+
+Same as **Card/List View Pattern** — list rows show category only; indicators in fixed slots.
+
+### Note Reading View Pattern
+
+`/notes/[id]` is a **private document reading experience**, not a CRUD admin panel.
+
+```text
+← Back to notes
+
+Title                                      [Edit] [More actions]
+[Pin] [Favorite] [Resolved/Unresolved]
+[Category] [#tags]
+Created · Updated
+
+[Reading surface — MarkdownPreview]
+```
+
+Rules:
+
+1. **Edit** is the only always-visible secondary action besides the menu trigger.
+2. Pin, favorite, archive, duplicate, and move to trash live in **More actions** (`NoteMoreActionsMenu`).
+3. **Move to trash** is destructive styling inside the menu — never a large red page button on active notes.
+4. State indicators use `NoteStateIndicators` with `interactive` toggles in fixed order: pinned → favorite → resolved/unresolved.
+5. Resolved control is part of the indicator row — not a detached floating button.
+6. Metadata: category badge (no `#`), tags with `#`, created/updated dates as secondary text.
+7. Body uses `note-reading-surface` — comfortable width (editor token ~880px), soft border, readable typography.
+8. **Archived:** calm banner + restore via menu; no archive action as primary.
+9. **Trash:** banner + Restore note + Delete permanently (with confirmation); no normal edit/menu.
+10. **Locked:** `VaultLockedState` (`read-note`) — no decrypted title, body, category, or tags.
+
+### Destructive Action Pattern
+
+1. Destructive actions are never the first or most prominent control unless on a dedicated confirmation screen.
+2. **Move to trash** → More actions menu + calm confirmation: “You can restore this note from Trash later.”
+3. **Delete permanently** → only in trash context + confirmation: “This will permanently delete this encrypted note. This action cannot be undone.”
+4. Menu items use destructive text color (`--danger`).
+5. Pages should not feel like admin panels — prioritize the user’s primary task (read, write, organize).
+
+### Metadata Badge Pattern
+
+| Type | Display | Example |
+|------|---------|---------|
+| Category | pill/badge, no hash prefix | `Pray` |
+| Tag | chip with `#` prefix | `#faith` |
+| Dates | muted secondary line | `Created Jun 17 · Updated Jun 18` |
+
+Do not show plaintext metadata while vault is locked.
+
+### State Indicator Pattern
+
+Component: `NoteStateIndicators`. **Fixed slot order:** pinned (1) → favorite (2) → resolved/unresolved (3). Archived/trash append after without shifting slots.
+
+| Slot | Active label | Inactive label |
+|------|--------------|----------------|
+| Pin | Pinned note | Not pinned |
+| Favorite | Favorite note | Not favorite |
+| Resolved | Mark as unresolved (interactive) / Resolved (display) | Mark as resolved |
+
+On detail view, slots are buttons (`interactive` prop). Clicks must not navigate.
+
+### Locked State Pattern
+
+`VaultLockedState` explains what happened and what to do next:
+
+- **Unlock here** — expands vault dock quick unlock when available.
+- **Open full unlock page** — `/vault/unlock?returnTo=…`
+
+No decrypted note content or metadata on locked `/notes/[id]`.
+
+### Settings Page Pattern
+
+Use `SettingsSection` — one topic per section. No nested duplicate page titles. Account (`/settings/account`) vs vault (`/vault/*`) separation.
+
+### Empty State Pattern
+
+`EmptyState` with calm copy and a single clear next action (e.g. “Start your first private note”).
+
+### Width and Spacing System
+
+| Surface | Token | Max width |
+|---------|-------|-----------|
+| Settings / account / vault | `settings` | 800px |
+| Notes list | `notes` | 920px |
+| Note editor + reading view | `editor` | 880px |
+| Marketing | `marketing` | ~896px |
+| Narrow (unlock) | `narrow` | ~448px |
+
+Use `AuthenticatedPage` for authenticated routes. Avoid floating controls outside the content grid.
+
+### Terminology (active UI)
+
+Use **SelahKeep**, **private notes**, **recovery phrase**, **vault password**.
+
+Do **not** use deprecated product branding, legacy domain language, or removed features in active UI (see [`UI_UX_SCREEN_AUDIT.md`](./UI_UX_SCREEN_AUDIT.md)).
+
+---
 
 ## 5. Phase scope
 

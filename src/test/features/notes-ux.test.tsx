@@ -81,7 +81,7 @@ vi.mock("@/lib/crypto-client/note-drafts", () => ({
 
 const sampleIndex = {
   version: 3 as const,
-  categories: [{ id: "c1", name: "Prayer", createdAt: "", updatedAt: "" }],
+  categories: [{ id: "c1", name: "Personal", createdAt: "", updatedAt: "" }],
   tags: [{ id: "t1", name: "faith", createdAt: "", updatedAt: "" }],
   savedViews: [],
   entries: [
@@ -411,7 +411,7 @@ describe("notes UX", () => {
       });
     });
 
-    it("hides category dropdown when no categories exist", async () => {
+    it("shows create-category field when no user categories exist on blank note", async () => {
       const { useCategoriesTags } = await import("@/features/notes/use-categories-tags");
       vi.mocked(useCategoriesTags).mockReturnValue({
         categories: [],
@@ -427,13 +427,14 @@ describe("notes UX", () => {
       });
 
       render(<NewNotePage />);
-      expect(screen.queryByLabelText(/^category$/i)).toBeNull();
-      expect(screen.getByText(/you can add categories later/i)).toBeTruthy();
+      expect(screen.getByPlaceholderText(/new category name/i)).toBeTruthy();
+      expect(screen.queryByRole("combobox", { name: /^category$/i })).toBeNull();
     });
 
-    it("shows category dropdown when categories exist", async () => {
+    it("shows category dropdown for user-created categories on blank note", async () => {
       render(<NewNotePage />);
-      expect(screen.getByLabelText(/^category$/i)).toBeTruthy();
+      const select = screen.getByRole("combobox", { name: /^category$/i }) as HTMLSelectElement;
+      expect(Array.from(select.options).some((o) => o.textContent === "Personal")).toBe(true);
     });
 
     it("does not show resolved toggle on new note page", () => {
@@ -559,9 +560,10 @@ describe("notes UX", () => {
       render(<NoteDetailPage />);
       await screen.findByText("Prayer note");
       expect(screen.getByLabelText(/mark as resolved/i)).toBeTruthy();
-      expect(screen.getByText("Unresolved")).toBeTruthy();
-      expect(screen.queryByRole("button", { name: /^edit$/i })).toBeTruthy();
+      expect(screen.getByTestId("note-reading-view")).toBeTruthy();
+      expect(screen.getByRole("button", { name: /^edit$/i })).toBeTruthy();
       expect(screen.queryAllByRole("button", { name: /mark as resolved/i })).toHaveLength(1);
+      expect(screen.queryByRole("button", { name: /move to trash/i })).toBeNull();
     });
 
     it("calls toggleNoteResolved from detail resolve icon", async () => {
@@ -634,7 +636,7 @@ describe("notes UX", () => {
     it("displays category differently from tags", async () => {
       render(<NoteDetailPage />);
       await screen.findByText("Prayer note");
-      expect(screen.getByText("Prayer")).toBeTruthy();
+      expect(screen.getByText("Personal")).toBeTruthy();
       expect(screen.getByText("#faith")).toBeTruthy();
     });
 

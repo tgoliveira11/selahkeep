@@ -242,7 +242,7 @@ describe("SelahKeep notes toolbar refinement", () => {
   describe("note state indicators", () => {
     it("shows resolved indicator in card mode", () => {
       render(
-        <NoteStateIndicators answered includeResolved pinned favorite archived={false} trashed={false} />
+        <NoteStateIndicators answered pinned favorite archived={false} trashed={false} />
       );
       expect(screen.getByTestId("note-resolved-indicator")).toBeTruthy();
       expect(screen.getByLabelText("Resolved")).toBeTruthy();
@@ -250,7 +250,7 @@ describe("SelahKeep notes toolbar refinement", () => {
 
     it("shows unresolved indicator in card mode", () => {
       render(
-        <NoteStateIndicators answered={false} includeResolved pinned favorite archived={false} trashed={false} />
+        <NoteStateIndicators answered={false} pinned favorite archived={false} trashed={false} />
       );
       expect(screen.getByTestId("note-unresolved-indicator")).toBeTruthy();
       expect(screen.getByLabelText("Unresolved")).toBeTruthy();

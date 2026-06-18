@@ -50,7 +50,7 @@ function getCopy(variant: VaultLockedStateVariant, autoLocked: boolean) {
     case "read-note":
       return {
         title: "Unlock to read this note",
-        lead: "Your account is signed in, but this note stays encrypted until you unlock your vault on this device.",
+        lead: "Your account is signed in, but your vault is closed. Unlock your vault to read or edit this private note.",
         body: null,
         showBullets: false,
       };
