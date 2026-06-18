@@ -4,10 +4,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import {
   NoteFilters,
   defaultNoteFilters,
+  hasNoteOrganizers,
 } from "@/features/notes/note-filters";
 
 describe("note filters UI", () => {
-  it("updates search and answered filter", () => {
+  it("updates search and resolved filter", () => {
     const onChange = vi.fn();
     render(
       <NoteFilters
@@ -21,7 +22,11 @@ describe("note filters UI", () => {
     fireEvent.change(screen.getByLabelText(/search/i), { target: { value: "morning" } });
     expect(onChange).toHaveBeenCalledWith({ ...defaultNoteFilters, search: "morning" });
 
-    fireEvent.change(screen.getByLabelText(/answered/i), { target: { value: "answered" } });
-    expect(onChange).toHaveBeenLastCalledWith({ ...defaultNoteFilters, answered: "answered" });
+    fireEvent.change(screen.getByLabelText(/status/i), { target: { value: "resolved" } });
+    expect(onChange).toHaveBeenLastCalledWith({ ...defaultNoteFilters, resolved: "resolved" });
+  });
+
+  it("is hidden without categories or tags", () => {
+    expect(hasNoteOrganizers([], [])).toBe(false);
   });
 });

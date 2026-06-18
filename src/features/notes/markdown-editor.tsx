@@ -1,8 +1,16 @@
 "use client";
 
+import { useCallback } from "react";
+import { MarkdownPreview } from "@/components/notes/markdown-preview";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { renderSanitizedMarkdown } from "./sanitize-markdown";
+import {
+  applyMarkdownWrap,
+  MARKDOWN_WRAP_ACTIONS,
+  resolveMarkdownShortcut,
+  shortcutToWrapAction,
+  type WrapAction,
+} from "@/lib/notes/markdown-actions";
 
 interface MarkdownEditorProps {
   value: string;
@@ -10,24 +18,8 @@ interface MarkdownEditorProps {
   placeholder?: string;
   maxLength?: number;
   id?: string;
+  onSave?: () => void;
 }
-
-type WrapAction = {
-  label: string;
-  prefix: string;
-  suffix: string;
-  block?: boolean;
-};
-
-const WRAP_ACTIONS: WrapAction[] = [
-  { label: "Bold", prefix: "**", suffix: "**" },
-  { label: "Italic", prefix: "_", suffix: "_" },
-  { label: "H1", prefix: "# ", suffix: "", block: true },
-  { label: "H2", prefix: "## ", suffix: "", block: true },
-  { label: "Quote", prefix: "> ", suffix: "", block: true },
-  { label: "List", prefix: "- ", suffix: "", block: true },
-  { label: "Link", prefix: "[", suffix: "](https://)" },
-];
 
 export function MarkdownEditor({
   value,
@@ -35,31 +27,53 @@ export function MarkdownEditor({
   placeholder = "Write in Markdown…",
   maxLength = 50_000,
   id = "note-markdown",
+  onSave,
 }: MarkdownEditorProps) {
-  function applyWrap(action: WrapAction) {
-    const el = document.getElementById(id) as HTMLTextAreaElement | null;
-    if (!el) return;
+  const applyWrap = useCallback(
+    (action: WrapAction) => {
+      const el = document.getElementById(id) as HTMLTextAreaElement | null;
+      if (!el) return;
 
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const selected = value.slice(start, end);
-    const insertion = action.block && !selected ? action.prefix : `${action.prefix}${selected}${action.suffix}`;
-    const next = value.slice(0, start) + insertion + value.slice(end);
-    onChange(next.slice(0, maxLength));
+      const { next, cursor } = applyMarkdownWrap(
+        value,
+        action,
+        el.selectionStart,
+        el.selectionEnd,
+        maxLength
+      );
+      onChange(next);
 
-    requestAnimationFrame(() => {
-      el.focus();
-      const cursor = start + insertion.length;
-      el.setSelectionRange(cursor, cursor);
-    });
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(cursor, cursor);
+      });
+    },
+    [id, maxLength, onChange, value]
+  );
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    const shortcut = resolveMarkdownShortcut(event.nativeEvent);
+    if (!shortcut) return;
+
+    if (shortcut === "save") {
+      if (onSave) {
+        event.preventDefault();
+        onSave();
+      }
+      return;
+    }
+
+    const action = shortcutToWrapAction(shortcut);
+    if (action) {
+      event.preventDefault();
+      applyWrap(action);
+    }
   }
-
-  const previewHtml = value.trim() ? renderSanitizedMarkdown(value) : "";
 
   return (
     <div className="space-y-4">
-      <div className="markdown-editor-toolbar flex flex-wrap gap-2">
-        {WRAP_ACTIONS.map((action) => (
+      <div className="markdown-editor-toolbar flex flex-wrap items-center gap-2">
+        {MARKDOWN_WRAP_ACTIONS.map((action) => (
           <Button
             key={action.label}
             type="button"
@@ -70,12 +84,16 @@ export function MarkdownEditor({
             {action.label}
           </Button>
         ))}
+        <span className="ml-auto hidden text-xs text-[var(--muted)] sm:inline">
+          ⌘/Ctrl+S save · B bold · I italic · ⇧8 list · ⇧C checklist
+        </span>
       </div>
 
       <Textarea
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value.slice(0, maxLength))}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         maxLength={maxLength}
         rows={12}
@@ -84,9 +102,9 @@ export function MarkdownEditor({
 
       <div>
         <p className="mb-2 text-sm font-medium text-[var(--muted)]">Preview</p>
-        <div
-          className="prose-note min-h-[8rem] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card-muted)] p-4 text-sm leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: previewHtml || "<p class='text-[var(--muted)]'>Nothing to preview yet.</p>" }}
+        <MarkdownPreview
+          markdown={value}
+          className="min-h-[8rem] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card-muted)] p-4 text-sm leading-relaxed"
         />
       </div>
     </div>

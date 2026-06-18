@@ -5,4 +5,5 @@ export * from "./vault-index";
 export * from "./vault-settings";
 export * from "./note-search";
 export * from "./notes";
+export * from "./note-drafts";
 export * from "./vault-idb-cleanup";

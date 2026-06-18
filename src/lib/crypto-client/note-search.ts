@@ -1,13 +1,16 @@
 import type { VaultIndexPlaintext, VaultIndexNoteEntry } from "./vault-index-types";
 import { getActiveVaultEntries, activeCategories, activeTags } from "./vault-index";
 
+export type ResolvedFilter = "all" | "resolved" | "unresolved";
+
+/** @deprecated Use ResolvedFilter — maps to internal `answered` index field */
 export type AnsweredFilter = "all" | "answered" | "unanswered";
 
 export type NoteSearchFilters = {
   search?: string;
   categoryId?: string | null;
   tagId?: string;
-  answered?: AnsweredFilter;
+  resolved?: ResolvedFilter;
 };
 
 export type NoteSearchResult = VaultIndexNoteEntry & {
@@ -59,8 +62,8 @@ export function searchVaultIndex(
         return false;
       }
 
-      if (filters.answered === "answered" && !entry.answered) return false;
-      if (filters.answered === "unanswered" && entry.answered) return false;
+      if (filters.resolved === "resolved" && !entry.answered) return false;
+      if (filters.resolved === "unresolved" && entry.answered) return false;
 
       return matchesSearch(entry, filters.search ?? "", index);
     })

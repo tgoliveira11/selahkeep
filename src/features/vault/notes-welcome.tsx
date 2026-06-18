@@ -8,7 +8,7 @@ import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/marketing/brand";
 const CAPABILITIES = [
   "Write private Markdown notes",
   "Organize notes with categories and tags",
-  "Mark notes as answered",
+  "Mark notes as resolved",
   "Search by title, category, or tag after unlocking your vault",
   "Unlock your vault with password, recovery phrase, or a configured passkey",
 ] as const;

@@ -2,7 +2,7 @@ import { openDB } from "idb";
 
 const DB_NAME = "letters-vault";
 /** Bumps past v2 device_secrets / vault_envelopes stores — wipes trusted-device material. */
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 let cleanupPromise: Promise<void> | null = null;
 
@@ -23,6 +23,9 @@ export async function purgeTrustedDeviceIdb(): Promise<void> {
               db.deleteObjectStore(name);
             }
           }
+        }
+        if (!db.objectStoreNames.contains("encrypted_note_drafts")) {
+          db.createObjectStore("encrypted_note_drafts", { keyPath: ["userId", "draftKey"] });
         }
       },
     });

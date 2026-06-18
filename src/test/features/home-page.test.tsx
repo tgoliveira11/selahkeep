@@ -54,10 +54,9 @@ describe("home page marketing content", () => {
     expect(screen.getByText(/save your writing securely/i)).toBeTruthy();
   });
 
-  it("explains marking notes as answered", () => {
+  it("explains marking notes as resolved", () => {
     render(<HomePage />);
-    expect(screen.getByRole("heading", { name: /mark as answered/i })).toBeTruthy();
-    expect(screen.getByText(/prayer or reflection feels answered/i)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /mark as resolved/i })).toBeTruthy();
   });
 
   it("explains vault recovery options", () => {

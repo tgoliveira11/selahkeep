@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
@@ -16,16 +16,39 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { SuccessState } from "@/components/ui/success-state";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
 import { CategoryTagFields } from "@/features/notes/category-tag-fields";
+import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
+import { MarkdownPreview } from "@/components/notes/markdown-preview";
 import { useCategoriesTags } from "@/features/notes/use-categories-tags";
-import { renderSanitizedMarkdown } from "@/features/notes/sanitize-markdown";
 import { useNotes } from "@/features/notes/use-notes";
+import {
+  useAutosaveTimer,
+  useConfirmLeave,
+  useUnsavedChangesWarning,
+} from "@/features/notes/use-unsaved-changes";
 import { notesApi } from "@/lib/api-client/notes";
 import { decryptNote, type NoteMetadataPlaintext } from "@/lib/crypto-client/notes";
+import {
+  deleteEncryptedNoteDraft,
+  loadEncryptedNoteDraft,
+  saveEncryptedNoteDraft,
+  type NoteDraftPlaintext,
+} from "@/lib/crypto-client/note-drafts";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
+import { RESOLVED_COPY, isNoteResolved } from "@/lib/notes/resolved-labels";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { VaultAccessGate } from "@/features/vault/vault-access-gate";
 import { getCachedNoteBody } from "@/features/notes/eager-decrypt-notes";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
+
+function editSnapshot(metadata: NoteMetadataPlaintext, body: string): string {
+  return JSON.stringify({
+    title: metadata.title,
+    categoryId: metadata.categoryId,
+    tagIds: metadata.tagIds,
+    answered: metadata.answered,
+    body,
+  });
+}
 
 export default function NoteDetailPage() {
   const vault = useRequireVault();
@@ -40,12 +63,37 @@ export default function NoteDetailPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [draftPrompt, setDraftPrompt] = useState<NoteDraftPlaintext | null>(null);
+  const [baseline, setBaseline] = useState("");
 
   const canRead = vault.status === "ready" && vault.vaultUnlocked;
   const vaultUserId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
   const { updateNote, deleteNote, busy, error: notesError } = useNotes(vaultUserId);
   const { categories, tags, createCategory, createTag } = useCategoriesTags(vaultUserId, vaultUnlocked);
+
+  const editSnapshotValue = useMemo(
+    () => (metadata ? editSnapshot(metadata, body) : ""),
+    [metadata, body]
+  );
+  const dirty = editing && editSnapshotValue !== baseline;
+  useUnsavedChangesWarning(dirty);
+  const { requestLeave, confirmDialog } = useConfirmLeave(dirty);
+
+  const persistDraft = useCallback(async () => {
+    if (!vaultUserId || !metadata || !dirty) return;
+    const draft: NoteDraftPlaintext = {
+      title: metadata.title,
+      body,
+      categoryId: metadata.categoryId,
+      tagIds: metadata.tagIds,
+      answered: metadata.answered,
+      updatedAt: new Date().toISOString(),
+    };
+    await saveEncryptedNoteDraft(vaultUserId, id, draft);
+  }, [body, dirty, id, metadata, vaultUserId]);
+
+  useAutosaveTimer(Boolean(vaultUserId && editing && dirty), persistDraft);
 
   useEffect(() => {
     return subscribeVaultSession(() => {
@@ -55,11 +103,14 @@ export default function NoteDetailPage() {
       setEditing(false);
       setError(null);
       setLoading(false);
+      setDraftPrompt(null);
+      setBaseline("");
     });
   }, []);
 
   useEffect(() => {
     if (!canRead || !vaultUserId) return;
+    const userId = vaultUserId;
 
     let cancelled = false;
 
@@ -69,8 +120,9 @@ export default function NoteDetailPage() {
       try {
         const note = await notesApi.get(id);
         const cachedBody = getCachedNoteBody(id);
+        let decrypted;
         if (cachedBody) {
-          const decrypted = await decryptNote(
+          decrypted = await decryptNote(
             note.encryptedMetadata,
             note.encryptedBody,
             note.encryptedWrappedNoteKey
@@ -80,18 +132,22 @@ export default function NoteDetailPage() {
             setBody(cachedBody);
             setWrappedKey(note.encryptedWrappedNoteKey);
           }
-          return;
+        } else {
+          decrypted = await decryptNote(
+            note.encryptedMetadata,
+            note.encryptedBody,
+            note.encryptedWrappedNoteKey
+          );
+          if (!cancelled) {
+            setMetadata(decrypted.metadata);
+            setBody(decrypted.body);
+            setWrappedKey(note.encryptedWrappedNoteKey);
+          }
         }
 
-        const decrypted = await decryptNote(
-          note.encryptedMetadata,
-          note.encryptedBody,
-          note.encryptedWrappedNoteKey
-        );
-        if (!cancelled) {
-          setMetadata(decrypted.metadata);
-          setBody(decrypted.body);
-          setWrappedKey(note.encryptedWrappedNoteKey);
+        const draft = await loadEncryptedNoteDraft(userId, id);
+        if (!cancelled && draft) {
+          setDraftPrompt(draft);
         }
       } catch (e) {
         if (!cancelled) {
@@ -114,25 +170,91 @@ export default function NoteDetailPage() {
     setLoading(true);
   }
 
+  function startEditing() {
+    if (!metadata) return;
+    setBaseline(editSnapshot(metadata, body));
+    setEditing(true);
+  }
+
+  function cancelEditing() {
+    if (!metadata) return;
+    const snap = JSON.parse(baseline) as {
+      title: string;
+      categoryId: string | null;
+      tagIds: string[];
+      answered: boolean;
+      body: string;
+    };
+    setMetadata({
+      ...metadata,
+      title: snap.title,
+      categoryId: snap.categoryId,
+      tagIds: snap.tagIds,
+      answered: snap.answered,
+    });
+    setBody(snap.body);
+    setEditing(false);
+  }
+
+  function restoreDraft() {
+    if (!draftPrompt || !metadata) return;
+    setMetadata({
+      ...metadata,
+      title: draftPrompt.title,
+      categoryId: draftPrompt.categoryId,
+      tagIds: draftPrompt.tagIds,
+      answered: draftPrompt.answered,
+    });
+    setBody(draftPrompt.body);
+    setDraftPrompt(null);
+    setEditing(true);
+    setBaseline(
+      editSnapshot(
+        {
+          ...metadata,
+          title: draftPrompt.title,
+          categoryId: draftPrompt.categoryId,
+          tagIds: draftPrompt.tagIds,
+          answered: draftPrompt.answered,
+        },
+        draftPrompt.body
+      )
+    );
+  }
+
+  async function discardDraft() {
+    if (vaultUserId) {
+      await deleteEncryptedNoteDraft(vaultUserId, id);
+    }
+    setDraftPrompt(null);
+  }
+
   async function handleSave() {
     if (!metadata || !wrappedKey) return;
     setError(null);
     try {
       await updateNote(id, metadata, body, wrappedKey);
-      setMetadata((m) => (m ? { ...m, updatedAt: new Date().toISOString() } : m));
+      const nextMeta = { ...metadata, updatedAt: new Date().toISOString() };
+      setMetadata(nextMeta);
+      setBaseline(editSnapshot(nextMeta, body));
+      if (vaultUserId) {
+        await deleteEncryptedNoteDraft(vaultUserId, id);
+      }
+      setDraftPrompt(null);
       setEditing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save");
     }
   }
 
-  async function handleMarkAnswered() {
+  async function handleMarkResolved() {
     if (!metadata || !wrappedKey) return;
     setError(null);
     try {
       const next = { ...metadata, answered: true, updatedAt: new Date().toISOString() };
       await updateNote(id, next, body, wrappedKey);
       setMetadata(next);
+      setBaseline(editSnapshot(next, body));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to update");
     }
@@ -141,6 +263,9 @@ export default function NoteDetailPage() {
   async function handleDelete() {
     setError(null);
     try {
+      if (vaultUserId) {
+        await deleteEncryptedNoteDraft(vaultUserId, id);
+      }
       await deleteNote(id);
       router.push("/notes");
     } catch (e) {
@@ -183,19 +308,42 @@ export default function NoteDetailPage() {
     );
   }
 
-  const previewHtml = renderSanitizedMarkdown(body);
   const displayError = error ?? notesError;
 
   return (
     <PageLayout>
       <div className="mb-6">
-        <Link href="/notes" className="text-sm font-medium text-[var(--primary)] hover:underline">
+        <button
+          type="button"
+          className="text-sm font-medium text-[var(--primary)] hover:underline"
+          onClick={() => requestLeave(() => router.push("/notes"))}
+        >
           ← Back to my notes
-        </Link>
+        </button>
       </div>
+
+      {draftPrompt && !editing && (
+        <Alert variant="info" role="status" className="mb-4">
+          <p className="font-medium">Unsaved draft found</p>
+          <p className="mt-1 text-sm">You have unsaved changes saved on this device.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button type="button" onClick={restoreDraft}>
+              Restore draft
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => void discardDraft()}>
+              Discard draft
+            </Button>
+          </div>
+        </Alert>
+      )}
 
       {editing ? (
         <Card className="space-y-5">
+          {dirty && (
+            <p className="text-sm text-[var(--muted)]" role="status">
+              You have unsaved changes.
+            </p>
+          )}
           <FormField id="edit-title" label="Title">
             <Input
               id="edit-title"
@@ -205,6 +353,7 @@ export default function NoteDetailPage() {
             />
           </FormField>
           <CategoryTagFields
+            mode="edit"
             categories={categories}
             tags={tags}
             categoryId={metadata.categoryId}
@@ -217,13 +366,21 @@ export default function NoteDetailPage() {
             onCreateTag={createTag}
           />
           <FormField id="edit-body" label="Your note">
-            <MarkdownEditor value={body} onChange={setBody} id="edit-note-markdown" />
+            <MarkdownEditor
+              value={body}
+              onChange={setBody}
+              id="edit-note-markdown"
+              onSave={() => void handleSave()}
+            />
           </FormField>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button onClick={handleSave} disabled={busy}>
+            <Button onClick={() => void handleSave()} disabled={busy}>
               {busy ? "Saving…" : "Save changes"}
             </Button>
-            <Button variant="secondary" onClick={() => setEditing(false)}>
+            <Button
+              variant="secondary"
+              onClick={() => requestLeave(cancelEditing)}
+            >
               Cancel
             </Button>
           </div>
@@ -233,21 +390,22 @@ export default function NoteDetailPage() {
           <header className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">{metadata.title}</h1>
-              {metadata.answered && <Badge variant="success">Answered</Badge>}
+              {isNoteResolved(metadata.answered) && (
+                <Badge variant="success">{RESOLVED_COPY.resolvedBadge}</Badge>
+              )}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {metadata.categoryId && (
-                <Badge variant="muted">
-                  {categories.find((c) => c.id === metadata.categoryId)?.name ?? "Category"}
-                </Badge>
+                <NoteCategoryLabel
+                  name={
+                    categories.find((category) => category.id === metadata.categoryId)?.name ??
+                    "Category"
+                  }
+                />
               )}
               {metadata.tagIds.map((tagId) => {
-                const tag = tags.find((t) => t.id === tagId);
-                return tag ? (
-                  <Badge key={tagId} variant="muted">
-                    {tag.name}
-                  </Badge>
-                ) : null;
+                const tag = tags.find((item) => item.id === tagId);
+                return tag ? <NoteTagChip key={tagId} name={tag.name} /> : null;
               })}
             </div>
             <p className="text-sm text-[var(--muted)]">
@@ -261,23 +419,20 @@ export default function NoteDetailPage() {
           </header>
 
           <Card muted className="p-6">
-            <div
-              className="prose-note text-base leading-relaxed text-[var(--foreground)]"
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
-            />
+            <MarkdownPreview markdown={body} className="text-base leading-relaxed text-[var(--foreground)]" />
           </Card>
 
-          {metadata.answered && (
-            <SuccessState message="You marked this note as answered in your journey." />
+          {isNoteResolved(metadata.answered) && (
+            <SuccessState message={RESOLVED_COPY.resolvedSuccess} />
           )}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button variant="secondary" onClick={() => setEditing(true)}>
+            <Button variant="secondary" onClick={startEditing}>
               Edit
             </Button>
-            {!metadata.answered && (
-              <Button variant="secondary" onClick={handleMarkAnswered} disabled={busy}>
-                Mark as answered
+            {!isNoteResolved(metadata.answered) && (
+              <Button variant="secondary" onClick={() => void handleMarkResolved()} disabled={busy}>
+                {RESOLVED_COPY.markResolved}
               </Button>
             )}
             <Button variant="danger" onClick={() => setDeleteOpen(true)}>
@@ -304,6 +459,7 @@ export default function NoteDetailPage() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
       />
+      {confirmDialog}
     </PageLayout>
   );
 }

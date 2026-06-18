@@ -124,7 +124,7 @@ describe("vault status UI", () => {
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("setup_incomplete"));
 
     render(<NotesPage />);
-    expect(await screen.findByText("Complete your vault setup")).toBeTruthy();
+    expect(await screen.findByText("Vault setup incomplete")).toBeTruthy();
     expect(screen.getByRole("link", { name: /continue setup/i }).getAttribute("href")).toBe(
       "/vault/setup"
     );
@@ -135,7 +135,7 @@ describe("vault status UI", () => {
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
     render(<NotesPage />);
-    expect(await screen.findByText("Unlock your vault to view your notes")).toBeTruthy();
+    expect(await screen.findByText("Vault locked")).toBeTruthy();
     expect(screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")).toBe(
       "/vault/unlock"
     );

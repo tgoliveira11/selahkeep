@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { RESOLVED_COPY, isNoteResolved } from "@/lib/notes/resolved-labels";
 import { Badge } from "@/components/ui/badge";
+import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
 import { cn } from "@/lib/ui/cn";
 
 interface NoteCardProps {
@@ -34,11 +36,9 @@ export function NoteCard({
         <div className="min-w-0 flex-1">
           <p className={cn("truncate font-medium", locked && "text-[var(--muted)]")}>{title}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            {categoryName && <Badge variant="muted">{categoryName}</Badge>}
+            {categoryName && <NoteCategoryLabel name={categoryName} />}
             {tagNames.map((name) => (
-              <Badge key={name} variant="muted">
-                {name}
-              </Badge>
+              <NoteTagChip key={name} name={name} />
             ))}
           </div>
           <p className="mt-2 text-sm text-[var(--muted)]">
@@ -49,7 +49,7 @@ export function NoteCard({
             })}
           </p>
         </div>
-        {answered && <Badge variant="success">Answered</Badge>}
+        {isNoteResolved(answered) && <Badge variant="success">{RESOLVED_COPY.resolvedBadge}</Badge>}
       </div>
     </Link>
   );

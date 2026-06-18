@@ -13,6 +13,7 @@ import {
   type VaultCategory,
   type VaultTag,
 } from "@/lib/crypto-client/vault-index";
+import { normalizeTagInput } from "@/lib/notes/tag-normalization";
 import { useVaultIndex } from "./use-vault-index";
 
 export function useCategoriesTags(userId: string | null, vaultUnlocked: boolean) {
@@ -44,9 +45,12 @@ export function useCategoriesTags(userId: string | null, vaultUnlocked: boolean)
 
   const createTag = useCallback(
     async (name: string) => {
+      const normalized = normalizeTagInput(name);
+      if (!normalized) throw new Error("Invalid tag name");
+
       let created: VaultTag | null = null;
       await mutateIndex((current) => {
-        const result = addVaultTag(current, name);
+        const result = addVaultTag(current, normalized);
         created = result.tag;
         return result.index;
       });

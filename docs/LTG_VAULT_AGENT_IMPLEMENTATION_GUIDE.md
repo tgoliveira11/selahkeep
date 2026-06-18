@@ -31,6 +31,15 @@
 
 See `docs/VAULT_RECOVERY_FLOW_AUDIT.md`.
 
+## Notes UX (`/notes`, `/notes/new`, `/notes/[id]`)
+
+- **Title required** on create; validated client-side before `encryptNote`.
+- **Answered** defaults to `false` on create; toggle only on detail/edit.
+- **Search/filters** on `/notes` when ≥1 category or tag exists (`hasNoteOrganizers`).
+- **Tags:** `src/lib/notes/tag-normalization.ts` — max **32** chars; display `#` prefix only in UI.
+- **Vault indicator:** `NotesVaultIndicator` on `/notes` for locked/open states.
+- **Markdown preview:** `sanitize-markdown.ts` (`marked` + `dompurify`) and `MarkdownPreview` component — client-side only after vault unlock; no crypto changes.
+
 ## Related docs
 
 - `docs/TDR_LTG_Vault_MVP.md`

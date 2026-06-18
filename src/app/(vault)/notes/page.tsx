@@ -12,15 +12,16 @@ import { NoteCard } from "@/components/notes/note-card";
 import {
   NoteFilters,
   defaultNoteFilters,
+  hasNoteOrganizers,
   noteFiltersToSearch,
   type NoteFilterState,
 } from "@/features/notes/note-filters";
+import { NotesVaultIndicator } from "@/features/notes/notes-vault-indicator";
 import { useVaultIndex } from "@/features/notes/use-vault-index";
 import { searchVaultIndex, searchVaultIndexWhenLocked } from "@/lib/crypto-client/note-search";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
-import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
 import { NotesWelcome } from "@/features/vault/notes-welcome";
 
 export default function NotesPage() {
@@ -34,6 +35,16 @@ export default function NotesPage() {
   const [filters, setFilters] = useState<NoteFilterState>(defaultNoteFilters);
 
   useEffect(() => subscribeVaultSession(() => setFilters(defaultNoteFilters)), []);
+
+  const activeCategories = useMemo(
+    () => (index ? index.categories.filter((category) => !category.deletedAt) : []),
+    [index]
+  );
+  const activeTags = useMemo(
+    () => (index ? index.tags.filter((tag) => !tag.deletedAt) : []),
+    [index]
+  );
+  const showOrganizerFilters = hasNoteOrganizers(activeCategories, activeTags);
 
   const notes = useMemo(() => {
     if (!vaultUnlocked || !index) return searchVaultIndexWhenLocked();
@@ -75,7 +86,7 @@ export default function NotesPage() {
               title="Notes"
               description="Private encrypted notes — prayers, reflections, and journaling in one vault."
             />
-            <VaultStatusPrompt clientStatus={clientStatus} context="notes" />
+            <NotesVaultIndicator clientStatus={clientStatus} />
           </>
         )}
       </PageLayout>
@@ -94,19 +105,27 @@ export default function NotesPage() {
         }
       />
 
+      {clientStatus && <NotesVaultIndicator clientStatus={clientStatus} />}
+
       {error && (
         <div className="mb-6">
           <ErrorState message={error} onRetry={() => window.location.reload()} />
         </div>
       )}
 
-      {vaultUnlocked && index && (
+      {vaultUnlocked && index && showOrganizerFilters && (
         <NoteFilters
           filters={filters}
-          categories={index.categories.filter((c) => !c.deletedAt)}
-          tags={index.tags.filter((t) => !t.deletedAt)}
+          categories={activeCategories}
+          tags={activeTags}
           onChange={setFilters}
         />
+      )}
+
+      {vaultUnlocked && index && !showOrganizerFilters && (
+        <p className="mb-6 text-sm text-[var(--muted)]">
+          Create categories or tags to start filtering your notes.
+        </p>
       )}
 
       {notes.length === 0 ? (

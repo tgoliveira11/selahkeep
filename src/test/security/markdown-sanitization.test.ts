@@ -14,6 +14,12 @@ describe("markdown sanitization", () => {
     expect(html).toContain("<em>");
   });
 
+  it("hardens external links", () => {
+    const html = renderSanitizedMarkdown("[safe](https://example.com)");
+    expect(html).toContain('rel="noopener noreferrer"');
+    expect(html).toContain('target="_blank"');
+  });
+
   it("sanitizes raw html directly", () => {
     const clean = sanitizeMarkdownHtml('<img src=x onerror=alert(1)><p>ok</p>');
     expect(clean).not.toContain("onerror");

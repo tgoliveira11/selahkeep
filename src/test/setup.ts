@@ -1,4 +1,5 @@
 import { vi, beforeEach, expect } from "vitest";
+import "@testing-library/jest-dom/vitest";
 import { toHaveNoViolations } from "jest-axe";
 import {
   InMemoryRateLimitAdapter,

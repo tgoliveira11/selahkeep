@@ -51,14 +51,14 @@ describe("note search and filters", () => {
     expect(searchVaultIndex(index, { search: "gratitude" }).map((n) => n.id)).toEqual(["n1"]);
   });
 
-  it("filters by category, tag, and answered status", () => {
+  it("filters by category, tag, and resolved status", () => {
     const categoryId = index.categories[0]!.id;
     const tagId = index.tags[0]!.id;
 
     expect(searchVaultIndex(index, { categoryId }).map((n) => n.id)).toEqual(["n1"]);
     expect(searchVaultIndex(index, { categoryId: null }).map((n) => n.id)).toEqual(["n2"]);
     expect(searchVaultIndex(index, { tagId }).map((n) => n.id)).toEqual(["n1"]);
-    expect(searchVaultIndex(index, { answered: "answered" }).map((n) => n.id)).toEqual(["n1"]);
-    expect(searchVaultIndex(index, { answered: "unanswered" }).map((n) => n.id)).toEqual(["n2"]);
+    expect(searchVaultIndex(index, { resolved: "resolved" }).map((n) => n.id)).toEqual(["n1"]);
+    expect(searchVaultIndex(index, { resolved: "unresolved" }).map((n) => n.id)).toEqual(["n2"]);
   });
 });

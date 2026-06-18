@@ -235,10 +235,17 @@ Run `npm run db:migrate` after pulling vault schema updates (`0008`–`0011`, in
 
 Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings`**.
 
-- **Markdown editor** with sanitized preview (`dompurify` + `marked`)
+- **Resolved status** — user-facing “resolved” maps to internal encrypted `answered` metadata; set on edit/detail only
+- **Markdown editor** with checklists, keyboard shortcuts, and client-side sanitized preview
+- **Encrypted local drafts** — autosaved in IndexedDB wrapped by User Vault Key (`note_draft` field); never plaintext
+- **Title required** on `/notes/new` (trimmed, non-empty); still encrypted in metadata at rest
 - **Encrypted metadata** (title, category, tags, answered) + **encrypted body** per note
+- **Answered** marker available on `/notes/[id]` edit/detail only; new notes default to `answered: false`
 - **Vault index v2** (`GET/PATCH /api/vault/index`) — note entries plus encrypted category/tag definitions
-- **Client-side search/filters** after unlock (title, category, tag, answered) — no server search
+- **Tags** normalized client-side (`normalizeTagInput`, max **32** chars); displayed with `#`, stored without `#`
+- **Category vs tags:** category pill (no `#`); tag chips with `#`
+- **Client-side search/filters** after unlock — shown only when at least one category or tag exists; no server search
+- **Vault status on `/notes`:** closed vault visual + unlock CTA when locked; open vault visual + manual lock when unlocked
 - **Unlock behavior** (`GET/PATCH /api/vault/settings`): `metadata_only` (default) or `decrypt_all`
 - **API:** `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted payloads only
 - **Removed (Phase 3):** `/letters`, `/api/letters`, `letters` table

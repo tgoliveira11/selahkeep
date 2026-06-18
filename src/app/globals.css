@@ -116,10 +116,136 @@ body {
 .prose-note {
   overflow-wrap: anywhere;
   word-break: break-word;
+  color: var(--foreground);
+  line-height: 1.65;
+}
+
+.prose-note > * + * {
+  margin-top: 0.75em;
+}
+
+.prose-note h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+
+.prose-note h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.prose-note h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.prose-note h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.prose-note p {
+  margin: 0;
+}
+
+.prose-note ul,
+.prose-note ol {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.prose-note ul {
+  list-style-type: disc;
+}
+
+.prose-note ol {
+  list-style-type: decimal;
+}
+
+.prose-note li {
+  margin: 0.25em 0;
+}
+
+.prose-note li > ul,
+.prose-note li > ol {
+  margin-top: 0.25em;
+}
+
+.prose-note blockquote {
+  margin: 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+  font-style: italic;
+}
+
+.prose-note a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 500;
+}
+
+.prose-note a:hover {
+  color: var(--primary-hover);
+}
+
+.prose-note strong {
+  font-weight: 600;
+}
+
+.prose-note em {
+  font-style: italic;
 }
 
 .prose-note pre,
 .prose-note code {
   overflow-x: auto;
   max-width: 100%;
+}
+
+.prose-note code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--card-muted);
+  padding: 0.125em 0.35em;
+  border-radius: 0.25rem;
+}
+
+.prose-note pre {
+  margin: 0;
+  padding: 1rem;
+  background: var(--card-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.prose-note pre code {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.prose-note hr {
+  margin: 1.25rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.prose-note input[type="checkbox"] {
+  margin-right: 0.5rem;
+  accent-color: var(--primary);
+  vertical-align: middle;
+}
+
+.prose-note li:has(> input[type="checkbox"]) {
+  list-style: none;
+  margin-left: -1.25rem;
 }

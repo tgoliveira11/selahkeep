@@ -2,21 +2,22 @@
 
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
-import type { AnsweredFilter } from "@/lib/crypto-client/note-search";
+import { RESOLVED_COPY } from "@/lib/notes/resolved-labels";
+import type { ResolvedFilter } from "@/lib/crypto-client/note-search";
 import type { VaultCategory, VaultTag } from "@/lib/crypto-client/vault-index-types";
 
 export type NoteFilterState = {
   search: string;
   categoryId: string | "all" | "none";
   tagId: string | "all";
-  answered: AnsweredFilter;
+  resolved: ResolvedFilter;
 };
 
 export const defaultNoteFilters: NoteFilterState = {
   search: "",
   categoryId: "all",
   tagId: "all",
-  answered: "all",
+  resolved: "all",
 };
 
 interface NoteFiltersProps {
@@ -26,7 +27,15 @@ interface NoteFiltersProps {
   onChange: (filters: NoteFilterState) => void;
 }
 
+export function hasNoteOrganizers(categories: VaultCategory[], tags: VaultTag[]): boolean {
+  return categories.length > 0 || tags.length > 0;
+}
+
 export function NoteFilters({ filters, categories, tags, onChange }: NoteFiltersProps) {
+  if (!hasNoteOrganizers(categories, tags)) {
+    return null;
+  }
+
   return (
     <div className="note-filters mb-6 space-y-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)]">
       <FormField id="note-search" label="Search">
@@ -78,18 +87,18 @@ export function NoteFilters({ filters, categories, tags, onChange }: NoteFilters
           </select>
         </FormField>
 
-        <FormField id="filter-answered" label="Answered">
+        <FormField id="filter-resolved" label={RESOLVED_COPY.filterLabel}>
           <select
-            id="filter-answered"
+            id="filter-resolved"
             className="w-full min-h-11 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
-            value={filters.answered}
+            value={filters.resolved}
             onChange={(e) =>
-              onChange({ ...filters, answered: e.target.value as AnsweredFilter })
+              onChange({ ...filters, resolved: e.target.value as ResolvedFilter })
             }
           >
             <option value="all">All notes</option>
-            <option value="answered">Answered only</option>
-            <option value="unanswered">Unanswered only</option>
+            <option value="resolved">{RESOLVED_COPY.showResolved}</option>
+            <option value="unresolved">{RESOLVED_COPY.showUnresolved}</option>
           </select>
         </FormField>
       </div>
@@ -107,6 +116,6 @@ export function noteFiltersToSearch(filters: NoteFilterState) {
           ? null
           : filters.categoryId,
     tagId: filters.tagId === "all" ? undefined : filters.tagId,
-    answered: filters.answered,
+    resolved: filters.resolved,
   };
 }

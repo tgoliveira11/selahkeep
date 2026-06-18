@@ -73,8 +73,14 @@ Residual risk: a malicious script running on this origin (XSS) or compromised br
 - Category and tag **names** live only in the encrypted vault index (v2); never in database columns or API plaintext fields.
 - Answered status is stored only in encrypted note metadata and vault index — not in database columns.
 - **Search and filters** run client-side in memory after vault unlock; there is no server search endpoint and queries never leave the browser.
+- **Note titles** are required on create in the UI; title text remains in encrypted metadata only.
+- **Tags** are normalized before storage (`src/lib/notes/tag-normalization.ts`, max length **32**); `#` is display-only.
+- **Answered** defaults to `false` on create; only editable on note detail/edit.
 - Vault setting `unlockBehavior`: `metadata_only` (default) or `decrypt_all` (eager body decrypt after unlock) — stored in encrypted vault settings.
-- Markdown preview uses `dompurify` allowlist before `dangerouslySetInnerHTML`.
+- User-facing note status is **resolved**; encrypted metadata/index still use internal field name `answered` (legacy naming).
+- Note drafts autosave locally as **encrypted** payloads (`note_draft` AAD) in IndexedDB; plaintext title/body/tags are never persisted.
+- Markdown preview/detail use `marked` + `dompurify` allowlist via `MarkdownPreview` before `dangerouslySetInnerHTML`.
+- Unsafe HTML/scripts and `javascript:` links are stripped; external links use `rel="noopener noreferrer"`.
 - Note APIs reject plaintext `title`, `body`, `markdown`, `tags`, `categoryId`, `categoryName`, `tagNames`, `answered`, `noteKey`, etc.
 - Soft delete (`deleted_at` on notes + `deletedAt` in vault index); no plaintext search indexes.
 

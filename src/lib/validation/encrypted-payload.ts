@@ -16,6 +16,7 @@ const aadSchema = z.object({
     "vault_key",
     "vault_settings",
     "vault_index",
+    "note_draft",
   ]),
 });
 

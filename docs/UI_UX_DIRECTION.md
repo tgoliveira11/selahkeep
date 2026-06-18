@@ -97,7 +97,19 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 | `not_configured` | Set up your vault → `/vault/setup` | Same |
 | `setup_incomplete` | Complete your vault setup → `/vault/setup` | Same |
 | `locked` | Unlock your vault → `/vault/unlock` | Same |
-| `unlocked` | Unlock behavior settings | Notes list + filters |
+| `unlocked` | Unlock behavior settings | Notes list + filters (when categories/tags exist); vault open indicator |
+
+### `/notes`, `/notes/new`, `/notes/[id]`
+
+- **Search/filters** on `/notes` appear only after at least one category or tag exists; helper copy when none exist.
+- **Vault indicator** on `/notes`: closed visual + unlock CTA when locked; open visual + **Lock vault** when unlocked.
+- **New note:** title required; category dropdown only when categories exist; no answered toggle on create.
+- **Tags:** chip input with normalization; display `#tag`, store `tag` (max 32 chars).
+- **Detail:** category pill without `#`; tag chips with `#`; answered toggle in edit mode only.
+- **Resolved:** user-facing label; internal encrypted metadata uses `answered`.
+- **Markdown:** checklists (read-only in preview), shortcuts, sanitized `MarkdownPreview`.
+- **Drafts:** encrypted local autosave; restore/discard on return.
+- **Templates:** client-side starter Markdown on `/notes/new` only.
 
 ---
 

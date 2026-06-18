@@ -130,7 +130,7 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 - **Recovery management:** `/vault/recovery` — status-gated recovery phrase replace + passkey setup (no initial phrase generation post-setup)
 - **Vault unlock:** `LtgVaultUnlockPanel` / `VaultAccessGate` on `/vault/unlock` and note pages
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + **purple** primary)
-- **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview
+- **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview; tag normalization before encrypted index write
 
 ## AAD binding (ADR-005)
 

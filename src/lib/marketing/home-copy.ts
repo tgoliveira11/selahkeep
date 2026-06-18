@@ -23,9 +23,9 @@ export const homeCopy = {
           "Save your writing securely and return whenever you want to remember, reflect, or find comfort.",
       },
       {
-        title: "Mark as answered",
+        title: "Mark as resolved",
         description:
-          "When a prayer or reflection feels answered, mark it so you can revisit that moment of peace and gratitude.",
+          "When a prayer, reflection, or decision feels complete, mark it resolved so you can revisit that moment later.",
       },
       {
         title: "Recover thoughtfully",

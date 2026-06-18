@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 import { FormField } from "@/components/ui/form-field";
 import { PrivacyNotice } from "@/components/ui/privacy-notice";
 import { ErrorState } from "@/components/ui/error-state";
@@ -14,11 +14,34 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
 import { CategoryTagFields } from "@/features/notes/category-tag-fields";
+import { NoteTemplatePicker } from "@/features/notes/note-template-picker";
 import { useCategoriesTags } from "@/features/notes/use-categories-tags";
 import { useNotes } from "@/features/notes/use-notes";
+import {
+  useAutosaveTimer,
+  useConfirmLeave,
+  useUnsavedChangesWarning,
+} from "@/features/notes/use-unsaved-changes";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
+import {
+  deleteEncryptedNoteDraft,
+  loadEncryptedNoteDraft,
+  NEW_NOTE_DRAFT_KEY,
+  saveEncryptedNoteDraft,
+  type NoteDraftPlaintext,
+} from "@/lib/crypto-client/note-drafts";
+import { getNoteTemplate, type NoteTemplateId } from "@/lib/notes/note-templates";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { VaultAccessGate } from "@/features/vault/vault-access-gate";
+
+const TITLE_REQUIRED_MESSAGE = "Add a title before saving your note.";
+
+const EMPTY_FORM = {
+  title: "",
+  body: "",
+  categoryId: null as string | null,
+  tagIds: [] as string[],
+};
 
 export default function NewNotePage() {
   const vault = useRequireVault();
@@ -27,19 +50,44 @@ export default function NewNotePage() {
   const [body, setBody] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [tagIds, setTagIds] = useState<string[]>([]);
-  const [answered, setAnswered] = useState(false);
+  const [templateId, setTemplateId] = useState<NoteTemplateId>("blank");
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [draftPrompt, setDraftPrompt] = useState<NoteDraftPlaintext | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+  const [baseline, setBaseline] = useState(JSON.stringify(EMPTY_FORM));
+
   const userId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
   const { createNote, busy, error: notesError } = useNotes(userId);
-  const {
-    categories,
-    tags,
-    createCategory,
-    createTag,
-  } = useCategoriesTags(userId, vaultUnlocked);
-  const [error, setError] = useState<string | null>(null);
+  const { categories, tags, createCategory, createTag } = useCategoriesTags(userId, vaultUnlocked);
 
   const canWrite = vault.status === "ready" && vault.vaultUnlocked;
+  const trimmedTitle = title.trim();
+  const canSave = Boolean(trimmedTitle && body.trim());
+
+  const formSnapshot = useMemo(
+    () => JSON.stringify({ title, body, categoryId, tagIds }),
+    [title, body, categoryId, tagIds]
+  );
+  const dirty = hydrated && formSnapshot !== baseline;
+  useUnsavedChangesWarning(dirty);
+  const { requestLeave, confirmDialog } = useConfirmLeave(dirty);
+
+  const persistDraft = useCallback(async () => {
+    if (!userId || !dirty) return;
+    const draft: NoteDraftPlaintext = {
+      title,
+      body,
+      categoryId,
+      tagIds,
+      answered: false,
+      updatedAt: new Date().toISOString(),
+    };
+    await saveEncryptedNoteDraft(userId, NEW_NOTE_DRAFT_KEY, draft);
+  }, [body, categoryId, dirty, tagIds, title, userId]);
+
+  useAutosaveTimer(Boolean(userId && dirty), persistDraft);
 
   useEffect(() => {
     return subscribeVaultSession(() => {
@@ -47,10 +95,91 @@ export default function NewNotePage() {
       setBody("");
       setCategoryId(null);
       setTagIds([]);
-      setAnswered(false);
+      setTitleError(null);
       setError(null);
+      setDraftPrompt(null);
+      setHydrated(false);
+      setBaseline(JSON.stringify(EMPTY_FORM));
     });
   }, []);
+
+  useEffect(() => {
+    if (!userId || !canWrite) return;
+    let cancelled = false;
+
+    void (async () => {
+      const draft = await loadEncryptedNoteDraft(userId, NEW_NOTE_DRAFT_KEY);
+      if (cancelled) return;
+      if (draft && (draft.title.trim() || draft.body.trim())) {
+        setDraftPrompt(draft);
+      }
+      setHydrated(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, canWrite]);
+
+  function applyTemplate(id: NoteTemplateId) {
+    setTemplateId(id);
+    const template = getNoteTemplate(id);
+    setBody(template.body);
+    if (!title.trim()) {
+      setTitle("");
+    }
+  }
+
+  function restoreDraft() {
+    if (!draftPrompt) return;
+    setTitle(draftPrompt.title);
+    setBody(draftPrompt.body);
+    setCategoryId(draftPrompt.categoryId);
+    setTagIds(draftPrompt.tagIds);
+    setDraftPrompt(null);
+    setBaseline(
+      JSON.stringify({
+        title: draftPrompt.title,
+        body: draftPrompt.body,
+        categoryId: draftPrompt.categoryId,
+        tagIds: draftPrompt.tagIds,
+      })
+    );
+  }
+
+  async function discardDraft() {
+    if (userId) {
+      await deleteEncryptedNoteDraft(userId, NEW_NOTE_DRAFT_KEY);
+    }
+    setDraftPrompt(null);
+  }
+
+  async function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
+    setError(null);
+
+    if (!trimmedTitle) {
+      setTitleError(TITLE_REQUIRED_MESSAGE);
+      return;
+    }
+
+    try {
+      const note = await createNote({
+        title: trimmedTitle,
+        body,
+        categoryId,
+        tagIds,
+        answered: false,
+      });
+      if (userId) {
+        await deleteEncryptedNoteDraft(userId, NEW_NOTE_DRAFT_KEY);
+      }
+      setBaseline(formSnapshot);
+      router.push(`/notes/${note.id}`);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Failed to save note");
+    }
+  }
 
   if (vault.status === "loading" || vault.status === "redirecting") {
     return (
@@ -84,18 +213,6 @@ export default function NewNotePage() {
     );
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-
-    try {
-      const note = await createNote({ title, body, categoryId, tagIds, answered });
-      router.push(`/notes/${note.id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to save note");
-    }
-  }
-
   const displayError = error ?? notesError;
 
   return (
@@ -108,30 +225,62 @@ export default function NewNotePage() {
       <Card className="space-y-6">
         <PrivacyNotice compact />
 
+        {draftPrompt && (
+          <Alert variant="info" role="status">
+            <p className="font-medium">Unsaved draft found</p>
+            <p className="mt-1 text-sm">You have unsaved changes saved on this device.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button type="button" onClick={restoreDraft}>
+                Restore draft
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => void discardDraft()}>
+                Discard draft
+              </Button>
+            </div>
+          </Alert>
+        )}
+
+        {dirty && (
+          <p className="text-sm text-[var(--muted)]" role="status">
+            You have unsaved changes.
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
-          <FormField id="note-title" label="Title (optional)" hint="Leave blank to use a date-based title">
+          <NoteTemplatePicker value={templateId} onChange={applyTemplate} disabled={busy} />
+          <FormField id="note-title" label="Title" hint="Required">
             <Input
               id="note-title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="A title for your note"
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (titleError) setTitleError(null);
+              }}
+              placeholder={getNoteTemplate(templateId).titlePlaceholder}
               maxLength={200}
+              required
+              aria-invalid={Boolean(titleError)}
+              aria-describedby={titleError ? "note-title-error" : undefined}
             />
+            {titleError && (
+              <p id="note-title-error" className="mt-2 text-sm text-[var(--danger)]" role="alert">
+                {titleError}
+              </p>
+            )}
           </FormField>
           <CategoryTagFields
+            mode="create"
             categories={categories}
             tags={tags}
             categoryId={categoryId}
             tagIds={tagIds}
-            answered={answered}
             onCategoryChange={setCategoryId}
             onTagIdsChange={setTagIds}
-            onAnsweredChange={setAnswered}
             onCreateCategory={createCategory}
             onCreateTag={createTag}
           />
           <FormField id="note-body" label="Your note">
-            <MarkdownEditor value={body} onChange={setBody} />
+            <MarkdownEditor value={body} onChange={setBody} onSave={() => void handleSubmit()} />
           </FormField>
           {displayError && (
             <p className="text-sm text-[var(--danger)]" role="alert">
@@ -139,15 +288,26 @@ export default function NewNotePage() {
             </p>
           )}
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button type="submit" disabled={busy || !body.trim()} className="w-full sm:w-auto">
+            <Button
+              type="submit"
+              disabled={busy || !canSave}
+              className="w-full sm:w-auto"
+              title={!trimmedTitle ? TITLE_REQUIRED_MESSAGE : undefined}
+            >
               {busy ? "Saving securely…" : "Save note"}
             </Button>
-            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => router.back()}>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={() => requestLeave(() => router.back())}
+            >
               Cancel
             </Button>
           </div>
         </form>
       </Card>
+      {confirmDialog}
     </PageLayout>
   );
 }

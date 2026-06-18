@@ -1,0 +1,114 @@
+import { openDB, type IDBPDatabase } from "idb";
+import { encryptField, decryptField } from "./aes-gcm";
+import { getSessionVaultKey } from "./vault";
+import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
+
+const DB_NAME = "letters-vault";
+const DB_VERSION = 4;
+const DRAFT_STORE = "encrypted_note_drafts";
+
+export const NEW_NOTE_DRAFT_KEY = "new";
+
+export interface NoteDraftPlaintext {
+  title: string;
+  body: string;
+  categoryId: string | null;
+  tagIds: string[];
+  answered: boolean;
+  updatedAt: string;
+}
+
+interface DraftRecord {
+  userId: string;
+  draftKey: string;
+  payload: EncryptedPayload;
+  updatedAt: string;
+}
+
+let dbPromise: Promise<IDBPDatabase> | null = null;
+
+/** @internal Test helper */
+export function resetNoteDraftDbForTests(): void {
+  dbPromise = null;
+}
+
+function openDraftDb(): Promise<IDBPDatabase> {
+  if (!dbPromise) {
+    dbPromise = openDB(DB_NAME, DB_VERSION, {
+      upgrade(db, oldVersion) {
+        if (oldVersion < 3) {
+          for (const name of [...db.objectStoreNames]) {
+            if (name === "device_secrets" || name === "vault_envelopes") {
+              db.deleteObjectStore(name);
+            }
+          }
+        }
+        if (!db.objectStoreNames.contains(DRAFT_STORE)) {
+          db.createObjectStore(DRAFT_STORE, { keyPath: ["userId", "draftKey"] });
+        }
+      },
+    });
+  }
+  return dbPromise;
+}
+
+function draftResourceId(userId: string, draftKey: string): string {
+  return draftKey === NEW_NOTE_DRAFT_KEY ? userId : draftKey;
+}
+
+export async function saveEncryptedNoteDraft(
+  userId: string,
+  draftKey: string,
+  draft: NoteDraftPlaintext
+): Promise<void> {
+  const vaultKey = getSessionVaultKey();
+  if (!vaultKey) return;
+
+  const payload = await encryptField(JSON.stringify(draft), vaultKey, {
+    userId,
+    resourceId: draftResourceId(userId, draftKey),
+    field: "note_draft",
+  });
+
+  const db = await openDraftDb();
+  const record: DraftRecord = {
+    userId,
+    draftKey,
+    payload,
+    updatedAt: draft.updatedAt,
+  };
+  await db.put(DRAFT_STORE, record);
+}
+
+export async function loadEncryptedNoteDraft(
+  userId: string,
+  draftKey: string
+): Promise<NoteDraftPlaintext | null> {
+  const vaultKey = getSessionVaultKey();
+  if (!vaultKey) return null;
+
+  const db = await openDraftDb();
+  const record = (await db.get(DRAFT_STORE, [userId, draftKey])) as DraftRecord | undefined;
+  if (!record?.payload) return null;
+
+  const json = await decryptField(record.payload, vaultKey);
+  return JSON.parse(json) as NoteDraftPlaintext;
+}
+
+export async function deleteEncryptedNoteDraft(userId: string, draftKey: string): Promise<void> {
+  const db = await openDraftDb();
+  await db.delete(DRAFT_STORE, [userId, draftKey]);
+}
+
+export async function clearUserNoteDrafts(userId: string): Promise<void> {
+  const db = await openDraftDb();
+  const tx = db.transaction(DRAFT_STORE, "readwrite");
+  const store = tx.objectStore(DRAFT_STORE);
+  const all = await store.getAll();
+  for (const record of all as DraftRecord[]) {
+    if (record.userId === userId) {
+      await store.delete([userId, record.draftKey]);
+    }
+  }
+  await tx.done;
+}

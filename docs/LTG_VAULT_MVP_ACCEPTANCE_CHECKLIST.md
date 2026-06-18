@@ -17,10 +17,10 @@
 | 10 | User can unlock with recovery phrase | ✅ Pass | `unlockFromRecoveryPhrase` | `crypto-vault-unlock.test.ts` | Legacy `recovery_code` still supported |
 | 11 | User can associate passkey with vault unlock | ✅ Pass | `PasskeyVaultUnlockSetup`, enable-vault-unlock API | `passkey-vault-plaintext-rejection.test.ts`, API route tests | |
 | 12 | User can unlock with compatible passkey vault envelope | ✅ Pass | `unlock-with-passkey.ts`, PRF envelope | `passkey-login-vault-unlock.test.ts` | |
-| 13 | User can create/edit/delete/archive Markdown notes | ✅ Pass | `/notes`, `/notes/new`, `/notes/[id]` | `notes-pages.test.tsx`, `notes-routes.test.ts`, `note-service.test.ts` | Soft delete via `deleted_at` |
-| 14 | User can assign one category and multiple tags per note | ✅ Pass | `CategoryTagFields`, encrypted vault index | `category-tag-crypto.test.ts`, `note-filters.test.tsx` | |
-| 15 | User can mark notes as answered | ✅ Pass | Encrypted metadata `answered` flag | `answered-metadata.test.ts` | |
-| 16 | User can search by title/tag/category after unlock | ✅ Pass | `note-search.ts`, `NoteFilters` | `note-search.test.ts`, `note-filters.test.tsx` | Local client-side search only |
+| 13 | User can create/edit/delete/archive Markdown notes | ✅ Pass | `/notes`, `/notes/new`, `/notes/[id]` | `notes-ux.test.tsx`, `notes-routes.test.ts`, `note-service.test.ts` | Title required on create; soft delete via `deleted_at` |
+| 14 | User can assign one category and multiple tags per note | ✅ Pass | `CategoryTagFields`, `TagChipInput`, encrypted vault index | `category-tag-crypto.test.ts`, `tag-normalization.test.ts`, `notes-ux.test.tsx` | Tags normalized; `#` display-only |
+| 15 | User can mark notes as answered | ✅ Pass | Encrypted metadata `answered` flag | `answered-metadata.test.ts`, `notes-ux.test.tsx` | Not on `/notes/new` |
+| 16 | User can search by title/tag/category after unlock | ✅ Pass | `note-search.ts`, `NoteFilters` | `note-search.test.ts`, `notes-ux.test.tsx` | Filters visible only when organizers exist |
 | 17 | Titles visible in UI after unlock; **not** plaintext at rest | ✅ Pass | `encrypted_metadata` column only | `schema-no-plaintext.test.ts`, `default-title-encryption.test.ts` | |
 | 18 | Tags/categories/body not plaintext at rest | ✅ Pass | Encrypted metadata + body | `schema-no-plaintext.test.ts`, `notes-plaintext-rejection.test.ts` | |
 | 19 | APIs do not receive plaintext note content | ✅ Pass | `note-plaintext-rejection.ts` policies | `notes-plaintext-rejection.test.ts`, `plaintext-rejection.test.ts`, sentinel tests | |
@@ -40,7 +40,7 @@
 | 33 | Accessibility smoke (axe) on core pages | ✅ Pass | `accessibility.test.tsx` | jest-axe on home, login, register, account-deleted | |
 | 34 | Account deletion warning mentions vault + notes | ✅ Pass | `ACCOUNT_DELETION_VAULT_NOTE` on settings page | `account-deletion-page.test.tsx` | |
 | 35 | Deployment docs updated (no console email in prod) | ✅ Pass | `VERCEL_ENVIRONMENT_VARIABLES.md`, `secure-auth-deployment-checklist.md`, README deploy | Manual review | OAuth callbacks documented |
-| 36 | Vault status distinguishes not configured / setup incomplete / locked / unlocked | ✅ Pass | `GET /api/vault/status`, `useVaultClientStatus`, `/notes`, `/vault/settings`, nav badge | `vault-status.test.ts`, `vault-status-ui.test.tsx` | No unlock panel when vault missing |
+| 36 | Vault status distinguishes not configured / setup incomplete / locked / unlocked | ✅ Pass | `GET /api/vault/status`, `useVaultClientStatus`, `NotesVaultIndicator`, nav badge | `vault-status.test.ts`, `vault-status-ui.test.tsx`, `notes-ux.test.tsx` | `/notes` vault open/closed visual |
 | 37 | `/vault/recovery` status-gated; recovery phrase replace (not initial generation) | ✅ Pass | `/vault/recovery`, `POST /api/vault/recovery-phrase` | `vault-recovery-page.test.tsx`, `recovery-phrase-route.test.ts`, `vault-service.test.ts` | Legacy `recovery_code` unlock only; no "Do this later" |
 
 ---

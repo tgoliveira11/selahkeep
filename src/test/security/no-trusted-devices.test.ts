@@ -89,6 +89,6 @@ describe("no trusted devices guard", () => {
     const cleanup = readSource("src/lib/crypto-client/vault-idb-cleanup.ts");
     expect(cleanup).toContain("device_secrets");
     expect(cleanup).toContain("vault_envelopes");
-    expect(cleanup).toContain("DB_VERSION = 3");
+    expect(cleanup).toContain("DB_VERSION = 4");
   });
 });
