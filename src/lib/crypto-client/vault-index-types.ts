@@ -55,6 +55,8 @@ export type VaultIndexNoteEntry = {
   trashedAt?: string | null;
   hasChecklist?: boolean;
   isDailyNote?: boolean;
+  hasResolvedReflection?: boolean;
+  resolvedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   /** @deprecated Migrated to trashed/trashedAt */
@@ -102,6 +104,8 @@ export type NoteMetadataForIndex = {
   trashedAt?: string | null;
   hasChecklist?: boolean;
   isDailyNote?: boolean;
+  hasResolvedReflection?: boolean;
+  resolvedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;

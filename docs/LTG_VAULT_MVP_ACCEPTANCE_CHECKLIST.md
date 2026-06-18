@@ -47,6 +47,7 @@
 | 38 | Interactive Markdown checklists with encrypted persistence | ✅ Pass | `markdown-checklist.ts`, `MarkdownPreview`, note detail view save | `markdown-checklist.test.ts`, `markdown-preview.test.tsx`, `notes-ux.test.tsx` | Source markdown is source of truth |
 | 39 | Notes list resolve action, dates, sort, counter | ✅ Pass | `note-card.tsx`, `note-sort.ts`, `note-count.ts`, `notes/page.tsx` | `note-sort.test.ts`, `note-count.test.ts`, `notes-ux.test.tsx` | Client-side after vault unlock |
 | 41 | Note organization lifecycle (pin, favorite, archive, trash, filters, saved views, duplicate) | ✅ Pass | Track 3 + UI refinement | `note-metadata.test.ts`, `smart-filters.test.ts`, `saved-views.test.ts`, `duplicate-note.test.ts`, `note-org-metadata.test.ts`, `notes-refinements.test.tsx`, `notes-ui-patterns.test.tsx` | Smart filter chips; saved views menu; compact toolbar |
+| 42 | Reflective workflows (resolved reflection, timeline, remembrance, weekly reflection, prompts) | ✅ Pass | Track 5 | `note-lifecycle.test.ts`, `reflective-workflows-track-5.test.tsx`, `reflective-workflows-security.test.ts` | Local-only; encrypted metadata; hidden when vault locked |
 | 37 | `/vault/recovery` status-gated; recovery phrase replace (not initial generation) | ✅ Pass | `/vault/recovery`, `POST /api/vault/recovery-phrase` | `vault-recovery-page.test.tsx`, `recovery-phrase-route.test.ts`, `vault-service.test.ts` | Legacy `recovery_code` unlock only; no "Do this later" |
 
 ---

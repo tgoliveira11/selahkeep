@@ -322,6 +322,10 @@ export default function NotesPage() {
           onApplySavedView={handleApplySavedView}
           onSaveView={handleSaveView}
           onDeleteSavedView={handleDeleteSavedView}
+          onRecentlyViewed={() => {
+            setSmartFilter("recently-viewed");
+            setActiveSavedViewId(null);
+          }}
           trashNotice={smartFilter === "trash"}
         />
       )}

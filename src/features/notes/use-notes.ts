@@ -24,6 +24,13 @@ import {
   duplicateNoteMetadata,
   metadataToIndexEntry,
 } from "@/lib/notes/note-metadata";
+import {
+  appendLifecycleEvent,
+  applyNoteReopened,
+  applyNoteResolved,
+  buildResolvedReflection,
+  type ResolvedReflection,
+} from "@/lib/notes/note-lifecycle";
 import { countChecklistItems } from "@/lib/notes/markdown-checklist";
 
 async function syncVaultIndex(
@@ -58,9 +65,17 @@ async function persistMetadataUpdate(
   noteId: string,
   metadata: NoteMetadataPlaintext,
   body: string,
-  wrappedKey: import("@/lib/validation/encrypted-payload").EncryptedPayload
+  wrappedKey: import("@/lib/validation/encrypted-payload").EncryptedPayload,
+  options?: { appendUpdatedEvent?: boolean }
 ) {
-  const updatedMetadata = { ...metadata, updatedAt: new Date().toISOString() };
+  const now = new Date().toISOString();
+  let updatedMetadata = { ...metadata, updatedAt: now };
+  if (options?.appendUpdatedEvent) {
+    updatedMetadata = {
+      ...updatedMetadata,
+      lifecycleEvents: appendLifecycleEvent(updatedMetadata.lifecycleEvents, "updated", now),
+    };
+  }
   const payload = await reencryptNoteWithUpdatedMetadata(
     userId,
     noteId,
@@ -138,7 +153,9 @@ export function useNotes(userId: string | null) {
       setBusy(true);
       setError(null);
       try {
-        const result = await persistMetadataUpdate(userId, noteId, metadata, body, existingWrappedKey);
+        const result = await persistMetadataUpdate(userId, noteId, metadata, body, existingWrappedKey, {
+          appendUpdatedEvent: true,
+        });
         return result.note;
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to update note";
@@ -165,6 +182,7 @@ export function useNotes(userId: string | null) {
           trashedAt: now,
           pinned: false,
           updatedAt: now,
+          lifecycleEvents: appendLifecycleEvent(decrypted.metadata.lifecycleEvents, "trashed", now),
         };
         const result = await persistMetadataUpdate(
           userId,
@@ -192,10 +210,13 @@ export function useNotes(userId: string | null) {
       setError(null);
       try {
         const { decrypted, note } = await loadNoteForUpdate(noteId);
+        const now = new Date().toISOString();
         const updatedMetadata: NoteMetadataPlaintext = {
           ...decrypted.metadata,
           trashed: false,
           trashedAt: null,
+          lifecycleEvents: appendLifecycleEvent(decrypted.metadata.lifecycleEvents, "restored", now),
+          updatedAt: now,
         };
         const result = await persistMetadataUpdate(
           userId,
@@ -247,10 +268,9 @@ export function useNotes(userId: string | null) {
       setError(null);
       try {
         const { decrypted, note } = await loadNoteForUpdate(noteId);
-        const updatedMetadata = {
-          ...decrypted.metadata,
-          answered,
-        };
+        const updatedMetadata = answered
+          ? applyNoteResolved(decrypted.metadata, decrypted.metadata.resolvedReflection)
+          : applyNoteReopened(decrypted.metadata);
         const result = await persistMetadataUpdate(
           userId,
           noteId,
@@ -261,6 +281,43 @@ export function useNotes(userId: string | null) {
         return result.metadata;
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to update note";
+        setError(message);
+        throw e;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [userId]
+  );
+
+  const resolveNoteWithReflection = useCallback(
+    async (
+      noteId: string,
+      reflectionFields?: {
+        whatChanged?: string;
+        howResolved?: string;
+        whatToRemember?: string;
+      } | null
+    ) => {
+      if (!userId) throw new Error("Not authenticated");
+      setBusy(true);
+      setError(null);
+      try {
+        const { decrypted, note } = await loadNoteForUpdate(noteId);
+        const reflection: ResolvedReflection | null = reflectionFields
+          ? buildResolvedReflection(reflectionFields)
+          : null;
+        const updatedMetadata = applyNoteResolved(decrypted.metadata, reflection);
+        const result = await persistMetadataUpdate(
+          userId,
+          noteId,
+          updatedMetadata,
+          decrypted.body,
+          note.encryptedWrappedNoteKey
+        );
+        return result.metadata;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to resolve note";
         setError(message);
         throw e;
       } finally {
@@ -335,6 +392,10 @@ export function useNotes(userId: string | null) {
           ...decrypted.metadata,
           archived,
           pinned: archived ? false : decrypted.metadata.pinned,
+          lifecycleEvents: appendLifecycleEvent(
+            decrypted.metadata.lifecycleEvents,
+            archived ? "archived" : "unarchived"
+          ),
         };
         const result = await persistMetadataUpdate(
           userId,
@@ -408,6 +469,7 @@ export function useNotes(userId: string | null) {
     restoreNoteFromTrash,
     permanentlyDeleteNote,
     toggleNoteResolved,
+    resolveNoteWithReflection,
     toggleNotePinned,
     toggleNoteFavorite,
     toggleNoteArchived,

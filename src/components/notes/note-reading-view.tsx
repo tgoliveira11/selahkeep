@@ -8,6 +8,8 @@ import { NoteMoreActionsMenu } from "@/components/notes/note-more-actions-menu";
 import { NoteStateIndicators } from "@/components/notes/note-state-indicators";
 import { formatNoteListDates } from "@/lib/notes/note-dates";
 import { HighlightedText, SearchMatchBanner } from "@/components/notes/search-highlight";
+import { ResolvedReflectionDisplay } from "@/components/notes/resolved-reflection-display";
+import { NoteTimeline } from "@/components/notes/note-timeline";
 import type { VaultCategory, VaultTag } from "@/lib/crypto-client/vault-index-types";
 import type { NoteMetadataPlaintext } from "@/lib/crypto-client/notes";
 
@@ -21,6 +23,8 @@ interface NoteReadingViewProps {
   checklistSaveState: "idle" | "saving" | "saved" | "error";
   onEdit: () => void;
   onToggleResolved: () => void;
+  onMarkResolved?: () => void;
+  onReopen?: () => void;
   onTogglePinned: () => void;
   onToggleFavorite: () => void;
   onToggleArchived: () => void;
@@ -42,6 +46,8 @@ export function NoteReadingView({
   checklistSaveState,
   onEdit,
   onToggleResolved,
+  onMarkResolved,
+  onReopen,
   onTogglePinned,
   onToggleFavorite,
   onToggleArchived,
@@ -128,7 +134,7 @@ export function NoteReadingView({
           resolving={resolving}
           onTogglePinned={metadata.trashed || metadata.archived ? undefined : onTogglePinned}
           onToggleFavorite={metadata.trashed || metadata.archived ? undefined : onToggleFavorite}
-          onToggleResolved={metadata.trashed ? undefined : onToggleResolved}
+          onToggleResolved={metadata.trashed ? undefined : metadata.answered ? onReopen ?? onToggleResolved : onMarkResolved ?? onToggleResolved}
           className="note-reading-view__states"
         />
 
@@ -145,7 +151,15 @@ export function NoteReadingView({
         </p>
       </header>
 
-      <div className="note-reading-surface" data-testid="note-reading-surface">
+      {metadata.answered && metadata.resolvedReflection && (
+        <div className="mt-4">
+          <ResolvedReflectionDisplay reflection={metadata.resolvedReflection} />
+        </div>
+      )}
+
+      <NoteTimeline metadata={metadata} />
+
+      <div className="note-reading-surface mt-6" data-testid="note-reading-surface">
         {checklistSaveState !== "idle" && (
           <p className="mb-3 text-sm text-[var(--muted)]" role="status" data-testid="checklist-save-state">
             {checklistSaveState === "saving" && "Saving…"}

@@ -1,5 +1,9 @@
 import type { NoteMetadataPlaintext } from "@/lib/crypto-client/notes";
 import type { VaultIndexNoteEntry } from "@/lib/crypto-client/vault-index-types";
+import {
+  createLifecycleEvent,
+  hasResolvedReflectionContent,
+} from "@/lib/notes/note-lifecycle";
 import { countChecklistItems } from "@/lib/notes/markdown-checklist";
 import { isDailyNoteTitle } from "@/lib/notes/daily-note";
 
@@ -29,6 +33,8 @@ export function normalizeNoteMetadata(
     trashedAt: raw.trashedAt ?? DEFAULT_LIFECYCLE.trashedAt,
     createdAt: raw.createdAt ?? now,
     updatedAt: raw.updatedAt ?? now,
+    resolvedReflection: raw.resolvedReflection ?? null,
+    lifecycleEvents: raw.lifecycleEvents ?? [],
   };
 }
 
@@ -50,6 +56,10 @@ export function metadataToIndexEntry(
     trashedAt: metadata.trashedAt,
     hasChecklist: body !== undefined ? countChecklistItems(body) > 0 : undefined,
     isDailyNote: isDailyNoteTitle(metadata.title),
+    hasResolvedReflection: hasResolvedReflectionContent(metadata.resolvedReflection),
+    resolvedAt: metadata.answered
+      ? metadata.resolvedReflection?.resolvedAt ?? metadata.updatedAt
+      : null,
     createdAt: metadata.createdAt,
     updatedAt: metadata.updatedAt,
   };
@@ -70,6 +80,8 @@ export function indexEntryToMetadataPatch(
   | "trashedAt"
   | "createdAt"
   | "updatedAt"
+  | "resolvedReflection"
+  | "lifecycleEvents"
 > {
   return {
     title: entry.title,
@@ -83,6 +95,8 @@ export function indexEntryToMetadataPatch(
     trashedAt: entry.trashedAt ?? null,
     createdAt: entry.createdAt,
     updatedAt: entry.updatedAt,
+    resolvedReflection: null,
+    lifecycleEvents: [],
   };
 }
 
@@ -109,6 +123,8 @@ export function duplicateNoteMetadata(
     archived: false,
     trashed: false,
     trashedAt: null,
+    resolvedReflection: null,
+    lifecycleEvents: [createLifecycleEvent("duplicated", updatedAt)],
     createdAt,
     updatedAt,
   });

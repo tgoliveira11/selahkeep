@@ -70,6 +70,10 @@ On vault lock (`subscribeVaultSession`):
 | Notes UI | `src/app/(vault)/notes/page.tsx` |
 | Detail highlight | `src/components/notes/note-reading-view.tsx` |
 
+## Track 5 cross-reference
+
+Reflective workflows (resolved reflection, timeline, remembrance, weekly reflection) extend note metadata and UI — see `docs/REFLECTIVE_SPIRITUAL_WORKFLOWS_TRACK_5_IMPLEMENTATION.md`. Search and recently viewed remain client-only per above.
+
 ## Tests
 
 | Layer | Files |

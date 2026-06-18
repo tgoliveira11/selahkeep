@@ -1,5 +1,10 @@
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import { ENCRYPTION_VERSION } from "@/lib/validation/encrypted-payload";
+import type {
+  NoteLifecycleEvent,
+  ResolvedReflection,
+} from "@/lib/notes/note-lifecycle";
+import { createLifecycleEvent } from "@/lib/notes/note-lifecycle";
 import { normalizeNoteMetadata } from "@/lib/notes/note-metadata";
 import { generateAesKey, encryptField, decryptField } from "./aes-gcm";
 import { verifyPayloadAad } from "./aad-verify";
@@ -21,6 +26,8 @@ export type NoteMetadataPlaintext = {
   trashedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  resolvedReflection?: ResolvedReflection | null;
+  lifecycleEvents?: NoteLifecycleEvent[];
 };
 
 export interface EncryptedNotePayload {
@@ -48,6 +55,8 @@ export type EncryptNoteInput = {
   trashedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  resolvedReflection?: ResolvedReflection | null;
+  lifecycleEvents?: NoteLifecycleEvent[];
 };
 
 export async function encryptNote(
@@ -60,6 +69,7 @@ export async function encryptNote(
   if (input.body.length > BODY_MAX_LENGTH) throw new Error("Body too long");
 
   const now = new Date().toISOString();
+  const createdAt = input.createdAt ?? now;
   const metadata = normalizeNoteMetadata({
     title: input.title,
     categoryId: input.categoryId ?? null,
@@ -70,8 +80,11 @@ export async function encryptNote(
     archived: input.archived ?? false,
     trashed: input.trashed ?? false,
     trashedAt: input.trashedAt ?? null,
-    createdAt: input.createdAt ?? now,
+    createdAt,
     updatedAt: input.updatedAt ?? now,
+    resolvedReflection: input.resolvedReflection ?? null,
+    lifecycleEvents:
+      input.lifecycleEvents ?? [createLifecycleEvent("created", createdAt)],
   });
 
   const noteKey = await generateNoteKey();

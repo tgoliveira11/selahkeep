@@ -33,6 +33,7 @@ interface NotesListControlsProps {
   onApplySavedView: (view: { id: string; criteria: SavedViewCriteria }) => void;
   onSaveView: (name: string, criteria: SavedViewCriteria) => void | Promise<void>;
   onDeleteSavedView: (viewId: string) => void | Promise<void>;
+  onRecentlyViewed?: () => void;
   trashNotice?: boolean;
 }
 
@@ -56,6 +57,7 @@ export function NotesListControls({
   onApplySavedView,
   onSaveView,
   onDeleteSavedView,
+  onRecentlyViewed,
   trashNotice,
 }: NotesListControlsProps) {
   const noteCountLabel = formatNoteCount(filteredCount, totalCount);
@@ -88,6 +90,7 @@ export function NotesListControls({
               onApply={onApplySavedView}
               onSave={onSaveView}
               onDelete={onDeleteSavedView}
+              onRecentlyViewed={onRecentlyViewed}
             />
             <AdvancedFiltersMenu
               filters={filters}

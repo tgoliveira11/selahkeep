@@ -44,6 +44,7 @@ import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { getCachedNoteBody } from "@/features/notes/eager-decrypt-notes";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import { cn } from "@/lib/ui/cn";
+import { ResolvedReflectionDialog } from "@/components/notes/resolved-reflection-dialog";
 
 function editSnapshot(metadata: NoteMetadataPlaintext, body: string): string {
   return JSON.stringify({
@@ -88,6 +89,7 @@ export default function NoteDetailPage() {
   const [checklistSaveState, setChecklistSaveState] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
+  const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
@@ -101,7 +103,7 @@ export default function NoteDetailPage() {
     vault.status === "ready" && vault.vaultUnlocked && clientStatus === "unlocked";
   const vaultUserId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
-  const { updateNote, moveNoteToTrash, restoreNoteFromTrash, permanentlyDeleteNote, toggleNoteResolved, toggleNotePinned, toggleNoteFavorite, toggleNoteArchived, duplicateNote, busy, error: notesError } = useNotes(vaultUserId);
+  const { updateNote, moveNoteToTrash, restoreNoteFromTrash, permanentlyDeleteNote, toggleNoteResolved, resolveNoteWithReflection, toggleNotePinned, toggleNoteFavorite, toggleNoteArchived, duplicateNote, busy, error: notesError } = useNotes(vaultUserId);
   const { mutateIndex } = useVaultIndex(vaultUserId, vaultUnlocked);
   const { query: searchQuery } = useNoteSearchContext();
   const { categories, tags, createCategory, createTag } = useCategoriesTags(vaultUserId, vaultUnlocked);
@@ -323,6 +325,71 @@ export default function NoteDetailPage() {
       window.setTimeout(() => setSavedFlash(false), 2000);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save");
+    }
+  }
+
+  async function handleMarkResolved() {
+    if (!metadata || metadata.answered) return;
+    setResolveDialogOpen(true);
+  }
+
+  async function handleResolveWithoutReflection() {
+    touchVaultActivity();
+    if (!metadata || !wrappedKey) return;
+    setResolving(true);
+    setError(null);
+    const previous = metadata;
+    try {
+      const updated = await resolveNoteWithReflection(id, null);
+      setMetadata(updated);
+      setBaseline(editSnapshot(updated, body));
+      setResolveDialogOpen(false);
+    } catch (e) {
+      setMetadata(previous);
+      setError(e instanceof Error ? e.message : "Failed to resolve");
+    } finally {
+      setResolving(false);
+    }
+  }
+
+  async function handleSaveReflectionAndResolve(fields: {
+    whatChanged?: string;
+    howResolved?: string;
+    whatToRemember?: string;
+  }) {
+    touchVaultActivity();
+    if (!metadata || !wrappedKey) return;
+    setResolving(true);
+    setError(null);
+    const previous = metadata;
+    try {
+      const updated = await resolveNoteWithReflection(id, fields);
+      setMetadata(updated);
+      setBaseline(editSnapshot(updated, body));
+      setResolveDialogOpen(false);
+    } catch (e) {
+      setMetadata(previous);
+      setError(e instanceof Error ? e.message : "Failed to resolve");
+    } finally {
+      setResolving(false);
+    }
+  }
+
+  async function handleReopen() {
+    touchVaultActivity();
+    if (!metadata || !wrappedKey || !metadata.answered) return;
+    setResolving(true);
+    setError(null);
+    const previous = metadata;
+    try {
+      const updated = await toggleNoteResolved(id, false);
+      setMetadata(updated);
+      setBaseline(editSnapshot(updated, body));
+    } catch (e) {
+      setMetadata(previous);
+      setError(e instanceof Error ? e.message : "Failed to reopen");
+    } finally {
+      setResolving(false);
     }
   }
 
@@ -582,6 +649,8 @@ export default function NoteDetailPage() {
           checklistSaveState={checklistSaveState}
           onEdit={startEditing}
           onToggleResolved={() => void handleToggleResolved()}
+          onMarkResolved={() => void handleMarkResolved()}
+          onReopen={() => void handleReopen()}
           onTogglePinned={() => void toggleNotePinned(id, !metadata.pinned).then(setMetadata)}
           onToggleFavorite={() => void toggleNoteFavorite(id, !metadata.favorite).then(setMetadata)}
           onToggleArchived={() => void toggleNoteArchived(id, !metadata.archived).then(setMetadata)}
@@ -621,6 +690,15 @@ export default function NoteDetailPage() {
         onCancel={() => setPermanentDeleteOpen(false)}
       />
       {confirmDialog}
+
+      <ResolvedReflectionDialog
+        key={resolveDialogOpen ? "open" : "closed"}
+        open={resolveDialogOpen}
+        loading={resolving || busy}
+        onSaveAndResolve={(fields) => void handleSaveReflectionAndResolve(fields)}
+        onResolveWithoutReflection={() => void handleResolveWithoutReflection()}
+        onCancel={() => setResolveDialogOpen(false)}
+      />
     </NoteDetailPageShell>
   );
 }

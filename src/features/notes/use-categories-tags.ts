@@ -20,7 +20,7 @@ export function useCategoriesTags(userId: string | null, vaultUnlocked: boolean)
   const { index, mutateIndex, loading, error } = useVaultIndex(userId, vaultUnlocked);
 
   const createCategory = useCallback(
-    async (name: string) => {
+    async (name: string): Promise<VaultCategory> => {
       let created: VaultCategory | null = null;
       await mutateIndex((current) => {
         const result = addVaultCategory(current, name);
@@ -44,7 +44,7 @@ export function useCategoriesTags(userId: string | null, vaultUnlocked: boolean)
   );
 
   const createTag = useCallback(
-    async (name: string) => {
+    async (name: string): Promise<VaultTag> => {
       const normalized = normalizeTagInput(name);
       if (!normalized) throw new Error("Invalid tag name");
 

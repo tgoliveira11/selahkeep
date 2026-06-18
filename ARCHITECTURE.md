@@ -71,7 +71,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - WebAuthn challenge indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
 
 - `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted notes (Markdown body, metadata blob)
-- `GET/PATCH /api/vault/index` — encrypted vault index blob (v3: note lifecycle metadata, categories, tags, saved views)
+- `GET/PATCH /api/vault/index` — encrypted vault index blob (v3: note lifecycle metadata, categories, tags, saved views, recently viewed)
 - `GET/PATCH /api/vault/settings` — encrypted vault settings (unlock behavior, setup metadata)
 - `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted note payloads only
 - `POST /api/vault/setup` — vault-v2 setup (encrypted settings, index, password + recovery phrase envelopes); vault password validated client-side via `PasswordSetupFields` + `VAULT_PASSWORD_*` (never in request body)

@@ -28,6 +28,7 @@ type NoteMetadataPlaintext = {
 
 - **Backward compatibility:** `normalizeNoteMetadata()` defaults missing lifecycle fields after decrypt.
 - **Legacy mapping:** internal `answered` → user-facing **resolved**; v1 index `archived` → `trashed`; v2 `deletedAt` → `trashed` + `trashedAt`.
+- **Track 5 (reflective):** `resolvedReflection` and `lifecycleEvents` in encrypted note metadata; index mirrors `hasResolvedReflection` and `resolvedAt` for list views. See `docs/REFLECTIVE_SPIRITUAL_WORKFLOWS_TRACK_5_IMPLEMENTATION.md`.
 
 ## Vault index v3
 

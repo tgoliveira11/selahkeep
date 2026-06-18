@@ -53,6 +53,7 @@ import {
   resolveTemplateCategoryId,
 } from "@/lib/notes/template-category";
 import { cn } from "@/lib/ui/cn";
+import { PromptCards } from "@/components/notes/prompt-cards";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { VaultLockedState } from "@/features/vault/vault-locked-state";
 import { useNoteVaultBeforeAutoLock } from "@/features/notes/use-note-vault-before-auto-lock";
@@ -407,6 +408,16 @@ export default function NewNotePage() {
             )}
             </FormField>
           </div>
+
+          <PromptCards
+            context="new-note"
+            className={cn(focusMode && "note-focus-hide")}
+            onInsert={(markdown) => {
+              touchVaultActivity();
+              activateDraft("content");
+              setBody((current) => current + markdown);
+            }}
+          />
 
           <div data-testid="new-note-editor-field">
             <FormField id="note-body" label="Your note">

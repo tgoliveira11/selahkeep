@@ -22,6 +22,8 @@ describe("note metadata normalization", () => {
     expect(normalized.archived).toBe(DEFAULT_LIFECYCLE.archived);
     expect(normalized.trashed).toBe(DEFAULT_LIFECYCLE.trashed);
     expect(normalized.trashedAt).toBeNull();
+    expect(normalized.lifecycleEvents).toEqual([]);
+    expect(normalized.resolvedReflection).toBeNull();
   });
 
   it("preserves explicit lifecycle fields", () => {
@@ -87,5 +89,25 @@ describe("note metadata normalization", () => {
     expect(dup.favorite).toBe(false);
     expect(dup.archived).toBe(false);
     expect(dup.trashed).toBe(false);
+    expect(dup.resolvedReflection).toBeNull();
+    expect(dup.lifecycleEvents?.some((e) => e.type === "duplicated")).toBe(true);
+  });
+
+  it("maps resolved reflection flag to index entry", () => {
+    const meta = normalizeNoteMetadata({
+      title: "Resolved",
+      categoryId: null,
+      tagIds: [],
+      answered: true,
+      resolvedReflection: {
+        resolvedAt: "2026-06-10T00:00:00.000Z",
+        whatToRemember: "Peace",
+      },
+      createdAt: "2026-06-01T00:00:00.000Z",
+      updatedAt: "2026-06-10T00:00:00.000Z",
+    });
+    const entry = metadataToIndexEntry("n1", meta);
+    expect(entry.hasResolvedReflection).toBe(true);
+    expect(entry.resolvedAt).toBe("2026-06-10T00:00:00.000Z");
   });
 });

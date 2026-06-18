@@ -566,29 +566,23 @@ describe("notes UX", () => {
       expect(screen.queryByRole("button", { name: /move to trash/i })).toBeNull();
     });
 
-    it("calls toggleNoteResolved from detail resolve icon", async () => {
+    it("opens reflection dialog from detail resolve icon", async () => {
       const { useNotes } = await import("@/features/notes/use-notes");
-      const toggleNoteResolved = vi.fn().mockResolvedValue({
-        title: "Prayer note",
-        body: "**answered**",
-        categoryId: "c1",
-        tagIds: ["t1"],
-        answered: true,
-        createdAt: "2026-01-01T00:00:00.000Z",
-        updatedAt: "2026-01-03T00:00:00.000Z",
-      });
       vi.mocked(useNotes).mockReturnValue({
         createNote: vi.fn(),
         updateNote: vi.fn(),
         deleteNote: vi.fn(),
-        toggleNoteResolved,
+        toggleNoteResolved: vi.fn(),
+        resolveNoteWithReflection: vi.fn(),
         busy: false,
         error: null,
-      });
+      } as never);
 
       render(<NoteDetailPage />);
       fireEvent.click(await screen.findByLabelText(/mark as resolved/i));
-      await waitFor(() => expect(toggleNoteResolved).toHaveBeenCalledWith(NOTE_ID, true));
+      await waitFor(() =>
+        expect(screen.getByTestId("resolved-reflection-dialog")).toBeInTheDocument()
+      );
     });
 
     it("renders resolved markdown on detail view", async () => {

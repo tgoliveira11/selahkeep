@@ -118,6 +118,10 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 - **Progressive disclosure:** saved views and advanced category/tag/status filters live in menus, not large always-visible blocks.
 - **Smart filter chips** on `/notes` (All active, Pinned, Favorites, Recently viewed, Resolved, Unresolved, Archived, Trash) — client-only after unlock.
 - **Saved views** — encrypted in vault index; save/apply/delete via **Views ▾** menu on `/notes`.
+- **Reflective views** — **Remembrance** (`/notes/remembrance`), **Weekly reflection** (`/notes/weekly-reflection`), **Recently viewed** (smart filter) in **Views ▾** menu.
+- **Resolved reflection** — optional calm dialog when marking resolved (What changed? / How resolved? / What to remember?); stored in encrypted metadata; displayed on detail when present.
+- **Timeline** — progressive disclosure on `/notes/[id]` from encrypted lifecycle events (newest first).
+- **Prompt cards** — static local prompts on `/notes/new` and weekly reflection; insert into editor only.
 - **View mode** — Cards (rich metadata cards) / List (compact scan rows); preference in `localStorage` (`selahkeep:notes:view-mode`, non-sensitive).
 - **Controls visibility:** entire toolbar hidden when zero notes and no organizers/saved views/active filters; shown for one or more notes.
 - **Vault status dock** (`VaultStatusDock` inside authenticated `Nav` header): collapsed = tiny centered handle (`Vault` or `mm:ss` + chevron); expanded locked = quick password/passkey unlock + **Open full unlock page**; expanded open = compact row with **Lock now**. Recovery phrase only on `/vault/unlock`. Top nav shows only Notes, Vault, Account, Sign out.

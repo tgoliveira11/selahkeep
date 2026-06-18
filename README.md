@@ -237,9 +237,9 @@ Run `npm run db:migrate` after pulling vault schema updates (`0008`–`0011`, in
 
 ## Notes (SelahKeep Phase 2–3)
 
-Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings`**, **`/vault/security`**.
+Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/notes/remembrance`**, **`/notes/weekly-reflection`**, **`/vault/settings`**, **`/vault/security`**.
 
-- **Resolved status** — user-facing “resolved” maps to internal encrypted `answered` metadata; icon toggle on list cards and detail view; edit-mode toggle in category fields; filters use resolved/unresolved
+- **Resolved status** — user-facing “resolved” maps to internal encrypted `answered` metadata; optional reflection dialog on mark-resolved; timeline on detail; icon toggle on list cards and detail view; edit-mode toggle in category fields; filters use resolved/unresolved
 - **Note editor** — polished visual editor card (grouped toolbar, canvas, status) by default via Tiptap; Markdown remains canonical encrypted body; discreet **Markdown** toggle for source + collapsible preview. **Quick insert**, **focus mode**, **14 templates**, **daily note**, encrypted local drafts, and save/draft status. See `docs/EDITOR_EXPERIENCE_TRACK_2_IMPLEMENTATION.md`.
 - **Notes list** — created + updated dates on every card, sort (last modified/created/title; pinned notes first within groups), filtered counter (`4 of 12 notes`), resolved/unresolved badges, **smart local filters**, **saved views** (encrypted in vault index), **cards/list view toggle** (`selahkeep:notes:view-mode`)
 - **Note lifecycle** — pin, favorite, archive, move to trash, restore, permanent delete (with confirmation), duplicate note (new id + Note Key). See `docs/NOTE_ORGANIZATION_LIFECYCLE_TRACK_3_IMPLEMENTATION.md`.
@@ -251,7 +251,8 @@ Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings
 - **Vault index v3** (`GET/PATCH /api/vault/index`) — note entries (with lifecycle fields), encrypted category/tag definitions, encrypted saved views
 - **Tags** normalized client-side (`normalizeTagInput`, max **32** chars); displayed with `#`, stored without `#`
 - **Category vs tags:** category pill (no `#`); tag chips with `#`
-- **Client-side search/filters** after unlock — full-text search over title, body, category, and tags; compact toolbar with smart filter chips (including **Recently viewed**); saved views in **Views ▾** menu; no server search. See `docs/SEARCH_AND_DISCOVERY_TRACK_4_IMPLEMENTATION.md` and `docs/UI_UX_DIRECTION.md`.
+- **Client-side search/filters** after unlock — full-text search over title, body, category, and tags; compact toolbar with smart filter chips (including **Recently viewed**); saved views and reflective routes in **Views ▾** menu (Remembrance, Weekly reflection); no server search. See `docs/SEARCH_AND_DISCOVERY_TRACK_4_IMPLEMENTATION.md`, `docs/REFLECTIVE_SPIRITUAL_WORKFLOWS_TRACK_5_IMPLEMENTATION.md`, and `docs/UI_UX_DIRECTION.md`.
+- **Reflective workflows** — resolved reflection (encrypted metadata), note timeline, `/notes/remembrance`, `/notes/weekly-reflection`, static prompt cards (local only, no AI)
 - **Vault status dock:** `VaultStatusDock` in `AppHeaderChrome` / authenticated `Nav` header (collapsed handle + expanded panel, signed-in only) — compact handle when locked/unlocked; full panel for setup states and on expand; inactivity countdown in handle (`mm:ss`) and expanded copy; **Lock now** / unlock only when expanded; unlock links use safe `returnTo` (`safe-return-to.ts`).
 - **Unlock behavior** (`GET/PATCH /api/vault/settings`): `metadata_only` (default) or `decrypt_all`
 - **API:** `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted payloads only

@@ -5,6 +5,8 @@
 **Status:** Phases 0–5 **complete** (historical planning tables retained below for traceability)  
 **Priority Track 1** (Security, Recovery, and Trust): **mostly complete** — `/vault/security` shipped 2026-06-16  
 **Priority Track 2** (Writing Experience and Editor Quality): **mostly complete** — visual editor, drafts, templates, quick insert, focus mode, daily note shipped 2026-06-16  
+**Priority Track 4** (Search and Discovery): **complete** — local body search, highlighting, recently viewed shipped 2026-06-18  
+**Priority Track 5** (Reflective and Spiritual Workflows): **complete** — resolved reflection, timeline, remembrance, weekly reflection, prompt cards shipped 2026-06-18  
 **Active routes:** `/notes`, `/api/notes`, `/vault/*` — **letters domain removed**
 
 ---
@@ -964,11 +966,11 @@ The duplicated note should receive a new Note Key and a new encrypted note body/
 
 ---
 
-### Priority Track 4 — Search and Discovery
+### Priority Track 4 — Search and Discovery ✅
 
-These items increase usefulness once users have many notes.
+These items increase usefulness once users have many notes. See `docs/SEARCH_AND_DISCOVERY_TRACK_4_IMPLEMENTATION.md`.
 
-#### Local Full-Text Search After Unlock
+#### Local Full-Text Search After Unlock ✅
 
 Add local search over decrypted note bodies after vault unlock.
 
@@ -979,39 +981,44 @@ Important requirements:
 - decrypted note bodies are searched only in memory;
 - search state is cleared when the vault locks.
 
-#### Encrypted Local Search Index
+**Status:** Implemented — metadata + body search via `useNoteSearchBodies` and `matchNoteText()`.
+
+#### Encrypted Local Search Index — deferred
 
 Create an encrypted search index that can be stored with the vault.
 
-Possible model:
+```text
+TODO_SECURITY_REVIEW_REQUIRED:
+Encrypted persistent search index is deferred. Current search uses in-memory decrypted notes after vault unlock only.
+```
 
-- build index client-side;
-- encrypt index with vault material;
-- store encrypted index server-side;
-- decrypt index after unlock;
-- search locally.
+**Status:** Deferred — see Track 4 implementation doc.
 
-This would improve performance for larger vaults.
-
-#### Search Result Highlighting
+#### Search Result Highlighting ✅
 
 Highlight matching terms in search results and note view.
 
 Highlighting must happen client-side after unlock.
 
-#### Recently Viewed Notes
+**Status:** Implemented — `HighlightedText`, `SearchResultSnippet`, detail view highlighting.
+
+#### Recently Viewed Notes ✅
 
 Add a local or encrypted record of recently viewed notes.
 
 If persisted, the recently viewed list must be encrypted because it may reveal sensitive behavior.
 
+**Status:** Implemented — `recentlyViewed` in encrypted vault index; smart filter chip; Views menu entry.
+
 ---
 
-### Priority Track 5 — Reflective and Spiritual Workflows
+### Priority Track 5 — Reflective and Spiritual Workflows ✅
 
-These features give SelahKeep a stronger product identity beyond generic notes.
+These features give SelahKeep a stronger product identity beyond generic notes. See `docs/REFLECTIVE_SPIRITUAL_WORKFLOWS_TRACK_5_IMPLEMENTATION.md`.
 
-#### Resolved Reflection
+**Status:** Implemented (2026-06-18).
+
+#### Resolved Reflection ✅
 
 When marking a note as resolved, optionally prompt the user:
 
@@ -1019,59 +1026,23 @@ When marking a note as resolved, optionally prompt the user:
 - How was this resolved?
 - What do you want to remember?
 
-This turns resolved notes into a reflective record rather than a simple status toggle.
+Stored in encrypted note metadata (`resolvedReflection`). Reopening clears the current reflection (MVP).
 
-#### Prayer / Reflection Timeline
+#### Prayer / Reflection Timeline ✅
 
-Add a timeline view showing note lifecycle events:
+Timeline on `/notes/[id]` from encrypted `lifecycleEvents` + synthetic created event. Reverse-chronological (newest first). Progressive disclosure (“Show timeline”).
 
-- Created
-- Updated
-- Resolved
-- Reopened
-- Archived
+#### Remembrance Mode ✅
 
-The timeline should be generated from encrypted metadata after vault unlock.
+Route: `/notes/remembrance`. Resolved notes with saved reflection (`hasResolvedReflection` index flag). Entry from Views menu. Hidden when vault locked.
 
-#### Remembrance Mode
+#### Weekly Reflection ✅
 
-Add a view for revisiting resolved notes.
+Route: `/notes/weekly-reflection`. Sections: created this week, resolved this week, gratitude notes, open reflections, carry-forward prompt. Local timezone week (Monday–Sunday). Optional encrypted weekly reflection note (category “Weekly Reflection”).
 
-Possible copy:
+#### Prompt Cards ✅
 
-- Things you once carried
-- Things you want to remember
-- Resolved reflections
-
-This feature aligns strongly with the “Selah” concept of pause and reflection.
-
-#### Weekly Reflection
-
-Provide a weekly review experience.
-
-Possible sections:
-
-- Notes created this week
-- Notes resolved this week
-- Gratitude notes
-- Open reflections
-- What should I carry forward?
-
-All processing should happen locally after unlock unless future AI features are explicitly opted in.
-
-#### Prompt Cards
-
-Offer optional writing prompts.
-
-Examples:
-
-- What am I grateful for today?
-- What am I avoiding?
-- What do I need to surrender?
-- What should I remember from today?
-- What decision needs clarity?
-
-Prompt cards should not require AI and should not send content anywhere.
+Static local prompts in `/notes/new`, weekly reflection, empty states. Insert into editor. No AI/network.
 
 ---
 

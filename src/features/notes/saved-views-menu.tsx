@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ToolbarMenu } from "@/components/ui/toolbar-menu";
@@ -15,6 +16,7 @@ interface SavedViewsMenuProps {
   onApply: (view: SavedView) => void;
   onSave: (name: string, criteria: SavedViewCriteria) => void;
   onDelete: (viewId: string) => void;
+  onRecentlyViewed?: () => void;
 }
 
 /** Secondary saved views menu — not a large always-visible panel. */
@@ -25,6 +27,7 @@ export function SavedViewsMenu({
   onApply,
   onSave,
   onDelete,
+  onRecentlyViewed,
 }: SavedViewsMenuProps) {
   const [saveOpen, setSaveOpen] = useState(false);
   const [name, setName] = useState("");
@@ -45,6 +48,43 @@ export function SavedViewsMenu({
       icon={<IconViews />}
     >
       <div className="space-y-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">Reflective views</p>
+        <ul className="space-y-1">
+          <li>
+            <Link
+              href="/notes/remembrance"
+              role="menuitem"
+              className="block w-full rounded-[var(--radius)] px-2 py-2 text-left text-sm hover:bg-[var(--card-muted)]"
+              data-testid="view-remembrance"
+            >
+              Remembrance
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/notes/weekly-reflection"
+              role="menuitem"
+              className="block w-full rounded-[var(--radius)] px-2 py-2 text-left text-sm hover:bg-[var(--card-muted)]"
+              data-testid="view-weekly-reflection"
+            >
+              Weekly reflection
+            </Link>
+          </li>
+          {onRecentlyViewed && (
+            <li>
+              <button
+                type="button"
+                role="menuitem"
+                className="w-full rounded-[var(--radius)] px-2 py-2 text-left text-sm hover:bg-[var(--card-muted)]"
+                data-testid="view-recently-viewed"
+                onClick={onRecentlyViewed}
+              >
+                Recently viewed
+              </button>
+            </li>
+          )}
+        </ul>
+
         <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">Saved views</p>
         {views.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">No saved views yet</p>
