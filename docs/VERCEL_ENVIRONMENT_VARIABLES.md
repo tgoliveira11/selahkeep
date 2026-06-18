@@ -136,8 +136,10 @@ When `true`, working SMTP (`EMAIL_PROVIDER=smtp`) is effectively required.
 | `APP_NAME` | Optional | All | `SelahKeep` | secure-auth UI/email | Display name | Default `SelahKeep`. |
 | `APP_SLUG` | Optional | All | `letters-to-god` | secure-auth | Stable app slug | Default `letters-to-god`. |
 | `NEXTAUTH_URL` | Optional | Preview | `https://<preview-host>` | Legacy base URL fallback | Same role as `APP_BASE_URL` | Prefer `APP_BASE_URL`. Still read by email config and WebAuthn fallbacks. |
-| `AUTH_AFTER_LOGIN_PATH` | Optional | All | `/letters` | secure-auth | Post-login redirect | Default `/letters`. |
+| `AUTH_AFTER_LOGIN_PATH` | Optional | All | `/notes` | secure-auth | Post-login redirect | Default `/notes`. |
 | `AUTH_AFTER_LOGOUT_PATH` | Optional | All | `/login` | secure-auth | Post-logout redirect | Default `/login`. |
+| `AUTH_REDIRECT_AUTHENTICATED_FROM_GUEST_PAGES` | Optional | All | `true` | secure-auth UI + `proxy.ts` | Redirect signed-in users away from `/login`, `/register`, `/forgot-password` | Default `true`. Set `false` only for intentional re-login while signed in. |
+| `AUTH_AUTHENTICATED_REDIRECT_PATH` | Optional | All | `/notes` | secure-auth UI + `proxy.ts` | Destination when redirecting authenticated users off guest auth pages | Defaults to `AUTH_AFTER_LOGIN_PATH` (`/notes`). |
 
 ### Sessions
 
@@ -264,11 +266,11 @@ Add OAuth variables only for providers you enable. Run database migrations again
 |-------|--------|
 | `npm install` without `--legacy-peer-deps` | Passes (`nodemailer@7.x` satisfies `next-auth` peer) |
 | `package-lock.json` committed | Yes |
-| No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.1.19-internal` from npm registry |
+| No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.1.20-internal` from npm registry |
 | Private registry | Public npm scope `@tgoliveira` — no extra `.npmrc` required for Vercel |
 | Local `npm run build` | Passes |
 | Production domain (example) | `https://selahkeep.com` |
-| Package health | `GET /api/auth/package-health` → `version: 0.1.19-internal` |
+| Package health | `GET /api/auth/package-health` → `version: 0.1.20-internal` |
 | Production deploy validated | **Not re-run in this phase** — redeploy after env review |
 
 ---
@@ -281,7 +283,7 @@ After deploy:
 curl https://selahkeep.com/api/auth/package-health
 ```
 
-Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.19-internal" }` when runtime secrets and DB are configured.
+Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.20-internal" }` when runtime secrets and DB are configured.
 
 ---
 

@@ -5,6 +5,10 @@ import { SecureAuthUIProvider } from "@tgoliveira/secure-auth/react";
 import VerifyEmailPage from "@/app/(auth)/verify-email/page";
 import { testSecureAuthUiConfig } from "@/test/helpers/secure-auth-ui-config";
 
+vi.mock("next-auth/react", () => ({
+  useSession: vi.fn(() => ({ data: null, status: "unauthenticated", update: vi.fn() })),
+}));
+
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("token=abc"),
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),

@@ -6,6 +6,36 @@ import {
   createContentSecurityPolicyNonce,
 } from "@/lib/security/content-security-policy";
 import { sanitizeAuthCallbackUrl } from "@/lib/auth/safe-auth-callback";
+import { buildSecureAuthUiPublicConfigFromEnv } from "@/lib/env/secure-auth-from-env";
+
+const secureAuthUiConfig = buildSecureAuthUiPublicConfigFromEnv(process.env);
+
+const GUEST_ONLY_PATHS = [
+  secureAuthUiConfig.paths.login,
+  secureAuthUiConfig.paths.register,
+  secureAuthUiConfig.paths.forgotPassword,
+];
+
+function isGuestOnlyPath(pathname: string): boolean {
+  return GUEST_ONLY_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  );
+}
+
+function isFullyAuthenticatedToken(
+  token: Awaited<ReturnType<typeof getToken>>
+): boolean {
+  if (!token || typeof token === "string" || !token.sub || token.sessionInvalidated) {
+    return false;
+  }
+  if (token.twoFactorPending === true && token.twoFactorVerified === false) {
+    return false;
+  }
+  if (token.emailVerificationRequired === true) {
+    return false;
+  }
+  return true;
+}
 
 const TWO_FACTOR_ALLOWED_PREFIXES = [
   "/login",
@@ -70,6 +100,33 @@ export async function proxy(request: NextRequest) {
       url.search = "";
       const attemptedPath = `${pathname}${request.nextUrl.search}`;
       url.searchParams.set("callbackUrl", sanitizeAuthCallbackUrl(attemptedPath));
+      return NextResponse.redirect(url);
+    }
+  }
+
+  if (
+    secureAuthUiConfig.auth.redirectAuthenticatedFromGuestPages &&
+    isFullyAuthenticatedToken(token)
+  ) {
+    const pathname = request.nextUrl.pathname;
+    if (isGuestOnlyPath(pathname)) {
+      const url = request.nextUrl.clone();
+      url.pathname = secureAuthUiConfig.auth.authenticatedRedirectPath;
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+
+    if (pathname === secureAuthUiConfig.paths.loginComplete) {
+      const url = request.nextUrl.clone();
+      url.pathname = secureAuthUiConfig.auth.authenticatedRedirectPath;
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+
+    if (pathname === secureAuthUiConfig.paths.loginTwoFactor) {
+      const url = request.nextUrl.clone();
+      url.pathname = secureAuthUiConfig.auth.authenticatedRedirectPath;
+      url.search = "";
       return NextResponse.redirect(url);
     }
   }

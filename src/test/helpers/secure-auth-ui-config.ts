@@ -48,4 +48,8 @@ export const testSecureAuthUiConfig: SecureAuthUIPublicConfig = {
     singleActiveSession: false,
     revocationPollIntervalSeconds: 0,
   },
+  auth: {
+    redirectAuthenticatedFromGuestPages: true,
+    authenticatedRedirectPath: "/notes",
+  },
 };

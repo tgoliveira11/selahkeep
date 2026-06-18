@@ -5,6 +5,14 @@ import { SecureAuthUIProvider } from "@tgoliveira/secure-auth/react";
 import ForgotPasswordPage from "@/app/(auth)/forgot-password/page";
 import { testSecureAuthUiConfig } from "@/test/helpers/secure-auth-ui-config";
 
+vi.mock("next-auth/react", () => ({
+  useSession: vi.fn(() => ({ data: null, status: "unauthenticated", update: vi.fn() })),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+}));
+
 vi.mock("@tgoliveira/secure-auth/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tgoliveira/secure-auth/client")>();
   return {

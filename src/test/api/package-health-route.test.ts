@@ -8,7 +8,7 @@ vi.mock("@/lib/secure-auth", () => ({
           Response.json({
             ok: true,
             package: "@tgoliveira/secure-auth",
-            version: "0.1.19-internal",
+            version: "0.1.20-internal",
           })
         ),
       },
@@ -23,6 +23,6 @@ describe("package health route", () => {
     const body = await response.json();
     expect(body.ok).toBe(true);
     expect(body.package).toBe("@tgoliveira/secure-auth");
-    expect(body.version).toBe("0.1.19-internal");
+    expect(body.version).toBe("0.1.20-internal");
   });
 });

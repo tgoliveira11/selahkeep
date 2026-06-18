@@ -143,6 +143,36 @@ describe("buildSecureAuthConfigFromEnv", () => {
     ).toThrow(/NEXTAUTH_SECRET/);
   });
 
+  it("maps authenticated guest-page redirect settings from env", () => {
+    const defaults = { appName: "Test", appSlug: "test", baseUrl: "http://localhost:3001" };
+
+    const withDefaults = buildSecureAuthConfigFromEnv(baseEnv, defaults);
+    expect(withDefaults.auth?.redirectAuthenticatedFromGuestPages).toBe(true);
+    expect(withDefaults.auth?.authenticatedRedirectPath).toBe("/notes");
+
+    const withCustom = buildSecureAuthConfigFromEnv(
+      {
+        ...baseEnv,
+        AUTH_REDIRECT_AUTHENTICATED_FROM_GUEST_PAGES: "false",
+        AUTH_AUTHENTICATED_REDIRECT_PATH: "/vault",
+        AUTH_AFTER_LOGIN_PATH: "/notes",
+      },
+      defaults
+    );
+    expect(withCustom.auth?.redirectAuthenticatedFromGuestPages).toBe(false);
+    expect(withCustom.auth?.authenticatedRedirectPath).toBe("/vault");
+
+    const ui = buildSecureAuthUiPublicConfigFromEnv(
+      {
+        AUTH_AUTHENTICATED_REDIRECT_PATH: "/vault",
+        AUTH_REDIRECT_AUTHENTICATED_FROM_GUEST_PAGES: "true",
+      },
+      { appName: "SelahKeep", appSlug: "letters-to-god", baseUrl: "http://localhost:3001" }
+    );
+    expect(ui.auth.redirectAuthenticatedFromGuestPages).toBe(true);
+    expect(ui.auth.authenticatedRedirectPath).toBe("/vault");
+  });
+
   it("builds public UI config without server secrets", () => {
     const config = buildSecureAuthUiPublicConfigFromEnv(
       { APP_BASE_URL: "http://localhost:3001", PASSWORD_MIN_LENGTH: "10" },

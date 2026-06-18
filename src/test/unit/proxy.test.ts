@@ -91,3 +91,43 @@ describe("proxy two-factor gating", () => {
     expect(response.headers.get("location")).toBeNull();
   });
 });
+
+describe("proxy authenticated guest-page redirects", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("redirects fully authenticated users away from /login", async () => {
+    getToken.mockResolvedValue({
+      sub: "user-1",
+      twoFactorPending: false,
+      twoFactorVerified: true,
+    });
+    const { proxy } = await import("@/proxy");
+    const response = await proxy(new NextRequest("http://localhost:3001/login"));
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toContain("/notes");
+  });
+
+  it("redirects fully authenticated users away from /register and /forgot-password", async () => {
+    getToken.mockResolvedValue({
+      sub: "user-1",
+      twoFactorPending: false,
+      twoFactorVerified: true,
+    });
+    const { proxy } = await import("@/proxy");
+
+    const register = await proxy(new NextRequest("http://localhost:3001/register"));
+    expect(register.headers.get("location")).toContain("/notes");
+
+    const forgot = await proxy(new NextRequest("http://localhost:3001/forgot-password"));
+    expect(forgot.headers.get("location")).toContain("/notes");
+  });
+
+  it("does not redirect unauthenticated users from guest pages", async () => {
+    getToken.mockResolvedValue(null);
+    const { proxy } = await import("@/proxy");
+    const response = await proxy(new NextRequest("http://localhost:3001/login"));
+    expect(response.headers.get("location")).toBeNull();
+  });
+});

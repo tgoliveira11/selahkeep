@@ -37,6 +37,13 @@ function parseSecureAuthEnv(
 
   const afterLoginPath = readEnv(env, "AUTH_AFTER_LOGIN_PATH") ?? "/notes";
   const afterLogoutPath = readEnv(env, "AUTH_AFTER_LOGOUT_PATH") ?? "/login";
+  const authenticatedRedirectPath =
+    readEnv(env, "AUTH_AUTHENTICATED_REDIRECT_PATH") ?? afterLoginPath;
+  const redirectAuthenticatedFromGuestPages = readBoolEnv(
+    env,
+    "AUTH_REDIRECT_AUTHENTICATED_FROM_GUEST_PAGES",
+    true
+  );
 
   const requireEmailVerificationBeforeSignIn = readBoolEnv(
     env,
@@ -178,6 +185,8 @@ function parseSecureAuthEnv(
     twoFactorEncryptionKey,
     afterLoginPath,
     afterLogoutPath,
+    authenticatedRedirectPath,
+    redirectAuthenticatedFromGuestPages,
     requireEmailVerificationBeforeSignIn,
     sendVerificationOnRegister,
     singleActiveSession,
@@ -221,6 +230,10 @@ export function buildSecureAuthUiPublicConfigFromEnv(
       singleActiveSession: parsed.singleActiveSession,
       revocationPollIntervalSeconds: parsed.revocationPollIntervalSeconds,
     },
+    auth: {
+      redirectAuthenticatedFromGuestPages: parsed.redirectAuthenticatedFromGuestPages,
+      authenticatedRedirectPath: parsed.authenticatedRedirectPath,
+    },
   };
 }
 
@@ -248,6 +261,8 @@ export function buildSecureAuthConfigFromEnv(
     twoFactorEncryptionKey,
     afterLoginPath,
     afterLogoutPath,
+    authenticatedRedirectPath,
+    redirectAuthenticatedFromGuestPages,
     requireEmailVerificationBeforeSignIn,
     sendVerificationOnRegister,
     singleActiveSession,
@@ -279,6 +294,8 @@ export function buildSecureAuthConfigFromEnv(
       requireEmailVerificationBeforeSignIn,
       nextAuthSecret,
       twoFactorEncryptionKey,
+      redirectAuthenticatedFromGuestPages,
+      authenticatedRedirectPath,
     },
     accountPolicy: {
       sendVerificationOnRegister,

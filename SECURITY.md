@@ -139,7 +139,7 @@ Plaintext passwords are redacted from logs (`safeLogger`) and blocked from audit
 
 These flows protect **account authentication only**. They do **not** unlock, recover, rotate, or decrypt the private letters vault. User-facing copy states this on reset and change-password screens.
 
-**Account authentication** is implemented by `@tgoliveira/secure-auth@0.1.19-internal` (thin app routes + `createSecureAuth` in `src/lib/secure-auth.ts`). See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md).
+**Account authentication** is implemented by `@tgoliveira/secure-auth@0.1.20-internal` (thin app routes + `createSecureAuth` in `src/lib/secure-auth.ts`). See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md).
 
 **Email verification**
 
