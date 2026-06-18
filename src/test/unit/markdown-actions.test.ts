@@ -34,4 +34,11 @@ describe("markdown actions", () => {
     ).toBe("checklist");
     expect(shortcutToWrapAction("checklist")?.prefix).toBe("- [ ] ");
   });
+
+  it("resolves inline code shortcut", () => {
+    expect(
+      resolveMarkdownShortcut({ key: "e", metaKey: true, ctrlKey: false, shiftKey: false, altKey: false })
+    ).toBe("code");
+    expect(shortcutToWrapAction("code")?.prefix).toBe("`");
+  });
 });

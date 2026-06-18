@@ -80,6 +80,7 @@ Residual risk: a malicious script running on this origin (XSS) or compromised br
 - User-facing note status is **resolved**; encrypted metadata/index still use internal field name `answered` (legacy naming).
 - Note drafts autosave locally as **encrypted** payloads (`note_draft` AAD) in IndexedDB; plaintext title/body/tags are never persisted.
 - Markdown preview/detail use `marked` + `dompurify` allowlist via `MarkdownPreview` before `dangerouslySetInnerHTML`.
+- Visual note editor (Tiptap) keeps **Markdown as canonical body**; pasted HTML is sanitized client-side (`editor-paste.ts`); only `http(s)` links accepted in-editor. HTML is never sent to APIs.
 - Unsafe HTML/scripts and `javascript:` links are stripped; external links use `rel="noopener noreferrer"`.
 - Note APIs reject plaintext `title`, `body`, `markdown`, `tags`, `categoryId`, `categoryName`, `tagNames`, `answered`, `noteKey`, etc.
 - Soft delete (`deleted_at` on notes + `deletedAt` in vault index); no plaintext search indexes.

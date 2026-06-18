@@ -117,6 +117,15 @@ function mockClientStatus(
   };
 }
 
+function switchEditorToMarkdownMode() {
+  fireEvent.click(screen.getByTestId("editor-mode-markdown"));
+}
+
+function setNoteBody(value: string) {
+  switchEditorToMarkdownMode();
+  fireEvent.change(screen.getByTestId("markdown-expert-textarea"), { target: { value } });
+}
+
 describe("notes UX", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -340,9 +349,7 @@ describe("notes UX", () => {
     it("requires a title before saving", async () => {
       render(<NewNotePage />);
       fireEvent.change(screen.getByLabelText("Title"), { target: { value: "" } });
-      fireEvent.change(screen.getByPlaceholderText(/write in markdown/i), {
-        target: { value: "Body" },
-      });
+      setNoteBody("Body");
       const saveButton = screen.getByRole("button", { name: /save note/i });
       expect(saveButton).toBeDisabled();
       expect(saveButton.getAttribute("title")).toMatch(/add a title before saving/i);
@@ -351,9 +358,7 @@ describe("notes UX", () => {
     it("rejects whitespace-only titles", () => {
       render(<NewNotePage />);
       fireEvent.change(screen.getByLabelText("Title"), { target: { value: "   " } });
-      fireEvent.change(screen.getByPlaceholderText(/write in markdown/i), {
-        target: { value: "Body" },
-      });
+      setNoteBody("Body");
       const saveButton = screen.getByRole("button", { name: /save note/i });
       expect(saveButton).toBeDisabled();
     });
@@ -372,9 +377,7 @@ describe("notes UX", () => {
 
       render(<NewNotePage />);
       fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Morning" } });
-      fireEvent.change(screen.getByPlaceholderText(/write in markdown/i), {
-        target: { value: "Body" },
-      });
+      setNoteBody("Body");
       fireEvent.click(screen.getByRole("button", { name: /save note/i }));
 
       await waitFor(() => {
@@ -416,18 +419,14 @@ describe("notes UX", () => {
 
     it("renders markdown preview bold text", () => {
       render(<NewNotePage />);
-      fireEvent.change(screen.getByPlaceholderText(/write in markdown/i), {
-        target: { value: "**bold**" },
-      });
+      setNoteBody("**bold**");
       const preview = screen.getByTestId("markdown-preview");
       expect(preview.querySelector("strong")?.textContent).toBe("bold");
     });
 
     it("renders markdown preview checklist items", () => {
       render(<NewNotePage />);
-      fireEvent.change(screen.getByPlaceholderText(/write in markdown/i), {
-        target: { value: "- [ ] item one\n- [x] item two" },
-      });
+      setNoteBody("- [ ] item one\n- [x] item two");
       const preview = screen.getByTestId("markdown-preview");
       expect(preview.querySelectorAll('input[type="checkbox"]').length).toBeGreaterThanOrEqual(2);
       expect(preview.querySelector('input[type="checkbox"][disabled]')).toBeNull();
@@ -435,8 +434,8 @@ describe("notes UX", () => {
 
     it("toggles checklist in new note preview without saving", async () => {
       render(<NewNotePage />);
-      const textarea = screen.getByPlaceholderText(/write in markdown/i) as HTMLTextAreaElement;
-      fireEvent.change(textarea, { target: { value: "- [ ] item one" } });
+      setNoteBody("- [ ] item one");
+      const textarea = screen.getByTestId("markdown-expert-textarea") as HTMLTextAreaElement;
       const checkbox = screen.getByTestId("markdown-preview").querySelector(
         'input[type="checkbox"]'
       ) as HTMLInputElement;
@@ -451,9 +450,7 @@ describe("notes UX", () => {
 
     it("sanitizes unsafe markdown preview content", () => {
       render(<NewNotePage />);
-      fireEvent.change(screen.getByPlaceholderText(/write in markdown/i), {
-        target: { value: '<script>alert("xss")</script>\n\n**safe**' },
-      });
+      setNoteBody('<script>alert("xss")</script>\n\n**safe**');
       const preview = screen.getByTestId("markdown-preview");
       expect(preview.innerHTML).not.toContain("<script");
       expect(preview.querySelector("strong")?.textContent).toBe("safe");
@@ -612,8 +609,9 @@ describe("notes UX", () => {
       render(<NoteDetailPage />);
       await screen.findByText("Prayer note");
       fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+      switchEditorToMarkdownMode();
 
-      const textarea = screen.getByPlaceholderText(/write in markdown/i) as HTMLTextAreaElement;
+      const textarea = screen.getByTestId("markdown-expert-textarea") as HTMLTextAreaElement;
       expect(textarea.value).toBe("**answered**");
 
       const preview = screen.getByTestId("markdown-preview");
@@ -691,7 +689,8 @@ describe("notes UX", () => {
       render(<NoteDetailPage />);
       await screen.findByText("Edit checklist");
       fireEvent.click(screen.getByRole("button", { name: /edit/i }));
-      const textarea = screen.getByPlaceholderText(/write in markdown/i) as HTMLTextAreaElement;
+      switchEditorToMarkdownMode();
+      const textarea = screen.getByTestId("markdown-expert-textarea") as HTMLTextAreaElement;
       const checkbox = screen.getByTestId("markdown-preview").querySelector(
         'input[type="checkbox"]'
       ) as HTMLInputElement;

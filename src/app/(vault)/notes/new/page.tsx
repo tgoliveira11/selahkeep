@@ -219,7 +219,7 @@ export default function NewNotePage() {
     <PageLayout>
       <PageHeader
         title="New note"
-        description="Write in Markdown. Your note is encrypted before it leaves this device."
+        description="Write your note. It is encrypted before it leaves this device."
       />
 
       <Card className="space-y-6">

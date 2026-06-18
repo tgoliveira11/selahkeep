@@ -249,3 +249,40 @@ body {
   list-style: none;
   margin-left: -1.25rem;
 }
+
+.visual-note-editor-content {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.visual-note-editor-content:focus {
+  outline: none;
+}
+
+.visual-note-editor-content p.is-editor-empty:first-child::before {
+  color: var(--muted);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.visual-note-editor-content ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.visual-note-editor-content li[data-type="taskItem"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.visual-note-editor-content li[data-type="taskItem"] > label {
+  flex: 0 0 auto;
+  margin-top: 0.2rem;
+}
+
+.visual-note-editor-content li[data-type="taskItem"] > div {
+  flex: 1 1 auto;
+}

@@ -39,7 +39,8 @@ See `docs/VAULT_RECOVERY_FLOW_AUDIT.md`.
 - **Tags:** `src/lib/notes/tag-normalization.ts` — max **32** chars; display `#` prefix only in UI.
 - **Vault indicator:** `NotesVaultIndicator` on `/notes` and `/notes/[id]` (not top nav) — open/closed copy, inactivity countdown (`useVaultAutoLockCountdown`), manual lock when open; detail unlock links include safe `returnTo` (`safe-return-to.ts`).
 - **Top nav:** Notes, Vault, Account, Sign out only — no lock/unlock badges or vault status text.
-- **Markdown preview:** `sanitize-markdown.ts` + `MarkdownPreview` — interactive checklists toggle `[ ]` ↔ `[x]` in source via `markdown-checklist.ts`; view mode persists through `updateNote`; new/edit preview updates editor only.
+- **Note editor:** visual (WYSIWYG) default via Tiptap; Markdown canonical; expert `</>` mode with textarea + sanitized preview. See [`EDITOR_IMPLEMENTATION_DECISION.md`](./EDITOR_IMPLEMENTATION_DECISION.md).
+- **Markdown preview:** `sanitize-markdown.ts` + `MarkdownPreview` — interactive checklists toggle `[ ]` ↔ `[x]` in source via `markdown-checklist.ts`; view mode persists through `updateNote`; expert-mode preview updates editor only.
 - **Inactivity:** `useVaultActivity` resets `touchVaultSession` on click, keydown, input, focusin, scroll, pointerdown, touchstart.
 
 ## Related docs

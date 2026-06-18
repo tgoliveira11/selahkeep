@@ -103,14 +103,14 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 
 - **Search/filters** on `/notes` appear only after at least one category or tag exists; helper copy when none exist.
 - **Vault indicator** on `/notes` and `/notes/[id]`: **Vault closed** + unlock CTA when locked (detail hides decrypted title/body/metadata); **Vault open** + inactivity countdown + **Lock vault** when unlocked. Top nav shows only Notes, Vault, Account, Sign out (no vault lock/status badges).
-- **New note:** title required; category dropdown only when categories exist; no resolved toggle on create.
+- **New note:** title required; category dropdown only when categories exist; no resolved toggle on create. **Visual editor** default; `</>` toggles Markdown expert mode (textarea + preview).
 - **Tags:** chip input with normalization; display `#tag`, store `tag` (max 32 chars).
 - **Detail:** title row with resolved/unresolved badge + resolve icon (same as list); category pill without `#`; tag chips with `#`; created + updated dates; interactive checklist toggles in view/edit preview (persist on view via encrypted update).
 - **List:** resolve/unresolve icon button per card (`stopPropagation`, does not navigate); resolved/unresolved badges; created + updated dates (`text-xs`); sort + filtered note counter.
 - **Resolved:** user-facing label; internal encrypted metadata uses `answered`.
 - **Markdown:** interactive checklists in preview (toggle `[ ]` ↔ `[x]` in source only), shortcuts, sanitized `MarkdownPreview`.
 - **Drafts:** encrypted local autosave; restore/discard on return.
-- **Templates:** client-side starter Markdown on `/notes/new` only.
+- **Templates:** client-side starter Markdown on `/notes/new` only (loaded into visual editor).
 
 ---
 

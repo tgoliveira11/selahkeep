@@ -236,7 +236,7 @@ Run `npm run db:migrate` after pulling vault schema updates (`0008`–`0011`, in
 Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings`**.
 
 - **Resolved status** — user-facing “resolved” maps to internal encrypted `answered` metadata; icon toggle on list cards and detail view; edit-mode toggle in category fields; filters use resolved/unresolved
-- **Markdown editor** with interactive checklists (source-of-truth toggles in Markdown), keyboard shortcuts, and client-side sanitized preview
+- **Note editor** — visual (WYSIWYG) by default via Tiptap; Markdown remains canonical encrypted body; expert `</>` mode for raw Markdown + preview. Interactive checklists, keyboard shortcuts, sanitized preview in expert mode and read-only view.
 - **Notes list** — created + updated dates on every card, sort (last modified/created/title), filtered counter (`4 of 12 notes`), resolved/unresolved badges
 - **Vault indicator** on `/notes` and `/notes/[id]` — open/closed state with real inactivity countdown (`Auto-locks in 14:32`); lock control here only (not top nav); detail unlock CTA preserves `returnTo` for post-unlock navigation
 - **Encrypted local drafts** — autosaved in IndexedDB wrapped by User Vault Key (`note_draft` field); never plaintext

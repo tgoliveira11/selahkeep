@@ -36,7 +36,8 @@
 | 29 | Inactivity lock clears decrypted note body cache | ✅ Pass | `lockVaultSession` → `clearNoteBodyCache` | `vault-session.test.ts`, `phase5-security-regression.test.ts` | |
 | 30 | Logout locks vault and clears client state | ✅ Pass | `nav.tsx` `lockVaultSession` + `clearVaultClientState` | `phase5-security-regression.test.ts` | |
 | 31 | No active letters domain | ✅ Pass | Letters routes/modules removed | `no-letters-domain.test.ts` | |
-| 32 | Mobile UX: touch targets, no horizontal overflow | ✅ Pass | `globals.css`, `note-filters.tsx`, `markdown-editor.tsx` | Manual + layout tests | `min-h-11` on filters; `overflow-x: hidden` |
+| 32 | Mobile UX: touch targets, no horizontal overflow | ✅ Pass | `globals.css`, `note-filters.tsx`, `markdown-editor.tsx`, `editor-toolbar.tsx` | Manual + layout tests | `min-h-11` on filters/toolbar; visual editor responsive |
+| 39 | Visual note editor (WYSIWYG default) + Markdown expert mode | ✅ Pass | `markdown-editor.tsx`, `visual-note-editor.tsx`, `EDITOR_IMPLEMENTATION_DECISION.md` | `markdown-editor.test.tsx`, `visual-note-editor.test.tsx`, `notes-ux.test.tsx` | Markdown canonical; `</>` expert toggle |
 | 33 | Accessibility smoke (axe) on core pages | ✅ Pass | `accessibility.test.tsx` | jest-axe on home, login, register, account-deleted | |
 | 34 | Account deletion warning mentions vault + notes | ✅ Pass | `ACCOUNT_DELETION_VAULT_NOTE` on settings page | `account-deletion-page.test.tsx` | |
 | 35 | Deployment docs updated (no console email in prod) | ✅ Pass | `VERCEL_ENVIRONMENT_VARIABLES.md`, `secure-auth-deployment-checklist.md`, README deploy | Manual review | OAuth callbacks documented |

@@ -1,16 +1,13 @@
 "use client";
 
-import { useCallback } from "react";
-import { MarkdownPreview } from "@/components/notes/markdown-preview";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  applyMarkdownWrap,
-  MARKDOWN_WRAP_ACTIONS,
-  resolveMarkdownShortcut,
-  shortcutToWrapAction,
-  type WrapAction,
-} from "@/lib/notes/markdown-actions";
+import { Alert } from "@/components/ui/alert";
+import { MarkdownExpertEditor } from "@/features/notes/markdown-expert-editor";
+import { VisualNoteEditor } from "@/features/notes/visual-note-editor";
+import { getMarkdownConversionWarning } from "@/lib/notes/markdown-roundtrip";
+
+export type NoteEditorMode = "visual" | "markdown";
 
 interface MarkdownEditorProps {
   value: string;
@@ -25,92 +22,86 @@ interface MarkdownEditorProps {
 export function MarkdownEditor({
   value,
   onChange,
-  placeholder = "Write in Markdown…",
+  placeholder,
   maxLength = 50_000,
   id = "note-markdown",
   onSave,
   checklistsDisabled = false,
 }: MarkdownEditorProps) {
-  const applyWrap = useCallback(
-    (action: WrapAction) => {
-      const el = document.getElementById(id) as HTMLTextAreaElement | null;
-      if (!el) return;
+  const [mode, setMode] = useState<NoteEditorMode>("visual");
+  const [conversionWarning, setConversionWarning] = useState<string | null>(null);
 
-      const { next, cursor } = applyMarkdownWrap(
-        value,
-        action,
-        el.selectionStart,
-        el.selectionEnd,
-        maxLength
-      );
-      onChange(next);
-
-      requestAnimationFrame(() => {
-        el.focus();
-        el.setSelectionRange(cursor, cursor);
-      });
-    },
-    [id, maxLength, onChange, value]
-  );
-
-  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
-    const shortcut = resolveMarkdownShortcut(event.nativeEvent);
-    if (!shortcut) return;
-
-    if (shortcut === "save") {
-      if (onSave) {
-        event.preventDefault();
-        onSave();
-      }
-      return;
+  function switchMode(next: NoteEditorMode) {
+    if (next === mode) return;
+    if (next === "visual") {
+      setConversionWarning(getMarkdownConversionWarning(value));
+    } else {
+      setConversionWarning(null);
     }
-
-    const action = shortcutToWrapAction(shortcut);
-    if (action) {
-      event.preventDefault();
-      applyWrap(action);
-    }
+    setMode(next);
   }
 
   return (
-    <div className="space-y-4">
-      <div className="markdown-editor-toolbar flex flex-wrap items-center gap-2">
-        {MARKDOWN_WRAP_ACTIONS.map((action) => (
+    <div className="space-y-3" data-testid="note-editor">
+      <div className="flex flex-wrap items-center gap-2">
+        <div
+          className="inline-flex rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card-muted)] p-1"
+          role="group"
+          aria-label="Editor mode"
+        >
           <Button
-            key={action.label}
             type="button"
-            variant="secondary"
-            className="text-xs"
-            onClick={() => applyWrap(action)}
+            variant={mode === "visual" ? "primary" : "secondary"}
+            className="min-h-9 px-3 py-1.5 text-xs"
+            aria-pressed={mode === "visual"}
+            data-testid="editor-mode-visual"
+            onClick={() => switchMode("visual")}
           >
-            {action.label}
+            Visual
           </Button>
-        ))}
-        <span className="ml-auto hidden text-xs text-[var(--muted)] sm:inline">
-          ⌘/Ctrl+S save · B bold · I italic · ⇧8 list · ⇧C checklist
+          <Button
+            type="button"
+            variant={mode === "markdown" ? "primary" : "secondary"}
+            className="min-h-9 px-3 py-1.5 text-xs font-mono"
+            aria-pressed={mode === "markdown"}
+            data-testid="editor-mode-markdown"
+            onClick={() => switchMode("markdown")}
+            title="Markdown expert mode"
+          >
+            &lt;/&gt;
+          </Button>
+        </div>
+        <span className="text-xs text-[var(--muted)]">
+          {mode === "visual" ? "Visual editor" : "Markdown expert mode"}
         </span>
       </div>
 
-      <Textarea
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value.slice(0, maxLength))}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        maxLength={maxLength}
-        rows={12}
-        className="font-mono text-sm"
-      />
+      {conversionWarning && mode === "visual" && (
+        <Alert variant="warning" role="status" data-testid="editor-conversion-warning">
+          {conversionWarning}
+        </Alert>
+      )}
 
-      <div>
-        <p className="mb-2 text-sm font-medium text-[var(--muted)]">Preview</p>
-        <MarkdownPreview
-          markdown={value}
-          onMarkdownChange={onChange}
-          checklistsDisabled={checklistsDisabled}
-          className="min-h-[8rem] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card-muted)] p-4 text-sm leading-relaxed"
+      {mode === "visual" ? (
+        <VisualNoteEditor
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder ?? "Write your note…"}
+          maxLength={maxLength}
+          id={id === "note-markdown" ? "note-visual-editor" : `${id}-visual`}
+          onSave={onSave}
         />
-      </div>
+      ) : (
+        <MarkdownExpertEditor
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder ?? "Write in Markdown…"}
+          maxLength={maxLength}
+          id={id}
+          onSave={onSave}
+          checklistsDisabled={checklistsDisabled}
+        />
+      )}
     </div>
   );
 }

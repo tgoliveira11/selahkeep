@@ -14,6 +14,7 @@ export const MARKDOWN_WRAP_ACTIONS: WrapAction[] = [
   { label: "List", prefix: "- ", suffix: "", block: true },
   { label: "Checklist", prefix: "- [ ] ", suffix: "", block: true },
   { label: "Link", prefix: "[", suffix: "](https://)" },
+  { label: "Code", prefix: "`", suffix: "`" },
 ];
 
 export function applyMarkdownWrap(
@@ -58,6 +59,7 @@ export type MarkdownShortcutAction =
   | "bold"
   | "italic"
   | "link"
+  | "code"
   | "orderedList"
   | "bulletList"
   | "checklist";
@@ -73,6 +75,7 @@ export function resolveMarkdownShortcut(
   if (key === "b" && !event.shiftKey) return "bold";
   if (key === "i" && !event.shiftKey) return "italic";
   if (key === "k" && !event.shiftKey) return "link";
+  if (key === "e" && !event.shiftKey) return "code";
   if (key === "7" && event.shiftKey) return "orderedList";
   if (key === "8" && event.shiftKey) return "bulletList";
   if (key === "c" && event.shiftKey) return "checklist";
@@ -88,6 +91,8 @@ export function shortcutToWrapAction(action: MarkdownShortcutAction): WrapAction
       return MARKDOWN_WRAP_ACTIONS[1];
     case "link":
       return MARKDOWN_WRAP_ACTIONS[7];
+    case "code":
+      return MARKDOWN_WRAP_ACTIONS[8];
     case "bulletList":
       return MARKDOWN_WRAP_ACTIONS[5];
     case "checklist":
