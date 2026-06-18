@@ -77,6 +77,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - `POST /api/vault/setup` — vault-v2 setup (encrypted settings, index, password + recovery phrase envelopes); vault password validated client-side via `PasswordSetupFields` + `VAULT_PASSWORD_*` (never in request body)
 - `POST /api/vault/init`, `GET /api/vault/status` — returns `hasVault`, `setupPhase`, `setupComplete`, and `availableUnlockMethods`; client derives `not_configured` / `setup_incomplete` / `locked` / `unlocked` via `useVaultClientStatus` + UVK session
 - `POST /api/vault/unlock-envelope` — fetch encrypted envelope for password / recovery phrase unlock
+- `GET/POST /api/vault/security-events` — list and record safe vault security audit events (no secrets)
 - `POST /api/vault/recovery-phrase` — replace recovery phrase envelope (atomic revoke + create; client-side UVK wrap)
 - `POST /api/recovery-code`, `POST /api/vault/unlock-with-recovery-code` — legacy recovery code only
 - `POST /api/passkeys/register`, `POST /api/passkeys/authenticate`, `DELETE /api/passkeys` — vault recovery passkey flows (authenticated)
@@ -129,6 +130,7 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 - **Vault setup:** `/vault/setup` — `PasswordSetupFields` (secure-auth) + BIP39 recovery phrase wizard; policy from `src/lib/config/vault-password-policy.ts`
 - **Recovery management:** `/vault/recovery` — status-gated recovery phrase replace (no initial phrase generation post-setup); link to `/vault/settings` for optional passkey vault unlock
 - **Passkey vault unlock:** `/vault/settings` — `PasskeyVaultUnlockSetup`; PRF diagnostics in `src/lib/passkey/passkey-prf-diagnostics.ts`
+- **Vault security review:** `/vault/security` — health summary, protection indicators, local recovery phrase drill (`verifyRecoveryPhraseDrill`), passkey compatibility guide, safe audit event log (`GET/POST /api/vault/security-events`); see `docs/VAULT_SECURITY_REVIEW_IMPLEMENTATION.md`
 - **Vault unlock:** `VaultDockQuickUnlock` in `VaultStatusDock` (vault password + passkey PRF when available); full `LtgVaultUnlockPanel` on `/vault/unlock` (password, recovery phrase, passkey PRF). Dock links to full page for recovery/fallback; no duplicate unlock form on `/vault/unlock`. Collapsed handle shows `Vault` or countdown; expanded open state is compact with **Lock now**; auto-collapse via `useVaultDockDismiss`.
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + **purple** primary)
 - **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview; visual note editor (Tiptap) with Markdown canonical storage — see [`docs/EDITOR_IMPLEMENTATION_DECISION.md`](./docs/EDITOR_IMPLEMENTATION_DECISION.md) and [`docs/EDITOR_UI_UX_REDESIGN_DECISION.md`](./docs/EDITOR_UI_UX_REDESIGN_DECISION.md); tag normalization before encrypted index write

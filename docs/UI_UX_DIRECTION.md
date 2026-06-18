@@ -72,6 +72,11 @@ Account auth UI comes from `@tgoliveira/secure-auth/react`. Style integration po
 - Step 5: Confirm phrase
 - Privacy notice: secrets never leave the device
 
+### `/vault/settings` and `/vault/security`
+
+- **Settings:** unlock behavior, passkey vault unlock management, recovery link, import/export limitation notice
+- **Security review (`/vault/security`):** vault health summary, protection status, local recovery phrase test (no server phrase transmission), passkey PRF compatibility, safe security event log, account/vault separation reminder
+
 ### `/vault/unlock`
 
 - Purple primary unlock button

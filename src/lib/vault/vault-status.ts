@@ -99,7 +99,7 @@ export type VaultStatusCopy = {
 
 export function getVaultStatusCopy(
   clientStatus: VaultClientStatus,
-  context: "default" | "settings" | "unlock" | "notes" | "recovery" = "default"
+  context: "default" | "settings" | "unlock" | "notes" | "recovery" | "security" = "default"
 ): VaultStatusCopy {
   switch (clientStatus) {
     case "not_configured":
@@ -135,6 +135,17 @@ export function getVaultStatusCopy(
           promptTitle: "Set up your vault",
           promptDescription:
             "You need to create your private vault before you can manage vault settings. Your vault protects your notes, categories, tags, and recovery options separately from your account login.",
+          promptCta: "Set up vault",
+        };
+      }
+      if (context === "security") {
+        return {
+          badgeLabel: "Vault not set up",
+          actionLabel: "Set up vault",
+          actionHref: "/vault/setup",
+          promptTitle: "Set up your vault",
+          promptDescription:
+            "Create your private encrypted vault before reviewing vault security.",
           promptCta: "Set up vault",
         };
       }
@@ -180,6 +191,17 @@ export function getVaultStatusCopy(
           promptTitle: "Complete your vault setup",
           promptDescription:
             "Your vault setup is not finished yet. Complete it before managing vault settings.",
+          promptCta: "Continue setup",
+        };
+      }
+      if (context === "security") {
+        return {
+          badgeLabel: "Vault setup incomplete",
+          actionLabel: "Continue setup",
+          actionHref: "/vault/setup",
+          promptTitle: "Complete your vault setup",
+          promptDescription:
+            "Finish setting up your vault before reviewing vault security.",
           promptCta: "Continue setup",
         };
       }

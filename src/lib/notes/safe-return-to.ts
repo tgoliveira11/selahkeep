@@ -1,6 +1,7 @@
 const ALLOWED_VAULT_RETURN_PATTERNS = [
   /^\/notes(?:\/|$)/,
   /^\/vault\/settings(?:\/|$)/,
+  /^\/vault\/security(?:\/|$)/,
   /^\/vault\/recovery(?:\/|$)/,
   /^\/settings\/account(?:\/|$)/,
 ] as const;

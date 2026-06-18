@@ -3,6 +3,7 @@
 > Former working name: LTG Vault. Current product name: SelahKeep.
 
 **Status:** Phases 0–5 **complete** (historical planning tables retained below for traceability)  
+**Priority Track 1** (Security, Recovery, and Trust): **mostly complete** — `/vault/security` shipped 2026-06-16  
 **Active routes:** `/notes`, `/api/notes`, `/vault/*` — **letters domain removed**
 
 ---
@@ -739,39 +740,52 @@ Future enhancements should follow these principles:
 
 ### Priority Track 1 — Security, Recovery, and Trust
 
+**Track status:** **Mostly complete** on `main` (2026-06-16) — vault security review shipped at `/vault/security`. See `docs/VAULT_SECURITY_REVIEW_IMPLEMENTATION.md`.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Security Review Mode | ✅ Done | `/vault/security`; entry from `/vault/settings` |
+| Vault Health Summary | ✅ Done | `deriveVaultHealthSummary()` |
+| Recovery Drill | ✅ Done | `verifyRecoveryPhraseDrill()` — local-only, no envelope rotation |
+| Security Event Log | ✅ Done | `GET/POST /api/vault/security-events`; existing `audit_events` |
+| Passkey Compatibility Guide | ✅ Done | PRF diagnostics + account vs vault unlock copy |
+| Recovery Phrase Checkup | ⏳ Deferred | Word-position confirmation prompt not implemented |
+| Last vault unlock method | ⏳ Deferred | UI shows “Not tracked yet” |
+
 These items strengthen user confidence and reduce the risk of data loss.
 
-#### Security Review Mode
+#### Security Review Mode ✅
 
-Add a dedicated security overview screen, likely under `/vault/security` or `/vault/settings`, showing the current protection status of the vault.
+**Done** — dedicated security overview at `/vault/security` (entry: **Open security review** on `/vault/settings`).
 
-Potential indicators:
+Shows current protection status without exposing secret material:
 
 - Vault password configured
 - Recovery phrase configured
 - Recovery phrase last replaced date
 - Passkey vault unlock configured / unavailable / unsupported in this browser
-- Auto-lock enabled and timeout value
-- Last vault unlock method, if safely tracked
-- Export/import availability status
+- Auto-lock enabled and timeout value (15 min fixed)
+- Last vault unlock method — **deferred** (“Not tracked yet”)
+- Export/import availability status — **Not available yet**
 - Account/vault separation reminder
 
 The goal is to make the user understand whether their vault is well protected without exposing any secret material.
 
-#### Vault Health Summary
+#### Vault Health Summary ✅
 
-Provide a human-friendly summary such as:
+**Done** — human-friendly summary on `/vault/security`:
 
-- Protection: Strong
-- Recovery: Configured
-- Passkey vault unlock: Not available in this browser
-- Auto-lock: Enabled
+- Protection: Strong / Good / Needs attention / Incomplete
+- Recovery: Configured / Missing / Unknown
+- Passkey vault unlock: configured or browser-specific status
+- Auto-lock: Enabled (15 minutes)
+- Export/import: Not available yet
 
-This should not be gamified excessively. It should support clarity and trust.
+This is not gamified excessively. It supports clarity and trust.
 
-#### Recovery Phrase Checkup
+#### Recovery Phrase Checkup ⏳
 
-Periodically prompt the user to confirm that they still have access to their recovery phrase. This must be implemented carefully.
+**Deferred** — periodically prompt the user to confirm that they still have access to their recovery phrase. This must be implemented carefully.
 
 Possible approach:
 
@@ -780,45 +794,51 @@ Possible approach:
 - Never store the phrase in plaintext.
 - Do not lock the user out if they skip the checkup, but warn clearly.
 
-#### Recovery Drill
+*Recovery Drill (below) ships first as the trust-building verification path.*
 
-Add a safe “Test my recovery phrase” flow. This should verify that the recovery phrase can unwrap the recovery envelope without replacing it.
+#### Recovery Drill ✅
 
-The flow should:
+**Done** — safe **Test recovery phrase** flow on `/vault/security` (`verifyRecoveryPhraseDrill`).
 
-- require account authentication;
-- require a configured vault;
-- never send the recovery phrase to the server;
-- confirm whether the phrase works;
-- not rotate or invalidate the phrase.
+Verifies that the recovery phrase can unwrap the recovery envelope without replacing it.
 
-This is a strong trust-building feature and should be prioritized before public beta.
+The flow:
 
-#### Security Event Log
+- requires account authentication;
+- requires a configured vault;
+- requires unlocked vault for full UI (locked state shows partial overview + unlock CTA);
+- never sends the recovery phrase to the server;
+- confirms whether the phrase works;
+- does not rotate or invalidate the phrase.
 
-Add a safe audit-style view for vault security events.
+This is a strong trust-building feature prioritized before public beta.
 
-Possible events:
+#### Security Event Log ✅
 
-- Vault unlocked with password
-- Vault unlocked with recovery phrase
-- Vault unlocked with passkey PRF
-- Recovery phrase replaced
-- Passkey vault unlock setup failed due to PRF unsupported
-- Vault auto-locked due to inactivity
+**Done** — safe audit-style view on `/vault/security` (`vaultSecurityService` + `audit_events`).
 
-The event log must never include note content, decrypted metadata, PRF output, recovery phrase, vault password, User Vault Key, or Note Keys.
+Events supported (when recorded):
 
-#### Passkey Compatibility Guide
+- Vault unlocked with password / recovery phrase / passkey PRF
+- Recovery phrase replaced (server-side audit on replace flow)
+- Recovery phrase test succeeded / failed
+- Vault locked manually / auto-locked due to inactivity
+- Passkey vault unlock enabled / disabled
 
-Create a user-facing explanation of why passkey sign-in may work while passkey vault unlock may not.
+The event log never includes note content, decrypted metadata, PRF output, recovery phrase, vault password, User Vault Key, or Note Keys.
 
-The guide should explain:
+#### Passkey Compatibility Guide ✅
+
+**Done** — user-facing section on `/vault/security`.
+
+Explains:
 
 - account passkey login is different from vault passkey unlock;
 - vault passkey unlock requires WebAuthn PRF;
 - some browsers/providers may support passkeys but not PRF;
 - vault password and recovery phrase remain fallback methods.
+
+CTA: **Manage passkey vault unlock** → `/vault/settings`.
 
 ---
 

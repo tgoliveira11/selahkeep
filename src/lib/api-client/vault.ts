@@ -99,4 +99,9 @@ export const vaultApi = {
       "/api/vault/settings",
       { encryptedVaultSettings }
     ),
+
+  listSecurityEvents: () =>
+    apiClient.get<{
+      events: Array<{ id: string; eventType: string; label: string; createdAt: string }>;
+    }>("/api/vault/security-events"),
 };

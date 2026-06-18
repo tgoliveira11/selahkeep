@@ -186,4 +186,15 @@ describe("vault status model", () => {
     expect(copy.actionHref).toBe("/vault/unlock");
     expect(copy.promptDescription).toMatch(/replace your recovery phrase/i);
   });
+
+  it("getVaultStatusCopy security context routes not configured to setup", () => {
+    const copy = getVaultStatusCopy("not_configured", "security");
+    expect(copy.promptTitle).toBe("Set up your vault");
+    expect(copy.actionHref).toBe("/vault/setup");
+  });
+
+  it("getVaultStatusCopy security context routes setup incomplete to setup", () => {
+    const copy = getVaultStatusCopy("setup_incomplete", "security");
+    expect(copy.promptCta).toBe("Continue setup");
+  });
 });

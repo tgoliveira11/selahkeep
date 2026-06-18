@@ -82,6 +82,7 @@ describe("logged-in navigation", () => {
 
   it("marks Vault active for vault unlock and setup routes", () => {
     expect(isLoggedInNavLinkActive("/vault/settings", "/vault/settings")).toBe(true);
+    expect(isLoggedInNavLinkActive("/vault/security", "/vault/settings")).toBe(true);
     expect(isLoggedInNavLinkActive("/vault/unlock", "/vault/settings")).toBe(true);
     expect(isLoggedInNavLinkActive("/vault/setup", "/vault/settings")).toBe(true);
   });

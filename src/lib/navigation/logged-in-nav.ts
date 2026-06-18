@@ -23,10 +23,14 @@ export function isLoggedInNavLinkActive(pathname: string, href: string): boolean
     return (
       pathname === "/vault/settings" ||
       pathname.startsWith("/vault/settings/") ||
+      pathname === "/vault/security" ||
+      pathname.startsWith("/vault/security/") ||
       pathname === "/vault/unlock" ||
       pathname.startsWith("/vault/unlock/") ||
       pathname === "/vault/setup" ||
-      pathname.startsWith("/vault/setup/")
+      pathname.startsWith("/vault/setup/") ||
+      pathname === "/vault/recovery" ||
+      pathname.startsWith("/vault/recovery/")
     );
   }
   if (href === "/settings/account") {

@@ -31,6 +31,14 @@
 
 See `docs/VAULT_RECOVERY_FLOW_AUDIT.md`.
 
+## Vault security review (`/vault/security`)
+
+- Entry from `/vault/settings` → **Open security review**.
+- Gated by account session + vault setup phase; full review (including recovery drill) requires unlocked vault.
+- Recovery drill: `verifyRecoveryPhraseDrill` in `src/lib/crypto-client/recovery-drill.ts` — local unwrap only; never rotates/replaces envelopes; phrase never sent to server.
+- Event log: existing `audit_events` via `GET/POST /api/vault/security-events`; safe metadata only (`method` labels).
+- See `docs/VAULT_SECURITY_REVIEW_IMPLEMENTATION.md`.
+
 ## Notes UX (`/notes`, `/notes/new`, `/notes/[id]`)
 
 - **Title required** on create; validated client-side before `encryptNote`.

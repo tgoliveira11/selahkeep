@@ -53,7 +53,7 @@
 | Role | Name | Date | Notes |
 |------|------|------|-------|
 | Engineering | | | Phase 5 complete |
-| Security review | | | Pre-beta gate per `LGPD_BETA_GATES.md` |
+| Security review | `/vault/security` — health summary, recovery drill, event log | ✅ Pass | `docs/VAULT_SECURITY_REVIEW_IMPLEMENTATION.md` | `vault-security-page.test.tsx`, `vault-security-review.test.tsx`, `recovery-drill.test.ts` | No secret material exposed |
 | Private usability | | | See `PRIVATE_USABILITY_TEST_SCRIPT.md` |
 
 **Related:** [`TDR_LTG_Vault_MVP.md`](./TDR_LTG_Vault_MVP.md) §20, [`LTG_VAULT_IMPLEMENTATION_PLAN.md`](./LTG_VAULT_IMPLEMENTATION_PLAN.md) Phase 5

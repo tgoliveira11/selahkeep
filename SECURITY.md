@@ -231,7 +231,14 @@ Safe audit events only (no plaintext letters, recovery codes, keys, or ciphertex
 - If PRF is unavailable at registration, passkey vault envelope is **not** created and existing passkey envelopes are **not** revoked
 - PRF diagnostics: `src/lib/passkey/passkey-prf-diagnostics.ts`; audit `docs/PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`
 - Primary UX: `/vault/settings` (not `/vault/recovery`) for enable/test/replace/disable; PRF-unsupported browsers see read-only status and cannot disable/replace without a PRF ceremony proof
-- Vault unlock `returnTo` query param is sanitized (`sanitizeVaultReturnTo`) to internal paths only (`/notes`, `/vault/settings`, `/vault/recovery`, `/settings/account`); disabling passkey vault unlock requires DELETE/POST with verified WebAuthn assertion including PRF client extension results
+- Vault unlock `returnTo` query param is sanitized (`sanitizeVaultReturnTo`) to internal paths only (`/notes`, `/vault/settings`, `/vault/security`, `/vault/recovery`, `/settings/account`); disabling passkey vault unlock requires DELETE/POST with verified WebAuthn assertion including PRF client extension results
+
+### Vault security review (`/vault/security`)
+
+- Read-only protection overview from `GET /api/vault/status` plus client PRF diagnostics; no decrypted note metadata
+- **Recovery drill:** `verifyRecoveryPhraseDrill` unwraps the recovery envelope locally; phrase never sent to server; does not rotate/replace envelopes
+- **Event log:** filtered `audit_events` via `vaultSecurityService`; client may record unlock/lock/drill events with `method` metadata only
+- Export/import shown as not available yet
 - WebAuthn challenges consumed atomically via `consumeValidChallenge()` (`DELETE … RETURNING` with expiry/user/type checks). **`findValidChallenge` is removed** — all flows must use atomic consumption.
 - Indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
 

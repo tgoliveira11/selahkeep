@@ -13,6 +13,7 @@ describe("sanitizeVaultReturnTo", () => {
 
   it("allows protected vault and account settings paths", () => {
     expect(sanitizeVaultReturnTo("/vault/settings")).toBe("/vault/settings");
+    expect(sanitizeVaultReturnTo("/vault/security")).toBe("/vault/security");
     expect(sanitizeVaultReturnTo("/vault/recovery")).toBe("/vault/recovery");
     expect(sanitizeVaultReturnTo("/settings/account")).toBe("/settings/account");
   });

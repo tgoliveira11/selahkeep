@@ -7,6 +7,7 @@ import {
   configureVaultAutoLock,
   subscribeVaultSession,
 } from "@/lib/crypto-client/vault-session";
+import { recordVaultSecurityEvent } from "@/features/vault/record-vault-security-event";
 
 export const VAULT_INACTIVITY_LOCK_MESSAGE =
   "Your vault was locked to protect your private notes.";
@@ -16,7 +17,10 @@ export function VaultAutoLockNotice() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    configureVaultAutoLock(() => setVisible(true));
+    configureVaultAutoLock(() => {
+      setVisible(true);
+      void recordVaultSecurityEvent("vault_auto_locked");
+    });
 
     const unsubscribe = subscribeVaultSession(() => {
       if (isVaultUnlocked()) {

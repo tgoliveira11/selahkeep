@@ -9,7 +9,7 @@ import { getVaultStatusCopy } from "@/lib/vault/vault-status";
 
 interface VaultStatusPromptProps {
   clientStatus: Exclude<VaultClientStatus, "unlocked">;
-  context?: "default" | "settings" | "unlock" | "notes" | "recovery";
+  context?: "default" | "settings" | "unlock" | "notes" | "recovery" | "security";
   /** After unlock, return to this route when safe. */
   returnTo?: string;
 }

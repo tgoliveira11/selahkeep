@@ -79,6 +79,7 @@ Production hides `/api-docs` unless `ENABLE_API_DOCS=true` in `.env.local`.
 - **Sign in with passkey** on `/login` — phishing-resistant account authentication; does not require TOTP even when 2FA is enabled
 - **Account settings → Passkeys** — register sign-in passkeys (package)
 - **`/vault/settings` → Passkey vault unlock** — enable, test, replace, or disable vault unlock per account passkey (requires unlocked vault + WebAuthn PRF)
+- **`/vault/security`** — vault security review: health summary, protection status, recovery phrase drill (local-only), passkey compatibility, and recent safe vault security events (entry from Vault settings)
 - **`/vault/recovery`** — recovery phrase management; optional link to vault settings for passkey vault unlock
 - **Passkey sign-in** may auto-unlock the vault when a compatible PRF envelope exists; otherwise you remain signed in and are guided to `/vault/unlock`
 - Details: [`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`](docs/PASSKEY_LOGIN_VAULT_UNLOCK.md)
@@ -236,7 +237,7 @@ Run `npm run db:migrate` after pulling vault schema updates (`0008`–`0011`, in
 
 ## Notes (SelahKeep Phase 2–3)
 
-Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings`**.
+Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings`**, **`/vault/security`**.
 
 - **Resolved status** — user-facing “resolved” maps to internal encrypted `answered` metadata; icon toggle on list cards and detail view; edit-mode toggle in category fields; filters use resolved/unresolved
 - **Note editor** — polished visual editor card (grouped toolbar, canvas, status) by default via Tiptap; Markdown remains canonical encrypted body; discreet **Markdown** toggle for source + collapsible preview. See `docs/EDITOR_UI_UX_REDESIGN_DECISION.md`.

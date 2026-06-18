@@ -118,6 +118,19 @@ export default function VaultSettingsPage() {
         <LoadingState label="Loading settings" />
       ) : (
         <div className="space-y-4">
+          <Card className="space-y-3 border-dashed p-5">
+            <h2 className="font-medium">Vault security review</h2>
+            <p className="text-sm text-[var(--muted)]">
+              Review your vault protection, recovery readiness, passkey compatibility, and recent vault
+              security events.
+            </p>
+            <Link href="/vault/security">
+              <Button variant="secondary" className="w-full sm:w-auto">
+                Open security review
+              </Button>
+            </Link>
+          </Card>
+
           {error && <ErrorState message={error} />}
           {saveError && (
             <Alert variant="danger" role="alert">
