@@ -5,9 +5,9 @@ import { useSession } from "next-auth/react";
 import { AccountSettingsPage, SecuritySettingsPage } from "@tgoliveira/secure-auth/react";
 import { defaultSignOutAccount } from "@tgoliveira/secure-auth/react/client";
 import { Button } from "@/components/ui/button";
-import { PageLayout } from "@/components/layout/page-layout";
+import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card } from "@/components/ui/card";
+import { SettingsSection } from "@/components/ui/settings-section";
 import { APP_PASSKEY_SLUG } from "@/lib/passkey/app-slug";
 import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { ACCOUNT_DELETION_VAULT_NOTE } from "@/lib/account-auth-messages";
@@ -17,18 +17,22 @@ export default function AccountSettingsPageWrapper() {
   const { data: session } = useSession();
 
   return (
-    <PageLayout width="medium">
+    <AuthenticatedPage width="settings">
       <PageHeader
         title="Account settings"
         description="Manage sign-in, security, and account lifecycle for SelahKeep."
       />
 
-      <div className="space-y-5">
-        <Alert variant="warning" title="Before you delete your account">
-          {ACCOUNT_DELETION_VAULT_NOTE}
-        </Alert>
-
-        <Card className="space-y-4 p-5 sm:p-6">
+      <div className="authenticated-page__sections space-y-5">
+        <SettingsSection
+          title="Account"
+          description="Your sign-in email and account lifecycle."
+          suppressPackageHeading
+          className="scroll-mt-8"
+        >
+          <Alert variant="warning" title="Before you delete your account" className="mb-4">
+            {ACCOUNT_DELETION_VAULT_NOTE}
+          </Alert>
           <AccountSettingsPage
             appSlug={APP_PASSKEY_SLUG}
             afterDeletePath="/account-deleted"
@@ -43,33 +47,33 @@ export default function AccountSettingsPageWrapper() {
               await defaultSignOutAccount();
             }}
           />
-        </Card>
+        </SettingsSection>
 
-        <Card id="security" className="scroll-mt-8 space-y-4 p-5 sm:p-6">
-          <div className="space-y-1 border-b border-[var(--border)] pb-3">
-            <h2 className="text-lg font-semibold text-[var(--foreground)]">Security</h2>
-            <p className="text-sm text-[var(--muted)]">
-              Password, two-factor authentication, and account passkeys for sign-in.
-            </p>
-          </div>
+        <SettingsSection
+          id="security"
+          title="Security"
+          description="Password, two-factor authentication, and account passkeys for sign-in."
+        >
           <SecuritySettingsPage appSlug={APP_PASSKEY_SLUG} />
-        </Card>
+        </SettingsSection>
 
-        <Card className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <div className="space-y-1">
-            <h2 className="font-medium text-[var(--foreground)]">Vault protection</h2>
-            <p className="text-sm text-[var(--muted)]">
-              Passkey vault unlock, recovery phrase, and unlock behavior are managed separately from
-              account sign-in.
-            </p>
+        <SettingsSection>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <h2 className="font-medium text-[var(--foreground)]">Vault protection</h2>
+              <p className="text-sm text-[var(--muted)]">
+                Passkey vault unlock, recovery phrase, and unlock behavior are managed separately
+                from account sign-in.
+              </p>
+            </div>
+            <Link href="/vault/settings" className="shrink-0">
+              <Button variant="secondary" className="w-full sm:w-auto">
+                Open vault settings
+              </Button>
+            </Link>
           </div>
-          <Link href="/vault/settings" className="shrink-0">
-            <Button variant="secondary" className="w-full sm:w-auto">
-              Open vault settings
-            </Button>
-          </Link>
-        </Card>
+        </SettingsSection>
       </div>
-    </PageLayout>
+    </AuthenticatedPage>
   );
 }

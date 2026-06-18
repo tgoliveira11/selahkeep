@@ -132,7 +132,7 @@ describe("VaultSecurityPage", () => {
     expect(
       screen.getByRole("link", { name: /open full unlock page/i }).getAttribute("href")
     ).toBe("/vault/unlock?returnTo=%2Fvault%2Fsecurity");
-    fireEvent.click(screen.getByRole("button", { name: /unlock vault/i }));
+    fireEvent.click(screen.getByRole("button", { name: /unlock here/i }));
     expect(requestVaultDockExpand).toHaveBeenCalled();
     expect(screen.queryByTestId("vault-security-review")).toBeNull();
   });

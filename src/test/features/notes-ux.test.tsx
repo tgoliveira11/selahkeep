@@ -60,6 +60,15 @@ vi.mock("@/lib/crypto-client/vault-session", () => ({
   subscribeVaultActivityTimer: vi.fn(() => () => {}),
   getVaultAutoLockRemainingMs: vi.fn(() => 14 * 60 * 1000 + 32 * 1000),
   lockVaultSession: vi.fn(),
+  lockVaultSessionManually: vi.fn(),
+  registerVaultBeforeAutoLock: vi.fn(() => () => {}),
+  isVaultManuallyLocked: vi.fn(() => false),
+  wasVaultLockedByInactivity: vi.fn(() => false),
+}));
+
+vi.mock("@/features/vault/use-vault-activity", () => ({
+  useVaultActivity: vi.fn(),
+  touchVaultActivity: vi.fn(),
 }));
 
 vi.mock("@/lib/crypto-client/note-drafts", () => ({
@@ -191,7 +200,7 @@ describe("notes UX", () => {
     it("hides search/filter when there are no categories and no tags", async () => {
       const { useVaultIndex } = await import("@/features/notes/use-vault-index");
       vi.mocked(useVaultIndex).mockReturnValue({
-        index: { ...sampleIndex, categories: [], tags: [] },
+        index: { ...sampleIndex, categories: [], tags: [], entries: [] },
         loading: false,
         error: null,
         mutateIndex: vi.fn(),
@@ -200,6 +209,8 @@ describe("notes UX", () => {
       render(<NotesPage />);
       expect(await screen.findByText("Notes")).toBeTruthy();
       expect(screen.queryByLabelText(/search/i)).toBeNull();
+      expect(screen.queryByTestId("notes-counter")).toBeNull();
+      expect(screen.queryByTestId("note-sort")).toBeNull();
       expect(screen.getByText(/create categories or tags to start filtering/i)).toBeTruthy();
     });
 
@@ -240,8 +251,8 @@ describe("notes UX", () => {
       expect(screen.getByRole("heading", { name: /your vault is closed/i })).toBeTruthy();
       expect(screen.getByText(/account session does not unlock your vault/i)).toBeTruthy();
       expect(screen.getByText(/encrypted before they leave this device/i)).toBeTruthy();
-      expect(screen.getByRole("button", { name: /unlock vault/i })).toBeTruthy();
-      expect(screen.getByTestId("notes-open-full-unlock-page").getAttribute("href")).toBe(
+      expect(screen.getByRole("button", { name: /unlock here/i })).toBeTruthy();
+      expect(screen.getByTestId("vault-open-full-unlock-page").getAttribute("href")).toBe(
         "/vault/unlock?returnTo=%2Fnotes"
       );
       expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
@@ -251,7 +262,7 @@ describe("notes UX", () => {
 
     it("does not show page-level vault open indicator when unlocked", async () => {
       render(<NotesPage />);
-      expect(await screen.findByRole("link", { name: /new note/i })).toBeTruthy();
+      expect((await screen.findAllByTestId("new-note-action")).length).toBeGreaterThan(0);
       expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
       expect(screen.queryByText("Vault open")).toBeNull();
     });
@@ -288,13 +299,16 @@ describe("notes UX", () => {
 
       render(<NotesPage />);
       expect(await screen.findByTestId("notes-counter")).toHaveTextContent("2 notes");
-      fireEvent.change(screen.getByLabelText(/status/i), { target: { value: "resolved" } });
+      fireEvent.click(screen.getByTestId("advanced-filters-menu"));
+      fireEvent.change(screen.getByTestId("filter-resolved"), { target: { value: "resolved" } });
       expect(screen.getByTestId("notes-counter")).toHaveTextContent("1 of 2 notes");
     });
 
     it("shows sort control", async () => {
       render(<NotesPage />);
-      expect(await screen.findByLabelText(/sort by/i)).toBeTruthy();
+      fireEvent.click(await screen.findByTestId("note-sort-menu"));
+      expect(screen.getByLabelText(/sort by/i)).toBeTruthy();
+      expect(screen.getByTestId("note-sort")).toBeTruthy();
     });
 
     it("shows resolve quick action on note cards", async () => {
@@ -337,9 +351,9 @@ describe("notes UX", () => {
       expect(card?.textContent).toMatch(/Updated/);
     });
 
-    it("shows unresolved badge on open notes", async () => {
+    it("shows unresolved indicator on open notes in card mode", async () => {
       render(<NotesPage />);
-      expect(await screen.findByTestId("note-card-unresolved-badge")).toBeTruthy();
+      expect(await screen.findByTestId("note-unresolved-indicator")).toBeTruthy();
     });
 
     it("routes no-vault state to /vault/setup", async () => {
@@ -519,7 +533,8 @@ describe("notes UX", () => {
       vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
       render(<NoteDetailPage />);
-      expect(await screen.findByTestId("notes-vault-protected-message")).toBeTruthy();
+      expect(await screen.findByTestId("vault-locked-state-read-note")).toBeTruthy();
+      expect(screen.getByRole("heading", { name: /unlock to read this note/i })).toBeTruthy();
       expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
       expect(screen.queryByText("Prayer note")).toBeNull();
       expect(screen.queryByTestId("markdown-preview")).toBeNull();

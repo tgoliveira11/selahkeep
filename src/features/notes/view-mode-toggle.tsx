@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { IconCards, IconList } from "@/components/ui/toolbar-icons";
 import type { NoteViewMode } from "@/lib/notes/note-view-mode";
 import { cn } from "@/lib/ui/cn";
 
@@ -9,27 +9,36 @@ interface ViewModeToggleProps {
   onChange: (mode: NoteViewMode) => void;
 }
 
+/** Compact segmented icon toggle — matches shared toolbar control height. */
 export function ViewModeToggle({ mode, onChange }: ViewModeToggleProps) {
   return (
-    <div className="flex gap-1 rounded-[var(--radius)] border border-[var(--border)] p-1" role="group" aria-label="View mode">
-      <Button
+    <div className="view-mode-toggle" role="group" aria-label="View mode">
+      <button
         type="button"
-        variant={mode === "cards" ? "primary" : "secondary"}
-        className={cn("min-h-9 px-3 py-1.5")}
+        className={cn(
+          "view-mode-toggle__btn",
+          mode === "cards" && "view-mode-toggle__btn--active"
+        )}
         data-testid="view-mode-cards"
+        aria-label="Cards view"
+        aria-pressed={mode === "cards"}
         onClick={() => onChange("cards")}
       >
-        Cards
-      </Button>
-      <Button
+        <IconCards />
+      </button>
+      <button
         type="button"
-        variant={mode === "list" ? "primary" : "secondary"}
-        className={cn("min-h-9 px-3 py-1.5")}
+        className={cn(
+          "view-mode-toggle__btn",
+          mode === "list" && "view-mode-toggle__btn--active"
+        )}
         data-testid="view-mode-list"
+        aria-label="List view"
+        aria-pressed={mode === "list"}
         onClick={() => onChange("list")}
       >
-        List
-      </Button>
+        <IconList />
+      </button>
     </div>
   );
 }

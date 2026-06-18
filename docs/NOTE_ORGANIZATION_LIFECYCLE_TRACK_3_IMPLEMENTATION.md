@@ -107,7 +107,7 @@ Drafts filter uses encrypted draft keys from IndexedDB (`listEncryptedNoteDraftK
 |-------|-------|
 | Unit | `note-metadata.test.ts`, `smart-filters.test.ts`, `saved-views.test.ts`, `note-view-mode.test.ts`, `duplicate-note.test.ts`, updated `vault-index.test.ts`, `note-sort.test.ts` |
 | Security | `note-org-metadata.test.ts` |
-| Features | Updated `notes-ux.test.tsx`, `vault-status-ui.test.tsx`, `editor-track-2.test.tsx` |
+| Features | Updated `notes-ux.test.tsx`, `vault-status-ui.test.tsx`, `editor-track-2.test.tsx`, `notes-toolbar-refinement.test.tsx` |
 
 ## Validation
 
@@ -118,6 +118,29 @@ npm run test
 npm run test:coverage  # ≥90% enforced scope
 npm run build
 ```
+
+## List controls region (UI refinement)
+
+`/notes` uses `NotesListControls` — a compact toolbar (search, **Views ▾**, **Filters ▾**, **Sort ▾**, Cards/List), smart filter chips, and integrated note count. Saved views are secondary (`SavedViewsMenu`), not a large always-visible card.
+
+Visibility (`shouldShowNotesListControls`): organizers (categories/tags), ≥1 note, active smart filter, active search/filter, or saved views. When hidden, sort/view/count/search are all hidden together. Zero notes with no organizers shows a polished empty state instead.
+
+### Toolbar dropdown layering
+
+`ToolbarMenu` panels portal to `document.body` with `toolbar-menu-panel` and `--z-toolbar-popover` (40). The controls shell uses `overflow: visible` so menus are not clipped. Escape closes menus and returns focus to the trigger.
+
+### Shared toolbar control height
+
+`--toolbar-control-height` (2.5rem) applies to `ToolbarButton` and `ViewModeToggle` so Views, Filters, Sort, and Cards/List align on one baseline.
+
+### List vs card metadata
+
+- **List mode:** category column only (no tags); separate States column for pin/favorite/archive/trash indicators; resolved/unresolved in status column.
+- **Card mode:** category + tag chips; `NoteStateIndicators` includes resolved icon when applicable.
+
+### Note state indicators
+
+`NoteStateIndicators` (`src/components/notes/note-state-indicators.tsx`) provides accessible icon-only labels for resolved, pinned, favorite, archived, and trash. Pinned/favorite are suppressed when archived or trashed.
 
 ## Remaining risks / follow-ups
 

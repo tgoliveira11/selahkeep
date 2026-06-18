@@ -16,6 +16,9 @@ interface CategoryTagFieldsProps {
   categoryId: string | null;
   tagIds: string[];
   answered?: boolean;
+  /** Template-assigned category cannot be changed during note creation. */
+  categoryLocked?: boolean;
+  lockedCategoryName?: string | null;
   onCategoryChange: (categoryId: string | null) => void;
   onTagIdsChange: (tagIds: string[]) => void;
   onAnsweredChange?: (answered: boolean) => void;
@@ -35,10 +38,16 @@ export function CategoryTagFields({
   onAnsweredChange,
   onCreateCategory,
   onCreateTag,
+  categoryLocked = false,
+  lockedCategoryName,
 }: CategoryTagFieldsProps) {
   const [newCategory, setNewCategory] = useState("");
-  const showCategory = categories.length > 0;
+  const showCategory = categories.length > 0 || categoryLocked;
   const showAnswered = mode === "edit" && onAnsweredChange;
+  const resolvedCategoryName =
+    lockedCategoryName ??
+    categories.find((category) => category.id === categoryId)?.name ??
+    null;
 
   async function handleAddCategory() {
     const name = newCategory.trim();
@@ -52,36 +61,50 @@ export function CategoryTagFields({
     <div className="space-y-4">
       {showCategory ? (
         <FormField id="note-category" label="Category">
-          <select
-            id="note-category"
-            className="w-full min-h-11 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
-            value={categoryId ?? ""}
-            onChange={(e) => onCategoryChange(e.target.value || null)}
-          >
-            <option value="">No category</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-          {onCreateCategory && (
-            <div className="mt-2 flex gap-2">
-              <Input
-                placeholder="New category name"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                maxLength={80}
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleAddCategory}
-                disabled={!newCategory.trim()}
-              >
-                Add
-              </Button>
+          {categoryLocked && resolvedCategoryName ? (
+            <div
+              className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card-muted)] px-3 py-2.5"
+              data-testid="template-locked-category"
+            >
+              <p className="text-sm font-medium text-[var(--foreground)]">{resolvedCategoryName}</p>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                This category is assigned by the template.
+              </p>
             </div>
+          ) : (
+            <>
+              <select
+                id="note-category"
+                className="w-full min-h-11 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                value={categoryId ?? ""}
+                onChange={(e) => onCategoryChange(e.target.value || null)}
+              >
+                <option value="">No category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              {onCreateCategory && (
+                <div className="mt-2 flex gap-2">
+                  <Input
+                    placeholder="New category name"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    maxLength={80}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleAddCategory}
+                    disabled={!newCategory.trim()}
+                  >
+                    Add
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </FormField>
       ) : (

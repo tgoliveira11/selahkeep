@@ -187,7 +187,7 @@ describe("vault status UI", () => {
     });
 
     render(<NotesPage />);
-    expect(await screen.findByRole("link", { name: /new note/i })).toBeTruthy();
+    expect((await screen.findAllByTestId("new-note-action")).length).toBeGreaterThan(0);
     expect(screen.queryByText(/set up your vault/i)).toBeNull();
   });
 
@@ -201,13 +201,13 @@ describe("vault status UI", () => {
     expect(screen.queryByText(/unlock to read/i)).toBeNull();
   });
 
-  it("vault settings locked prompt links to unlock with returnTo", async () => {
+  it("vault settings locked prompt links to full unlock page with returnTo", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
     render(<VaultSettingsPage />);
     expect(
-      screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")
+      screen.getByRole("link", { name: /open full unlock page/i }).getAttribute("href")
     ).toBe("/vault/unlock?returnTo=%2Fvault%2Fsettings");
   });
 
@@ -216,7 +216,10 @@ describe("vault status UI", () => {
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
     render(<VaultSettingsPage />);
-    expect(await screen.findByText("Unlock your vault")).toBeTruthy();
+    expect(
+      await screen.findByText(/unlock your vault to manage vault settings/i)
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: /unlock here/i })).toBeTruthy();
     expect(screen.queryByText(/use recovery code/i)).toBeNull();
   });
 

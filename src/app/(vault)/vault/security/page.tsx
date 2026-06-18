@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { PageLayout } from "@/components/layout/page-layout";
 import { PageHeader } from "@/components/ui/page-header";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -9,10 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
+import { VaultLockedState } from "@/features/vault/vault-locked-state";
 import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
 import { VaultSecurityReview } from "@/features/vault/vault-security-review";
-import { buildVaultUnlockHref } from "@/lib/notes/safe-return-to";
-import { requestVaultDockExpand } from "@/features/vault/vault-status-dock-events";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 export default function VaultSecurityPage() {
@@ -48,7 +48,7 @@ export default function VaultSecurityPage() {
   }
 
   return (
-    <PageLayout>
+    <AuthenticatedPage width="settings">
       <PageHeader
         title="Vault security"
         description={`Review how your private notes are protected. ${PRODUCT_NAME} separates account sign-in from vault unlock. Your private notes remain encrypted until your vault is opened on this device.`}
@@ -82,24 +82,7 @@ export default function VaultSecurityPage() {
             </Card>
           )}
           {clientStatus === "locked" ? (
-            <Card className="space-y-4 p-6">
-              <div className="space-y-2">
-                <h2 className="text-lg font-semibold">Unlock your vault to run security checks</h2>
-                <p className="text-sm text-[var(--muted)]">
-                  Your account is signed in, but your vault remains closed until you unlock it.
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                <Button className="w-full sm:w-auto" onClick={() => requestVaultDockExpand()}>
-                  Unlock vault
-                </Button>
-                <Link href={buildVaultUnlockHref("/vault/security")}>
-                  <Button variant="secondary" className="w-full sm:w-auto">
-                    Open full unlock page
-                  </Button>
-                </Link>
-              </div>
-            </Card>
+            <VaultLockedState variant="vault-security" returnTo="/vault/security" />
           ) : (
             <VaultStatusPrompt
               clientStatus={clientStatus}
@@ -109,6 +92,6 @@ export default function VaultSecurityPage() {
           )}
         </div>
       ) : null}
-    </PageLayout>
+    </AuthenticatedPage>
   );
 }

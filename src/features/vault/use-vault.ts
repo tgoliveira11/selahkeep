@@ -7,7 +7,7 @@ import {
   isVaultUnlocked,
 } from "@/lib/crypto-client/vault";
 import {
-  lockVaultSession,
+  lockVaultSessionManually,
   registerVaultUnloadGuard,
   touchVaultSession,
 } from "@/lib/crypto-client/vault-session";
@@ -30,7 +30,7 @@ export function useVault() {
   }, []);
 
   const lockVault = useCallback(() => {
-    lockVaultSession();
+    lockVaultSessionManually();
   }, []);
 
   const unlockFromPasskey = useCallback(async () => {

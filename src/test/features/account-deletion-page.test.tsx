@@ -38,6 +38,7 @@ describe("account settings page wrapper", () => {
   it("groups account, security, and vault protection in compact sections", () => {
     render(<AccountSettingsPage />);
     expect(screen.getByRole("heading", { name: /account settings/i })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /^account$/i })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /^security$/i })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /vault protection/i })).toBeTruthy();
     expect(screen.getByRole("link", { name: /open vault settings/i })).toHaveAttribute(
@@ -47,9 +48,11 @@ describe("account settings page wrapper", () => {
     expect(screen.queryByText(/passkey vault unlock setup/i)).toBeNull();
   });
 
-  it("warns that account deletion removes vault and notes", () => {
+  it("warns that account deletion removes vault and notes near delete action", () => {
     render(<AccountSettingsPage />);
-    expect(screen.getByText(ACCOUNT_DELETION_VAULT_NOTE)).toBeTruthy();
+    const accountSection = screen.getByRole("heading", { name: /^account$/i }).closest("section");
+    expect(accountSection?.textContent).toMatch(ACCOUNT_DELETION_VAULT_NOTE);
+    expect(screen.getByRole("button", { name: /delete my account permanently/i })).toBeTruthy();
   });
 
   it("keeps delete account action accessible", () => {

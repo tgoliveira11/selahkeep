@@ -1,37 +1,35 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { PageLayout } from "@/components/layout/page-layout";
+import { NotesListGrid } from "@/components/notes/notes-list-grid";
 import { Button } from "@/components/ui/button";
+import { NewNoteAction } from "@/features/notes/new-note-action";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { PageHeader } from "@/components/ui/page-header";
-import { FormField } from "@/components/ui/form-field";
 import { NoteCard } from "@/components/notes/note-card";
 import { NoteListRow } from "@/components/notes/note-list-row";
 import {
-  NoteFilters,
   defaultNoteFilters,
   hasNoteOrganizers,
   noteFiltersToSearch,
   type NoteFilterState,
 } from "@/features/notes/note-filters";
-import { SmartFilterBar } from "@/features/notes/smart-filter-bar";
-import { SavedViewsBar } from "@/features/notes/saved-views-bar";
-import { ViewModeToggle } from "@/features/notes/view-mode-toggle";
+import { NotesListControls } from "@/features/notes/notes-list-controls";
 import { NotesVaultProtectedMessage } from "@/features/notes/notes-vault-protected-message";
 import { useVaultIndex } from "@/features/notes/use-vault-index";
 import { useNotes } from "@/features/notes/use-notes";
 import { searchVaultIndex, searchVaultIndexWhenLocked } from "@/lib/crypto-client/note-search";
 import { listEncryptedNoteDraftKeys } from "@/lib/crypto-client/note-drafts";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
-import { formatNoteCount } from "@/lib/notes/note-count";
+import { shouldShowNotesListControls } from "@/lib/notes/notes-list-controls-visibility";
 import {
   DEFAULT_NOTE_SORT,
-  NOTE_SORT_OPTIONS,
   sortNotes,
   type NoteSortOption,
 } from "@/lib/notes/note-sort";
@@ -117,7 +115,13 @@ export default function NotesPage() {
     return sortNotes(searchVaultIndex(index, searchFilters), sort);
   }, [vaultUnlocked, index, searchFilters, sort]);
 
-  const noteCountLabel = formatNoteCount(filteredNotes.length, allNotes.length);
+  const showListControls = shouldShowNotesListControls({
+    hasOrganizers: showOrganizerFilters,
+    totalNotes: allNotes.length,
+    smartFilter,
+    filters,
+    hasSavedViews: (index?.savedViews?.length ?? 0) > 0,
+  });
 
   const currentSavedViewCriteria = useMemo(
     (): SavedViewCriteria => ({
@@ -257,26 +261,11 @@ export default function NotesPage() {
   }
 
   return (
-    <PageLayout>
+    <AuthenticatedPage width="notes">
       <PageHeader
         title="Notes"
-        description="Private encrypted notes — prayers, reflections, and journaling in one vault."
-        action={
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full sm:w-auto"
-              data-testid="new-daily-note"
-              onClick={openDailyNote}
-            >
-              New daily note
-            </Button>
-            <Link href="/notes/new">
-              <Button className="w-full sm:w-auto">New note</Button>
-            </Link>
-          </div>
-        }
+        description="Your encrypted space for prayers, reflections, and private notes."
+        action={<NewNoteAction onDailyNote={openDailyNote} />}
       />
 
       {error && (
@@ -291,62 +280,31 @@ export default function NotesPage() {
         </div>
       )}
 
-      {vaultUnlocked && index && (
-        <>
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <p className="text-sm text-[var(--muted)]" data-testid="notes-counter" aria-live="polite">
-              {noteCountLabel}
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <ViewModeToggle mode={viewMode} onChange={handleViewModeChange} />
-              <FormField id="note-sort" label="Sort by" className="sm:w-56">
-                <select
-                  id="note-sort"
-                  className="w-full min-h-11 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as NoteSortOption)}
-                >
-                  {NOTE_SORT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
-            </div>
-          </div>
-
-          <div className="mb-4 grid gap-4 sm:grid-cols-2">
-            <SmartFilterBar value={smartFilter} onChange={setSmartFilter} />
-          </div>
-
-          <SavedViewsBar
-            views={index.savedViews ?? []}
-            activeViewId={activeSavedViewId}
-            currentCriteria={currentSavedViewCriteria}
-            onApply={handleApplySavedView}
-            onSave={handleSaveView}
-            onDelete={handleDeleteSavedView}
-          />
-
-          {smartFilter === "trash" && (
-            <p className="mb-4 text-sm text-[var(--muted)]" data-testid="trash-notice">
-              Trash auto-purge is not implemented yet. Notes remain until you delete them permanently.
-            </p>
-          )}
-        </>
-      )}
-
-      {vaultUnlocked && index && showOrganizerFilters && (
-        <NoteFilters
+      {vaultUnlocked && index && showListControls && (
+        <NotesListControls
+          filteredCount={filteredNotes.length}
+          totalCount={allNotes.length}
+          sort={sort}
+          onSortChange={setSort}
+          viewMode={viewMode}
+          onViewModeChange={handleViewModeChange}
+          smartFilter={smartFilter}
+          onSmartFilterChange={setSmartFilter}
           filters={filters}
+          onFiltersChange={setFilters}
           categories={activeCategories}
           tags={activeTags}
-          onChange={setFilters}
+          savedViews={index.savedViews ?? []}
+          activeSavedViewId={activeSavedViewId}
+          currentSavedViewCriteria={currentSavedViewCriteria}
+          onApplySavedView={handleApplySavedView}
+          onSaveView={handleSaveView}
+          onDeleteSavedView={handleDeleteSavedView}
+          trashNotice={smartFilter === "trash"}
         />
       )}
 
-      {vaultUnlocked && index && !showOrganizerFilters && smartFilter === "all-active" && (
+      {vaultUnlocked && index && !showListControls && !showOrganizerFilters && smartFilter === "all-active" && allNotes.length === 0 && (
         <p className="mb-6 text-sm text-[var(--muted)]">
           Create categories or tags to start filtering your notes.
         </p>
@@ -354,69 +312,67 @@ export default function NotesPage() {
 
       {filteredNotes.length === 0 ? (
         <EmptyState
-          title={allNotes.length === 0 ? "No notes yet" : "No matching notes"}
+          title={allNotes.length === 0 ? "Start your first private note" : "No matching notes"}
           description={
             allNotes.length === 0
-              ? "When you're ready, write your first private note. It stays protected on your device before it is saved."
+              ? "Write a prayer, reflection, decision, or journal entry inside your encrypted vault."
               : "Try adjusting your search or filters to find what you're looking for."
           }
           action={
             allNotes.length === 0 ? (
               <Link href="/notes/new">
-                <Button>Write your first note</Button>
+                <Button data-testid="empty-state-new-note">New note</Button>
               </Link>
             ) : undefined
           }
         />
-      ) : viewMode === "list" ? (
-        <ul className="space-y-2">
-          {filteredNotes.map((note) => (
-            <li key={note.id}>
-              <NoteListRow
-                id={note.id}
-                title={note.title}
-                answered={note.answered}
-                pinned={note.pinned}
-                favorite={note.favorite}
-                archived={note.archived}
-                trashed={note.trashed}
-                createdAt={note.createdAt}
-                updatedAt={note.updatedAt}
-                categoryName={note.categoryName}
-                tagNames={note.tagNames}
-                resolving={resolvingId === note.id}
-                onToggleResolved={
-                  note.trashed ? undefined : () => void handleToggleResolved(note.id, note.answered)
-                }
-              />
-            </li>
-          ))}
-        </ul>
       ) : (
-        <ul className="space-y-3">
-          {filteredNotes.map((note) => (
-            <li key={note.id}>
-              <NoteCard
-                id={note.id}
-                title={note.title}
-                answered={note.answered}
-                pinned={note.pinned}
-                favorite={note.favorite}
-                archived={note.archived}
-                trashed={note.trashed}
-                createdAt={note.createdAt}
-                updatedAt={note.updatedAt}
-                categoryName={note.categoryName}
-                tagNames={note.tagNames}
-                resolving={resolvingId === note.id}
-                onToggleResolved={
-                  note.trashed ? undefined : () => void handleToggleResolved(note.id, note.answered)
-                }
-              />
-            </li>
-          ))}
-        </ul>
+        <NotesListGrid viewMode={viewMode}>
+          {filteredNotes.map((note) =>
+            viewMode === "list" ? (
+              <li key={note.id}>
+                <NoteListRow
+                  id={note.id}
+                  title={note.title}
+                  answered={note.answered}
+                  pinned={note.pinned}
+                  favorite={note.favorite}
+                  archived={note.archived}
+                  trashed={note.trashed}
+                  createdAt={note.createdAt}
+                  updatedAt={note.updatedAt}
+                  categoryName={note.categoryName}
+                  tagNames={note.tagNames}
+                  resolving={resolvingId === note.id}
+                  onToggleResolved={
+                    note.trashed ? undefined : () => void handleToggleResolved(note.id, note.answered)
+                  }
+                />
+              </li>
+            ) : (
+              <li key={note.id}>
+                <NoteCard
+                  id={note.id}
+                  title={note.title}
+                  answered={note.answered}
+                  pinned={note.pinned}
+                  favorite={note.favorite}
+                  archived={note.archived}
+                  trashed={note.trashed}
+                  createdAt={note.createdAt}
+                  updatedAt={note.updatedAt}
+                  categoryName={note.categoryName}
+                  tagNames={note.tagNames}
+                  resolving={resolvingId === note.id}
+                  onToggleResolved={
+                    note.trashed ? undefined : () => void handleToggleResolved(note.id, note.answered)
+                  }
+                />
+              </li>
+            )
+          )}
+        </NotesListGrid>
       )}
-    </PageLayout>
+    </AuthenticatedPage>
   );
 }

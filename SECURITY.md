@@ -250,13 +250,16 @@ Challenges scoped by user ID and type; expire after 5 minutes; deleted on use vi
 
 ## Vault session hardening
 
-- **15-minute inactivity** auto-lock — remaining time shown in collapsed dock handle (`mm:ss`) and expanded open dock (`Vault open · Auto-locks in mm:ss`)
+- **Inactivity auto-lock** (default 15 minutes; `NEXT_PUBLIC_VAULT_AUTO_LOCK_MINUTES` / `VAULT_AUTO_LOCK_MINUTES`) — remaining time shown in collapsed dock handle (`mm:ss`) and expanded open dock (`Vault open · Auto-locks in mm:ss`). Single timer in `vault-session.ts`; `registerVaultBeforeAutoLock` saves encrypted note drafts before lock.
+- **Activity detection:** window events plus document capture (`keydown`, `input`, `pointerdown`, `compositionstart`, `compositionend`, `paste`); note editor calls `touchVaultActivity()` on change.
 - **Vault status UI:** global `VaultStatusDock` inside authenticated header when signed in (no note title/body/category/tag or vault secrets in the dock); collapsed handle shows `Closed` when locked or countdown when open
 - **Inline unlock:** expanded locked dock embeds `VaultDockQuickUnlock` — vault password and passkey PRF (when envelope exists and browser is not PRF-unsupported). Recovery phrase unlock is only on `/vault/unlock`. Same client-only unlock services as the full page; secrets never sent to the server. Dock shows status-only message on `/vault/unlock` (no duplicate form).
 - Dock auto-collapses on `/vault/unlock` and when **Open full unlock page** is clicked; no duplicate unlock form on that route
-- `/notes` locked state (`NotesVaultProtectedMessage`) explains vault vs account sign-in and offers **Unlock vault** (expands dock) plus **Open full unlock page** without showing decrypted note content
+- Locked vault surfaces (`VaultLockedState`) use context-specific copy and **Unlock here** (expands dock) plus **Open full unlock page** — no recovery protection summary or “recovery code” in active copy
 - Manual **Lock now** (expanded open dock) clears in-memory key, note body cache, and sets a session lock flag; note pages hide decrypted content until explicit unlock
 - In-memory User Vault Key cleared on lock, sign out, and `pagehide` (best effort)
+
+See [`docs/VAULT_AUTO_LOCK_NORMALIZATION.md`](docs/VAULT_AUTO_LOCK_NORMALIZATION.md).
 
 ## Import / export (MVP)
 

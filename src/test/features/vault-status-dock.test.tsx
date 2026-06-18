@@ -15,7 +15,7 @@ import {
   VAULT_STATUS_DOCK_COLLAPSED_KEY,
   writeVaultStatusDockCollapsedPreference,
 } from "@/features/vault/vault-status-dock-preference";
-import { lockVaultSession } from "@/lib/crypto-client/vault-session";
+import { lockVaultSessionManually } from "@/lib/crypto-client/vault-session";
 import { sanitizeVaultReturnTo } from "@/lib/notes/safe-return-to";
 
 const unlockFromVaultPassword = vi.fn();
@@ -68,6 +68,7 @@ vi.mock("@/features/vault/use-vault-client-status", () => ({
 
 vi.mock("@/lib/crypto-client/vault-session", () => ({
   lockVaultSession: vi.fn(),
+  lockVaultSessionManually: vi.fn(),
   subscribeVaultSession: vi.fn(() => () => {}),
   subscribeVaultActivityTimer: vi.fn(() => () => {}),
   getVaultAutoLockRemainingMs: vi.fn(() => 14 * 60 * 1000 + 32 * 1000),
@@ -314,7 +315,7 @@ describe("VaultStatusDock", () => {
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
     fireEvent.click(screen.getByRole("button", { name: /lock now/i }));
 
-    expect(lockVaultSession).toHaveBeenCalledTimes(1);
+    expect(lockVaultSessionManually).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId("vault-status-dock-handle")).toBeTruthy();
   });
 

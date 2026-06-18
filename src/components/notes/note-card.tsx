@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { RESOLVED_COPY, isNoteResolved } from "@/lib/notes/resolved-labels";
+import { isNoteResolved } from "@/lib/notes/resolved-labels";
 import { formatNoteListDates } from "@/lib/notes/note-dates";
-import { Badge } from "@/components/ui/badge";
 import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
+import { NoteStateIndicators } from "@/components/notes/note-state-indicators";
 import { NoteResolvedToggle } from "@/components/notes/note-resolved-toggle";
 import { cn } from "@/lib/ui/cn";
 
@@ -39,54 +39,34 @@ export function NoteCard({
   resolving = false,
   onToggleResolved,
 }: NoteCardProps) {
-  const resolved = isNoteResolved(answered);
-
   return (
     <div
       className={cn(
-        "rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-md",
-        resolved && "border-[var(--success)]/25 bg-[var(--success-muted)]/30"
+        "note-card rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-md",
+        isNoteResolved(answered) &&
+          "note-card--resolved border-[var(--success)]/30 bg-[color-mix(in_srgb,var(--success-muted)_18%,var(--card))]"
       )}
+      data-testid="note-card"
     >
       <div className="flex items-start justify-between gap-3">
         <Link
           href={`/notes/${id}`}
-          className={cn(
-            "min-w-0 flex-1 rounded-[var(--radius)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]",
-            resolved && "opacity-90"
-          )}
+          className="min-w-0 flex-1 rounded-[var(--radius)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
         >
           <div className="flex flex-wrap items-center gap-2">
-            {pinned && (
-              <Badge variant="muted" data-testid="note-pinned-badge">
-                Pinned
-              </Badge>
-            )}
-            {favorite && (
-              <Badge variant="muted" data-testid="note-favorite-badge">
-                Favorite
-              </Badge>
-            )}
-            {archived && (
-              <Badge variant="muted" data-testid="note-archived-badge">
-                Archived
-              </Badge>
-            )}
-            {trashed && (
-              <Badge variant="muted" data-testid="note-trashed-badge">
-                Trash
-              </Badge>
-            )}
-            <p className={cn("truncate font-medium", locked && "text-[var(--muted)]", resolved && "text-[var(--muted)]")}>
+            <p className={cn("truncate font-medium", locked && "text-[var(--muted)]")}>
               {title}
             </p>
-            {resolved ? (
-              <Badge variant="success">{RESOLVED_COPY.resolvedBadge}</Badge>
-            ) : (
-              <Badge variant="muted" data-testid="note-card-unresolved-badge">{RESOLVED_COPY.unresolved}</Badge>
-            )}
+            <NoteStateIndicators
+              answered={answered}
+              pinned={pinned}
+              favorite={favorite}
+              archived={archived}
+              trashed={trashed}
+              includeResolved
+            />
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2" data-testid="note-card-metadata">
             {categoryName && <NoteCategoryLabel name={categoryName} />}
             {tagNames.map((name) => (
               <NoteTagChip key={name} name={name} />

@@ -26,6 +26,7 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 | [`VERCEL_ENVIRONMENT_VARIABLES.md`](./VERCEL_ENVIRONMENT_VARIABLES.md) | Deployment env vars |
 | [`API_REFERENCE.md`](./API_REFERENCE.md) | API overview |
 | [`LTG_VAULT_AGENT_IMPLEMENTATION_GUIDE.md`](./LTG_VAULT_AGENT_IMPLEMENTATION_GUIDE.md) | Agent notes for vault + secure-auth integration |
+| [`VAULT_AUTO_LOCK_NORMALIZATION.md`](./VAULT_AUTO_LOCK_NORMALIZATION.md) | Auto-lock config, activity, locked-state UI, draft hooks |
 | [`EDITOR_IMPLEMENTATION_DECISION.md`](./EDITOR_IMPLEMENTATION_DECISION.md) | Visual note editor (Tiptap) decision and boundaries |
 
 ## Root-level docs

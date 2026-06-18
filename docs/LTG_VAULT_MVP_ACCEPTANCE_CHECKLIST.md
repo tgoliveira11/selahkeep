@@ -20,7 +20,7 @@
 | 13 | User can create/edit/delete/archive Markdown notes | ✅ Pass | `/notes`, `/notes/new`, `/notes/[id]` | `notes-ux.test.tsx`, `notes-routes.test.ts`, `note-service.test.ts`, `note-org-metadata.test.ts` | Trash = client metadata; permanent delete = server soft delete |
 | 14 | User can assign one category and multiple tags per note | ✅ Pass | `CategoryTagFields`, `TagChipInput`, encrypted vault index | `category-tag-crypto.test.ts`, `tag-normalization.test.ts`, `notes-ux.test.tsx` | Tags normalized; `#` display-only |
 | 15 | User can mark notes as answered | ✅ Pass | Encrypted metadata `answered` flag | `answered-metadata.test.ts`, `notes-ux.test.tsx` | Not on `/notes/new` |
-| 16 | User can search by title/tag/category after unlock | ✅ Pass | `note-search.ts`, `NoteFilters` | `note-search.test.ts`, `notes-ux.test.tsx` | Filters visible only when organizers exist |
+| 16 | User can search by title/tag/category after unlock | ✅ Pass | `note-search.ts`, `NotesListControls`, `AdvancedFiltersMenu` | `note-search.test.ts`, `notes-ux.test.tsx`, `notes-ui-patterns.test.tsx` | Compact toolbar; filters in **Filters ▾** menu |
 | 17 | Titles visible in UI after unlock; **not** plaintext at rest | ✅ Pass | `encrypted_metadata` column only | `schema-no-plaintext.test.ts`, `default-title-encryption.test.ts` | |
 | 18 | Tags/categories/body not plaintext at rest | ✅ Pass | Encrypted metadata + body | `schema-no-plaintext.test.ts`, `notes-plaintext-rejection.test.ts` | |
 | 19 | APIs do not receive plaintext note content | ✅ Pass | `note-plaintext-rejection.ts` policies | `notes-plaintext-rejection.test.ts`, `plaintext-rejection.test.ts`, sentinel tests | |
@@ -31,8 +31,9 @@
 | 24 | Encrypted attachments not in MVP | ✅ Pass | No `note_attachments` table | `no-letters-domain.test.ts`, TDR §11 | Documented as deferred |
 | 25 | Build, lint, tests, and coverage pass | ✅ Pass | CI commands in AGENTS.md | `npm run lint`, `test:coverage`, `build` | ≥90% enforced scope |
 | 26 | Public pages explain SelahKeep direction clearly | ✅ Pass | Home page sections: vault vs account, deferred features | `home-page.test.tsx` | |
-| 27 | Vault inactivity lock (15 min default) | ✅ Pass | `vault-session.ts` `VAULT_INACTIVITY_MS`, `use-vault-activity.ts` | `vault-session.test.ts`, `phase5-security-regression.test.ts` | Documented in README/SECURITY |
-| 28 | Inactivity lock shows calm user notice | ✅ Pass | `vault-auto-lock-notice.tsx`, `configureVaultAutoLock` | `phase5-security-regression.test.ts` | Message: vault locked to protect private notes |
+| 27 | Vault inactivity lock (15 min default, env configurable) | ✅ Pass | `vault-auto-lock-config.ts`, `vault-session.ts`, `use-vault-activity.ts` | `vault-auto-lock-config.test.ts`, `vault-session.test.ts`, `vault-activity.test.tsx` | See `docs/VAULT_AUTO_LOCK_NORMALIZATION.md` |
+| 28 | Inactivity lock shows calm user notice | ✅ Pass | `vault-auto-lock-notice.tsx`, `configureVaultAutoLock` | `vault-auto-lock-notice.test.tsx`, `vault-auto-lock-normalization.test.tsx` | Writing routes mention encrypted draft save |
+| 42 | Vault auto-lock normalization (locked copy, editor activity, draft before lock) | ✅ Pass | `VaultLockedState`, `registerVaultBeforeAutoLock`, `touchVaultActivity` | `vault-auto-lock-normalization.test.tsx`, `vault-auto-lock-draft.test.ts`, `notes-vault-locked-state.test.tsx` | `/notes/new` no longer uses `VaultAccessGate` |
 | 29 | Inactivity lock clears decrypted note body cache | ✅ Pass | `lockVaultSession` → `clearNoteBodyCache` | `vault-session.test.ts`, `phase5-security-regression.test.ts` | |
 | 30 | Logout locks vault and clears client state | ✅ Pass | `nav.tsx` `lockVaultSession` + `clearVaultClientState` | `phase5-security-regression.test.ts` | |
 | 31 | No active letters domain | ✅ Pass | Letters routes/modules removed | `no-letters-domain.test.ts` | |
@@ -45,7 +46,7 @@
 | 40 | Two-factor challenge is pre-auth; mobile redirect + safe callback | ✅ Pass | `/login/2fa`, `session-state.ts`, `safe-auth-callback.ts`, `oauth-two-factor-challenge.tsx`, `proxy.ts` | `two-factor-challenge.test.tsx`, `session-state.test.ts`, `safe-auth-callback.test.ts`, `site-layout.test.tsx`, `proxy.test.ts` | No logged-in nav during pending 2FA; OAuth waits for session refresh; see `docs/TWO_FACTOR_MOBILE_FLOW_AUDIT.md` |
 | 38 | Interactive Markdown checklists with encrypted persistence | ✅ Pass | `markdown-checklist.ts`, `MarkdownPreview`, note detail view save | `markdown-checklist.test.ts`, `markdown-preview.test.tsx`, `notes-ux.test.tsx` | Source markdown is source of truth |
 | 39 | Notes list resolve action, dates, sort, counter | ✅ Pass | `note-card.tsx`, `note-sort.ts`, `note-count.ts`, `notes/page.tsx` | `note-sort.test.ts`, `note-count.test.ts`, `notes-ux.test.tsx` | Client-side after vault unlock |
-| 41 | Note organization lifecycle (pin, favorite, archive, trash, filters, saved views, duplicate) | ✅ Pass | Track 3 implementation | `note-metadata.test.ts`, `smart-filters.test.ts`, `saved-views.test.ts`, `duplicate-note.test.ts`, `note-org-metadata.test.ts` | See `docs/NOTE_ORGANIZATION_LIFECYCLE_TRACK_3_IMPLEMENTATION.md` |
+| 41 | Note organization lifecycle (pin, favorite, archive, trash, filters, saved views, duplicate) | ✅ Pass | Track 3 + UI refinement | `note-metadata.test.ts`, `smart-filters.test.ts`, `saved-views.test.ts`, `duplicate-note.test.ts`, `note-org-metadata.test.ts`, `notes-refinements.test.tsx`, `notes-ui-patterns.test.tsx` | Smart filter chips; saved views menu; compact toolbar |
 | 37 | `/vault/recovery` status-gated; recovery phrase replace (not initial generation) | ✅ Pass | `/vault/recovery`, `POST /api/vault/recovery-phrase` | `vault-recovery-page.test.tsx`, `recovery-phrase-route.test.ts`, `vault-service.test.ts` | Legacy `recovery_code` unlock only; no "Do this later" |
 
 ---

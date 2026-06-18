@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { lockVaultSession } from "@/lib/crypto-client/vault-session";
+import { lockVaultSessionManually } from "@/lib/crypto-client/vault-session";
 import { recordVaultSecurityEvent } from "@/features/vault/record-vault-security-event";
 import { buildVaultUnlockHref } from "@/lib/notes/safe-return-to";
 import type { VaultClientStatus } from "@/lib/vault/vault-status";
@@ -161,7 +161,7 @@ export function VaultStatusDock() {
     serverStatus.setupComplete && serverStatus.vaultVersion === "vault-v2";
 
   function lockNow() {
-    lockVaultSession();
+    lockVaultSessionManually();
     void recordVaultSecurityEvent("vault_locked_manual");
     collapse();
   }

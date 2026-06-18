@@ -42,7 +42,11 @@ Restore/discard banners on new and edit pages. Drafts cleared on successful save
 
 ## Templates
 
-14 local templates in `src/lib/notes/note-templates.ts` (no server table). Selector on `/notes/new`; replace confirmation when body has content.
+14 local templates in `src/lib/notes/note-templates.ts` (no server table). Selector on `/notes/new`; header **New note ▾** menu can open `/notes/new?template=<id>` for core templates. Replace confirmation when body has content.
+
+**Template categories (refinement):** Non-blank templates assign a locked category matching the template name (e.g. Prayer → category Prayer), created/reused via encrypted vault index. Blank note does not auto-create a category. Category is read-only during creation when assigned by template.
+
+**Autosave activation (refinement):** Encrypted autosave and unsaved-change warnings start only after user-originated edits (title, body, tags, manual category). Template prefill alone does not activate autosave.
 
 ## Quick insert menu
 
@@ -54,7 +58,7 @@ Restore/discard banners on new and edit pages. Drafts cleared on successful save
 
 ## Daily note
 
-`src/lib/notes/daily-note.ts` — title format `Daily note — YYYY-MM-DD`. **New daily note** on `/notes` opens existing today’s note from decrypted vault index or routes to `/notes/new?daily=1` with Journal template. No plaintext server-side daily index.
+`src/lib/notes/daily-note.ts` — title format `Daily note — YYYY-MM-DD`. **Daily note** is available from the header **New note ▾** menu on `/notes`; opens existing today’s note from decrypted vault index or routes to `/notes/new?daily=1` with Journal template. No plaintext server-side daily index.
 
 ## Security guarantees
 

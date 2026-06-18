@@ -69,7 +69,7 @@ describe("notes vault locked state actions", () => {
     vi.clearAllMocks();
   });
 
-  it("Unlock vault expands the Vault Status Dock", () => {
+  it("Unlock here expands the Vault Status Dock", () => {
     render(
       <>
         <VaultStatusDock />
@@ -80,7 +80,7 @@ describe("notes vault locked state actions", () => {
     expect(screen.getByTestId("vault-status-dock-handle")).toBeTruthy();
     expect(screen.queryByLabelText(/vault password/i)).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: /^unlock vault$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^unlock here$/i }));
     expect(screen.getByLabelText(/vault password/i)).toBeTruthy();
   });
 });

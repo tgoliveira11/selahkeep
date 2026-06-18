@@ -7,6 +7,7 @@ import { EditorStatusBar, type EditorStatus } from "@/components/notes/editor-st
 import { EditorToolbar } from "@/components/notes/editor-toolbar";
 import { MarkdownExpertEditor } from "@/features/notes/markdown-expert-editor";
 import { VisualNoteEditor } from "@/features/notes/visual-note-editor";
+import { touchVaultActivity } from "@/features/vault/use-vault-activity";
 import {
   applyMarkdownWrap,
   type WrapAction,
@@ -45,8 +46,17 @@ export function MarkdownEditor({
   const [conversionWarning, setConversionWarning] = useState<string | null>(null);
   const [visualEditor, setVisualEditor] = useState<Editor | null>(null);
 
+  const handleChange = useCallback(
+    (next: string) => {
+      touchVaultActivity();
+      onChange(next);
+    },
+    [onChange]
+  );
+
   const applyMarkdownAction = useCallback(
     (action: WrapAction) => {
+      touchVaultActivity();
       const el = document.getElementById(id) as HTMLTextAreaElement | null;
       if (!el) return;
 
@@ -57,18 +67,19 @@ export function MarkdownEditor({
         el.selectionEnd,
         maxLength
       );
-      onChange(next);
+      handleChange(next);
 
       requestAnimationFrame(() => {
         el.focus();
         el.setSelectionRange(cursor, cursor);
       });
     },
-    [id, maxLength, onChange, value]
+    [handleChange, id, maxLength, value]
   );
 
   const applyQuickInsert = useCallback(
     (insertId: QuickInsertId) => {
+      touchVaultActivity();
       const snippet = getQuickInsertSnippet(insertId);
 
       if (mode === "visual" && visualEditor) {
@@ -86,16 +97,17 @@ export function MarkdownEditor({
         el.selectionEnd,
         maxLength
       );
-      onChange(next);
+      handleChange(next);
       requestAnimationFrame(() => {
         el.focus();
         el.setSelectionRange(cursor, cursor);
       });
     },
-    [id, maxLength, mode, onChange, value, visualEditor]
+    [handleChange, id, maxLength, mode, value, visualEditor]
   );
 
   function switchMode() {
+    touchVaultActivity();
     const next: NoteEditorMode = mode === "visual" ? "markdown" : "visual";
     if (next === "visual") {
       setConversionWarning(getMarkdownConversionWarning(value));
@@ -131,7 +143,7 @@ export function MarkdownEditor({
           {mode === "visual" ? (
             <VisualNoteEditor
               value={value}
-              onChange={onChange}
+              onChange={handleChange}
               placeholder={placeholder ?? "Write what you want to remember…"}
               maxLength={maxLength}
               id={id === "note-markdown" ? "note-visual-editor" : `${id}-visual`}
@@ -141,7 +153,7 @@ export function MarkdownEditor({
           ) : (
             <MarkdownExpertEditor
               value={value}
-              onChange={onChange}
+              onChange={handleChange}
               placeholder={placeholder ?? "Write in Markdown…"}
               maxLength={maxLength}
               id={id}

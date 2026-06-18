@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   lockVaultSession,
+  lockVaultSessionManually,
   unlockVaultSession,
   scheduleVaultAutoLock,
   touchVaultSession,
   configureVaultAutoLock,
   isVaultManuallyLocked,
   subscribeVaultSession,
+  registerVaultBeforeAutoLock,
+  wasVaultLockedByInactivity,
   VAULT_INACTIVITY_MS,
   getVaultAutoLockRemainingMs,
   subscribeVaultActivityTimer,
@@ -32,6 +35,7 @@ describe("vault session auto-lock", () => {
     unlockVaultSession(key);
     expect(isVaultUnlocked()).toBe(true);
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
+    await vi.runAllTimersAsync();
     expect(isVaultUnlocked()).toBe(false);
     expect(isVaultManuallyLocked()).toBe(true);
   });
@@ -101,6 +105,7 @@ describe("vault session auto-lock", () => {
     vi.advanceTimersByTime(2000);
     expect(isVaultUnlocked()).toBe(true);
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS);
+    await vi.runAllTimersAsync();
     expect(isVaultUnlocked()).toBe(false);
   });
 
@@ -112,6 +117,7 @@ describe("vault session auto-lock", () => {
     expect(callback).not.toHaveBeenCalled();
     unlockVaultSession(await generateUserVaultKey());
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
+    await vi.runAllTimersAsync();
     expect(callback).toHaveBeenCalledTimes(1);
     configureVaultAutoLock();
   });
@@ -121,5 +127,51 @@ describe("vault session auto-lock", () => {
     unlockVaultSession(await generateUserVaultKey());
     lockVaultSession();
     expect(getCachedNoteBody("n1")).toBeUndefined();
+  });
+
+  it("runs beforeAutoLock handlers before inactivity lock", async () => {
+    const beforeLock = vi.fn();
+    registerVaultBeforeAutoLock(beforeLock);
+    unlockVaultSession(await generateUserVaultKey());
+    vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
+    await vi.runAllTimersAsync();
+    expect(beforeLock).toHaveBeenCalledTimes(1);
+    expect(isVaultUnlocked()).toBe(false);
+  });
+
+  it("marks inactivity lock with wasVaultLockedByInactivity", async () => {
+    unlockVaultSession(await generateUserVaultKey());
+    vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
+    await vi.runAllTimersAsync();
+    expect(wasVaultLockedByInactivity()).toBe(true);
+  });
+
+  it("manual lock does not set inactivity flag", async () => {
+    unlockVaultSession(await generateUserVaultKey());
+    lockVaultSessionManually();
+    expect(wasVaultLockedByInactivity()).toBe(false);
+  });
+
+  it("unlock clears inactivity flag", async () => {
+    unlockVaultSession(await generateUserVaultKey());
+    vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
+    await vi.runAllTimersAsync();
+    expect(wasVaultLockedByInactivity()).toBe(true);
+    unlockVaultSession(await generateUserVaultKey());
+    expect(wasVaultLockedByInactivity()).toBe(false);
+  });
+
+  it("keeps only one inactivity timer", async () => {
+    const key = await generateUserVaultKey();
+    unlockVaultSession(key);
+    touchVaultSession();
+    touchVaultSession();
+    vi.advanceTimersByTime(VAULT_INACTIVITY_MS - 1000);
+    touchVaultSession();
+    vi.advanceTimersByTime(2000);
+    expect(isVaultUnlocked()).toBe(true);
+    vi.advanceTimersByTime(VAULT_INACTIVITY_MS);
+    await vi.runAllTimersAsync();
+    expect(isVaultUnlocked()).toBe(false);
   });
 });

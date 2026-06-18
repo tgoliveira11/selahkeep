@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { RESOLVED_COPY, isNoteResolved } from "@/lib/notes/resolved-labels";
-import { formatNoteListDates } from "@/lib/notes/note-dates";
-import { Badge } from "@/components/ui/badge";
-import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
+import { formatNoteUpdatedShort } from "@/lib/notes/note-dates";
+import { NoteStateIndicators } from "@/components/notes/note-state-indicators";
 import { NoteResolvedToggle } from "@/components/notes/note-resolved-toggle";
 import { cn } from "@/lib/ui/cn";
 
@@ -26,7 +25,6 @@ interface NoteListRowProps {
 export function NoteListRow({
   id,
   title,
-  createdAt,
   updatedAt,
   answered,
   pinned = false,
@@ -34,7 +32,6 @@ export function NoteListRow({
   archived = false,
   trashed = false,
   categoryName,
-  tagNames = [],
   locked,
   resolving = false,
   onToggleResolved,
@@ -42,62 +39,56 @@ export function NoteListRow({
   const resolved = isNoteResolved(answered);
 
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-md",
-        resolved && "border-[var(--success)]/25 bg-[var(--success-muted)]/20"
-      )}
+    <article
+      className={cn("note-list-row", resolved && "note-list-row--resolved")}
       data-testid="note-list-row"
     >
       <Link
         href={`/notes/${id}`}
-        className="min-w-0 flex-1 rounded-[var(--radius)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+        className="note-list-row__hit"
+        aria-label={`Open note: ${title}`}
       >
-        <div className="flex flex-wrap items-center gap-2">
-          {pinned && (
-            <Badge variant="muted" data-testid="note-pinned-badge">
-              Pinned
-            </Badge>
+        <span
+          className={cn(
+            "note-list-row__status",
+            resolved ? "note-list-row__status--resolved" : "note-list-row__status--open"
           )}
-          {favorite && (
-            <Badge variant="muted" data-testid="note-favorite-badge">
-              Favorite
-            </Badge>
-          )}
-          {archived && (
-            <Badge variant="muted" data-testid="note-archived-badge">
-              Archived
-            </Badge>
-          )}
-          {trashed && (
-            <Badge variant="muted" data-testid="note-trashed-badge">
-              Trash
-            </Badge>
-          )}
-          <p className={cn("truncate text-sm font-medium", locked && "text-[var(--muted)]", resolved && "text-[var(--muted)]")}>
-            {title}
-          </p>
-          {resolved ? (
-            <Badge variant="success">{RESOLVED_COPY.resolvedBadge}</Badge>
-          ) : (
-            <Badge variant="muted">{RESOLVED_COPY.unresolved}</Badge>
-          )}
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          {categoryName && <NoteCategoryLabel name={categoryName} />}
-          {tagNames.slice(0, 3).map((name) => (
-            <NoteTagChip key={name} name={name} />
-          ))}
-          {tagNames.length > 3 && (
-            <span className="text-xs text-[var(--muted)]">+{tagNames.length - 3}</span>
-          )}
-        </div>
-        <p className="mt-1 text-xs text-[var(--muted)]">{formatNoteListDates(createdAt, updatedAt)}</p>
+        >
+          <span aria-hidden>{resolved ? "✓" : "○"}</span>
+          <span className="sr-only">
+            {resolved ? RESOLVED_COPY.resolvedBadge : RESOLVED_COPY.unresolved}
+          </span>
+        </span>
+
+        <span className={cn("note-list-row__title", locked && "text-[var(--muted)]")}>
+          {title}
+        </span>
+
+        <span className="note-list-row__category">
+          {categoryName ?? ""}
+        </span>
+
+        <time className="note-list-row__date" dateTime={updatedAt}>
+          {formatNoteUpdatedShort(updatedAt)}
+        </time>
       </Link>
 
-      {onToggleResolved && !trashed && (
-        <NoteResolvedToggle answered={answered} resolving={resolving} onToggle={onToggleResolved} />
-      )}
-    </div>
+      <NoteStateIndicators
+        answered={answered}
+        pinned={pinned}
+        favorite={favorite}
+        archived={archived}
+        trashed={trashed}
+        className="note-list-row__indicators"
+      />
+
+      <div className="note-list-row__action">
+        {onToggleResolved && !trashed ? (
+          <NoteResolvedToggle answered={answered} resolving={resolving} onToggle={onToggleResolved} />
+        ) : (
+          <span className="note-list-row__action-spacer" aria-hidden />
+        )}
+      </div>
+    </article>
   );
 }

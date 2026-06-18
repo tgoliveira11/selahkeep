@@ -52,14 +52,14 @@ See `docs/VAULT_RECOVERY_FLOW_AUDIT.md`.
 - **Title required** on create; validated client-side before `encryptNote`.
 - **Resolved** maps to internal `answered`; list + detail icon toggle (`NoteResolvedToggle`); edit-mode toggle in category fields; encrypted metadata + vault index update via `toggleNoteResolved`.
 - **Search/filters** on `/notes` when ≥1 category or tag exists (`hasNoteOrganizers`); **smart local filters** always available; note counter (`formatNoteCount`) and sort (`note-sort.ts`, pinned first) when unlocked.
-- **Lifecycle:** pin, favorite, archive, trash (client metadata), restore, permanent delete (server soft delete + index removal), duplicate (new Note Key). See `docs/NOTE_ORGANIZATION_LIFECYCLE_TRACK_3_IMPLEMENTATION.md`.
+- **Lifecycle:** pin, favorite, archive, trash (client metadata), restore, permanent delete (server soft delete + index removal), duplicate (new Note Key). **Templates:** non-blank templates lock category to template name (encrypted index). **List controls:** unified `/notes` toolbar with shared visibility rule. **Autosave:** user-started edits only. See `docs/NOTE_ORGANIZATION_LIFECYCLE_TRACK_3_IMPLEMENTATION.md` and `docs/EDITOR_EXPERIENCE_TRACK_2_IMPLEMENTATION.md`.
 - **Saved views:** encrypted in vault index v3; cards/list view preference in `localStorage` (`selahkeep:notes:view-mode`).
 - **Tags:** `src/lib/notes/tag-normalization.ts` — max **32** chars; display `#` prefix only in UI.
-- **Vault status dock:** narrow popover in `Nav`; quick password/passkey unlock; recovery phrase on `/vault/unlock`; dock forced collapsed on that route; `/notes` locked card explains vault model and offers unlock actions.
+- **Vault status dock:** narrow popover in `Nav`; quick password/passkey unlock; recovery phrase on `/vault/unlock`; dock forced collapsed on that route; locked surfaces use `VaultLockedState` with **Unlock here** + **Open full unlock page**.
 - **Top nav:** Notes, Vault, Account, Sign out only — no lock/unlock badges or vault status text.
 - **Note editor:** visual (WYSIWYG) default via Tiptap; Markdown canonical; expert `</>` mode with textarea + sanitized preview. See [`EDITOR_IMPLEMENTATION_DECISION.md`](./EDITOR_IMPLEMENTATION_DECISION.md).
 - **Markdown preview:** `sanitize-markdown.ts` + `MarkdownPreview` — interactive checklists toggle `[ ]` ↔ `[x]` in source via `markdown-checklist.ts`; view mode persists through `updateNote`; expert-mode preview updates editor only.
-- **Inactivity:** `useVaultActivity` resets `touchVaultSession` on click, keydown, input, focusin, scroll, pointerdown, touchstart.
+- **Inactivity auto-lock:** `vault-auto-lock-config.ts` (env: `NEXT_PUBLIC_VAULT_AUTO_LOCK_MINUTES`); single timer in `vault-session.ts`; `registerVaultBeforeAutoLock` for encrypted draft save; `touchVaultActivity()` from editor; `VaultLockedState` per route. See [`VAULT_AUTO_LOCK_NORMALIZATION.md`](./VAULT_AUTO_LOCK_NORMALIZATION.md).
 
 ## Related docs
 

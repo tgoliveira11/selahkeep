@@ -1,0 +1,353 @@
+/** @vitest-environment happy-dom */
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import NotesPage from "@/app/(vault)/notes/page";
+import { ToolbarMenu } from "@/components/ui/toolbar-menu";
+import { ViewModeToggle } from "@/features/notes/view-mode-toggle";
+import { NoteCard } from "@/components/notes/note-card";
+import { NoteListRow } from "@/components/notes/note-list-row";
+import { NoteStateIndicators } from "@/components/notes/note-state-indicators";
+import { NoteResolvedToggle } from "@/components/notes/note-resolved-toggle";
+
+const routerPush = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(() => ({ push: routerPush, replace: vi.fn(), back: vi.fn() })),
+  usePathname: vi.fn(() => "/notes"),
+  useSearchParams: vi.fn(() => new URLSearchParams()),
+}));
+
+vi.mock("@/features/vault/use-require-vault", () => ({
+  useRequireVault: vi.fn(() => ({
+    status: "ready",
+    userId: "user-1",
+    vaultUnlocked: true,
+    recheckVault: vi.fn(),
+  })),
+}));
+
+vi.mock("@/features/vault/use-vault-client-status", () => ({
+  useVaultClientStatus: vi.fn(() => ({
+    status: "ready",
+    clientStatus: "unlocked",
+    setupPhase: "complete",
+    serverStatus: { setupComplete: true },
+    recheck: vi.fn(),
+  })),
+}));
+
+vi.mock("@/features/notes/use-notes", () => ({
+  useNotes: vi.fn(() => ({
+    toggleNoteResolved: vi.fn(),
+  })),
+}));
+
+vi.mock("@/lib/crypto-client/vault-session", () => ({
+  subscribeVaultSession: vi.fn(() => () => {}),
+}));
+
+vi.mock("@/lib/crypto-client/note-drafts", () => ({
+  listEncryptedNoteDraftKeys: vi.fn().mockResolvedValue([]),
+}));
+
+const baseEntry = {
+  id: "n1",
+  title: "Morning prayer",
+  categoryId: "c1" as string | null,
+  tagIds: ["t1"],
+  answered: false,
+  pinned: true,
+  favorite: true,
+  archived: false,
+  trashed: false,
+  trashedAt: null,
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-02T00:00:00.000Z",
+};
+
+const useVaultIndexMock = vi.fn(() => ({
+  index: {
+    categories: [{ id: "c1", name: "Prayer", createdAt: "", updatedAt: "" }],
+    tags: [{ id: "t1", name: "faith", createdAt: "", updatedAt: "" }],
+    entries: [baseEntry],
+    savedViews: [],
+    version: 3,
+  },
+  loading: false,
+  error: null,
+  mutateIndex: vi.fn(),
+}));
+
+vi.mock("@/features/notes/use-vault-index", () => ({
+  useVaultIndex: (...args: unknown[]) => useVaultIndexMock(...args),
+}));
+
+describe("SelahKeep notes toolbar refinement", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("toolbar dropdown layering", () => {
+    it("portals Views menu panel to document body with toolbar-menu-panel class", () => {
+      render(<NotesPage />);
+      fireEvent.click(screen.getByTestId("saved-views-menu"));
+      const panel = screen.getByTestId("saved-views-menu-panel");
+      expect(panel.className).toContain("toolbar-menu-panel");
+      expect(panel.parentElement).toBe(document.body);
+    });
+
+    it("portals Filters menu panel above page content", () => {
+      render(<NotesPage />);
+      fireEvent.click(screen.getByTestId("advanced-filters-menu"));
+      const panel = screen.getByTestId("advanced-filters-menu-panel");
+      expect(panel.className).toContain("toolbar-menu-panel");
+      expect(panel.parentElement).toBe(document.body);
+    });
+
+    it("portals Sort menu panel above page content", () => {
+      render(<NotesPage />);
+      fireEvent.click(screen.getByTestId("note-sort-menu"));
+      const panel = screen.getByTestId("note-sort-menu-panel");
+      expect(panel.className).toContain("toolbar-menu-panel");
+      expect(panel.parentElement).toBe(document.body);
+    });
+
+    it("does not clip menus inside notes-list-controls shell", () => {
+      render(<NotesPage />);
+      const shell = screen.getByTestId("notes-list-controls").querySelector(".notes-list-controls__shell");
+      expect(shell?.className ?? "").not.toContain("overflow-hidden");
+    });
+
+    it("closes ToolbarMenu on Escape and returns focus to trigger", () => {
+      render(
+        <ToolbarMenu label="Test menu" testId="test-toolbar-menu">
+          <p>Menu content</p>
+        </ToolbarMenu>
+      );
+      const trigger = screen.getByTestId("test-toolbar-menu");
+      fireEvent.click(trigger);
+      expect(screen.getByTestId("test-toolbar-menu-panel")).toBeTruthy();
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(screen.queryByTestId("test-toolbar-menu-panel")).toBeNull();
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it("keeps portaled panel usable on narrow viewport", () => {
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: 375 });
+      render(<NotesPage />);
+      fireEvent.click(screen.getByTestId("note-sort-menu"));
+      const panel = screen.getByTestId("note-sort-menu-panel");
+      expect(panel.style.maxWidth).toMatch(/min\(20rem/);
+    });
+  });
+
+  describe("toolbar control sizing", () => {
+    it("uses shared toolbar-button class on Views control", () => {
+      render(<NotesPage />);
+      expect(screen.getByTestId("saved-views-menu").className).toContain("toolbar-button");
+    });
+
+    it("uses shared toolbar-button class on Filters control", () => {
+      render(<NotesPage />);
+      expect(screen.getByTestId("advanced-filters-menu").className).toContain("toolbar-button");
+    });
+
+    it("uses shared toolbar-button class on Sort control", () => {
+      render(<NotesPage />);
+      expect(screen.getByTestId("note-sort-menu").className).toContain("toolbar-button");
+    });
+
+    it("uses view-mode-toggle class for Cards/List toggle", () => {
+      render(<NotesPage />);
+      const toggle = screen.getByTestId("view-mode-cards").closest(".view-mode-toggle");
+      expect(toggle).toBeTruthy();
+    });
+
+    it("ViewModeToggle standalone uses view-mode-toggle wrapper", () => {
+      render(<ViewModeToggle mode="cards" onChange={vi.fn()} />);
+      expect(screen.getByRole("group", { name: "View mode" }).className).toContain("view-mode-toggle");
+    });
+  });
+
+  describe("list mode metadata", () => {
+    it("shows category in list row", () => {
+      render(
+        <NoteListRow
+          id="n1"
+          title="Prayed that today"
+          answered={false}
+          createdAt="2026-01-01T00:00:00.000Z"
+          updatedAt="2026-01-02T00:00:00.000Z"
+          categoryName="Prayer"
+          tagNames={["faith"]}
+        />
+      );
+      expect(screen.getByText("Prayer")).toBeTruthy();
+    });
+
+    it("does not show tags in list row", () => {
+      render(
+        <NoteListRow
+          id="n1"
+          title="Prayed that today"
+          answered={false}
+          createdAt="2026-01-01T00:00:00.000Z"
+          updatedAt="2026-01-02T00:00:00.000Z"
+          categoryName="Prayer"
+          tagNames={["faith"]}
+        />
+      );
+      expect(screen.queryByText("faith")).toBeNull();
+      expect(screen.queryByText("#faith")).toBeNull();
+    });
+
+    it("still shows tags in card mode", () => {
+      render(
+        <NoteCard
+          id="n1"
+          title="Prayer note"
+          answered={false}
+          createdAt="2026-01-01T00:00:00.000Z"
+          updatedAt="2026-01-02T00:00:00.000Z"
+          categoryName="Prayer"
+          tagNames={["faith"]}
+        />
+      );
+      expect(within(screen.getByTestId("note-card-metadata")).getByText("#faith")).toBeTruthy();
+    });
+
+    it("keeps list row structured with link and separate action", () => {
+      const toggle = vi.fn();
+      render(
+        <NoteListRow
+          id="n1"
+          title="Structured row"
+          answered={false}
+          createdAt="2026-01-01T00:00:00.000Z"
+          updatedAt="2026-01-02T00:00:00.000Z"
+          categoryName="Prayer"
+          onToggleResolved={toggle}
+        />
+      );
+      expect(screen.getByRole("link", { name: /open note: structured row/i })).toHaveAttribute(
+        "href",
+        "/notes/n1"
+      );
+      fireEvent.click(screen.getByLabelText(/mark as resolved/i));
+      expect(toggle).toHaveBeenCalled();
+      expect(routerPush).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("note state indicators", () => {
+    it("shows resolved indicator in card mode", () => {
+      render(
+        <NoteStateIndicators answered includeResolved pinned favorite archived={false} trashed={false} />
+      );
+      expect(screen.getByTestId("note-resolved-indicator")).toBeTruthy();
+      expect(screen.getByLabelText("Resolved")).toBeTruthy();
+    });
+
+    it("shows unresolved indicator in card mode", () => {
+      render(
+        <NoteStateIndicators answered={false} includeResolved pinned favorite archived={false} trashed={false} />
+      );
+      expect(screen.getByTestId("note-unresolved-indicator")).toBeTruthy();
+      expect(screen.getByLabelText("Unresolved")).toBeTruthy();
+    });
+
+    it("shows pinned and favorite for active notes", () => {
+      render(<NoteStateIndicators answered={false} pinned favorite archived={false} trashed={false} />);
+      expect(screen.getByLabelText("Pinned note")).toBeTruthy();
+      expect(screen.getByLabelText("Favorite note")).toBeTruthy();
+    });
+
+    it("shows archived indicator when archived", () => {
+      render(<NoteStateIndicators answered={false} archived trashed={false} />);
+      expect(screen.getByLabelText("Archived note")).toBeTruthy();
+    });
+
+    it("shows trash indicator when trashed", () => {
+      render(<NoteStateIndicators answered={false} trashed />);
+      expect(screen.getByLabelText("Note in trash")).toBeTruthy();
+    });
+
+    it("hides pinned and favorite when archived", () => {
+      render(<NoteStateIndicators answered={false} pinned favorite archived trashed={false} />);
+      expect(screen.queryByLabelText("Pinned note")).toBeNull();
+      expect(screen.queryByLabelText("Favorite note")).toBeNull();
+      expect(screen.getByLabelText("Archived note")).toBeTruthy();
+    });
+
+    it("active note can show resolved + pinned + favorite in card", () => {
+      render(
+        <NoteCard
+          id="n1"
+          title="Full state"
+          answered
+          pinned
+          favorite
+          createdAt="2026-01-01T00:00:00.000Z"
+          updatedAt="2026-01-02T00:00:00.000Z"
+        />
+      );
+      expect(screen.getByLabelText("Resolved")).toBeTruthy();
+      expect(screen.getByLabelText("Pinned note")).toBeTruthy();
+      expect(screen.getByLabelText("Favorite note")).toBeTruthy();
+    });
+
+    it("list row shows indicators outside the navigation link", () => {
+      render(
+        <NoteListRow
+          id="n1"
+          title="Indicator row"
+          answered={false}
+          pinned
+          favorite
+          createdAt="2026-01-01T00:00:00.000Z"
+          updatedAt="2026-01-02T00:00:00.000Z"
+          categoryName="Prayer"
+        />
+      );
+      const link = screen.getByRole("link", { name: /open note: indicator row/i });
+      expect(within(link).queryByLabelText("Pinned note")).toBeNull();
+      expect(screen.getByLabelText("Pinned note")).toBeTruthy();
+    });
+  });
+
+  describe("regression", () => {
+    it("search still renders on notes page", () => {
+      render(<NotesPage />);
+      expect(screen.getByTestId("note-search")).toBeTruthy();
+    });
+
+    it("card/list toggle still switches modes", () => {
+      render(<NotesPage />);
+      fireEvent.click(screen.getByTestId("view-mode-list"));
+      expect(screen.getByTestId("notes-list-grid")).toBeTruthy();
+      fireEvent.click(screen.getByTestId("view-mode-cards"));
+      expect(screen.getByTestId("notes-card-mode")).toBeTruthy();
+    });
+
+    it("resolved toggle remains a separate control from card link", () => {
+      const onToggle = vi.fn();
+      render(
+        <NoteCard
+          id="n1"
+          title="Toggle test"
+          answered={false}
+          createdAt="2026-01-01T00:00:00.000Z"
+          updatedAt="2026-01-02T00:00:00.000Z"
+          onToggleResolved={onToggle}
+        />
+      );
+      fireEvent.click(screen.getByLabelText(/mark as resolved/i));
+      expect(onToggle).toHaveBeenCalled();
+    });
+
+    it("NoteResolvedToggle does not render inside navigation link", () => {
+      render(<NoteResolvedToggle answered={false} onToggle={vi.fn()} />);
+      expect(screen.getByLabelText(/mark as resolved/i).closest("a")).toBeNull();
+    });
+  });
+});

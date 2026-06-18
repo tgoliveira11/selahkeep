@@ -40,8 +40,9 @@ describe("VaultAutoLockNotice", () => {
     await act(async () => {
       unlockVaultSession(await generateUserVaultKey());
     });
-    act(() => {
+    await act(async () => {
       vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
+      await vi.runAllTimersAsync();
     });
 
     expect(screen.getByText(VAULT_INACTIVITY_LOCK_MESSAGE)).toBeInTheDocument();
@@ -68,8 +69,9 @@ describe("VaultAutoLockNotice", () => {
     await act(async () => {
       unlockVaultSession(await generateUserVaultKey());
     });
-    act(() => {
+    await act(async () => {
       vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
+      await vi.runAllTimersAsync();
     });
 
     expect(screen.getByText(VAULT_INACTIVITY_LOCK_MESSAGE)).toBeInTheDocument();

@@ -125,7 +125,8 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 ## UI layer
 
 - **Design docs:** `docs/UI_UX_DIRECTION.md`, `docs/LOGGED_IN_NAVIGATION_AUDIT.md`
-- **Layout:** `SiteShell` (`RouteScrollToTop`, `AppHeaderChrome`, `SiteFooter`); `VaultStatusDock` inside authenticated `Nav` header; `PageLayout` for content width. Client navigations reset window scroll to top unless the URL has a hash anchor.
+- **Layout:** `AuthenticatedPage` + `PageLayout` width tokens (`settings` 800px, `notes` 920px, `editor` 880px); see `src/lib/ui/authenticated-layout.ts` and `docs/UI_UX_DIRECTION.md`
+- **Authenticated UI patterns:** `PageHeader`, `ToolbarButton`, `NotesListControls`, `SmartFilterChips`, `NotesListGrid`, `SettingsSection`
 - **Public marketing:** Home page sections and copy in `src/lib/marketing/home-copy.ts`
 - **Vault setup:** `/vault/setup` — `PasswordSetupFields` (secure-auth) + BIP39 recovery phrase wizard; policy from `src/lib/config/vault-password-policy.ts`
 - **Recovery management:** `/vault/recovery` — status-gated recovery phrase replace (no initial phrase generation post-setup); link to `/vault/settings` for optional passkey vault unlock
@@ -189,7 +190,15 @@ Passkey sign-in follows package rules when 2FA is enabled (pending challenge unt
 
 ## Vault session
 
-`src/lib/crypto-client/vault-session.ts` — inactivity auto-lock (15 min), manual lock, unload guard, `getVaultAutoLockRemainingMs()` for notes vault indicator countdown on `/notes` and `/notes/[id]`.
+`src/lib/vault/vault-auto-lock-config.ts` — configurable inactivity timeout (default 15 min).
+
+`src/lib/crypto-client/vault-session.ts` — single inactivity timer, `registerVaultBeforeAutoLock`, manual vs inactivity lock distinction (`wasVaultLockedByInactivity`), unload guard, `getVaultAutoLockRemainingMs()` for dock countdown.
+
+`src/features/vault/use-vault-activity.ts` — activity listeners + `touchVaultActivity()` for editor paths.
+
+`src/features/vault/vault-locked-state.tsx` — normalized locked-state UI per route context.
+
+See [`docs/VAULT_AUTO_LOCK_NORMALIZATION.md`](./docs/VAULT_AUTO_LOCK_NORMALIZATION.md).
 
 ## Beta documentation
 

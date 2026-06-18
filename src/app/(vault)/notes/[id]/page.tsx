@@ -21,7 +21,10 @@ import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
 import { MarkdownPreview } from "@/components/notes/markdown-preview";
 import { NoteLifecycleActions } from "@/components/notes/note-lifecycle-actions";
 import { NoteResolvedToggle } from "@/components/notes/note-resolved-toggle";
-import { NotesVaultProtectedMessage } from "@/features/notes/notes-vault-protected-message";
+import { useNoteVaultBeforeAutoLock } from "@/features/notes/use-note-vault-before-auto-lock";
+import { useVaultAutoLockedCopy } from "@/features/vault/use-vault-auto-locked-copy";
+import { touchVaultActivity } from "@/features/vault/use-vault-activity";
+import { VaultLockedState } from "@/features/vault/vault-locked-state";
 import { useCategoriesTags } from "@/features/notes/use-categories-tags";
 import { useNotes } from "@/features/notes/use-notes";
 import {
@@ -80,6 +83,7 @@ export default function NoteDetailPage() {
   const [draftSaved, setDraftSaved] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const checklistSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoLocked = useVaultAutoLockedCopy();
 
   const clientStatus =
     vaultClient.status === "ready" ? vaultClient.clientStatus : null;
@@ -112,6 +116,7 @@ export default function NoteDetailPage() {
     setDraftSaved(true);
   }, [body, dirty, id, metadata, vaultUserId]);
 
+  useNoteVaultBeforeAutoLock(dirty, persistDraft);
   useAutosaveTimer(Boolean(vaultUserId && editing && dirty), persistDraft);
 
   useEffect(() => {
@@ -194,6 +199,7 @@ export default function NoteDetailPage() {
 
   const persistChecklistToggle = useCallback(
     (nextBody: string) => {
+      touchVaultActivity();
       if (!metadata || !wrappedKey) return;
 
       setBody(nextBody);
@@ -301,6 +307,7 @@ export default function NoteDetailPage() {
   }
 
   async function handleToggleResolved() {
+    touchVaultActivity();
     if (!metadata || !wrappedKey) return;
     setResolving(true);
     setError(null);
@@ -413,7 +420,13 @@ export default function NoteDetailPage() {
     return (
       <PageLayout>
         {backLink}
-        {clientStatus === "locked" && <NotesVaultProtectedMessage />}
+        {clientStatus === "locked" ? (
+          <VaultLockedState
+            variant={editing ? "write" : "read-note"}
+            autoLocked={autoLocked}
+            returnTo={`/notes/${id}`}
+          />
+        ) : null}
       </PageLayout>
     );
   }
@@ -422,7 +435,7 @@ export default function NoteDetailPage() {
     return (
       <PageLayout>
         {backLink}
-        <NotesVaultProtectedMessage />
+        <VaultLockedState variant="read-note" returnTo={`/notes/${id}`} />
       </PageLayout>
     );
   }
@@ -485,7 +498,10 @@ export default function NoteDetailPage() {
             <Input
               id="edit-title"
               value={metadata.title}
-              onChange={(e) => setMetadata({ ...metadata, title: e.target.value })}
+              onChange={(e) => {
+                touchVaultActivity();
+                setMetadata({ ...metadata, title: e.target.value });
+              }}
               maxLength={200}
             />
           </FormField>
@@ -497,9 +513,18 @@ export default function NoteDetailPage() {
               categoryId={metadata.categoryId}
               tagIds={metadata.tagIds}
               answered={metadata.answered}
-              onCategoryChange={(categoryId) => setMetadata({ ...metadata, categoryId })}
-              onTagIdsChange={(tagIds) => setMetadata({ ...metadata, tagIds })}
-              onAnsweredChange={(answered) => setMetadata({ ...metadata, answered })}
+              onCategoryChange={(categoryId) => {
+                touchVaultActivity();
+                setMetadata({ ...metadata, categoryId });
+              }}
+              onTagIdsChange={(tagIds) => {
+                touchVaultActivity();
+                setMetadata({ ...metadata, tagIds });
+              }}
+              onAnsweredChange={(answered) => {
+                touchVaultActivity();
+                setMetadata({ ...metadata, answered });
+              }}
               onCreateCategory={createCategory}
               onCreateTag={createTag}
             />

@@ -8,6 +8,11 @@ export function formatNoteDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, DATE_OPTS);
 }
 
+/** Compact updated label for scan-friendly list rows. */
+export function formatNoteUpdatedShort(iso: string): string {
+  return `Updated ${formatNoteDate(iso)}`;
+}
+
 /** Compact created / updated line for note list and detail metadata. */
 export function formatNoteListDates(createdAt: string, updatedAt: string): string {
   const created = formatNoteDate(createdAt);

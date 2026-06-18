@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { PageLayout } from "@/components/layout/page-layout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
+import { VaultLockedState } from "@/features/vault/vault-locked-state";
 import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
 import { useVaultSettings } from "@/features/notes/use-vault-settings";
 import type { VaultUnlockBehavior } from "@/lib/crypto-client/vault-settings";
@@ -98,17 +100,21 @@ export default function VaultSettingsPage() {
           title="Vault settings"
           description="Control how your vault behaves after unlock on this device."
         />
-        <VaultStatusPrompt
-          clientStatus={clientStatus}
-          context="settings"
-          returnTo="/vault/settings"
-        />
+        {clientStatus === "locked" ? (
+          <VaultLockedState variant="vault-settings" returnTo="/vault/settings" />
+        ) : (
+          <VaultStatusPrompt
+            clientStatus={clientStatus}
+            context="settings"
+            returnTo="/vault/settings"
+          />
+        )}
       </PageLayout>
     );
   }
 
   return (
-    <PageLayout>
+    <AuthenticatedPage width="settings">
       <PageHeader
         title="Vault settings"
         description="Control how your vault behaves after unlock on this device."
@@ -196,6 +202,6 @@ export default function VaultSettingsPage() {
           })}
         </div>
       )}
-    </PageLayout>
+    </AuthenticatedPage>
   );
 }

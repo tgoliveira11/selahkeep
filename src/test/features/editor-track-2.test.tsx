@@ -143,6 +143,7 @@ describe("daily note action", () => {
     } as ReturnType<typeof useRouter>);
 
     render(<NotesPage />);
+    fireEvent.click(screen.getByTestId("new-note-action"));
     fireEvent.click(screen.getByTestId("new-daily-note"));
     expect(push).toHaveBeenCalledWith("/notes/daily-1");
   });

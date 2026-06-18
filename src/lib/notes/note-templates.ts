@@ -254,5 +254,12 @@ export function getNoteTemplate(id: NoteTemplateId): NoteTemplate {
   return NOTE_TEMPLATES.find((t) => t.id === id) ?? NOTE_TEMPLATES[0];
 }
 
+export function parseNoteTemplateId(value: string | null): NoteTemplateId | null {
+  if (!value) return null;
+  return NOTE_TEMPLATES.some((template) => template.id === value)
+    ? (value as NoteTemplateId)
+    : null;
+}
+
 /** Daily note flow uses the Journal template body. */
 export const DAILY_NOTE_TEMPLATE_ID: NoteTemplateId = "journal";

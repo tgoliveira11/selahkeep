@@ -44,6 +44,7 @@ describe("Phase 5 security regression", () => {
       configureVaultAutoLock(onAutoLock);
       unlockVaultSession(await generateUserVaultKey());
       vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
+      await vi.runAllTimersAsync();
       expect(onAutoLock).toHaveBeenCalledTimes(1);
       expect(isVaultUnlocked()).toBe(false);
     });
