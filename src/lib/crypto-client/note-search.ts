@@ -2,6 +2,8 @@ import type { VaultIndexPlaintext, VaultIndexNoteEntry } from "./vault-index-typ
 import { activeCategories, activeTags } from "./vault-index";
 import type { SmartLocalFilter } from "@/lib/notes/smart-filters";
 import { DEFAULT_SMART_FILTER, matchesSmartFilter } from "@/lib/notes/smart-filters";
+import { matchNoteText, type NoteMatchField } from "@/lib/notes/note-text-search";
+import { getRecentlyViewedNoteIds } from "@/lib/notes/recently-viewed";
 
 export type ResolvedFilter = "all" | "resolved" | "unresolved";
 
@@ -20,68 +22,115 @@ export type NoteSearchFilters = {
 export type NoteSearchResult = VaultIndexNoteEntry & {
   categoryName: string | null;
   tagNames: string[];
+  bodySnippet?: string | null;
+  matchedFields?: NoteMatchField[];
 };
 
-function matchesSearch(
+function resolveCategoryName(
+  entry: VaultIndexNoteEntry,
+  index: VaultIndexPlaintext
+): string | null {
+  if (!entry.categoryId) return null;
+  return activeCategories(index).find((c) => c.id === entry.categoryId)?.name ?? null;
+}
+
+function resolveTagNames(entry: VaultIndexNoteEntry, index: VaultIndexPlaintext): string[] {
+  return entry.tagIds
+    .map((id) => activeTags(index).find((t) => t.id === id)?.name)
+    .filter((name): name is string => Boolean(name));
+}
+
+function matchesMetadataSearch(
   entry: VaultIndexNoteEntry,
   query: string,
   index: VaultIndexPlaintext
 ): boolean {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return true;
+  const categoryName = resolveCategoryName(entry, index);
+  const tagNames = resolveTagNames(entry, index);
+  return matchNoteText(query, { title: entry.title, categoryName, tagNames }).matches;
+}
 
-  if (entry.title.toLowerCase().includes(normalized)) return true;
+function matchesEntrySearch(
+  entry: VaultIndexNoteEntry,
+  query: string,
+  index: VaultIndexPlaintext,
+  bodies?: Map<string, string>
+): { matches: boolean; bodySnippet: string | null; matchedFields: NoteMatchField[] } {
+  const categoryName = resolveCategoryName(entry, index);
+  const tagNames = resolveTagNames(entry, index);
+  const body = bodies?.get(entry.id);
+  return matchNoteText(query, {
+    title: entry.title,
+    categoryName,
+    tagNames,
+    body,
+  });
+}
 
-  if (entry.categoryId) {
-    const category = activeCategories(index).find((c) => c.id === entry.categoryId);
-    if (category?.name.toLowerCase().includes(normalized)) return true;
+function passesOrganizerFilters(entry: VaultIndexNoteEntry, filters: NoteSearchFilters): boolean {
+  if (filters.categoryId !== undefined) {
+    if (filters.categoryId === null) {
+      if (entry.categoryId !== null) return false;
+    } else if (entry.categoryId !== filters.categoryId) {
+      return false;
+    }
   }
 
-  for (const tagId of entry.tagIds) {
-    const tag = activeTags(index).find((t) => t.id === tagId);
-    if (tag?.name.toLowerCase().includes(normalized)) return true;
+  if (filters.tagId && !entry.tagIds.includes(filters.tagId)) {
+    return false;
   }
 
-  return false;
+  if (filters.resolved === "resolved" && !entry.answered) return false;
+  if (filters.resolved === "unresolved" && entry.answered) return false;
+
+  return true;
 }
 
 export function searchVaultIndex(
   index: VaultIndexPlaintext,
-  filters: NoteSearchFilters
+  filters: NoteSearchFilters,
+  bodies?: Map<string, string>
 ): NoteSearchResult[] {
   const categories = activeCategories(index);
   const tags = activeTags(index);
   const smartFilter = filters.smartFilter ?? DEFAULT_SMART_FILTER;
+  const searchQuery = filters.search ?? "";
 
   return index.entries
-    .filter((entry) => matchesSmartFilter(entry, smartFilter, { draftNoteIds: filters.draftNoteIds }))
+    .filter((entry) =>
+      matchesSmartFilter(entry, smartFilter, {
+        draftNoteIds: filters.draftNoteIds,
+        recentlyViewedIds: getRecentlyViewedNoteIds(index),
+      })
+    )
+    .filter((entry) => passesOrganizerFilters(entry, filters))
     .filter((entry) => {
-      if (filters.categoryId !== undefined) {
-        if (filters.categoryId === null) {
-          if (entry.categoryId !== null) return false;
-        } else if (entry.categoryId !== filters.categoryId) {
-          return false;
-        }
+      if (!searchQuery.trim()) return true;
+      if (bodies) {
+        return matchesEntrySearch(entry, searchQuery, index, bodies).matches;
       }
-
-      if (filters.tagId && !entry.tagIds.includes(filters.tagId)) {
-        return false;
-      }
-
-      if (filters.resolved === "resolved" && !entry.answered) return false;
-      if (filters.resolved === "unresolved" && entry.answered) return false;
-
-      return matchesSearch(entry, filters.search ?? "", index);
+      return matchesMetadataSearch(entry, searchQuery, index);
     })
-    .map((entry) => ({
-      ...entry,
-      categoryName: entry.categoryId
+    .map((entry) => {
+      const categoryName = entry.categoryId
         ? (categories.find((c) => c.id === entry.categoryId)?.name ?? null)
-        : null,
-      tagNames: entry.tagIds
+        : null;
+      const tagNames = entry.tagIds
         .map((id) => tags.find((t) => t.id === id)?.name)
-        .filter((name): name is string => Boolean(name)),
-    }));
+        .filter((name): name is string => Boolean(name));
+
+      const searchMatch = searchQuery.trim()
+        ? matchesEntrySearch(entry, searchQuery, index, bodies)
+        : { matches: true, bodySnippet: null, matchedFields: [] as NoteMatchField[] };
+
+      return {
+        ...entry,
+        categoryName,
+        tagNames,
+        bodySnippet: searchMatch.bodySnippet,
+        matchedFields: searchMatch.matchedFields,
+      };
+    });
 }
 
 /** Locked vault: no decrypted index data should be shown. */

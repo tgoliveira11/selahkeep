@@ -33,7 +33,7 @@ const DEFAULT_ENTRY_LIFECYCLE = {
 };
 
 export function createEmptyVaultIndex(): VaultIndexPlaintext {
-  return { version: 3, categories: [], tags: [], entries: [], savedViews: [] };
+  return { version: 3, categories: [], tags: [], entries: [], savedViews: [], recentlyViewed: [] };
 }
 
 function normalizeIndexEntry(entry: Partial<VaultIndexNoteEntry> & { id: string }): VaultIndexNoteEntry {
@@ -69,6 +69,7 @@ function migrateToV3(
       tags: parsed.tags ?? [],
       entries: parsed.entries.map((entry) => normalizeIndexEntry(entry)),
       savedViews: parsed.savedViews ?? [],
+      recentlyViewed: parsed.recentlyViewed ?? [],
     };
   }
 
@@ -79,6 +80,7 @@ function migrateToV3(
       tags: parsed.tags ?? [],
       entries: parsed.entries.map((entry) => normalizeIndexEntry(entry)),
       savedViews: [],
+      recentlyViewed: [],
     };
   }
 
@@ -95,6 +97,7 @@ function migrateToV3(
       })
     ),
     savedViews: [],
+    recentlyViewed: [],
   };
 }
 

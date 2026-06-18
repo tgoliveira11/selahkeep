@@ -33,6 +33,10 @@ vi.mock("@/features/notes/use-notes", () => ({
   useNotes: vi.fn(),
 }));
 
+vi.mock("@/features/notes/use-vault-index", () => ({
+  useVaultIndex: vi.fn(),
+}));
+
 vi.mock("@/features/notes/use-categories-tags", () => ({
   useCategoriesTags: vi.fn(),
 }));
@@ -112,6 +116,7 @@ async function setupDetailMocks(metadata = baseMetadata(), body = "# Heading\n\n
   const { useRequireVault } = await import("@/features/vault/use-require-vault");
   const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
   const { useNotes } = await import("@/features/notes/use-notes");
+  const { useVaultIndex } = await import("@/features/notes/use-vault-index");
   const { useCategoriesTags } = await import("@/features/notes/use-categories-tags");
   const { notesApi } = await import("@/lib/api-client/notes");
   const { decryptNote } = await import("@/lib/crypto-client/notes");
@@ -144,6 +149,14 @@ async function setupDetailMocks(metadata = baseMetadata(), body = "# Heading\n\n
     duplicateNote: vi.fn(),
     busy: false,
     error: null,
+  });
+  vi.mocked(useVaultIndex).mockReturnValue({
+    index: null,
+    loading: false,
+    error: null,
+    mutateIndex: vi.fn().mockResolvedValue(undefined),
+    reload: vi.fn(),
+    persistIndex: vi.fn(),
   });
   vi.mocked(notesApi.get).mockResolvedValue({
     id: NOTE_ID,

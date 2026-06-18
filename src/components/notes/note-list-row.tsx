@@ -3,6 +3,7 @@ import { isNoteResolved } from "@/lib/notes/resolved-labels";
 import { formatNoteUpdatedShort } from "@/lib/notes/note-dates";
 import { NoteStateIndicators } from "@/components/notes/note-state-indicators";
 import { NoteResolvedToggle } from "@/components/notes/note-resolved-toggle";
+import { HighlightedText } from "@/components/notes/search-highlight";
 import { cn } from "@/lib/ui/cn";
 
 interface NoteListRowProps {
@@ -17,6 +18,7 @@ interface NoteListRowProps {
   trashed?: boolean;
   categoryName?: string | null;
   tagNames?: string[];
+  searchQuery?: string;
   locked?: boolean;
   resolving?: boolean;
   onToggleResolved?: () => void;
@@ -32,6 +34,7 @@ export function NoteListRow({
   archived = false,
   trashed = false,
   categoryName,
+  searchQuery = "",
   locked,
   resolving = false,
   onToggleResolved,
@@ -48,7 +51,7 @@ export function NoteListRow({
         className={cn("note-list-row__title", locked && "text-[var(--muted)]")}
         aria-label={`Open note: ${title}`}
       >
-        {title}
+        {searchQuery.trim() ? <HighlightedText text={title} query={searchQuery} /> : title}
       </Link>
 
       <span className="note-list-row__category">{categoryName ?? ""}</span>

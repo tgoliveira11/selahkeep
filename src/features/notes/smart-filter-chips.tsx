@@ -11,6 +11,7 @@ export const PRIMARY_SMART_FILTER_CHIPS: SmartLocalFilter[] = [
   "all-active",
   "pinned",
   "favorites",
+  "recently-viewed",
   "unresolved",
   "resolved",
   "archived",

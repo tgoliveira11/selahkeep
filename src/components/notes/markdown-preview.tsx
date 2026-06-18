@@ -3,6 +3,7 @@
 import { useMemo, useCallback } from "react";
 import { renderSanitizedMarkdown } from "@/features/notes/sanitize-markdown";
 import { toggleChecklistAtIndex } from "@/lib/notes/markdown-checklist";
+import { highlightSearchTermsInHtml } from "@/components/notes/search-highlight";
 
 interface MarkdownPreviewProps {
   markdown: string;
@@ -12,6 +13,8 @@ interface MarkdownPreviewProps {
   onMarkdownChange?: (markdown: string) => void;
   /** Disables checklist toggles while a save is in progress. */
   checklistsDisabled?: boolean;
+  /** Client-side search highlight query — never persisted. */
+  searchQuery?: string;
 }
 
 /**
@@ -24,13 +27,17 @@ export function MarkdownPreview({
   className = "",
   onMarkdownChange,
   checklistsDisabled = false,
+  searchQuery = "",
 }: MarkdownPreviewProps) {
   const trimmed = markdown.trim();
   const interactive = Boolean(onMarkdownChange);
-  const html = useMemo(
-    () => (trimmed ? renderSanitizedMarkdown(trimmed, { interactiveChecklists: interactive }) : ""),
-    [trimmed, interactive]
-  );
+  const html = useMemo(() => {
+    if (!trimmed) return "";
+    const rendered = renderSanitizedMarkdown(trimmed, { interactiveChecklists: interactive });
+    return searchQuery.trim()
+      ? highlightSearchTermsInHtml(rendered, searchQuery)
+      : rendered;
+  }, [trimmed, interactive, searchQuery]);
 
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {

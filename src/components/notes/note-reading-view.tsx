@@ -7,6 +7,7 @@ import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
 import { NoteMoreActionsMenu } from "@/components/notes/note-more-actions-menu";
 import { NoteStateIndicators } from "@/components/notes/note-state-indicators";
 import { formatNoteListDates } from "@/lib/notes/note-dates";
+import { HighlightedText, SearchMatchBanner } from "@/components/notes/search-highlight";
 import type { VaultCategory, VaultTag } from "@/lib/crypto-client/vault-index-types";
 import type { NoteMetadataPlaintext } from "@/lib/crypto-client/notes";
 
@@ -28,6 +29,7 @@ interface NoteReadingViewProps {
   onRestoreFromTrash: () => void;
   onPermanentDelete: () => void;
   onChecklistChange: (markdown: string) => void;
+  searchQuery?: string;
 }
 
 export function NoteReadingView({
@@ -48,6 +50,7 @@ export function NoteReadingView({
   onRestoreFromTrash,
   onPermanentDelete,
   onChecklistChange,
+  searchQuery = "",
 }: NoteReadingViewProps) {
   const categoryName = metadata.categoryId
     ? categories.find((category) => category.id === metadata.categoryId)?.name ?? null
@@ -74,9 +77,14 @@ export function NoteReadingView({
       )}
 
       <header className="note-reading-view__header space-y-3">
+        {searchQuery.trim() && <SearchMatchBanner query={searchQuery} />}
         <div className="note-reading-view__title-row flex flex-wrap items-start justify-between gap-3">
           <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-balance">
-            {metadata.title}
+            {searchQuery.trim() ? (
+              <HighlightedText text={metadata.title} query={searchQuery} />
+            ) : (
+              metadata.title
+            )}
           </h1>
           <div className="flex shrink-0 items-center gap-2">
             {!metadata.trashed && (
@@ -149,6 +157,7 @@ export function NoteReadingView({
           markdown={body}
           onMarkdownChange={onChecklistChange}
           checklistsDisabled={checklistSaveState === "saving" || busy}
+          searchQuery={searchQuery}
           className="note-reading-surface__content text-base leading-relaxed text-[var(--foreground)]"
         />
       </div>

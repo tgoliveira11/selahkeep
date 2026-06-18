@@ -3,6 +3,7 @@
 import { SiteShell } from "@/components/layout/site-shell";
 import { VaultAutoLockNotice } from "@/features/vault/vault-auto-lock-notice";
 import { useVaultActivity } from "@/features/vault/use-vault-activity";
+import { NoteSearchProvider } from "@/features/notes/note-search-context";
 
 function VaultSessionManager({ children }: { children: React.ReactNode }) {
   useVaultActivity();
@@ -17,7 +18,9 @@ function VaultSessionManager({ children }: { children: React.ReactNode }) {
 export default function VaultLayout({ children }: { children: React.ReactNode }) {
   return (
     <SiteShell>
-      <VaultSessionManager>{children}</VaultSessionManager>
+      <NoteSearchProvider>
+        <VaultSessionManager>{children}</VaultSessionManager>
+      </NoteSearchProvider>
     </SiteShell>
   );
 }

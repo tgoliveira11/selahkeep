@@ -69,11 +69,11 @@ Residual risk: a malicious script running on this origin (XSS) or compromised br
 
 - Note title lives in **encrypted metadata** (`note_metadata` AAD); body is Markdown encrypted under Note Key (`note_body` AAD).
 - Note Key is wrapped by User Vault Key (`note_key` AAD) — never sent to API in plaintext.
-- Vault index (list titles, categories, tags, lifecycle flags, saved views) is client-encrypted under UVK; server stores ciphertext only.
+- Vault index (list titles, categories, tags, lifecycle flags, saved views, **recently viewed note IDs**) is client-encrypted under UVK; server stores ciphertext only.
 - Category and tag **names** live only in the encrypted vault index (v3); never in database columns or API plaintext fields.
 - Note lifecycle fields (`pinned`, `favorite`, `archived`, `trashed`, `trashedAt`) live only in encrypted note metadata and vault index — not in database columns.
 - Answered status is stored only in encrypted note metadata and vault index — not in database columns.
-- **Search and filters** run client-side in memory after vault unlock; there is no server search endpoint and queries never leave the browser.
+- **Search and filters** run client-side in memory after vault unlock; there is no server search endpoint and queries never leave the browser. Full-text body search (Track 4) decrypts bodies in memory only while a query is active; snippets and highlights are never persisted. See `docs/SEARCH_AND_DISCOVERY_TRACK_4_IMPLEMENTATION.md`.
 - **Note titles** are required on create in the UI; title text remains in encrypted metadata only.
 - **Tags** are normalized before storage (`src/lib/notes/tag-normalization.ts`, max length **32**); `#` is display-only.
 - **Answered** defaults to `false` on create; only editable on note detail/edit.

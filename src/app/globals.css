@@ -775,6 +775,18 @@ body {
   margin-top: 0.85em;
 }
 
+.search-highlight,
+mark.search-highlight {
+  background: color-mix(in srgb, var(--accent-muted) 75%, #fff7d6 25%);
+  color: inherit;
+  border-radius: 0.2rem;
+  padding: 0 0.12em;
+}
+
+.note-search-snippet {
+  line-height: 1.45;
+}
+
 .note-state-indicators__slot--interactive {
   border: none;
   border-radius: calc(var(--radius) - 2px);

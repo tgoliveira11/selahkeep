@@ -22,6 +22,9 @@ import { touchVaultActivity } from "@/features/vault/use-vault-activity";
 import { VaultLockedState } from "@/features/vault/vault-locked-state";
 import { useCategoriesTags } from "@/features/notes/use-categories-tags";
 import { useNotes } from "@/features/notes/use-notes";
+import { useVaultIndex } from "@/features/notes/use-vault-index";
+import { useNoteSearchContext } from "@/features/notes/note-search-context";
+import { recordRecentlyViewed } from "@/lib/notes/recently-viewed";
 import {
   useAutosaveTimer,
   useConfirmLeave,
@@ -99,7 +102,10 @@ export default function NoteDetailPage() {
   const vaultUserId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
   const { updateNote, moveNoteToTrash, restoreNoteFromTrash, permanentlyDeleteNote, toggleNoteResolved, toggleNotePinned, toggleNoteFavorite, toggleNoteArchived, duplicateNote, busy, error: notesError } = useNotes(vaultUserId);
+  const { mutateIndex } = useVaultIndex(vaultUserId, vaultUnlocked);
+  const { query: searchQuery } = useNoteSearchContext();
   const { categories, tags, createCategory, createTag } = useCategoriesTags(vaultUserId, vaultUnlocked);
+  const recordedViewRef = useRef<string | null>(null);
 
   const editSnapshotValue = useMemo(
     () => (metadata ? editSnapshot(metadata, body) : ""),
@@ -195,6 +201,13 @@ export default function NoteDetailPage() {
       cancelled = true;
     };
   }, [canRead, vaultUserId, id]);
+
+  useEffect(() => {
+    if (!canRead || !metadata || !vaultUserId) return;
+    if (recordedViewRef.current === id) return;
+    recordedViewRef.current = id;
+    void mutateIndex((current) => recordRecentlyViewed(current, id));
+  }, [canRead, metadata, vaultUserId, id, mutateIndex]);
 
   useEffect(() => {
     return () => {
@@ -577,6 +590,7 @@ export default function NoteDetailPage() {
           onRestoreFromTrash={() => void handleRestoreFromTrash()}
           onPermanentDelete={() => setPermanentDeleteOpen(true)}
           onChecklistChange={persistChecklistToggle}
+          searchQuery={searchQuery}
         />
       )}
 

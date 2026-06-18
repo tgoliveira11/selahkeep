@@ -74,7 +74,7 @@ export function NotesListControls({
               type="search"
               aria-label="Search notes"
               data-testid="note-search"
-              placeholder="Search notes…"
+              placeholder="Search titles, notes, tags…"
               className="min-h-9 border-0 bg-transparent shadow-none focus-visible:ring-0"
               value={filters.search}
               onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}

@@ -12,6 +12,7 @@ export type SmartLocalFilter =
   | "no-tags"
   | "checklist"
   | "recently-updated"
+  | "recently-viewed"
   | "daily-notes"
   | "drafts";
 
@@ -27,6 +28,7 @@ export const SMART_FILTER_OPTIONS: { value: SmartLocalFilter; label: string }[] 
   { value: "no-tags", label: "No tags" },
   { value: "checklist", label: "Checklist notes" },
   { value: "recently-updated", label: "Recently updated" },
+  { value: "recently-viewed", label: "Recently viewed" },
   { value: "daily-notes", label: "Daily notes" },
   { value: "drafts", label: "Drafts" },
 ];
@@ -47,7 +49,7 @@ export function isRecentlyUpdated(entry: VaultIndexNoteEntry, now = Date.now()):
 export function matchesSmartFilter(
   entry: VaultIndexNoteEntry,
   filter: SmartLocalFilter,
-  options?: { draftNoteIds?: Set<string> }
+  options?: { draftNoteIds?: Set<string>; recentlyViewedIds?: string[] }
 ): boolean {
   switch (filter) {
     case "all-active":
@@ -72,6 +74,8 @@ export function matchesSmartFilter(
       return isActiveNoteEntry(entry) && Boolean(entry.hasChecklist);
     case "recently-updated":
       return isActiveNoteEntry(entry) && isRecentlyUpdated(entry);
+    case "recently-viewed":
+      return options?.recentlyViewedIds?.includes(entry.id) ?? false;
     case "daily-notes":
       return isActiveNoteEntry(entry) && Boolean(entry.isDailyNote);
     case "drafts":

@@ -8,7 +8,7 @@
 | `/login` | pass | `@tgoliveira/secure-auth` wrapper; no old branding |
 | `/register` | pass | Same auth package shell |
 | `/auth/*` | pass | Package-owned flows; app layout only |
-| `/notes` | pass | Page header, toolbar progressive disclosure, smart chips, locked state |
+| `/notes` | pass | Search includes body after unlock; Recently viewed chip; client-only query |
 | `/notes/new` | pass | Template-first field order; vault locked write state |
 | `/notes/[id]` | fixed | Redesigned as Note Reading View (Edit + More actions, reading surface) |
 | `/vault/setup` | pass | Step flow; SelahKeep copy |

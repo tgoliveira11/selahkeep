@@ -52,6 +52,9 @@ import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { NotesWelcome } from "@/features/vault/notes-welcome";
 import { findDailyNoteIdForDate } from "@/lib/notes/daily-note";
+import { useNoteSearchContext } from "@/features/notes/note-search-context";
+import { useNoteSearchBodies } from "@/features/notes/use-note-search-bodies";
+import { getRecentlyViewedNoteIds } from "@/lib/notes/recently-viewed";
 
 export default function NotesPage() {
   const vault = useRequireVault();
@@ -71,13 +74,25 @@ export default function NotesPage() {
   const [draftNoteIds, setDraftNoteIds] = useState<Set<string>>(new Set());
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [resolveError, setResolveError] = useState<string | null>(null);
+  const { query: searchHighlightQuery, setQuery: setSearchHighlightQuery } = useNoteSearchContext();
+
+  useEffect(() => {
+    setSearchHighlightQuery(filters.search);
+  }, [filters.search, setSearchHighlightQuery]);
+
+  const { bodies: searchBodies, loading: searchBodiesLoading } = useNoteSearchBodies(
+    index,
+    filters.search,
+    vaultUnlocked
+  );
 
   useEffect(() => subscribeVaultSession(() => {
     setFilters(defaultNoteFilters);
     setSmartFilter(DEFAULT_SMART_FILTER);
     setActiveSavedViewId(null);
     setDraftNoteIds(new Set());
-  }), []);
+    setSearchHighlightQuery("");
+  }), [setSearchHighlightQuery]);
 
   useEffect(() => {
     if (!vaultUserId || !vaultUnlocked) return;
@@ -112,8 +127,15 @@ export default function NotesPage() {
 
   const filteredNotes = useMemo(() => {
     if (!vaultUnlocked || !index) return searchVaultIndexWhenLocked();
-    return sortNotes(searchVaultIndex(index, searchFilters), sort);
-  }, [vaultUnlocked, index, searchFilters, sort]);
+    const hasSearch = Boolean(filters.search.trim());
+    const bodies = hasSearch && searchBodies ? searchBodies : undefined;
+    const results = searchVaultIndex(index, searchFilters, bodies);
+    if (smartFilter === "recently-viewed") {
+      const order = getRecentlyViewedNoteIds(index);
+      return [...results].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    }
+    return sortNotes(results, sort);
+  }, [vaultUnlocked, index, searchFilters, sort, smartFilter, filters.search, searchBodies]);
 
   const showListControls = shouldShowNotesListControls({
     hasOrganizers: showOrganizerFilters,
@@ -312,11 +334,21 @@ export default function NotesPage() {
 
       {filteredNotes.length === 0 ? (
         <EmptyState
-          title={allNotes.length === 0 ? "Start your first private note" : "No matching notes"}
+          title={
+            smartFilter === "recently-viewed"
+              ? "No recently viewed notes yet"
+              : allNotes.length === 0
+                ? "Start your first private note"
+                : searchBodiesLoading && filters.search.trim()
+                  ? "Searching your notes…"
+                  : "No matching notes"
+          }
           description={
-            allNotes.length === 0
-              ? "Write a prayer, reflection, decision, or journal entry inside your encrypted vault."
-              : "Try adjusting your search or filters to find what you're looking for."
+            smartFilter === "recently-viewed"
+              ? "Open a note to see it here after you unlock your vault."
+              : allNotes.length === 0
+                ? "Write a prayer, reflection, decision, or journal entry inside your encrypted vault."
+                : "Try adjusting your search or filters to find what you're looking for."
           }
           action={
             allNotes.length === 0 ? (
@@ -343,6 +375,7 @@ export default function NotesPage() {
                   updatedAt={note.updatedAt}
                   categoryName={note.categoryName}
                   tagNames={note.tagNames}
+                  searchQuery={searchHighlightQuery}
                   resolving={resolvingId === note.id}
                   onToggleResolved={
                     note.trashed ? undefined : () => void handleToggleResolved(note.id, note.answered)
@@ -363,6 +396,8 @@ export default function NotesPage() {
                   updatedAt={note.updatedAt}
                   categoryName={note.categoryName}
                   tagNames={note.tagNames}
+                  searchQuery={searchHighlightQuery}
+                  bodySnippet={note.bodySnippet}
                   resolving={resolvingId === note.id}
                   onToggleResolved={
                     note.trashed ? undefined : () => void handleToggleResolved(note.id, note.answered)

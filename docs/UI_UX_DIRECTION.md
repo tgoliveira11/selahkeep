@@ -116,7 +116,7 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 - **Page header:** title + human subtitle + primary **New note ▾** menu (blank, daily, core templates).
 - **Controls toolbar:** compact card with search, **Views ▾**, **Filters ▾**, **Sort ▾**, Cards/List; smart filter chips below; note count integrated — not a form-heavy panel.
 - **Progressive disclosure:** saved views and advanced category/tag/status filters live in menus, not large always-visible blocks.
-- **Smart filter chips** on `/notes` (All active, Pinned, Favorites, Resolved, Unresolved, Archived, Trash) — client-only after unlock.
+- **Smart filter chips** on `/notes` (All active, Pinned, Favorites, Recently viewed, Resolved, Unresolved, Archived, Trash) — client-only after unlock.
 - **Saved views** — encrypted in vault index; save/apply/delete via **Views ▾** menu on `/notes`.
 - **View mode** — Cards (rich metadata cards) / List (compact scan rows); preference in `localStorage` (`selahkeep:notes:view-mode`, non-sensitive).
 - **Controls visibility:** entire toolbar hidden when zero notes and no organizers/saved views/active filters; shown for one or more notes.

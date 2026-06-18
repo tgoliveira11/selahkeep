@@ -35,6 +35,12 @@ export type SavedView = {
   updatedAt: string;
 };
 
+/** Encrypted inside vault index — noteId + timestamp only (no plaintext title/body). */
+export type RecentlyViewedNote = {
+  noteId: string;
+  viewedAt: string;
+};
+
 /** Index row for one note (noteId stored as `id`). */
 export type VaultIndexNoteEntry = {
   id: string;
@@ -80,6 +86,7 @@ export type VaultIndexPlaintext = {
   tags: VaultTag[];
   entries: VaultIndexNoteEntry[];
   savedViews?: SavedView[];
+  recentlyViewed?: RecentlyViewedNote[];
 };
 
 export type NoteMetadataForIndex = {

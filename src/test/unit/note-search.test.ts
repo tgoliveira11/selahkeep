@@ -51,6 +51,28 @@ describe("note search and filters", () => {
     expect(searchVaultIndex(index, { search: "gratitude" }).map((n) => n.id)).toEqual(["n1"]);
   });
 
+  it("searches note body when bodies map is provided", () => {
+    const bodies = new Map([["n2", "Evening gratitude in the body"]]);
+    expect(
+      searchVaultIndex(index, { search: "gratitude" }, bodies).map((note) => note.id)
+    ).toEqual(["n1", "n2"]);
+    const result = searchVaultIndex(index, { search: "gratitude" }, bodies).find((n) => n.id === "n2");
+    expect(result?.bodySnippet).toMatch(/gratitude/i);
+  });
+
+  it("filters recently viewed smart filter", () => {
+    const viewed = {
+      ...index,
+      recentlyViewed: [
+        { noteId: "n2", viewedAt: "2026-01-03T00:00:00.000Z" },
+        { noteId: "n1", viewedAt: "2026-01-02T00:00:00.000Z" },
+      ],
+    };
+    expect(
+      searchVaultIndex(viewed, { smartFilter: "recently-viewed" }).map((note) => note.id).sort()
+    ).toEqual(["n1", "n2"]);
+  });
+
   it("filters by category, tag, and resolved status", () => {
     const categoryId = index.categories[0]!.id;
     const tagId = index.tags[0]!.id;

@@ -251,7 +251,7 @@ Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings
 - **Vault index v3** (`GET/PATCH /api/vault/index`) — note entries (with lifecycle fields), encrypted category/tag definitions, encrypted saved views
 - **Tags** normalized client-side (`normalizeTagInput`, max **32** chars); displayed with `#`, stored without `#`
 - **Category vs tags:** category pill (no `#`); tag chips with `#`
-- **Client-side search/filters** after unlock — compact toolbar with smart filter chips; category/tag/status in **Filters ▾** menu; saved views in **Views ▾** menu; no server search. See `docs/UI_UX_DIRECTION.md` (SelahKeep Authenticated UI Patterns).
+- **Client-side search/filters** after unlock — full-text search over title, body, category, and tags; compact toolbar with smart filter chips (including **Recently viewed**); saved views in **Views ▾** menu; no server search. See `docs/SEARCH_AND_DISCOVERY_TRACK_4_IMPLEMENTATION.md` and `docs/UI_UX_DIRECTION.md`.
 - **Vault status dock:** `VaultStatusDock` in `AppHeaderChrome` / authenticated `Nav` header (collapsed handle + expanded panel, signed-in only) — compact handle when locked/unlocked; full panel for setup states and on expand; inactivity countdown in handle (`mm:ss`) and expanded copy; **Lock now** / unlock only when expanded; unlock links use safe `returnTo` (`safe-return-to.ts`).
 - **Unlock behavior** (`GET/PATCH /api/vault/settings`): `metadata_only` (default) or `decrypt_all`
 - **API:** `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted payloads only
