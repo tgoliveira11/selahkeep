@@ -140,7 +140,14 @@ Plaintext passwords are redacted from logs (`safeLogger`) and blocked from audit
 
 These flows protect **account authentication only**. They do **not** unlock, recover, rotate, or decrypt the private letters vault. User-facing copy states this on reset and change-password screens.
 
-**Account authentication** is implemented by `@tgoliveira/secure-auth@0.1.20-internal` (thin app routes + `createSecureAuth` in `src/lib/secure-auth.ts`). See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md).
+**Account authentication** is implemented by `@tgoliveira/secure-auth@0.1.22-internal` (thin app routes + `createSecureAuth` in `src/lib/secure-auth.ts`). See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md).
+
+**Package API security (0.1.21+)** — enforced inside `@tgoliveira/secure-auth` route handlers, not only in app middleware:
+
+- Sensitive account APIs require a fully authenticated, email-verified session when `EMAIL_VERIFICATION_REQUIRE_FOR_ACCOUNT_APIS=true` (default)
+- Mutating account APIs reject cross-origin requests when `AUTH_SAME_ORIGIN_PROTECTION_ENABLED=true` (default); configure `APP_BASE_URL` / `NEXTAUTH_URL` per environment
+- `GET /api/auth/login/trace` is exposed only when both `AUTH_TRACE=true` and `AUTH_DEBUG_EXPOSE_TRACE_ROUTE=true` — never enable in production
+- App `proxy.ts` guest redirects and 2FA gating remain defense-in-depth UX only; primary enforcement is in package handlers
 
 **Email verification**
 

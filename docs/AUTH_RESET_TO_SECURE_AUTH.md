@@ -1,4 +1,4 @@
-# Auth reset to `@tgoliveira/secure-auth@0.1.20-internal`
+# Auth reset to `@tgoliveira/secure-auth@0.1.22-internal`
 
 Branch: `main` (Phase 0 complete)
 
@@ -97,4 +97,4 @@ npm run dev   # confirm http://localhost:3001/ loads
 
 ## Phase 0 status
 
-**Complete on `main`.** Account/auth is owned exclusively by `@tgoliveira/secure-auth@0.1.20-internal`. Guard tests: `no-local-auth-implementation.test.ts`, `secure-auth-delegate-routes.test.ts`, `secure-auth-env-and-imports.test.ts`.
+**Complete on `main`.** Account/auth is owned exclusively by `@tgoliveira/secure-auth@0.1.22-internal`. Guard tests: `no-local-auth-implementation.test.ts`, `secure-auth-delegate-routes.test.ts`, `secure-auth-env-and-imports.test.ts`.

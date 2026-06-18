@@ -12,8 +12,28 @@ import { resolveWebAuthnSettings } from "@/lib/env/webauthn-from-env";
 
 export type SecureAuthEnvSlice = Pick<
   SecureAuthConfig,
-  "app" | "auth" | "accountPolicy" | "passwordPolicy" | "sessions" | "rateLimit" | "server" | "debug" | "oauth" | "webauthn" | "ui"
+  | "app"
+  | "auth"
+  | "accountPolicy"
+  | "passwordPolicy"
+  | "sessions"
+  | "rateLimit"
+  | "server"
+  | "security"
+  | "debug"
+  | "oauth"
+  | "webauthn"
+  | "ui"
 >;
+
+function readCsvEnv(env: NodeJS.ProcessEnv, key: string): string[] {
+  const raw = readEnv(env, key);
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+}
 
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
@@ -56,6 +76,22 @@ function parseSecureAuthEnv(
     "EMAIL_VERIFICATION_SEND_ON_REGISTER",
     true
   );
+
+  const requireEmailVerificationForAccountApis = readBoolEnv(
+    env,
+    "EMAIL_VERIFICATION_REQUIRE_FOR_ACCOUNT_APIS",
+    true
+  );
+
+  const sameOriginProtectionEnabled = readBoolEnv(
+    env,
+    "AUTH_SAME_ORIGIN_PROTECTION_ENABLED",
+    true
+  );
+  const sameOriginAllowedOrigins = readCsvEnv(env, "AUTH_ALLOWED_ORIGINS");
+
+  const authTrace = readBoolEnv(env, "AUTH_TRACE", false);
+  const exposeTraceRoute = readBoolEnv(env, "AUTH_DEBUG_EXPOSE_TRACE_ROUTE", false);
 
   const singleActiveSession = readBoolEnv(env, "AUTH_SINGLE_ACTIVE_SESSION", false);
   const revocationPollIntervalSeconds = readIntEnv(
@@ -189,6 +225,11 @@ function parseSecureAuthEnv(
     redirectAuthenticatedFromGuestPages,
     requireEmailVerificationBeforeSignIn,
     sendVerificationOnRegister,
+    requireEmailVerificationForAccountApis,
+    sameOriginProtectionEnabled,
+    sameOriginAllowedOrigins,
+    authTrace,
+    exposeTraceRoute,
     singleActiveSession,
     revocationPollIntervalSeconds,
     passwordStrengthPosition,
@@ -265,6 +306,11 @@ export function buildSecureAuthConfigFromEnv(
     redirectAuthenticatedFromGuestPages,
     requireEmailVerificationBeforeSignIn,
     sendVerificationOnRegister,
+    requireEmailVerificationForAccountApis,
+    sameOriginProtectionEnabled,
+    sameOriginAllowedOrigins,
+    authTrace,
+    exposeTraceRoute,
     singleActiveSession,
     revocationPollIntervalSeconds,
     passwordStrengthPosition,
@@ -300,6 +346,13 @@ export function buildSecureAuthConfigFromEnv(
     accountPolicy: {
       sendVerificationOnRegister,
       requireEmailVerificationBeforeSignIn,
+      requireEmailVerificationForAccountApis,
+    },
+    security: {
+      sameOriginProtection: {
+        enabled: sameOriginProtectionEnabled,
+        allowedOrigins: sameOriginAllowedOrigins,
+      },
     },
     passwordPolicy,
     sessions: {
@@ -331,7 +384,8 @@ export function buildSecureAuthConfigFromEnv(
       cookieSecure,
     },
     debug: {
-      authTrace: readBoolEnv(env, "AUTH_TRACE", false),
+      authTrace,
+      exposeTraceRoute,
     },
     oauth: {
       google:

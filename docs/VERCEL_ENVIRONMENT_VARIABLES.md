@@ -141,6 +141,15 @@ When `true`, working SMTP (`EMAIL_PROVIDER=smtp`) is effectively required.
 | `AUTH_REDIRECT_AUTHENTICATED_FROM_GUEST_PAGES` | Optional | All | `true` | secure-auth UI + `proxy.ts` | Redirect signed-in users away from `/login`, `/register`, `/forgot-password` | Default `true`. Set `false` only for intentional re-login while signed in. |
 | `AUTH_AUTHENTICATED_REDIRECT_PATH` | Optional | All | `/notes` | secure-auth UI + `proxy.ts` | Destination when redirecting authenticated users off guest auth pages | Defaults to `AUTH_AFTER_LOGIN_PATH` (`/notes`). |
 
+### API security (secure-auth 0.1.21+)
+
+| Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
+|----------|-----------|--------------|---------------|---------|---------|-------|
+| `EMAIL_VERIFICATION_REQUIRE_FOR_ACCOUNT_APIS` | Optional | Production, Preview | `true` | secure-auth package handlers | Reject sensitive account APIs when session email is unverified | Default `true`. Returns 403 with verification message when enabled. |
+| `AUTH_SAME_ORIGIN_PROTECTION_ENABLED` | Optional | Production, Preview | `true` | secure-auth package handlers | Reject cross-origin mutating account API requests | Default `true`. Set `APP_BASE_URL` / `NEXTAUTH_URL` correctly in each environment. |
+| `AUTH_ALLOWED_ORIGINS` | Optional | Preview | `https://staging.example.com` | secure-auth | Extra allowed origins (comma-separated) | In addition to `APP_BASE_URL` and WebAuthn origin. |
+| `AUTH_DEBUG_EXPOSE_TRACE_ROUTE` | Optional | Never in prod | `false` | secure-auth | Expose `GET /api/auth/login/trace` | Default `false`. Requires `AUTH_TRACE=true` as well. Never enable in production. |
+
 ### Sessions
 
 | Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
@@ -266,11 +275,11 @@ Add OAuth variables only for providers you enable. Run database migrations again
 |-------|--------|
 | `npm install` without `--legacy-peer-deps` | Passes (`nodemailer@7.x` satisfies `next-auth` peer) |
 | `package-lock.json` committed | Yes |
-| No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.1.20-internal` from npm registry |
+| No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.1.22-internal` from npm registry |
 | Private registry | Public npm scope `@tgoliveira` — no extra `.npmrc` required for Vercel |
 | Local `npm run build` | Passes |
 | Production domain (example) | `https://selahkeep.com` |
-| Package health | `GET /api/auth/package-health` → `version: 0.1.20-internal` |
+| Package health | `GET /api/auth/package-health` → `version: 0.1.22-internal` |
 | Production deploy validated | **Not re-run in this phase** — redeploy after env review |
 
 ---
@@ -283,7 +292,7 @@ After deploy:
 curl https://selahkeep.com/api/auth/package-health
 ```
 
-Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.20-internal" }` when runtime secrets and DB are configured.
+Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.22-internal" }` when runtime secrets and DB are configured.
 
 ---
 

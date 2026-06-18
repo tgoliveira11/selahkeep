@@ -22,7 +22,7 @@
     "@scure/bip39": "^1.6.0",
     "@simplewebauthn/browser": "^13.1.0",
     "@simplewebauthn/server": "^13.1.1",
-    "@tgoliveira/secure-auth": "0.1.20-internal",
+    "@tgoliveira/secure-auth": "0.1.22-internal",
     "@tiptap/extension-link": "^3.27.0",
     "@tiptap/extension-placeholder": "^3.27.0",
     "@tiptap/extension-task-item": "^3.27.0",

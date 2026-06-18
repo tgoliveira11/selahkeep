@@ -143,6 +143,37 @@ describe("buildSecureAuthConfigFromEnv", () => {
     ).toThrow(/NEXTAUTH_SECRET/);
   });
 
+  it("maps API security hardening settings from env (0.1.21+)", () => {
+    const defaults = { appName: "Test", appSlug: "test", baseUrl: "http://localhost:3001" };
+
+    const withDefaults = buildSecureAuthConfigFromEnv(baseEnv, defaults);
+    expect(withDefaults.accountPolicy?.requireEmailVerificationForAccountApis).toBe(true);
+    expect(withDefaults.security?.sameOriginProtection?.enabled).toBe(true);
+    expect(withDefaults.security?.sameOriginProtection?.allowedOrigins).toEqual([]);
+    expect(withDefaults.debug?.authTrace).toBe(false);
+    expect(withDefaults.debug?.exposeTraceRoute).toBe(false);
+
+    const withCustom = buildSecureAuthConfigFromEnv(
+      {
+        ...baseEnv,
+        EMAIL_VERIFICATION_REQUIRE_FOR_ACCOUNT_APIS: "false",
+        AUTH_SAME_ORIGIN_PROTECTION_ENABLED: "false",
+        AUTH_ALLOWED_ORIGINS: "https://preview.example.com, https://staging.example.com",
+        AUTH_TRACE: "true",
+        AUTH_DEBUG_EXPOSE_TRACE_ROUTE: "true",
+      },
+      defaults
+    );
+    expect(withCustom.accountPolicy?.requireEmailVerificationForAccountApis).toBe(false);
+    expect(withCustom.security?.sameOriginProtection?.enabled).toBe(false);
+    expect(withCustom.security?.sameOriginProtection?.allowedOrigins).toEqual([
+      "https://preview.example.com",
+      "https://staging.example.com",
+    ]);
+    expect(withCustom.debug?.authTrace).toBe(true);
+    expect(withCustom.debug?.exposeTraceRoute).toBe(true);
+  });
+
   it("maps authenticated guest-page redirect settings from env", () => {
     const defaults = { appName: "Test", appSlug: "test", baseUrl: "http://localhost:3001" };
 

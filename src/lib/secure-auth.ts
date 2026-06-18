@@ -112,6 +112,8 @@ function initSecureAuth(): SecureAuthInstance {
     ...envConfig,
     accountPolicy: {
       sendVerificationOnRegister: envConfig.accountPolicy!.sendVerificationOnRegister,
+      requireEmailVerificationForAccountApis:
+        envConfig.accountPolicy!.requireEmailVerificationForAccountApis,
       requireEmailVerificationBeforeSignIn:
         envConfig.auth.requireEmailVerificationBeforeSignIn,
     },
