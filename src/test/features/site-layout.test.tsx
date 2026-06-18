@@ -90,6 +90,30 @@ describe("site layout shell", () => {
     expect(screen.getByRole("contentinfo")).toBeTruthy();
   });
 
+  it("shows pre-auth header during pending 2FA instead of logged-in nav", async () => {
+    const { useSession } = await import("next-auth/react");
+    vi.mocked(useSession).mockReturnValue({
+      data: {
+        user: { id: "user-1", email: "user@example.com" },
+        twoFactorPending: true,
+        twoFactorVerified: false,
+      },
+      status: "authenticated",
+      update: vi.fn(),
+    });
+
+    render(
+      <SiteShell>
+        <HomePage />
+      </SiteShell>
+    );
+
+    expect(screen.getAllByRole("link", { name: /sign in/i }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: /^notes$/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /sign out/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /expand vault status/i })).toBeNull();
+  });
+
   it("mobile menu button has an accessible label when signed in", async () => {
     const { useSession } = await import("next-auth/react");
     vi.mocked(useSession).mockReturnValue({

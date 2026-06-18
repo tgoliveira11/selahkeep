@@ -4,7 +4,7 @@ export const authPageMessages = {
   loginDescription: "Sign in to continue to your account.",
   registerTitle: "Create your account",
   registerDescription: "Start writing private notes in a protected space.",
-  loginTwoFactorTitle: "Two-factor authentication",
+  loginTwoFactorTitle: "Two-factor verification",
   loginTwoFactorDescription:
     "Enter the 6-digit code from your authenticator app to finish signing in.",
   forgotPasswordTitle: "Reset your password",

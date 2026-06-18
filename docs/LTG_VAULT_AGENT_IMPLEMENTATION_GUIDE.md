@@ -19,6 +19,14 @@
 | Purpose | Sign in | Unlock private notes |
 | Server | bcrypt hash | never sent |
 
+## Two-factor login challenge (pre-auth)
+
+- Pending 2FA is **not** a fully authenticated session — do not render logged-in nav, vault dock, or notes/vault routes before verification succeeds.
+- Route: `/login/2fa` (`src/app/(auth)/login/2fa/page.tsx`); credentials mode uses native POST (`?mode=credentials`); OAuth uses app-owned `OAuthTwoFactorChallenge` (session refresh before redirect).
+- Post-login redirect: `sanitizeAuthCallbackUrl` in `src/lib/auth/safe-auth-callback.ts`; proxy preserves safe `callbackUrl` when gating pending 2FA.
+- Session helpers: `isFullyAuthenticatedSession` / `isPendingTwoFactorSession` in `src/lib/auth/session-state.ts`.
+- See `docs/TWO_FACTOR_MOBILE_FLOW_AUDIT.md`.
+
 ## Recovery phrase replacement (`/vault/recovery`)
 
 - Requires authenticated session and **unlocked vault** (UVK in browser memory only).

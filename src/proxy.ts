@@ -5,6 +5,7 @@ import {
   applyContentSecurityPolicy,
   createContentSecurityPolicyNonce,
 } from "@/lib/security/content-security-policy";
+import { sanitizeAuthCallbackUrl } from "@/lib/auth/safe-auth-callback";
 
 const TWO_FACTOR_ALLOWED_PREFIXES = [
   "/login",
@@ -66,6 +67,9 @@ export async function proxy(request: NextRequest) {
     if (!isTwoFactorAllowedPath(pathname)) {
       const url = request.nextUrl.clone();
       url.pathname = "/login/2fa";
+      url.search = "";
+      const attemptedPath = `${pathname}${request.nextUrl.search}`;
+      url.searchParams.set("callbackUrl", sanitizeAuthCallbackUrl(attemptedPath));
       return NextResponse.redirect(url);
     }
   }

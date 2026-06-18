@@ -1,5 +1,6 @@
 import "server-only";
 import { getServerSession } from "next-auth";
+import { isFullyAuthenticatedSession } from "@/lib/auth/session-state";
 import { secureAuth } from "@/lib/secure-auth";
 
 export async function getSessionUser() {
@@ -24,14 +25,18 @@ export async function requireSessionUser() {
 }
 
 export async function requireFullyAuthenticatedUser() {
-  const user = await requireSessionUser();
-  if (!user.twoFactorVerified) {
+  const services = await secureAuth.getServices();
+  const session = await getServerSession(services.getAuthOptions());
+  if (!session?.user?.id) {
+    throw new UnauthorizedError("Authentication required");
+  }
+  if (!isFullyAuthenticatedSession(session)) {
     throw new UnauthorizedError("Two-factor verification required");
   }
   return {
-    id: user.id,
-    email: user.email,
-    accountSessionId: user.accountSessionId,
+    id: session.user.id,
+    email: session.user.email ?? "",
+    accountSessionId: session.accountSessionId,
   };
 }
 

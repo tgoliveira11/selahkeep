@@ -2,12 +2,13 @@
 
 import { useSession } from "next-auth/react";
 import { Nav } from "@/components/layout/nav";
+import { isFullyAuthenticatedSession } from "@/lib/auth/session-state";
 import { cn } from "@/lib/ui/cn";
 
 /** Sticky authenticated header chrome. Vault dock handle lives inside `Nav`. */
 export function AppHeaderChrome() {
-  const { status } = useSession();
-  const signedIn = status === "authenticated";
+  const { data: session, status } = useSession();
+  const signedIn = status === "authenticated" && isFullyAuthenticatedSession(session);
 
   return (
     <div

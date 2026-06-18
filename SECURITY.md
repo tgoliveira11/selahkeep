@@ -109,7 +109,7 @@ Optional TOTP 2FA protects **account sign-in only**. It does **not** decrypt pri
 - Backup codes generated on enable; hashed (SHA-256 + pepper) and one-time use; shown once
 - Credentials login: `POST /api/auth/login/start` → optional `POST /api/auth/login/verify-2fa` → one-time `login-token` NextAuth provider
 - Passkey login: `POST /api/auth/passkey/login/options` → `POST /api/auth/passkey/login/verify` → one-time `login-token` NextAuth provider (**TOTP not required**, even when 2FA is enabled)
-- OAuth login (Google, Apple, Microsoft): partial session until `POST /api/auth/login/verify-2fa-oauth` + session upgrade token; `src/proxy.ts` blocks app routes until verified
+- OAuth login (Google, Apple, Microsoft): partial session until `POST /api/auth/login/verify-2fa-oauth` + session upgrade token; `src/proxy.ts` blocks app routes until verified; app waits for JWT refresh before post-2FA redirect (see [`docs/TWO_FACTOR_MOBILE_FLOW_AUDIT.md`](docs/TWO_FACTOR_MOBILE_FLOW_AUDIT.md))
 - Rate limits: setup verify, login verify, disable, backup regeneration
 - Audit events never include TOTP secrets, codes, or backup codes
 

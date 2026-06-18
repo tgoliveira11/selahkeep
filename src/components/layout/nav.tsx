@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signOutAccount } from "@/lib/auth/sign-out-client";
+import { isFullyAuthenticatedSession } from "@/lib/auth/session-state";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AppMark } from "@/components/ui/app-mark";
@@ -19,6 +20,7 @@ import { VaultStatusDock } from "@/features/vault/vault-status-dock";
 
 export function Nav() {
   const { data: session } = useSession();
+  const authenticated = isFullyAuthenticatedSession(session);
   const router = useRouter();
   const pathname = usePathname();
   const menuId = useId();
@@ -46,19 +48,19 @@ export function Nav() {
     <header
       className={cn(
         "bg-[var(--card)] border-b border-[var(--border)]",
-        session && "authenticated-header"
+        authenticated && "authenticated-header"
       )}
     >
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
         <Link
-          href={session ? "/notes" : "/"}
+          href={authenticated ? "/notes" : "/"}
           className="flex items-center gap-2 text-lg font-semibold text-[var(--primary)]"
         >
           <AppMark size={28} />
           <span>{PRODUCT_NAME}</span>
         </Link>
 
-        {session ? (
+        {authenticated ? (
           <>
             <nav
               aria-label="Main navigation"
@@ -112,7 +114,7 @@ export function Nav() {
         )}
       </div>
 
-      {session && menuOpen && (
+      {authenticated && menuOpen && (
         <nav
           id={menuId}
           aria-label="Mobile navigation"
@@ -191,7 +193,7 @@ export function Nav() {
           </div>
         </nav>
       )}
-      {session ? <VaultStatusDock /> : null}
+      {authenticated ? <VaultStatusDock /> : null}
     </header>
   );
 }

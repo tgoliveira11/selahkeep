@@ -55,6 +55,7 @@ Account auth UI comes from `@tgoliveira/secure-auth/react`. Style integration po
 
 - `SecureAuthProviders` + `secureAuthUiPublicConfig` in root layout
 - App-owned wrappers: `(auth)/layout.tsx`, copy overrides via env config
+- **Pending 2FA:** site header shows pre-auth chrome (Sign in / Create account), not logged-in nav or vault dock — see `src/lib/auth/session-state.ts` and [`TWO_FACTOR_MOBILE_FLOW_AUDIT.md`](./TWO_FACTOR_MOBILE_FLOW_AUDIT.md)
 - **Do not** fork or patch package internals
 - App purple tokens apply to app shell (nav, vault pages, marketing); package auth pages inherit base layout background where wrapped
 
@@ -90,6 +91,7 @@ Account auth UI comes from `@tgoliveira/secure-auth/react`. Style integration po
 See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 
 - **Primary (signed in):** Notes · Vault · Account · Sign out (no vault lock/status in header)
+- **Pending 2FA:** same pre-auth header as signed-out users on `/login/2fa` (no Notes/Vault/Account/Sign out/dock)
 - **Global vault status dock:** narrow compact popover on authenticated header; quick password/passkey unlock; recovery phrase on `/vault/unlock` only; dock stays collapsed on `/vault/unlock`
 - **Route scroll:** authenticated navigations reset to page top unless a hash anchor is present (`RouteScrollToTop` in `SiteShell`)
 - **`/notes` locked state:** explanatory card with unlock actions; no decrypted notes, counts, or metadata while locked

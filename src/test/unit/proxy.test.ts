@@ -44,6 +44,35 @@ describe("proxy two-factor gating", () => {
     const response = await proxy(new NextRequest("http://localhost:3001/notes"));
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toContain("/login/2fa");
+    expect(response.headers.get("location")).toContain("callbackUrl=%2Fnotes");
+  });
+
+  it("preserves safe callbackUrl when redirecting from vault settings", async () => {
+    getToken.mockResolvedValue({ twoFactorPending: true, twoFactorVerified: false });
+    const { proxy } = await import("@/proxy");
+    const response = await proxy(
+      new NextRequest("http://localhost:3001/vault/settings?tab=security")
+    );
+    expect(response.headers.get("location")).toContain("/login/2fa");
+    expect(response.headers.get("location")).toContain(
+      "callbackUrl=%2Fvault%2Fsettings%3Ftab%3Dsecurity"
+    );
+  });
+
+  it("sanitizes unsafe callback targets to /notes", async () => {
+    getToken.mockResolvedValue({ twoFactorPending: true, twoFactorVerified: false });
+    const { proxy } = await import("@/proxy");
+    const response = await proxy(new NextRequest("http://localhost:3001/login/2fa"));
+    expect(response.headers.get("location")).toBeNull();
+  });
+
+  it("redirects pending 2FA away from login loop paths with safe default callback", async () => {
+    getToken.mockResolvedValue({ twoFactorPending: true, twoFactorVerified: false });
+    const { proxy } = await import("@/proxy");
+    const response = await proxy(new NextRequest("http://localhost:3001/notes/new"));
+    const location = response.headers.get("location") ?? "";
+    expect(location).toContain("callbackUrl=");
+    expect(location).not.toContain("callbackUrl=%2Flogin");
   });
 
   it("allows pending 2FA sessions to reach login and auth routes", async () => {

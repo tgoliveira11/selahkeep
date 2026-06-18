@@ -134,7 +134,7 @@ Microsoft sign-in uses the NextAuth **Azure AD** provider (`azure-ad`) against M
 
 **Account linking:** no automatic linking across providers. If an email is already registered with email/password (or another OAuth provider), Microsoft sign-in is rejected with a safe error.
 
-**OAuth + TOTP:** when account 2FA is enabled, OAuth sign-in (Google, Apple, GitHub, Microsoft) receives a partial session until `/login/2fa` + `POST /api/auth/login/verify-2fa-oauth` completes. Passkey sign-in bypasses TOTP.
+**OAuth + TOTP:** when account 2FA is enabled, OAuth sign-in (Google, Apple, GitHub, Microsoft) receives a partial session until `/login/2fa` + `POST /api/auth/login/verify-2fa-oauth` completes. The app-owned OAuth challenge waits for session refresh before redirect (see [`docs/TWO_FACTOR_MOBILE_FLOW_AUDIT.md`](docs/TWO_FACTOR_MOBILE_FLOW_AUDIT.md)). Passkey sign-in bypasses TOTP.
 
 ## Email verification and account passwords
 

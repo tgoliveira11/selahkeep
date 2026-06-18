@@ -171,7 +171,7 @@ TOTP 2FA is **account authentication only** — provided by `@tgoliveira/secure-
 Passkey sign-in follows package rules when 2FA is enabled (pending challenge until TOTP verified).
 
 - Settings UI: `/settings/account` (`AccountSettingsPage` from package + product recovery links)
-- Login challenge: `/login/2fa` + `src/proxy.ts` gate for OAuth partial sessions
+- Login challenge: `/login/2fa` (app integration: `OAuthTwoFactorChallenge` for OAuth, package `CredentialsTwoFactorForm` for credentials) + `src/proxy.ts` gate for partial sessions with safe `callbackUrl` preservation
 - Storage: `user_two_factor_settings`, `user_two_factor_backup_codes`, login challenge/token tables
 - NextAuth provider: `login-token` (one-time token after password + optional 2FA)
 
