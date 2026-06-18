@@ -21,6 +21,8 @@ export function findDailyNoteIdForDate(
   date = new Date()
 ): string | null {
   const expected = formatDailyNoteTitle(date);
-  const match = entries.find((entry) => !entry.deletedAt && entry.title === expected);
+  const match = entries.find(
+    (entry) => !entry.trashed && !entry.archived && entry.title === expected
+  );
   return match?.id ?? null;
 }

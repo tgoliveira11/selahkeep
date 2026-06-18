@@ -41,7 +41,33 @@ vi.mock("@/features/vault/use-vault", () => ({
 }));
 
 vi.mock("@/features/notes/use-vault-index", () => ({
-  useVaultIndex: vi.fn(() => ({ index: null, loading: false, error: null })),
+  useVaultIndex: vi.fn(() => ({
+    index: null,
+    loading: false,
+    error: null,
+    reload: vi.fn(),
+    persistIndex: vi.fn(),
+    mutateIndex: vi.fn(),
+  })),
+}));
+
+vi.mock("@/features/notes/use-notes", () => ({
+  useNotes: vi.fn(() => ({
+    toggleNoteResolved: vi.fn(),
+    moveNoteToTrash: vi.fn(),
+    restoreNoteFromTrash: vi.fn(),
+    permanentlyDeleteNote: vi.fn(),
+    toggleNotePinned: vi.fn(),
+    toggleNoteFavorite: vi.fn(),
+    toggleNoteArchived: vi.fn(),
+    duplicateNote: vi.fn(),
+    busy: false,
+    error: null,
+  })),
+}));
+
+vi.mock("@/lib/crypto-client/note-drafts", () => ({
+  listEncryptedNoteDraftKeys: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("@/features/passkey/passkey-vault-unlock-setup", () => ({
@@ -152,7 +178,7 @@ describe("vault status UI", () => {
     vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(true));
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
     vi.mocked(useVaultIndex).mockReturnValue({
-      index: { entries: [], categories: [], tags: [] },
+      index: { version: 3, entries: [], categories: [], tags: [], savedViews: [] },
       loading: false,
       error: null,
       reload: vi.fn(),

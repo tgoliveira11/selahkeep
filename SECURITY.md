@@ -69,8 +69,9 @@ Residual risk: a malicious script running on this origin (XSS) or compromised br
 
 - Note title lives in **encrypted metadata** (`note_metadata` AAD); body is Markdown encrypted under Note Key (`note_body` AAD).
 - Note Key is wrapped by User Vault Key (`note_key` AAD) — never sent to API in plaintext.
-- Vault index (list titles, categories, tags, answered flags) is client-encrypted under UVK; server stores ciphertext only.
-- Category and tag **names** live only in the encrypted vault index (v2); never in database columns or API plaintext fields.
+- Vault index (list titles, categories, tags, lifecycle flags, saved views) is client-encrypted under UVK; server stores ciphertext only.
+- Category and tag **names** live only in the encrypted vault index (v3); never in database columns or API plaintext fields.
+- Note lifecycle fields (`pinned`, `favorite`, `archived`, `trashed`, `trashedAt`) live only in encrypted note metadata and vault index — not in database columns.
 - Answered status is stored only in encrypted note metadata and vault index — not in database columns.
 - **Search and filters** run client-side in memory after vault unlock; there is no server search endpoint and queries never leave the browser.
 - **Note titles** are required on create in the UI; title text remains in encrypted metadata only.
@@ -82,8 +83,9 @@ Residual risk: a malicious script running on this origin (XSS) or compromised br
 - Markdown preview/detail use `marked` + `dompurify` allowlist via `MarkdownPreview` before `dangerouslySetInnerHTML`.
 - Visual note editor (Tiptap) keeps **Markdown as canonical body**; pasted HTML is sanitized client-side (`editor-paste.ts`); only `http(s)` links accepted in-editor. HTML is never sent to APIs.
 - Unsafe HTML/scripts and `javascript:` links are stripped; external links use `rel="noopener noreferrer"`.
-- Note APIs reject plaintext `title`, `body`, `markdown`, `tags`, `categoryId`, `categoryName`, `tagNames`, `answered`, `noteKey`, etc.
-- Soft delete (`deleted_at` on notes + `deletedAt` in vault index); no plaintext search indexes.
+- Note APIs reject plaintext `title`, `body`, `markdown`, `tags`, `categoryId`, `categoryName`, `tagNames`, `answered`, `pinned`, `favorite`, `archived`, `trashed`, `noteKey`, etc.
+- Trash moves notes client-side (encrypted metadata); permanent delete uses server soft delete (`deleted_at` on notes). Trash auto-purge not implemented.
+- No plaintext search or lifecycle indexes on the server.
 
 Letters domain removed in Phase 3 (`letters` table dropped via `0010_drop_letters.sql`).
 

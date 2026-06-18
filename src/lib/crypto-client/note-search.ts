@@ -1,5 +1,7 @@
 import type { VaultIndexPlaintext, VaultIndexNoteEntry } from "./vault-index-types";
-import { getActiveVaultEntries, activeCategories, activeTags } from "./vault-index";
+import { activeCategories, activeTags } from "./vault-index";
+import type { SmartLocalFilter } from "@/lib/notes/smart-filters";
+import { DEFAULT_SMART_FILTER, matchesSmartFilter } from "@/lib/notes/smart-filters";
 
 export type ResolvedFilter = "all" | "resolved" | "unresolved";
 
@@ -11,6 +13,8 @@ export type NoteSearchFilters = {
   categoryId?: string | null;
   tagId?: string;
   resolved?: ResolvedFilter;
+  smartFilter?: SmartLocalFilter;
+  draftNoteIds?: Set<string>;
 };
 
 export type NoteSearchResult = VaultIndexNoteEntry & {
@@ -47,8 +51,10 @@ export function searchVaultIndex(
 ): NoteSearchResult[] {
   const categories = activeCategories(index);
   const tags = activeTags(index);
+  const smartFilter = filters.smartFilter ?? DEFAULT_SMART_FILTER;
 
-  return getActiveVaultEntries(index)
+  return index.entries
+    .filter((entry) => matchesSmartFilter(entry, smartFilter, { draftNoteIds: filters.draftNoteIds }))
     .filter((entry) => {
       if (filters.categoryId !== undefined) {
         if (filters.categoryId === null) {

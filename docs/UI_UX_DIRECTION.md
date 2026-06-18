@@ -110,12 +110,16 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 
 ### `/notes`, `/notes/new`, `/notes/[id]`
 
-- **Search/filters** on `/notes` appear only after at least one category or tag exists; helper copy when none exist.
+- **Smart filters** on `/notes` (All active, Pinned, Favorites, Resolved, Unresolved, Archived, Trash, etc.) — client-only after unlock.
+- **Saved views** — encrypted in vault index; save/apply/delete on `/notes`.
+- **View mode** — Cards / List toggle; preference in `localStorage` (`selahkeep:notes:view-mode`, non-sensitive).
+- **Search/filters** for category/tag/text appear when at least one category or tag exists; helper copy when none exist on the default active filter.
 - **Vault status dock** (`VaultStatusDock` inside authenticated `Nav` header): collapsed = tiny centered handle (`Vault` or `mm:ss` + chevron); expanded locked = quick password/passkey unlock + **Open full unlock page**; expanded open = compact row with **Lock now**. Recovery phrase only on `/vault/unlock`. Top nav shows only Notes, Vault, Account, Sign out.
 - **New note:** title required; category dropdown only when categories exist; no resolved toggle on create. **Visual editor** default in a unified editor card (grouped toolbar, `+ Insert` quick menu, writing canvas, status bar); discreet **Markdown** toggle for source mode. **14 templates**, **focus mode**, **daily note** action, encrypted local drafts with restore/discard.
 - **Tags:** chip input with normalization; display `#tag`, store `tag` (max 32 chars).
 - **Detail:** title row with resolved/unresolved badge + resolve icon (same as list); category pill without `#`; tag chips with `#`; created + updated dates; interactive checklist toggles in view/edit preview (persist on view via encrypted update).
-- **List:** resolve/unresolve icon button per card (`stopPropagation`, does not navigate); resolved/unresolved badges; created + updated dates (`text-xs`); sort + filtered note counter.
+- **List:** resolve/unresolve icon button per card (`stopPropagation`, does not navigate); resolved/unresolved badges; pin/favorite/archive/trash badges when applicable; created + updated dates (`text-xs`); sort (pinned first within groups) + filtered note counter; cards/list toggle.
+- **Detail lifecycle:** Pin, Favorite, Archive, Move to trash, Restore, Delete permanently (confirmation), Duplicate note.
 - **Resolved:** user-facing label; internal encrypted metadata uses `answered`.
 - **Markdown:** interactive checklists in preview (toggle `[ ]` ↔ `[x]` in source only), shortcuts, sanitized `MarkdownPreview`.
 - **Drafts:** encrypted local autosave; restore/discard on return.
@@ -126,6 +130,8 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 ## 5. Phase scope
 
 **In Phase 1:** tokens, vault setup/unlock, light marketing copy toward “vault” language.
+
+**Track 3 (complete):** pin, favorite, archive, trash/restore/permanent delete, smart local filters, encrypted saved views, cards/list view, duplicate note. See `docs/NOTE_ORGANIZATION_LIFECYCLE_TRACK_3_IMPLEMENTATION.md`.
 
 **Phase 3 (complete):** notes list search/filters, category picker, tag chips, answered badge, `/vault/settings` unlock behavior (`metadata_only` vs `decrypt_all`).
 

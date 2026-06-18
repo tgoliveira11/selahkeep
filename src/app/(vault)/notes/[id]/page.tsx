@@ -19,6 +19,7 @@ import { NoteFocusModeToggle } from "@/features/notes/note-focus-mode-toggle";
 import { CategoryTagFields } from "@/features/notes/category-tag-fields";
 import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
 import { MarkdownPreview } from "@/components/notes/markdown-preview";
+import { NoteLifecycleActions } from "@/components/notes/note-lifecycle-actions";
 import { NoteResolvedToggle } from "@/components/notes/note-resolved-toggle";
 import { NotesVaultProtectedMessage } from "@/features/notes/notes-vault-protected-message";
 import { useCategoriesTags } from "@/features/notes/use-categories-tags";
@@ -68,6 +69,7 @@ export default function NoteDetailPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [permanentDeleteOpen, setPermanentDeleteOpen] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState<NoteDraftPlaintext | null>(null);
   const [baseline, setBaseline] = useState("");
   const [checklistSaveState, setChecklistSaveState] = useState<
@@ -85,7 +87,7 @@ export default function NoteDetailPage() {
     vault.status === "ready" && vault.vaultUnlocked && clientStatus === "unlocked";
   const vaultUserId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
-  const { updateNote, deleteNote, toggleNoteResolved, busy, error: notesError } = useNotes(vaultUserId);
+  const { updateNote, moveNoteToTrash, restoreNoteFromTrash, permanentlyDeleteNote, toggleNoteResolved, toggleNotePinned, toggleNoteFavorite, toggleNoteArchived, duplicateNote, busy, error: notesError } = useNotes(vaultUserId);
   const { categories, tags, createCategory, createTag } = useCategoriesTags(vaultUserId, vaultUnlocked);
 
   const editSnapshotValue = useMemo(
@@ -317,17 +319,53 @@ export default function NoteDetailPage() {
     }
   }
 
-  async function handleDelete() {
+  async function handleMoveToTrash() {
     setError(null);
     try {
       if (vaultUserId) {
         await deleteEncryptedNoteDraft(vaultUserId, id);
       }
-      await deleteNote(id);
+      await moveNoteToTrash(id);
+      router.push("/notes?filter=trash");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to move note to trash");
+      setDeleteOpen(false);
+    }
+  }
+
+  async function handleRestoreFromTrash() {
+    setError(null);
+    try {
+      await restoreNoteFromTrash(id);
+      setMetadata((current) =>
+        current ? { ...current, trashed: false, trashedAt: null } : current
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to restore note");
+    }
+  }
+
+  async function handlePermanentDelete() {
+    setError(null);
+    try {
+      if (vaultUserId) {
+        await deleteEncryptedNoteDraft(vaultUserId, id);
+      }
+      await permanentlyDeleteNote(id);
       router.push("/notes");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to delete");
-      setDeleteOpen(false);
+      setError(e instanceof Error ? e.message : "Failed to delete note");
+      setPermanentDeleteOpen(false);
+    }
+  }
+
+  async function handleDuplicate() {
+    setError(null);
+    try {
+      const { noteId } = await duplicateNote(id);
+      router.push(`/notes/${noteId}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to duplicate note");
     }
   }
 
@@ -547,9 +585,26 @@ export default function NoteDetailPage() {
             <Button variant="secondary" onClick={startEditing}>
               Edit
             </Button>
-            <Button variant="danger" onClick={() => setDeleteOpen(true)}>
-              Delete note
-            </Button>
+            <NoteLifecycleActions
+              pinned={metadata.pinned}
+              favorite={metadata.favorite}
+              archived={metadata.archived}
+              trashed={metadata.trashed}
+              busy={busy}
+              onTogglePinned={() =>
+                void toggleNotePinned(id, !metadata.pinned).then(setMetadata)
+              }
+              onToggleFavorite={() =>
+                void toggleNoteFavorite(id, !metadata.favorite).then(setMetadata)
+              }
+              onToggleArchived={() =>
+                void toggleNoteArchived(id, !metadata.archived).then(setMetadata)
+              }
+              onMoveToTrash={() => setDeleteOpen(true)}
+              onRestoreFromTrash={() => void handleRestoreFromTrash()}
+              onPermanentDelete={() => setPermanentDeleteOpen(true)}
+              onDuplicate={() => void handleDuplicate()}
+            />
           </div>
         </article>
       )}
@@ -564,12 +619,21 @@ export default function NoteDetailPage() {
 
       <ConfirmDialog
         open={deleteOpen}
-        title="Delete this note?"
-        description="This removes the note from your vault. You can recover access only if you have backups."
-        confirmLabel="Delete note"
+        title="Move to trash?"
+        description="This note will move to Trash. You can restore it later or delete it permanently."
+        confirmLabel="Move to trash"
         loading={busy}
-        onConfirm={handleDelete}
+        onConfirm={handleMoveToTrash}
         onCancel={() => setDeleteOpen(false)}
+      />
+      <ConfirmDialog
+        open={permanentDeleteOpen}
+        title="Delete permanently?"
+        description="This permanently removes the note from your vault. This cannot be undone."
+        confirmLabel="Delete permanently"
+        loading={busy}
+        onConfirm={handlePermanentDelete}
+        onCancel={() => setPermanentDeleteOpen(false)}
       />
       {confirmDialog}
     </PageLayout>

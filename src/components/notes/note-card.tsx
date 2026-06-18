@@ -12,6 +12,10 @@ interface NoteCardProps {
   createdAt: string;
   updatedAt: string;
   answered: boolean;
+  pinned?: boolean;
+  favorite?: boolean;
+  archived?: boolean;
+  trashed?: boolean;
   categoryName?: string | null;
   tagNames?: string[];
   locked?: boolean;
@@ -25,6 +29,10 @@ export function NoteCard({
   createdAt,
   updatedAt,
   answered,
+  pinned = false,
+  favorite = false,
+  archived = false,
+  trashed = false,
   categoryName,
   tagNames = [],
   locked,
@@ -49,13 +57,33 @@ export function NoteCard({
           )}
         >
           <div className="flex flex-wrap items-center gap-2">
+            {pinned && (
+              <Badge variant="muted" data-testid="note-pinned-badge">
+                Pinned
+              </Badge>
+            )}
+            {favorite && (
+              <Badge variant="muted" data-testid="note-favorite-badge">
+                Favorite
+              </Badge>
+            )}
+            {archived && (
+              <Badge variant="muted" data-testid="note-archived-badge">
+                Archived
+              </Badge>
+            )}
+            {trashed && (
+              <Badge variant="muted" data-testid="note-trashed-badge">
+                Trash
+              </Badge>
+            )}
             <p className={cn("truncate font-medium", locked && "text-[var(--muted)]", resolved && "text-[var(--muted)]")}>
               {title}
             </p>
             {resolved ? (
               <Badge variant="success">{RESOLVED_COPY.resolvedBadge}</Badge>
             ) : (
-              <Badge variant="muted">{RESOLVED_COPY.unresolved}</Badge>
+              <Badge variant="muted" data-testid="note-card-unresolved-badge">{RESOLVED_COPY.unresolved}</Badge>
             )}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -69,7 +97,7 @@ export function NoteCard({
           </p>
         </Link>
 
-        {onToggleResolved && (
+        {onToggleResolved && !trashed && (
           <NoteResolvedToggle
             answered={answered}
             resolving={resolving}

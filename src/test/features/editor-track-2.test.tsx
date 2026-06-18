@@ -51,10 +51,17 @@ vi.mock("@/features/notes/use-vault-index", () => ({
           categoryId: null,
           tagIds: [],
           answered: false,
+          pinned: false,
+          favorite: false,
+          archived: false,
+          trashed: false,
+          trashedAt: null,
           createdAt: "2026-06-16T08:00:00.000Z",
           updatedAt: "2026-06-16T08:00:00.000Z",
         },
       ],
+      savedViews: [],
+      version: 3,
     },
     loading: false,
     error: null,
@@ -65,7 +72,20 @@ vi.mock("@/features/notes/use-vault-index", () => ({
 vi.mock("@/features/notes/use-notes", () => ({
   useNotes: vi.fn(() => ({
     toggleNoteResolved: vi.fn(),
+    moveNoteToTrash: vi.fn(),
+    restoreNoteFromTrash: vi.fn(),
+    permanentlyDeleteNote: vi.fn(),
+    toggleNotePinned: vi.fn(),
+    toggleNoteFavorite: vi.fn(),
+    toggleNoteArchived: vi.fn(),
+    duplicateNote: vi.fn(),
+    busy: false,
+    error: null,
   })),
+}));
+
+vi.mock("@/lib/crypto-client/note-drafts", () => ({
+  listEncryptedNoteDraftKeys: vi.fn().mockResolvedValue([]),
 }));
 
 describe("editor track 2 components", () => {

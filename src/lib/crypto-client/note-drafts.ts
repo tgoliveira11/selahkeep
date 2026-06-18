@@ -95,6 +95,12 @@ export async function loadEncryptedNoteDraft(
   return JSON.parse(json) as NoteDraftPlaintext;
 }
 
+export async function listEncryptedNoteDraftKeys(userId: string): Promise<string[]> {
+  const db = await openDraftDb();
+  const all = (await db.getAll(DRAFT_STORE)) as DraftRecord[];
+  return all.filter((record) => record.userId === userId).map((record) => record.draftKey);
+}
+
 export async function deleteEncryptedNoteDraft(userId: string, draftKey: string): Promise<void> {
   const db = await openDraftDb();
   await db.delete(DRAFT_STORE, [userId, draftKey]);

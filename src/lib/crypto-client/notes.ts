@@ -1,5 +1,6 @@
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import { ENCRYPTION_VERSION } from "@/lib/validation/encrypted-payload";
+import { normalizeNoteMetadata } from "@/lib/notes/note-metadata";
 import { generateAesKey, encryptField, decryptField } from "./aes-gcm";
 import { verifyPayloadAad } from "./aad-verify";
 import { generateNoteKey, wrapNoteKey, unwrapNoteKey } from "./note-key";
@@ -11,7 +12,13 @@ export type NoteMetadataPlaintext = {
   title: string;
   categoryId: string | null;
   tagIds: string[];
+  /** Internal field — user-facing label is "resolved". */
   answered: boolean;
+  pinned: boolean;
+  favorite: boolean;
+  archived: boolean;
+  trashed: boolean;
+  trashedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -34,6 +41,11 @@ export type EncryptNoteInput = {
   categoryId?: string | null;
   tagIds?: string[];
   answered?: boolean;
+  pinned?: boolean;
+  favorite?: boolean;
+  archived?: boolean;
+  trashed?: boolean;
+  trashedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -48,14 +60,19 @@ export async function encryptNote(
   if (input.body.length > BODY_MAX_LENGTH) throw new Error("Body too long");
 
   const now = new Date().toISOString();
-  const metadata: NoteMetadataPlaintext = {
+  const metadata = normalizeNoteMetadata({
     title: input.title,
     categoryId: input.categoryId ?? null,
     tagIds: input.tagIds ?? [],
     answered: input.answered ?? false,
+    pinned: input.pinned ?? false,
+    favorite: input.favorite ?? false,
+    archived: input.archived ?? false,
+    trashed: input.trashed ?? false,
+    trashedAt: input.trashedAt ?? null,
     createdAt: input.createdAt ?? now,
     updatedAt: input.updatedAt ?? now,
-  };
+  });
 
   const noteKey = await generateNoteKey();
   const encryptedMetadata = await encryptField(JSON.stringify(metadata), noteKey, {
@@ -91,7 +108,11 @@ export async function decryptNote(
   verifyPayloadAad(encryptedBody, { userId, resourceId, field: "note_body" });
 
   const metadataJson = await decryptField(encryptedMetadata, noteKey);
-  const metadata = JSON.parse(metadataJson) as NoteMetadataPlaintext;
+  const parsed = JSON.parse(metadataJson) as Partial<NoteMetadataPlaintext> & { title?: string };
+  const metadata = normalizeNoteMetadata({
+    title: parsed.title ?? "",
+    ...parsed,
+  });
   const body = await decryptField(encryptedBody, noteKey);
 
   return { metadata, body };

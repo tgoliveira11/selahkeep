@@ -241,16 +241,17 @@ Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/vault/settings
 
 - **Resolved status** — user-facing “resolved” maps to internal encrypted `answered` metadata; icon toggle on list cards and detail view; edit-mode toggle in category fields; filters use resolved/unresolved
 - **Note editor** — polished visual editor card (grouped toolbar, canvas, status) by default via Tiptap; Markdown remains canonical encrypted body; discreet **Markdown** toggle for source + collapsible preview. **Quick insert**, **focus mode**, **14 templates**, **daily note**, encrypted local drafts, and save/draft status. See `docs/EDITOR_EXPERIENCE_TRACK_2_IMPLEMENTATION.md`.
-- **Notes list** — created + updated dates on every card, sort (last modified/created/title), filtered counter (`4 of 12 notes`), resolved/unresolved badges
+- **Notes list** — created + updated dates on every card, sort (last modified/created/title; pinned notes first within groups), filtered counter (`4 of 12 notes`), resolved/unresolved badges, **smart local filters**, **saved views** (encrypted in vault index), **cards/list view toggle** (`selahkeep:notes:view-mode`)
+- **Note lifecycle** — pin, favorite, archive, move to trash, restore, permanent delete (with confirmation), duplicate note (new id + Note Key). See `docs/NOTE_ORGANIZATION_LIFECYCLE_TRACK_3_IMPLEMENTATION.md`.
 - **Vault indicator** on `/notes` and `/notes/[id]` — open/closed state with real inactivity countdown (`Auto-locks in 14:32`); lock control here only (not top nav); unlock links preserve safe `returnTo` for post-unlock navigation (`/notes`, `/vault/settings`, `/vault/recovery`, `/settings/account`)
 - **Encrypted local drafts** — autosaved in IndexedDB wrapped by User Vault Key (`note_draft` field); never plaintext
 - **Title required** on `/notes/new` (trimmed, non-empty); still encrypted in metadata at rest
-- **Encrypted metadata** (title, category, tags, answered) + **encrypted body** per note
+- **Encrypted metadata** (title, category, tags, answered, pinned, favorite, archived, trashed) + **encrypted body** per note
 - **Answered** marker on list/detail icon toggle and edit fields; new notes default to `answered: false`
-- **Vault index v2** (`GET/PATCH /api/vault/index`) — note entries plus encrypted category/tag definitions
+- **Vault index v3** (`GET/PATCH /api/vault/index`) — note entries (with lifecycle fields), encrypted category/tag definitions, encrypted saved views
 - **Tags** normalized client-side (`normalizeTagInput`, max **32** chars); displayed with `#`, stored without `#`
 - **Category vs tags:** category pill (no `#`); tag chips with `#`
-- **Client-side search/filters** after unlock — shown only when at least one category or tag exists; no server search
+- **Client-side search/filters** after unlock — smart filters always available; category/tag search filters when organizers exist; no server search
 - **Vault status dock:** `VaultStatusDock` in `AppHeaderChrome` / authenticated `Nav` header (collapsed handle + expanded panel, signed-in only) — compact handle when locked/unlocked; full panel for setup states and on expand; inactivity countdown in handle (`mm:ss`) and expanded copy; **Lock now** / unlock only when expanded; unlock links use safe `returnTo` (`safe-return-to.ts`).
 - **Unlock behavior** (`GET/PATCH /api/vault/settings`): `metadata_only` (default) or `decrypt_all`
 - **API:** `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted payloads only

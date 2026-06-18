@@ -17,7 +17,7 @@
 | 10 | User can unlock with recovery phrase | ✅ Pass | `unlockFromRecoveryPhrase` | `crypto-vault-unlock.test.ts` | Legacy `recovery_code` still supported |
 | 11 | User can associate passkey with vault unlock | ✅ Pass | `/vault/settings` `PasskeyVaultUnlockSetup`, enable-vault-unlock API | `passkey-vault-unlock-settings.test.tsx`, `passkey-vault-plaintext-rejection.test.ts` | |
 | 12 | User can unlock with compatible passkey vault envelope | ✅ Pass | `unlock-with-passkey.ts`, PRF envelope | `passkey-login-vault-unlock.test.ts` | |
-| 13 | User can create/edit/delete/archive Markdown notes | ✅ Pass | `/notes`, `/notes/new`, `/notes/[id]` | `notes-ux.test.tsx`, `notes-routes.test.ts`, `note-service.test.ts` | Title required on create; soft delete via `deleted_at` |
+| 13 | User can create/edit/delete/archive Markdown notes | ✅ Pass | `/notes`, `/notes/new`, `/notes/[id]` | `notes-ux.test.tsx`, `notes-routes.test.ts`, `note-service.test.ts`, `note-org-metadata.test.ts` | Trash = client metadata; permanent delete = server soft delete |
 | 14 | User can assign one category and multiple tags per note | ✅ Pass | `CategoryTagFields`, `TagChipInput`, encrypted vault index | `category-tag-crypto.test.ts`, `tag-normalization.test.ts`, `notes-ux.test.tsx` | Tags normalized; `#` display-only |
 | 15 | User can mark notes as answered | ✅ Pass | Encrypted metadata `answered` flag | `answered-metadata.test.ts`, `notes-ux.test.tsx` | Not on `/notes/new` |
 | 16 | User can search by title/tag/category after unlock | ✅ Pass | `note-search.ts`, `NoteFilters` | `note-search.test.ts`, `notes-ux.test.tsx` | Filters visible only when organizers exist |
@@ -45,6 +45,7 @@
 | 40 | Two-factor challenge is pre-auth; mobile redirect + safe callback | ✅ Pass | `/login/2fa`, `session-state.ts`, `safe-auth-callback.ts`, `oauth-two-factor-challenge.tsx`, `proxy.ts` | `two-factor-challenge.test.tsx`, `session-state.test.ts`, `safe-auth-callback.test.ts`, `site-layout.test.tsx`, `proxy.test.ts` | No logged-in nav during pending 2FA; OAuth waits for session refresh; see `docs/TWO_FACTOR_MOBILE_FLOW_AUDIT.md` |
 | 38 | Interactive Markdown checklists with encrypted persistence | ✅ Pass | `markdown-checklist.ts`, `MarkdownPreview`, note detail view save | `markdown-checklist.test.ts`, `markdown-preview.test.tsx`, `notes-ux.test.tsx` | Source markdown is source of truth |
 | 39 | Notes list resolve action, dates, sort, counter | ✅ Pass | `note-card.tsx`, `note-sort.ts`, `note-count.ts`, `notes/page.tsx` | `note-sort.test.ts`, `note-count.test.ts`, `notes-ux.test.tsx` | Client-side after vault unlock |
+| 41 | Note organization lifecycle (pin, favorite, archive, trash, filters, saved views, duplicate) | ✅ Pass | Track 3 implementation | `note-metadata.test.ts`, `smart-filters.test.ts`, `saved-views.test.ts`, `duplicate-note.test.ts`, `note-org-metadata.test.ts` | See `docs/NOTE_ORGANIZATION_LIFECYCLE_TRACK_3_IMPLEMENTATION.md` |
 | 37 | `/vault/recovery` status-gated; recovery phrase replace (not initial generation) | ✅ Pass | `/vault/recovery`, `POST /api/vault/recovery-phrase` | `vault-recovery-page.test.tsx`, `recovery-phrase-route.test.ts`, `vault-service.test.ts` | Legacy `recovery_code` unlock only; no "Do this later" |
 
 ---

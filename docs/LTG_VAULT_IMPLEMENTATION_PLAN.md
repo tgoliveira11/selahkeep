@@ -889,29 +889,29 @@ Distraction-free toggle hides non-essential chrome; save/status and vault dock r
 
 ---
 
-### Priority Track 3 — Organization, Views, and Note Lifecycle
+### Priority Track 3 — Organization, Views, and Note Lifecycle ✅
 
-These items help users manage a growing vault.
+These items help users manage a growing vault. See `docs/NOTE_ORGANIZATION_LIFECYCLE_TRACK_3_IMPLEMENTATION.md`.
 
-#### Pinned Notes
+#### Pinned Notes ✅
 
 Allow users to pin important notes to the top of the list.
 
 Pinned state must be stored only in encrypted metadata/index.
 
-#### Favorites
+#### Favorites ✅
 
 Add a separate favorite marker for notes that are important but not necessarily resolved.
 
 This should be distinct from “resolved”.
 
-#### Archive
+#### Archive ✅
 
 Allow users to archive notes without deleting them.
 
 Archived notes should remain encrypted and retrievable through a filter.
 
-#### Trash / Recently Deleted
+#### Trash / Recently Deleted ✅
 
 Add a recoverable delete flow.
 
@@ -921,9 +921,9 @@ Possible behavior:
 - Trash retains encrypted notes for a defined period or until manually emptied;
 - permanent delete requires confirmation.
 
-This should be considered before public beta to reduce accidental data loss.
+Trash auto-purge is **not** implemented yet.
 
-#### Smart Local Filters
+#### Smart Local Filters ✅
 
 Add local filters based on decrypted index data after unlock.
 
@@ -941,20 +941,13 @@ Possible filters:
 
 No plaintext server-side filtering should be added for encrypted metadata.
 
-#### Saved Views
+#### Saved Views ✅
 
 Allow users to save common filter combinations locally or in encrypted vault settings.
 
-Examples:
-
-- Unresolved prayer notes
-- Reflections this month
-- Work notes
-- Bible study notes
-
 Saved views must not expose plaintext criteria to the server unless encrypted.
 
-#### Compact/List View
+#### Compact/List View ✅
 
 Add a display mode for users with many notes.
 
@@ -963,9 +956,7 @@ Possible modes:
 - Card view
 - Compact list view
 
-This should improve scalability without changing the data model.
-
-#### Duplicate Note
+#### Duplicate Note ✅
 
 Add a “Duplicate note” action.
 

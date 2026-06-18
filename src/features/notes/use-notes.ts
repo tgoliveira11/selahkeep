@@ -12,27 +12,19 @@ import {
 } from "@/lib/crypto-client/notes";
 import {
   addVaultIndexEntry,
-  archiveVaultIndexEntry,
   createEmptyVaultIndex,
   decryptVaultIndex,
   encryptVaultIndex,
+  removeVaultIndexEntry,
+  restoreVaultIndexEntry,
   updateVaultIndexEntry,
-  type VaultIndexEntry,
 } from "@/lib/crypto-client/vault-index";
-import { getSessionVaultKey } from "@/lib/crypto-client/vault";
-import { generateDefaultNoteTitle } from "@/lib/crypto-client/vault";
-
-function metadataToIndexEntry(noteId: string, metadata: NoteMetadataPlaintext): VaultIndexEntry {
-  return {
-    id: noteId,
-    title: metadata.title,
-    categoryId: metadata.categoryId,
-    tagIds: metadata.tagIds,
-    answered: metadata.answered,
-    createdAt: metadata.createdAt,
-    updatedAt: metadata.updatedAt,
-  };
-}
+import { getSessionVaultKey, generateDefaultNoteTitle } from "@/lib/crypto-client/vault";
+import {
+  duplicateNoteMetadata,
+  metadataToIndexEntry,
+} from "@/lib/notes/note-metadata";
+import { countChecklistItems } from "@/lib/notes/markdown-checklist";
 
 async function syncVaultIndex(
   userId: string,
@@ -51,6 +43,44 @@ async function syncVaultIndex(
   await vaultApi.updateIndex(encrypted);
 }
 
+async function loadNoteForUpdate(noteId: string) {
+  const note = await notesApi.get(noteId);
+  const decrypted = await decryptNote(
+    note.encryptedMetadata,
+    note.encryptedBody,
+    note.encryptedWrappedNoteKey
+  );
+  return { note, decrypted };
+}
+
+async function persistMetadataUpdate(
+  userId: string,
+  noteId: string,
+  metadata: NoteMetadataPlaintext,
+  body: string,
+  wrappedKey: import("@/lib/validation/encrypted-payload").EncryptedPayload
+) {
+  const updatedMetadata = { ...metadata, updatedAt: new Date().toISOString() };
+  const payload = await reencryptNoteWithUpdatedMetadata(
+    userId,
+    noteId,
+    updatedMetadata,
+    body,
+    wrappedKey
+  );
+  const note = await notesApi.update(noteId, payload);
+
+  await syncVaultIndex(userId, (index) =>
+    updateVaultIndexEntry(
+      index,
+      noteId,
+      metadataToIndexEntry(noteId, updatedMetadata, body)
+    )
+  );
+
+  return { metadata: updatedMetadata, note };
+}
+
 export function useNotes(userId: string | null) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,14 +97,22 @@ export function useNotes(userId: string | null) {
         const note = await notesApi.create({ id: noteId, ...payload });
 
         await syncVaultIndex(userId, (index) =>
-          addVaultIndexEntry(index, metadataToIndexEntry(noteId, {
-            title,
-            categoryId: input.categoryId ?? null,
-            tagIds: input.tagIds ?? [],
-            answered: input.answered ?? false,
-            createdAt: note.createdAt,
-            updatedAt: note.updatedAt,
-          }))
+          addVaultIndexEntry(
+            index,
+            metadataToIndexEntry(noteId, {
+              title,
+              categoryId: input.categoryId ?? null,
+              tagIds: input.tagIds ?? [],
+              answered: input.answered ?? false,
+              pinned: input.pinned ?? false,
+              favorite: input.favorite ?? false,
+              archived: input.archived ?? false,
+              trashed: input.trashed ?? false,
+              trashedAt: input.trashedAt ?? null,
+              createdAt: note.createdAt,
+              updatedAt: note.updatedAt,
+            }, input.body)
+          )
         );
 
         return note;
@@ -100,21 +138,8 @@ export function useNotes(userId: string | null) {
       setBusy(true);
       setError(null);
       try {
-        const updatedMetadata = { ...metadata, updatedAt: new Date().toISOString() };
-        const payload = await reencryptNoteWithUpdatedMetadata(
-          userId,
-          noteId,
-          updatedMetadata,
-          body,
-          existingWrappedKey
-        );
-        const note = await notesApi.update(noteId, payload);
-
-        await syncVaultIndex(userId, (index) =>
-          updateVaultIndexEntry(index, noteId, metadataToIndexEntry(noteId, updatedMetadata))
-        );
-
-        return note;
+        const result = await persistMetadataUpdate(userId, noteId, metadata, body, existingWrappedKey);
+        return result.note;
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to update note";
         setError(message);
@@ -126,14 +151,80 @@ export function useNotes(userId: string | null) {
     [userId]
   );
 
-  const deleteNote = useCallback(
+  const moveNoteToTrash = useCallback(
+    async (noteId: string) => {
+      if (!userId) throw new Error("Not authenticated");
+      setBusy(true);
+      setError(null);
+      try {
+        const { decrypted, note } = await loadNoteForUpdate(noteId);
+        const now = new Date().toISOString();
+        const updatedMetadata: NoteMetadataPlaintext = {
+          ...decrypted.metadata,
+          trashed: true,
+          trashedAt: now,
+          pinned: false,
+          updatedAt: now,
+        };
+        const result = await persistMetadataUpdate(
+          userId,
+          noteId,
+          updatedMetadata,
+          decrypted.body,
+          note.encryptedWrappedNoteKey
+        );
+        return result.metadata;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to move note to trash";
+        setError(message);
+        throw e;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [userId]
+  );
+
+  const restoreNoteFromTrash = useCallback(
+    async (noteId: string) => {
+      if (!userId) throw new Error("Not authenticated");
+      setBusy(true);
+      setError(null);
+      try {
+        const { decrypted, note } = await loadNoteForUpdate(noteId);
+        const updatedMetadata: NoteMetadataPlaintext = {
+          ...decrypted.metadata,
+          trashed: false,
+          trashedAt: null,
+        };
+        const result = await persistMetadataUpdate(
+          userId,
+          noteId,
+          updatedMetadata,
+          decrypted.body,
+          note.encryptedWrappedNoteKey
+        );
+        await syncVaultIndex(userId, (index) => restoreVaultIndexEntry(index, noteId));
+        return result.metadata;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to restore note";
+        setError(message);
+        throw e;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [userId]
+  );
+
+  const permanentlyDeleteNote = useCallback(
     async (noteId: string) => {
       if (!userId) throw new Error("Not authenticated");
       setBusy(true);
       setError(null);
       try {
         await notesApi.delete(noteId);
-        await syncVaultIndex(userId, (index) => archiveVaultIndexEntry(index, noteId));
+        await syncVaultIndex(userId, (index) => removeVaultIndexEntry(index, noteId));
         return { success: true as const };
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to delete note";
@@ -146,37 +237,28 @@ export function useNotes(userId: string | null) {
     [userId]
   );
 
+  /** @deprecated Use moveNoteToTrash */
+  const deleteNote = moveNoteToTrash;
+
   const toggleNoteResolved = useCallback(
     async (noteId: string, answered: boolean) => {
       if (!userId) throw new Error("Not authenticated");
       setBusy(true);
       setError(null);
       try {
-        const note = await notesApi.get(noteId);
-        const decrypted = await decryptNote(
-          note.encryptedMetadata,
-          note.encryptedBody,
-          note.encryptedWrappedNoteKey
-        );
+        const { decrypted, note } = await loadNoteForUpdate(noteId);
         const updatedMetadata = {
           ...decrypted.metadata,
           answered,
-          updatedAt: new Date().toISOString(),
         };
-        const payload = await reencryptNoteWithUpdatedMetadata(
+        const result = await persistMetadataUpdate(
           userId,
           noteId,
           updatedMetadata,
           decrypted.body,
           note.encryptedWrappedNoteKey
         );
-        await notesApi.update(noteId, payload);
-
-        await syncVaultIndex(userId, (index) =>
-          updateVaultIndexEntry(index, noteId, metadataToIndexEntry(noteId, updatedMetadata))
-        );
-
-        return updatedMetadata;
+        return result.metadata;
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to update note";
         setError(message);
@@ -188,5 +270,149 @@ export function useNotes(userId: string | null) {
     [userId]
   );
 
-  return { createNote, updateNote, deleteNote, toggleNoteResolved, busy, error };
+  const toggleNotePinned = useCallback(
+    async (noteId: string, pinned: boolean) => {
+      if (!userId) throw new Error("Not authenticated");
+      setBusy(true);
+      setError(null);
+      try {
+        const { decrypted, note } = await loadNoteForUpdate(noteId);
+        const updatedMetadata = { ...decrypted.metadata, pinned };
+        const result = await persistMetadataUpdate(
+          userId,
+          noteId,
+          updatedMetadata,
+          decrypted.body,
+          note.encryptedWrappedNoteKey
+        );
+        return result.metadata;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to update note";
+        setError(message);
+        throw e;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [userId]
+  );
+
+  const toggleNoteFavorite = useCallback(
+    async (noteId: string, favorite: boolean) => {
+      if (!userId) throw new Error("Not authenticated");
+      setBusy(true);
+      setError(null);
+      try {
+        const { decrypted, note } = await loadNoteForUpdate(noteId);
+        const updatedMetadata = { ...decrypted.metadata, favorite };
+        const result = await persistMetadataUpdate(
+          userId,
+          noteId,
+          updatedMetadata,
+          decrypted.body,
+          note.encryptedWrappedNoteKey
+        );
+        return result.metadata;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to update note";
+        setError(message);
+        throw e;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [userId]
+  );
+
+  const toggleNoteArchived = useCallback(
+    async (noteId: string, archived: boolean) => {
+      if (!userId) throw new Error("Not authenticated");
+      setBusy(true);
+      setError(null);
+      try {
+        const { decrypted, note } = await loadNoteForUpdate(noteId);
+        const updatedMetadata = {
+          ...decrypted.metadata,
+          archived,
+          pinned: archived ? false : decrypted.metadata.pinned,
+        };
+        const result = await persistMetadataUpdate(
+          userId,
+          noteId,
+          updatedMetadata,
+          decrypted.body,
+          note.encryptedWrappedNoteKey
+        );
+        return result.metadata;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to update note";
+        setError(message);
+        throw e;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [userId]
+  );
+
+  const duplicateNote = useCallback(
+    async (noteId: string) => {
+      if (!userId) throw new Error("Not authenticated");
+      setBusy(true);
+      setError(null);
+      try {
+        const { decrypted } = await loadNoteForUpdate(noteId);
+        const newNoteId = crypto.randomUUID();
+        const now = new Date().toISOString();
+        const metadata = duplicateNoteMetadata(decrypted.metadata, decrypted.body, now, now);
+        const payload = await encryptNote(userId, newNoteId, {
+          title: metadata.title,
+          body: decrypted.body,
+          categoryId: metadata.categoryId,
+          tagIds: metadata.tagIds,
+          answered: metadata.answered,
+          pinned: metadata.pinned,
+          favorite: metadata.favorite,
+          archived: metadata.archived,
+          trashed: metadata.trashed,
+          trashedAt: metadata.trashedAt,
+          createdAt: metadata.createdAt,
+          updatedAt: metadata.updatedAt,
+        });
+        const note = await notesApi.create({ id: newNoteId, ...payload });
+
+        await syncVaultIndex(userId, (index) =>
+          addVaultIndexEntry(
+            index,
+            metadataToIndexEntry(newNoteId, metadata, decrypted.body)
+          )
+        );
+
+        return { noteId: newNoteId, note };
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to duplicate note";
+        setError(message);
+        throw e;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [userId]
+  );
+
+  return {
+    createNote,
+    updateNote,
+    deleteNote,
+    moveNoteToTrash,
+    restoreNoteFromTrash,
+    permanentlyDeleteNote,
+    toggleNoteResolved,
+    toggleNotePinned,
+    toggleNoteFavorite,
+    toggleNoteArchived,
+    duplicateNote,
+    busy,
+    error,
+  };
 }

@@ -7,6 +7,10 @@ const notes: NoteSearchResult[] = [
     id: "a",
     title: "Beta",
     answered: false,
+    pinned: true,
+    favorite: false,
+    archived: false,
+    trashed: false,
     categoryId: null,
     tagIds: [],
     createdAt: "2026-01-01T00:00:00.000Z",
@@ -18,6 +22,10 @@ const notes: NoteSearchResult[] = [
     id: "b",
     title: "Alpha",
     answered: true,
+    pinned: false,
+    favorite: false,
+    archived: false,
+    trashed: false,
     categoryId: null,
     tagIds: [],
     createdAt: "2026-01-02T00:00:00.000Z",
@@ -32,16 +40,20 @@ describe("sortNotes", () => {
     expect(sortNotes(notes, "modified-desc").map((n) => n.id)).toEqual(["a", "b"]);
   });
 
-  it("sorts by modified oldest first", () => {
-    expect(sortNotes(notes, "modified-asc").map((n) => n.id)).toEqual(["b", "a"]);
+  it("sorts by modified oldest first with pinned notes first", () => {
+    expect(sortNotes(notes, "modified-asc").map((n) => n.id)).toEqual(["a", "b"]);
   });
 
-  it("sorts by created newest first", () => {
-    expect(sortNotes(notes, "created-desc").map((n) => n.id)).toEqual(["b", "a"]);
+  it("sorts by created newest first with pinned notes first", () => {
+    expect(sortNotes(notes, "created-desc").map((n) => n.id)).toEqual(["a", "b"]);
   });
 
   it("sorts by created oldest first", () => {
     expect(sortNotes(notes, "created-asc").map((n) => n.id)).toEqual(["a", "b"]);
+  });
+
+  it("sorts pinned notes above unpinned within sort groups", () => {
+    expect(sortNotes(notes, "modified-asc").map((n) => n.id)).toEqual(["a", "b"]);
   });
 
   it("sorts by title Z-A", () => {

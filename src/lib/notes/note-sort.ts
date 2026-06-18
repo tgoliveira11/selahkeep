@@ -25,6 +25,10 @@ export function sortNotes(
 ): NoteSearchResult[] {
   const sorted = [...notes];
   sorted.sort((a, b) => {
+    if (a.pinned !== b.pinned) {
+      return a.pinned ? -1 : 1;
+    }
+
     switch (sort) {
       case "modified-desc":
         return b.updatedAt.localeCompare(a.updatedAt);

@@ -67,12 +67,14 @@ vi.mock("@/lib/crypto-client/note-drafts", () => ({
   loadEncryptedNoteDraft: vi.fn().mockResolvedValue(null),
   saveEncryptedNoteDraft: vi.fn().mockResolvedValue(undefined),
   deleteEncryptedNoteDraft: vi.fn().mockResolvedValue(undefined),
+  listEncryptedNoteDraftKeys: vi.fn().mockResolvedValue([]),
 }));
 
 const sampleIndex = {
-  version: 2 as const,
+  version: 3 as const,
   categories: [{ id: "c1", name: "Prayer", createdAt: "", updatedAt: "" }],
   tags: [{ id: "t1", name: "faith", createdAt: "", updatedAt: "" }],
+  savedViews: [],
   entries: [
     {
       id: "note-1",
@@ -80,6 +82,11 @@ const sampleIndex = {
       categoryId: "c1",
       tagIds: ["t1"],
       answered: false,
+      pinned: false,
+      favorite: false,
+      archived: false,
+      trashed: false,
+      trashedAt: null,
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     },
@@ -150,7 +157,14 @@ describe("notes UX", () => {
       createNote: vi.fn(),
       updateNote: vi.fn(),
       deleteNote: vi.fn(),
+      moveNoteToTrash: vi.fn(),
+      restoreNoteFromTrash: vi.fn(),
+      permanentlyDeleteNote: vi.fn(),
       toggleNoteResolved: vi.fn(),
+      toggleNotePinned: vi.fn(),
+      toggleNoteFavorite: vi.fn(),
+      toggleNoteArchived: vi.fn(),
+      duplicateNote: vi.fn(),
       busy: false,
       error: null,
     });
@@ -325,7 +339,7 @@ describe("notes UX", () => {
 
     it("shows unresolved badge on open notes", async () => {
       render(<NotesPage />);
-      expect(await screen.findByText("Unresolved")).toBeTruthy();
+      expect(await screen.findByTestId("note-card-unresolved-badge")).toBeTruthy();
     });
 
     it("routes no-vault state to /vault/setup", async () => {
