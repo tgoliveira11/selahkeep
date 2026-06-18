@@ -17,6 +17,8 @@
 | `/vault/security` | pass | Locked variant; security review sections |
 | `/vault/recovery` | pass | Recovery phrase primary; legacy code noted when present |
 | `/settings/account` | pass | Account vs vault separation |
+| Unknown route (`not-found`) | fixed | Custom SelahKeep 404; calm copy; session-aware recovery |
+| Missing `/notes/[id]` | fixed | Generic note-not-found; no private metadata leak |
 
 ## Error / loading / empty
 
@@ -25,6 +27,7 @@
 | Notes empty state | pass | Calm CTA to first note |
 | Notes locked | pass | `VaultLockedState` notes-list |
 | Note detail locked | fixed | No decrypted metadata; unlock actions |
+| Global / note not-found | fixed | `NotFoundState`; no stack traces or private data |
 | Vault not configured prompts | pass | Dock + settings links |
 
 ## Follow-up (non-blocking)

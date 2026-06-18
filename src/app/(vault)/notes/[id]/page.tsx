@@ -31,6 +31,7 @@ import {
   useUnsavedChangesWarning,
 } from "@/features/notes/use-unsaved-changes";
 import { notesApi } from "@/lib/api-client/notes";
+import { ApiError } from "@/lib/api-client/api-error";
 import { decryptNote, type NoteMetadataPlaintext } from "@/lib/crypto-client/notes";
 import {
   deleteEncryptedNoteDraft,
@@ -45,6 +46,7 @@ import { getCachedNoteBody } from "@/features/notes/eager-decrypt-notes";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import { cn } from "@/lib/ui/cn";
 import { ResolvedReflectionDialog } from "@/components/notes/resolved-reflection-dialog";
+import { NoteNotFoundPanel } from "@/components/layout/app-not-found";
 
 function editSnapshot(metadata: NoteMetadataPlaintext, body: string): string {
   return JSON.stringify({
@@ -81,6 +83,7 @@ export default function NoteDetailPage() {
   const [wrappedKey, setWrappedKey] = useState<EncryptedPayload | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [noteMissing, setNoteMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [permanentDeleteOpen, setPermanentDeleteOpen] = useState(false);
@@ -190,7 +193,11 @@ export default function NoteDetailPage() {
         }
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Failed to load note");
+          if (e instanceof ApiError && e.status === 404) {
+            setNoteMissing(true);
+          } else {
+            setError(e instanceof Error ? e.message : "Failed to load note");
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -525,6 +532,10 @@ export default function NoteDetailPage() {
         <VaultLockedState variant="read-note" returnTo={`/notes/${id}`} />
       </NoteDetailPageShell>
     );
+  }
+
+  if (noteMissing) {
+    return <NoteNotFoundPanel />;
   }
 
   if (loading || !metadata) {

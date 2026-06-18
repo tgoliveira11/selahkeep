@@ -265,6 +265,8 @@ Use `AuthenticatedPage` from `@/components/layout/authenticated-page` for standa
 | `ViewModeToggle` | `@/features/notes/view-mode-toggle` |
 | `NotesListGrid` | `@/components/notes/notes-list-grid` |
 | `EmptyState` | `@/components/ui/empty-state` |
+| `NotFoundState` | `@/components/ui/not-found-state` |
+| `AppNotFoundPage` | `@/components/layout/app-not-found` |
 | `NoteCard` / `NoteListRow` | `@/components/notes/*` |
 | `NoteStateIndicators` | `@/components/notes/note-state-indicators` |
 | `NoteReadingView` | `@/components/notes/note-reading-view` |
@@ -357,6 +359,24 @@ Use `SettingsSection` — one topic per section. No nested duplicate page titles
 ### Empty State Pattern
 
 `EmptyState` with calm copy and a single clear next action (e.g. “Start your first private note”).
+
+### Not Found (404) Pattern
+
+`src/app/not-found.tsx` renders `AppNotFoundPage` — calm SelahKeep empty-state, not a technical error screen.
+
+| Context | Copy | Primary action |
+|---------|------|----------------|
+| Unknown route | Page not found — vault and notes are safe | Signed in: **Go to notes** · Signed out: **Go home** |
+| Missing `/notes/[id]` | Note not found — generic; no private metadata | **Back to notes** |
+
+Rules:
+
+- Subtle `404` badge; title is human (“Page not found”), not “404 Error”.
+- Missing private resources must **not** reveal whether a note ID existed or expose title/body/category/tags.
+- Signed-out users: Home + Sign in; no Vault Status Dock or authenticated nav.
+- Pending 2FA: same pre-auth recovery as signed-out (no authenticated shell).
+- Fully signed in: Go to notes, Go home, optional Open vault settings.
+- Route-specific: `src/app/(vault)/notes/[id]/not-found.tsx` and client 404 handling on note detail load.
 
 ### Width and Spacing System
 
