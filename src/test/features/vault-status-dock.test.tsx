@@ -212,20 +212,24 @@ describe("VaultStatusDock", () => {
     expect(screen.queryByRole("link", { name: /^unlock vault$/i })).toBeNull();
   });
 
-  it("on /vault/unlock shows status message without duplicate unlock form", async () => {
+  it("on /vault/unlock keeps dock collapsed when locked", async () => {
     const { usePathname } = await import("next/navigation");
     vi.mocked(usePathname).mockReturnValue("/vault/unlock");
 
     render(<VaultStatusDock />);
     expect(screen.getByTestId("vault-status-dock-handle")).toBeTruthy();
-    expect(screen.queryByLabelText(/vault password/i)).toBeNull();
-
+    expect(screen.queryByTestId("vault-status-dock")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
-    const dock = screen.getByTestId("vault-status-dock");
-    expect(dock.getAttribute("data-on-unlock-page")).toBe("true");
-    expect(screen.getByText(/already on the full unlock page/i)).toBeTruthy();
+    expect(screen.getByTestId("vault-status-dock-handle")).toBeTruthy();
     expect(screen.queryByLabelText(/vault password/i)).toBeNull();
-    expect(screen.queryByRole("tab", { name: /recovery phrase/i })).toBeNull();
+  });
+
+  it("collapses dock when Open full unlock page is clicked", async () => {
+    render(<VaultStatusDock />);
+    fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
+    fireEvent.click(screen.getByRole("link", { name: /open full unlock page/i }));
+    expect(screen.getByTestId("vault-status-dock-handle")).toBeTruthy();
+    expect(localStorage.getItem(VAULT_STATUS_DOCK_COLLAPSED_KEY)).toBe("true");
   });
 
   it("expanded locked dock uses narrow layout class", async () => {

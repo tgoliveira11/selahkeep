@@ -124,7 +124,7 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 ## UI layer
 
 - **Design docs:** `docs/UI_UX_DIRECTION.md`, `docs/LOGGED_IN_NAVIGATION_AUDIT.md`
-- **Layout:** `SiteShell` (`AppHeaderChrome` + `SiteFooter`); `VaultStatusDock` lives inside authenticated `Nav` header (`position: relative`); `PageLayout` for content width.
+- **Layout:** `SiteShell` (`RouteScrollToTop`, `AppHeaderChrome`, `SiteFooter`); `VaultStatusDock` inside authenticated `Nav` header; `PageLayout` for content width. Client navigations reset window scroll to top unless the URL has a hash anchor.
 - **Public marketing:** Home page sections and copy in `src/lib/marketing/home-copy.ts`
 - **Vault setup:** `/vault/setup` — `PasswordSetupFields` (secure-auth) + BIP39 recovery phrase wizard; policy from `src/lib/config/vault-password-policy.ts`
 - **Recovery management:** `/vault/recovery` — status-gated recovery phrase replace (no initial phrase generation post-setup); link to `/vault/settings` for optional passkey vault unlock

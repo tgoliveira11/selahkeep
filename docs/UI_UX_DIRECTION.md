@@ -85,7 +85,9 @@ Account auth UI comes from `@tgoliveira/secure-auth/react`. Style integration po
 See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 
 - **Primary (signed in):** Notes · Vault · Account · Sign out (no vault lock/status in header)
-- **Global vault status dock:** narrow compact popover (`max-width: 480px`) on authenticated header; collapsed handle (`Vault` when locked, `mm:ss` when open); expanded locked = `VaultDockQuickUnlock` (password + passkey PRF when available) + **Open full unlock page** (recovery phrase on full page); expanded open = single compact row + **Lock now**. No duplicate unlock form on `/vault/unlock`.
+- **Global vault status dock:** narrow compact popover on authenticated header; quick password/passkey unlock; recovery phrase on `/vault/unlock` only; dock stays collapsed on `/vault/unlock`
+- **Route scroll:** authenticated navigations reset to page top unless a hash anchor is present (`RouteScrollToTop` in `SiteShell`)
+- **`/notes` locked state:** explanatory card with unlock actions; no decrypted notes, counts, or metadata while locked
 - **Brand mark:** Purple SK monogram in header and favicon (no green envelope)
 - **Account vs vault:** `/settings/account` = sign-in security; `/vault/*` = note encryption protection
 - Footer attribution unchanged

@@ -198,7 +198,8 @@ describe("vault status dock inline unlock security", () => {
 
   it("does not render duplicate unlock form on /vault/unlock", async () => {
     await renderExpandedDock({ pathname: "/vault/unlock" });
-    expect(screen.getByText(/already on the full unlock page/i)).toBeTruthy();
+    expect(screen.getByTestId("vault-status-dock-handle")).toBeTruthy();
+    expect(screen.queryByTestId("vault-status-dock")).toBeNull();
     expect(screen.queryByLabelText(/vault password/i)).toBeNull();
   });
 });

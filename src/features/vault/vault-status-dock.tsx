@@ -28,6 +28,7 @@ import {
   writeVaultStatusDockCollapsedPreference,
 } from "@/features/vault/vault-status-dock-preference";
 import { useVaultDockDismiss } from "@/features/vault/use-vault-dock-dismiss";
+import { subscribeVaultDockExpand } from "@/features/vault/vault-status-dock-events";
 import { cn } from "@/lib/ui/cn";
 
 function iconToneClass(clientStatus: VaultClientStatus): string {
@@ -92,6 +93,9 @@ export function VaultStatusDock() {
 
   const expanded = useMemo(() => {
     if (!clientStatus) return false;
+    if (onFullUnlockPage && clientStatus === "locked") {
+      return false;
+    }
     if (expansion?.status === clientStatus) return expansion.expanded;
     const preference = readVaultStatusDockCollapsedPreference();
     return resolveExpanded(clientStatus, preference, onFullUnlockPage);
@@ -106,9 +110,12 @@ export function VaultStatusDock() {
 
   const expand = useCallback(() => {
     if (!clientStatus) return;
+    if (onFullUnlockPage && clientStatus === "locked") return;
     setExpansion({ status: clientStatus, expanded: true });
     writeVaultStatusDockCollapsedPreference(false);
-  }, [clientStatus]);
+  }, [clientStatus, onFullUnlockPage]);
+
+  useEffect(() => subscribeVaultDockExpand(expand), [expand]);
 
   useEffect(() => {
     if (!expanded || !panelRef.current || clientStatus !== "locked" || onFullUnlockPage) return;
@@ -154,6 +161,10 @@ export function VaultStatusDock() {
 
   function lockNow() {
     lockVaultSession();
+    collapse();
+  }
+
+  function openFullUnlockPage() {
     collapse();
   }
 
@@ -210,40 +221,6 @@ export function VaultStatusDock() {
     );
   }
 
-  if (status === "locked" && onFullUnlockPage) {
-    return (
-      <div
-        ref={panelRef}
-        className="vault-status-dock-panel vault-status-dock-panel--closed vault-status-dock-panel--compact"
-        data-testid="vault-status-dock"
-        data-vault-state="closed"
-        data-expanded="true"
-        data-on-unlock-page="true"
-        role="status"
-        aria-live="polite"
-      >
-        <div className="vault-status-dock-panel__head">
-          <span className={cn("vault-status-dock__icon vault-status-dock__icon--compact", iconToneClass(status))}>
-            <VaultStatusIcon status={status} />
-          </span>
-          <p className="vault-status-dock-panel__title">{expandedCopy.title}</p>
-          <button
-            type="button"
-            className="vault-status-dock__toggle"
-            aria-expanded={true}
-            aria-label="Collapse vault status"
-            onClick={collapse}
-          >
-            <VaultStatusDockChevron expanded />
-          </button>
-        </div>
-        <p className="vault-status-dock-panel__body vault-status-dock-panel__body--compact">
-          You are already on the full unlock page.
-        </p>
-      </div>
-    );
-  }
-
   if (status === "locked" && showLtgUnlock) {
     return (
       <div
@@ -283,7 +260,11 @@ export function VaultStatusDock() {
           }}
         />
         <p className="vault-status-dock-panel__fallback">
-          <Link href={unlockHref} className="vault-status-dock-panel__fallback-link">
+          <Link
+            href={unlockHref}
+            className="vault-status-dock-panel__fallback-link"
+            onClick={openFullUnlockPage}
+          >
             Open full unlock page
           </Link>
         </p>

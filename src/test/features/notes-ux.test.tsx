@@ -215,16 +215,24 @@ describe("notes UX", () => {
       expect(await screen.findByLabelText(/search/i)).toBeTruthy();
     });
 
-    it("shows protected message without decrypted content when locked", async () => {
+    it("shows helpful locked-vault state without decrypted content", async () => {
       const { useRequireVault } = await import("@/features/vault/use-require-vault");
       const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
       vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(false));
       vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
       render(<NotesPage />);
-      expect(await screen.findByTestId("notes-vault-protected-message")).toBeTruthy();
+      expect(await screen.findByTestId("notes-vault-locked-state")).toBeTruthy();
+      expect(screen.getByRole("heading", { name: /your vault is closed/i })).toBeTruthy();
+      expect(screen.getByText(/account session does not unlock your vault/i)).toBeTruthy();
+      expect(screen.getByText(/encrypted before they leave this device/i)).toBeTruthy();
+      expect(screen.getByRole("button", { name: /unlock vault/i })).toBeTruthy();
+      expect(screen.getByTestId("notes-open-full-unlock-page").getAttribute("href")).toBe(
+        "/vault/unlock?returnTo=%2Fnotes"
+      );
       expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
-      expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
+      expect(screen.queryByTestId("notes-counter")).toBeNull();
+      expect(screen.queryByRole("link", { name: /new note/i })).toBeNull();
     });
 
     it("does not show page-level vault open indicator when unlocked", async () => {
@@ -232,17 +240,6 @@ describe("notes UX", () => {
       expect(await screen.findByRole("link", { name: /new note/i })).toBeTruthy();
       expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
       expect(screen.queryByText("Vault open")).toBeNull();
-    });
-
-    it("does not duplicate unlock CTA on notes page when locked", async () => {
-      const { useRequireVault } = await import("@/features/vault/use-require-vault");
-      const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
-      vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(false));
-      vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
-
-      render(<NotesPage />);
-      await screen.findByTestId("notes-vault-protected-message");
-      expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
     });
 
     it("shows notes counter", async () => {
