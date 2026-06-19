@@ -154,12 +154,6 @@ describe("vault status dock inline unlock security", () => {
   });
 
   it("shows passkey unlock only when configured and available", async () => {
-    await renderExpandedDock({ passkey: false });
-    expect(screen.queryByRole("tab", { name: /^passkey$/i })).toBeNull();
-    expect(screen.queryByRole("button", { name: /unlock with passkey/i })).toBeNull();
-  });
-
-  it("shows passkey unlock when passkey_prf envelope exists and PRF is available", async () => {
     await renderExpandedDock({
       passkey: true,
       passkeyAvailability: {
@@ -168,11 +162,12 @@ describe("vault status dock inline unlock security", () => {
         prfExplicitlyUnsupported: false,
       },
     });
-    fireEvent.click(screen.getByRole("tab", { name: /^passkey$/i }));
     expect(screen.getByRole("button", { name: /unlock with passkey/i })).toBeTruthy();
+    expect(screen.queryByLabelText(/vault password/i)).toBeNull();
+    expect(screen.queryByRole("tab", { name: /^passkey$/i })).toBeNull();
   });
 
-  it("hides active passkey option when PRF is explicitly unsupported", async () => {
+  it("shows passkey unavailable state without password fallback when envelope exists", async () => {
     await renderExpandedDock({
       passkey: true,
       passkeyAvailability: {
@@ -182,7 +177,9 @@ describe("vault status dock inline unlock security", () => {
       },
     });
     expect(screen.queryByRole("tab", { name: /^passkey$/i })).toBeNull();
+    expect(screen.queryByLabelText(/vault password/i)).toBeNull();
     expect(screen.getByText(/passkey unlock is unavailable in this browser/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /open full unlock page/i })).toBeTruthy();
   });
 
   it("keeps dock expanded when unlock error is shown", async () => {
@@ -204,9 +201,24 @@ describe("vault status dock inline unlock security", () => {
     expect(dock.textContent?.toLowerCase()).not.toContain("letter");
   });
 
-  it("does not render duplicate unlock form on /vault/unlock", async () => {
-    await renderExpandedDock({ pathname: "/vault/unlock" });
-    expect(screen.getByTestId("vault-status-dock-handle")).toBeTruthy();
+  it("does not render dock on /vault/unlock", async () => {
+    const { usePathname } = await import("next/navigation");
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    const { useVault } = await import("@/features/vault/use-vault");
+    vi.mocked(usePathname).mockReturnValue("/vault/unlock");
+    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus(false));
+    vi.mocked(useVault).mockReturnValue({
+      loading: false,
+      error: null,
+      unlockFromVaultPassword,
+      unlockFromRecoveryPhrase: vi.fn(),
+      unlockFromPasskey,
+      unlockFromRecoveryCode: vi.fn(),
+      lockVault: vi.fn(),
+    });
+
+    render(<VaultStatusDock />);
+    expect(screen.queryByTestId("vault-status-dock-handle")).toBeNull();
     expect(screen.queryByTestId("vault-status-dock")).toBeNull();
     expect(screen.queryByLabelText(/vault password/i)).toBeNull();
   });

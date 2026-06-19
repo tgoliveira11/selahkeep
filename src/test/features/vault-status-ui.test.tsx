@@ -354,7 +354,7 @@ describe("nav vault status dock", () => {
     vi.clearAllMocks();
   });
 
-  it("shows vault status bar below header when vault is not configured", async () => {
+  it("does not show vault dock before vault is configured", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("not_configured"));
 
@@ -365,16 +365,13 @@ describe("nav vault status dock", () => {
     );
 
     const header = screen.getByRole("banner");
-    const dock = screen.getByTestId("vault-status-dock");
     const mainNav = within(header).getByRole("navigation", { name: /main navigation/i });
     expect(within(mainNav).queryByRole("link", { name: /set up vault/i })).toBeNull();
-    expect(within(dock).getByText("Vault not set up")).toBeTruthy();
-    expect(within(dock).getByRole("link", { name: /set up vault/i }).getAttribute("href")).toBe(
-      "/vault/setup"
-    );
+    expect(screen.queryByTestId("vault-status-dock")).toBeNull();
+    expect(screen.queryByTestId("vault-status-dock-handle")).toBeNull();
   });
 
-  it("shows continue setup in status bar when setup is incomplete", async () => {
+  it("does not show vault dock when setup is incomplete", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("setup_incomplete"));
 
@@ -384,13 +381,9 @@ describe("nav vault status dock", () => {
       </SiteShell>
     );
 
-    const dock = screen.getByTestId("vault-status-dock");
-    const mainNav = within(screen.getByRole("banner")).getByRole("navigation", {
-      name: /main navigation/i,
-    });
-    expect(within(dock).getByText("Setup incomplete")).toBeTruthy();
-    expect(within(dock).getByRole("link", { name: /continue setup/i })).toBeTruthy();
-    expect(within(mainNav).queryByText("Setup incomplete")).toBeNull();
+    expect(screen.queryByTestId("vault-status-dock")).toBeNull();
+    expect(screen.queryByTestId("vault-status-dock-handle")).toBeNull();
+    expect(screen.queryByText("Setup incomplete")).toBeNull();
   });
 
   it("shows unlock vault in status bar when vault is locked", async () => {

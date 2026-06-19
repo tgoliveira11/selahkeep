@@ -14,9 +14,12 @@ import {
 } from "@/lib/crypto-client/vault-envelope";
 import {
   generateRecoveryPhrase,
-  assertRecoveryPhraseConfirmation,
   type RecoveryPhraseLength,
 } from "@/lib/crypto-client/recovery-phrase";
+import {
+  assertRecoveryPhraseChallengeAnswers,
+  pickRecoveryPhraseChallengeIndices,
+} from "@/lib/crypto-client/recovery-phrase-challenge";
 import { setUnlockedVaultSession } from "@/lib/crypto-client/vault-session";
 import { vaultApi } from "@/lib/api-client/vault";
 import { validatePasswordSetup } from "@tgoliveira/secure-auth/client/password-policy";
@@ -37,15 +40,35 @@ export function useLtgVaultSetup(vaultPasswordPolicy: PasswordPolicyConfig) {
   const [vaultPasswordConfirm, setVaultPasswordConfirm] = useState("");
   const [phraseLength, setPhraseLength] = useState<RecoveryPhraseLength>(12);
   const [recoveryPhrase, setRecoveryPhrase] = useState("");
-  const [phraseConfirmation, setPhraseConfirmation] = useState("");
+  const [challengeIndices, setChallengeIndices] = useState<number[]>([]);
+  const [challengeAnswers, setChallengeAnswers] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generatePhrase = useCallback((length: RecoveryPhraseLength) => {
-    setPhraseLength(length);
-    setRecoveryPhrase(generateRecoveryPhrase(length));
-    setPhraseConfirmation("");
-    setStep("phrase-display");
+  const regenerateChallenge = useCallback((length: RecoveryPhraseLength) => {
+    setChallengeIndices(pickRecoveryPhraseChallengeIndices(length));
+    setChallengeAnswers({});
+    setError(null);
+  }, []);
+
+  const generatePhrase = useCallback(
+    (length: RecoveryPhraseLength) => {
+      setPhraseLength(length);
+      setRecoveryPhrase(generateRecoveryPhrase(length));
+      regenerateChallenge(length);
+      setStep("phrase-display");
+    },
+    [regenerateChallenge]
+  );
+
+  const beginPhraseConfirmation = useCallback(() => {
+    regenerateChallenge(phraseLength);
+    setStep("phrase-confirm");
+  }, [phraseLength, regenerateChallenge]);
+
+  const setChallengeAnswer = useCallback((index: number, value: string) => {
+    setChallengeAnswers((current) => ({ ...current, [index]: value }));
+    setError(null);
   }, []);
 
   const completeSetup = useCallback(async () => {
@@ -53,7 +76,7 @@ export function useLtgVaultSetup(vaultPasswordPolicy: PasswordPolicyConfig) {
     setLoading(true);
     setError(null);
     try {
-      assertRecoveryPhraseConfirmation(recoveryPhrase, phraseConfirmation);
+      assertRecoveryPhraseChallengeAnswers(recoveryPhrase, challengeAnswers, challengeIndices);
 
       const passwordValidation = validatePasswordSetup({
         password: vaultPassword,
@@ -107,7 +130,16 @@ export function useLtgVaultSetup(vaultPasswordPolicy: PasswordPolicyConfig) {
     } finally {
       setLoading(false);
     }
-  }, [session, vaultPassword, vaultPasswordConfirm, vaultPasswordPolicy, recoveryPhrase, phraseConfirmation, phraseLength]);
+  }, [
+    session,
+    vaultPassword,
+    vaultPasswordConfirm,
+    vaultPasswordPolicy,
+    recoveryPhrase,
+    challengeAnswers,
+    challengeIndices,
+    phraseLength,
+  ]);
 
   return {
     step,
@@ -118,9 +150,11 @@ export function useLtgVaultSetup(vaultPasswordPolicy: PasswordPolicyConfig) {
     setVaultPasswordConfirm,
     phraseLength,
     recoveryPhrase,
-    phraseConfirmation,
-    setPhraseConfirmation,
+    challengeIndices,
+    challengeAnswers,
+    setChallengeAnswer,
     generatePhrase,
+    beginPhraseConfirmation,
     completeSetup,
     loading,
     error,

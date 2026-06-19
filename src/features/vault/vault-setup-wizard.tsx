@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PasswordSetupFields } from "@tgoliveira/secure-auth/react/client";
 import type { PasswordPolicyConfig } from "@tgoliveira/secure-auth/client/password-policy";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { FormField } from "@/components/ui/form-field";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import type { VaultSetupStep } from "./use-ltg-vault-setup";
 import type { RecoveryPhraseLength } from "@/lib/crypto-client/recovery-phrase";
+import {
+  buildRecoveryPhraseDownloadContent,
+  downloadRecoveryPhraseFile,
+} from "@/lib/crypto-client/recovery-phrase-download";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 interface VaultSetupWizardProps {
@@ -20,12 +24,14 @@ interface VaultSetupWizardProps {
   vaultPassword: string;
   vaultPasswordConfirm: string;
   recoveryPhrase: string;
-  phraseConfirmation: string;
+  challengeIndices: number[];
+  challengeAnswers: Record<number, string>;
   onVaultPasswordChange: (value: string) => void;
   onVaultPasswordConfirmChange: (value: string) => void;
-  onPhraseConfirmationChange: (value: string) => void;
+  onChallengeAnswerChange: (index: number, value: string) => void;
   onSetStep: (step: VaultSetupStep) => void;
   onGeneratePhrase: (length: RecoveryPhraseLength) => void;
+  onBeginPhraseConfirmation: () => void;
   onComplete: () => void;
 }
 
@@ -37,15 +43,30 @@ export function VaultSetupWizard({
   vaultPassword,
   vaultPasswordConfirm,
   recoveryPhrase,
-  phraseConfirmation,
+  challengeIndices,
+  challengeAnswers,
   onVaultPasswordChange,
   onVaultPasswordConfirmChange,
-  onPhraseConfirmationChange,
+  onChallengeAnswerChange,
   onSetStep,
   onGeneratePhrase,
+  onBeginPhraseConfirmation,
   onComplete,
 }: VaultSetupWizardProps) {
   const [passwordStepValid, setPasswordStepValid] = useState(false);
+  const [savedSecurely, setSavedSecurely] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const canConfirmChallenge = useMemo(
+    () =>
+      challengeIndices.every((index) => (challengeAnswers[index] ?? "").trim().length > 0),
+    [challengeAnswers, challengeIndices]
+  );
+
+  async function copyRecoveryPhrase() {
+    await navigator.clipboard.writeText(recoveryPhrase);
+    setCopied(true);
+  }
 
   return (
     <Card className="space-y-5 p-6">
@@ -153,8 +174,31 @@ export function VaultSetupWizard({
           >
             {recoveryPhrase}
           </div>
-          <Button className="w-full" onClick={() => onSetStep("phrase-confirm")}>
-            I have saved my phrase
+          <Alert variant="warning">
+            Store this phrase securely. Anyone with this phrase can unlock your vault.
+          </Alert>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" type="button" onClick={() => void copyRecoveryPhrase()}>
+              {copied ? "Copied" : "Copy recovery phrase"}
+            </Button>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => downloadRecoveryPhraseFile(recoveryPhrase)}
+            >
+              Download recovery phrase
+            </Button>
+          </div>
+          <label className="flex items-start gap-2 text-sm text-[var(--muted)]">
+            <input
+              type="checkbox"
+              checked={savedSecurely}
+              onChange={(event) => setSavedSecurely(event.target.checked)}
+            />
+            <span>I saved this securely</span>
+          </label>
+          <Button className="w-full" disabled={!savedSecurely} onClick={onBeginPhraseConfirmation}>
+            Continue
           </Button>
         </>
       )}
@@ -164,30 +208,49 @@ export function VaultSetupWizard({
           <div className="space-y-2">
             <h2 className="text-lg font-semibold">Confirm your recovery phrase</h2>
             <p className="text-sm text-[var(--muted)]">
-              Enter the phrase exactly to confirm you saved it.
+              To make sure you saved it correctly, enter the requested words from your recovery
+              phrase.
             </p>
           </div>
-          <FormField label="Recovery phrase" id="phrase-confirm">
-            <Textarea
-              id="phrase-confirm"
-              rows={4}
-              value={phraseConfirmation}
-              onChange={(e) => onPhraseConfirmationChange(e.target.value)}
-              placeholder="Enter your recovery phrase"
-            />
-          </FormField>
+          <div className="space-y-3">
+            {challengeIndices.map((index) => (
+              <FormField
+                key={index}
+                label={`Word #${index}`}
+                id={`recovery-phrase-word-${index}`}
+              >
+                <Input
+                  id={`recovery-phrase-word-${index}`}
+                  aria-label={`Recovery phrase word number ${index}`}
+                  value={challengeAnswers[index] ?? ""}
+                  onChange={(event) => onChallengeAnswerChange(index, event.target.value)}
+                  autoComplete="off"
+                />
+              </FormField>
+            ))}
+          </div>
           <div className="flex gap-3">
             <Button variant="secondary" onClick={() => onSetStep("phrase-display")}>
               Back
             </Button>
-            <Button className="flex-1" disabled={loading} onClick={onComplete}>
-              {loading ? "Creating vault…" : "Create vault"}
+            <Button
+              className="flex-1"
+              disabled={loading || !canConfirmChallenge}
+              onClick={onComplete}
+            >
+              {loading ? "Creating vault…" : "Confirm recovery phrase"}
             </Button>
           </div>
         </>
       )}
 
       {error && <Alert variant="danger">{error}</Alert>}
+
+      {step === "phrase-display" && (
+        <span className="sr-only" data-testid="recovery-phrase-download-content">
+          {buildRecoveryPhraseDownloadContent(recoveryPhrase)}
+        </span>
+      )}
     </Card>
   );
 }

@@ -71,12 +71,14 @@ export function VaultSetupPage({ vaultPasswordPolicy }: VaultSetupPageProps) {
         vaultPassword={setup.vaultPassword}
         vaultPasswordConfirm={setup.vaultPasswordConfirm}
         recoveryPhrase={setup.recoveryPhrase}
-        phraseConfirmation={setup.phraseConfirmation}
+        challengeIndices={setup.challengeIndices}
+        challengeAnswers={setup.challengeAnswers}
         onVaultPasswordChange={setup.setVaultPassword}
         onVaultPasswordConfirmChange={setup.setVaultPasswordConfirm}
-        onPhraseConfirmationChange={setup.setPhraseConfirmation}
+        onChallengeAnswerChange={setup.setChallengeAnswer}
         onSetStep={setup.setStep}
         onGeneratePhrase={setup.generatePhrase}
+        onBeginPhraseConfirmation={setup.beginPhraseConfirmation}
         onComplete={handleComplete}
       />
     </PageLayout>

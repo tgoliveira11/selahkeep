@@ -6,9 +6,9 @@ export type VaultStatusDockExpandedCopy = {
   countdownInline: string | null;
 };
 
-/** Expanded by default for setup states; collapsed for locked/unlocked. */
+/** Expanded by default for locked/unlocked only when preference unset; setup states hide the dock. */
 export function getDefaultVaultStatusDockExpanded(clientStatus: VaultClientStatus): boolean {
-  return clientStatus === "not_configured" || clientStatus === "setup_incomplete";
+  return false;
 }
 
 /** Whether outside-click / Escape auto-collapse applies when expanded. */
@@ -48,7 +48,7 @@ export function getVaultStatusDockExpandedCopy(
     case "locked":
       return {
         title: "Vault closed",
-        body: "Unlock required to access private notes.",
+        body: "",
         countdownInline: null,
       };
     case "not_configured":

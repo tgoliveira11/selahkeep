@@ -5,11 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
-import type { VaultStatus } from "@/lib/api-client/vault";
 import { mapVaultUnlockError } from "@/features/vault/vault-unlock-errors";
 import { useVaultDockPasskeyAvailable } from "@/features/vault/use-vault-dock-passkey-available";
-
-type DockUnlockMode = "password" | "passkey";
+import type { VaultStatus } from "@/lib/api-client/vault";
 
 interface VaultDockQuickUnlockProps {
   loading: boolean;
@@ -20,7 +18,7 @@ interface VaultDockQuickUnlockProps {
   onUnlockPasskey?: () => void | Promise<void>;
 }
 
-/** Compact dock unlock: vault password and optional passkey PRF only. */
+/** Compact dock unlock: one primary method — passkey when configured, otherwise vault password. */
 export function VaultDockQuickUnlock({
   loading,
   error,
@@ -29,11 +27,12 @@ export function VaultDockQuickUnlock({
   onUnlockPassword,
   onUnlockPasskey,
 }: VaultDockQuickUnlockProps) {
-  const [mode, setMode] = useState<DockUnlockMode>("password");
   const [vaultPassword, setVaultPassword] = useState("");
-  const { showPasskey, prfExplicitlyUnsupported } = useVaultDockPasskeyAvailable(vaultStatus);
+  const { hasEnvelope, showPasskey, prfExplicitlyUnsupported } =
+    useVaultDockPasskeyAvailable(vaultStatus);
   const displayError = mapVaultUnlockError(error);
   const passwordId = `${idPrefix}-vault-password`;
+  const usePasskeyPrimary = hasEnvelope;
 
   async function submitPassword() {
     try {
@@ -53,69 +52,63 @@ export function VaultDockQuickUnlock({
     }
   }
 
-  return (
-    <div className="vault-dock-unlock space-y-2.5">
-      {showPasskey && onUnlockPasskey && (
-        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Quick unlock method">
-          <Button
-            variant={mode === "password" ? "primary" : "secondary"}
-            className="text-xs"
-            role="tab"
-            aria-selected={mode === "password"}
-            onClick={() => setMode("password")}
-          >
-            Vault password
-          </Button>
-          <Button
-            variant={mode === "passkey" ? "primary" : "secondary"}
-            className="text-xs"
-            role="tab"
-            aria-selected={mode === "passkey"}
-            onClick={() => setMode("passkey")}
-          >
-            Passkey
-          </Button>
+  if (usePasskeyPrimary) {
+    if (!showPasskey || !onUnlockPasskey) {
+      return (
+        <div className="vault-dock-unlock space-y-2.5">
+          <p className="vault-dock-unlock__note text-xs text-[var(--muted)]">
+            Passkey unlock is unavailable in this browser.
+          </p>
+          {displayError && (
+            <Alert variant="danger" role="alert">
+              {displayError}
+            </Alert>
+          )}
         </div>
-      )}
+      );
+    }
 
-      {mode === "password" && (
-        <>
-          <FormField label="Vault password" id={passwordId}>
-            <Input
-              id={passwordId}
-              type="password"
-              autoComplete="current-password"
-              value={vaultPassword}
-              onChange={(e) => setVaultPassword(e.target.value)}
-            />
-          </FormField>
-          <Button
-            className="w-full text-sm"
-            disabled={loading || !vaultPassword}
-            onClick={submitPassword}
-          >
-            {loading ? "Unlocking…" : "Unlock vault"}
-          </Button>
-        </>
-      )}
-
-      {mode === "passkey" && showPasskey && onUnlockPasskey && (
+    return (
+      <div className="vault-dock-unlock space-y-2.5">
         <Button
           className="w-full text-sm"
-          variant="secondary"
           disabled={loading}
           onClick={submitPasskey}
         >
           {loading ? "Unlocking…" : "Unlock with passkey"}
         </Button>
-      )}
+        {prfExplicitlyUnsupported && (
+          <p className="vault-dock-unlock__note text-xs text-[var(--muted)]">
+            Passkey unlock is unavailable in this browser.
+          </p>
+        )}
+        {displayError && (
+          <Alert variant="danger" role="alert">
+            {displayError}
+          </Alert>
+        )}
+      </div>
+    );
+  }
 
-      {prfExplicitlyUnsupported && (
-        <p className="vault-dock-unlock__note text-xs text-[var(--muted)]">
-          Passkey unlock is unavailable in this browser.
-        </p>
-      )}
-
+  return (
+    <div className="vault-dock-unlock space-y-2.5">
+      <FormField label="Vault password" id={passwordId}>
+        <Input
+          id={passwordId}
+          type="password"
+          autoComplete="current-password"
+          value={vaultPassword}
+          onChange={(e) => setVaultPassword(e.target.value)}
+        />
+      </FormField>
+      <Button
+        className="w-full text-sm"
+        disabled={loading || !vaultPassword}
+        onClick={submitPassword}
+      >
+        {loading ? "Unlocking…" : "Unlock vault"}
+      </Button>
       {displayError && (
         <Alert variant="danger" role="alert">
           {displayError}

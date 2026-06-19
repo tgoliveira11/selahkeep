@@ -48,6 +48,14 @@ vi.mock("@/features/vault/use-vault", () => ({
   })),
 }));
 
+vi.mock("@/features/vault/use-vault-dock-passkey-available", () => ({
+  useVaultDockPasskeyAvailable: vi.fn(() => ({
+    hasEnvelope: false,
+    showPasskey: false,
+    prfExplicitlyUnsupported: false,
+  })),
+}));
+
 vi.mock("@/features/vault/use-vault-client-status", () => ({
   useVaultClientStatus: vi.fn(() => ({
     status: "ready",
@@ -131,8 +139,9 @@ function installLocalStorageStub() {
 }
 
 describe("vault status dock copy", () => {
-  it("defaults expanded for setup states only", () => {
-    expect(getDefaultVaultStatusDockExpanded("not_configured")).toBe(true);
+  it("defaults collapsed for all visible dock states", () => {
+    expect(getDefaultVaultStatusDockExpanded("not_configured")).toBe(false);
+    expect(getDefaultVaultStatusDockExpanded("locked")).toBe(false);
     expect(vaultStatusDockAutoCollapseWhenExpanded("locked")).toBe(true);
     expect(vaultStatusDockAutoCollapseWhenExpanded("not_configured")).toBe(false);
   });
@@ -140,7 +149,7 @@ describe("vault status dock copy", () => {
   it("formats compact handle labels and expanded copy", () => {
     expect(getVaultStatusDockHandleLabel("locked", null)).toBe("Vault");
     expect(getVaultStatusDockHandleLabel("unlocked", "14:32")).toBe("14:32");
-    expect(getVaultStatusDockExpandedCopy("locked", null).body).toMatch(/Unlock required/);
+    expect(getVaultStatusDockExpandedCopy("locked", null).title).toBe("Vault closed");
     expect(getVaultStatusDockExpandedCopy("unlocked", "14:32").countdownInline).toBe(
       "Auto-locks in 14:32"
     );
@@ -158,6 +167,9 @@ describe("VaultStatusDock", () => {
     const { usePathname } = await import("next/navigation");
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     const { useVault } = await import("@/features/vault/use-vault");
+    const { useVaultDockPasskeyAvailable } = await import(
+      "@/features/vault/use-vault-dock-passkey-available"
+    );
     vi.mocked(usePathname).mockReturnValue("/notes");
     vi.mocked(useSession).mockReturnValue({
       data: { user: { id: "user-1", email: "user@example.com" } },
@@ -165,6 +177,11 @@ describe("VaultStatusDock", () => {
       update: vi.fn(),
     });
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
+    vi.mocked(useVaultDockPasskeyAvailable).mockReturnValue({
+      hasEnvelope: false,
+      showPasskey: false,
+      prfExplicitlyUnsupported: false,
+    });
     vi.mocked(useVault).mockReturnValue({
       loading: false,
       error: null,
@@ -200,7 +217,7 @@ describe("VaultStatusDock", () => {
     expect(screen.queryByRole("button", { name: /lock now/i })).toBeNull();
   });
 
-  it("expanded locked dock shows inline password form and fallback link", async () => {
+  it("expanded locked dock shows password unlock and more unlock options link", async () => {
     const { usePathname } = await import("next/navigation");
     vi.mocked(usePathname).mockReturnValue("/vault/settings");
 
@@ -209,43 +226,78 @@ describe("VaultStatusDock", () => {
 
     const dock = screen.getByTestId("vault-status-dock");
     expect(dock.className).toContain("vault-status-dock-panel--closed");
-    expect(screen.getByText(/Unlock required to access private notes/i)).toBeTruthy();
+    expect(screen.getByText(/Vault closed/i)).toBeTruthy();
     expect(screen.getByLabelText(/vault password/i)).toBeTruthy();
     expect(screen.queryByRole("tab", { name: /recovery phrase/i })).toBeNull();
     expect(screen.queryByLabelText(/recovery phrase/i)).toBeNull();
-    expect(screen.getByRole("link", { name: /open full unlock page/i }).getAttribute("href")).toBe(
+    expect(screen.queryByRole("tab", { name: /^passkey$/i })).toBeNull();
+    expect(screen.getByRole("link", { name: /more unlock options/i }).getAttribute("href")).toBe(
       "/vault/unlock?returnTo=%2Fvault%2Fsettings"
     );
     expect(dock.className).toContain("vault-status-dock-panel--narrow");
-    expect(screen.queryByRole("link", { name: /^unlock vault$/i })).toBeNull();
   });
 
-  it("on /vault/unlock keeps dock collapsed when locked", async () => {
+  it("does not render dock on /vault/unlock", async () => {
     const { usePathname } = await import("next/navigation");
     vi.mocked(usePathname).mockReturnValue("/vault/unlock");
 
     render(<VaultStatusDock />);
-    expect(screen.getByTestId("vault-status-dock-handle")).toBeTruthy();
+    expect(screen.queryByTestId("vault-status-dock-handle")).toBeNull();
     expect(screen.queryByTestId("vault-status-dock")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
-    expect(screen.getByTestId("vault-status-dock-handle")).toBeTruthy();
     expect(screen.queryByLabelText(/vault password/i)).toBeNull();
   });
 
-  it("collapses dock when Open full unlock page is clicked", async () => {
+  it("does not render dock before vault is configured", async () => {
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("not_configured"));
+
+    render(<VaultStatusDock />);
+    expect(screen.queryByTestId("vault-status-dock-handle")).toBeNull();
+    expect(screen.queryByText(/set up vault/i)).toBeNull();
+  });
+
+  it("collapses dock when More unlock options is clicked", async () => {
     render(<VaultStatusDock />);
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
-    fireEvent.click(screen.getByRole("link", { name: /open full unlock page/i }));
+    fireEvent.click(screen.getByRole("link", { name: /more unlock options/i }));
     expect(screen.getByTestId("vault-status-dock-handle")).toBeTruthy();
     expect(localStorage.getItem(VAULT_STATUS_DOCK_COLLAPSED_KEY)).toBe("true");
   });
 
-  it("expanded locked dock uses narrow layout class", async () => {
+  it("uses reduced dock width styles", async () => {
     render(<VaultStatusDock />);
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
-    expect(screen.getByTestId("vault-status-dock").className).toContain(
+    expect(document.querySelector(".vault-status-dock-panel")?.className).toContain(
       "vault-status-dock-panel--narrow"
     );
+  });
+
+  it("prioritizes passkey unlock when configured", async () => {
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    const { useVaultDockPasskeyAvailable } = await import(
+      "@/features/vault/use-vault-dock-passkey-available"
+    );
+    vi.mocked(useVaultClientStatus).mockReturnValue({
+      ...mockClientStatus("locked"),
+      serverStatus: {
+        ...mockClientStatus("locked").serverStatus,
+        availableUnlockMethods: {
+          password: true,
+          recoveryPhrase: true,
+          passkey: true,
+        },
+      },
+    });
+    vi.mocked(useVaultDockPasskeyAvailable).mockReturnValue({
+      hasEnvelope: true,
+      showPasskey: true,
+      prfExplicitlyUnsupported: false,
+    });
+
+    render(<VaultStatusDock />);
+    fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
+    expect(screen.getByRole("button", { name: /unlock with passkey/i })).toBeTruthy();
+    expect(screen.queryByLabelText(/vault password/i)).toBeNull();
   });
 
   it("expanded open dock is compact with lock now on one row", async () => {
@@ -339,7 +391,10 @@ describe("VaultStatusDock", () => {
     expect(sanitizeVaultReturnTo("javascript:alert(1)")).toBeNull();
   });
 
-  it("renders handle inside authenticated header", async () => {
+  it("renders handle inside authenticated header when vault is configured", async () => {
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
+
     render(
       <SiteShell>
         <HomePage />

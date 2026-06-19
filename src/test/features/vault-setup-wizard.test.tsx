@@ -6,11 +6,15 @@ import { useState } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { VaultSetupWizard } from "@/features/vault/vault-setup-wizard";
 import { buildVaultPasswordPolicyFromEnv } from "@/lib/config/vault-password-policy";
+import { RECOVERY_PHRASE_CHALLENGE_MISMATCH_MESSAGE } from "@/lib/crypto-client/recovery-phrase-challenge";
 
 const defaultPolicy = buildVaultPasswordPolicyFromEnv({
   VAULT_PASSWORD_MIN_LENGTH: "16",
   VAULT_PASSWORD_ENFORCEMENT: "enforce",
 });
+
+const phrase12 =
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
 const baseProps = {
   loading: false,
@@ -18,13 +22,15 @@ const baseProps = {
   vaultPasswordPolicy: defaultPolicy,
   vaultPassword: "",
   vaultPasswordConfirm: "",
-  recoveryPhrase: "",
-  phraseConfirmation: "",
+  recoveryPhrase: phrase12,
+  challengeIndices: [2, 7, 11],
+  challengeAnswers: {},
   onVaultPasswordChange: vi.fn(),
   onVaultPasswordConfirmChange: vi.fn(),
-  onPhraseConfirmationChange: vi.fn(),
+  onChallengeAnswerChange: vi.fn(),
   onSetStep: vi.fn(),
   onGeneratePhrase: vi.fn(),
+  onBeginPhraseConfirmation: vi.fn(),
   onComplete: vi.fn(),
 };
 
@@ -119,6 +125,53 @@ describe("VaultSetupWizard UI", () => {
     expect(onGenerate).toHaveBeenCalledWith(12);
     fireEvent.click(screen.getByText("24 words"));
     expect(onGenerate).toHaveBeenCalledWith(24);
+  });
+
+  it("renders copy and download actions on phrase display", () => {
+    render(<VaultSetupWizard {...baseProps} step="phrase-display" />);
+    expect(screen.getByRole("button", { name: /copy recovery phrase/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /download recovery phrase/i })).toBeTruthy();
+    expect(screen.getByTestId("recovery-phrase-download-content").textContent).toContain("1. abandon");
+    expect(screen.getByTestId("recovery-phrase-download-content").textContent).toContain(
+      "12. about"
+    );
+  });
+
+  it("requires saved checkbox before continuing to challenge", () => {
+    render(<VaultSetupWizard {...baseProps} step="phrase-display" />);
+    expect(screen.getByRole("button", { name: /^Continue$/i })).toHaveProperty("disabled", true);
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
+    expect(baseProps.onBeginPhraseConfirmation).toHaveBeenCalled();
+  });
+
+  it("shows randomized word challenge with 1-based labels", () => {
+    render(
+      <VaultSetupWizard
+        {...baseProps}
+        step="phrase-confirm"
+        challengeIndices={[3, 8, 12]}
+      />
+    );
+    expect(screen.getByLabelText(/recovery phrase word number 3/i)).toBeTruthy();
+    expect(screen.getByLabelText(/recovery phrase word number 8/i)).toBeTruthy();
+    expect(screen.getByLabelText(/recovery phrase word number 12/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /confirm recovery phrase/i })).toHaveProperty(
+      "disabled",
+      true
+    );
+  });
+
+  it("shows mismatch error without revealing correct words", () => {
+    render(
+      <VaultSetupWizard
+        {...baseProps}
+        step="phrase-confirm"
+        error={RECOVERY_PHRASE_CHALLENGE_MISMATCH_MESSAGE}
+      />
+    );
+    expect(screen.getByText(RECOVERY_PHRASE_CHALLENGE_MISMATCH_MESSAGE)).toBeTruthy();
+    expect(screen.queryByText(/^abandon$/i)).toBeNull();
   });
 });
 

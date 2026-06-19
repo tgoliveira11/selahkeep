@@ -13,6 +13,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Simplified the Vault Dock so it shows only one primary unlock method. Passkey unlock is prioritized when configured; otherwise the dock uses vault password unlock. Recovery phrase unlock is now available only on the full unlock page.
+- Reduced the Vault Dock width and removed the setup-vault state from the dock. The dock is hidden before a vault exists and on `/vault/unlock`.
+
+### Added
+
+- Added recovery phrase `.txt` download during vault setup.
+- Added randomized recovery phrase confirmation challenges during vault setup: 3 words for 12-word phrases and 6 words for 24-word phrases.
+
 ### Fixed
 
 - Fixed vault passkey unlock when both account sign-in passkeys and vault unlock passkeys exist. Vault unlock now requests only vault-enabled passkey credentials via `POST /api/passkeys/authenticate` with `purpose: "vault_unlock"`, and no longer allows account-only passkeys to be selected during vault unlock.
@@ -28,3 +38,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Reinforced the separation between account passkeys and vault passkeys. Account passkeys authenticate the account; vault passkeys unlock the vault using WebAuthn PRF. Account passkey sign-in still never unlocks the vault by itself. Vault unlock verify rejects account-only credentials and never returns a successful verify with a null envelope for vault unlock purpose.
 - Reinforced account passkey and vault passkey separation. Vault unlock continues to require WebAuthn PRF and fails closed if the selected credential is not linked to vault unlock.
 - Documented vault passkey lifecycle (registration, disable, re-registration) in `docs/PASSKEY_VAULT_LIFECYCLE.md`.
+- Reinforced recovery phrase handling by keeping phrase download and confirmation fully client-side and by requiring randomized word-position confirmation before completing setup.

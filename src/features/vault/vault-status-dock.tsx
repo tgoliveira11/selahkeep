@@ -1,18 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { lockVaultSessionManually } from "@/lib/crypto-client/vault-session";
 import { recordVaultSecurityEvent } from "@/features/vault/record-vault-security-event";
 import { buildVaultUnlockHref } from "@/lib/notes/safe-return-to";
 import type { VaultClientStatus } from "@/lib/vault/vault-status";
-import { getVaultStatusCopy } from "@/lib/vault/vault-status";
 import { useVaultAutoLockCountdown } from "@/features/vault/use-vault-auto-lock-countdown";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { useVault } from "@/features/vault/use-vault";
 import { VaultDockQuickUnlock } from "@/features/vault/vault-dock-quick-unlock";
+import { useVaultDockPasskeyAvailable } from "@/features/vault/use-vault-dock-passkey-available";
 import {
   getDefaultVaultStatusDockExpanded,
   getVaultStatusDockExpandedCopy,
@@ -75,14 +75,22 @@ function resolveExpanded(
   return false;
 }
 
+function buildCurrentReturnPath(pathname: string, searchParams: URLSearchParams): string {
+  const query = searchParams.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
 /** Header-attached collapsible vault status handle and expanded dock. */
 export function VaultStatusDock() {
   const { status: authStatus } = useSession();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const onFullUnlockPage = isVaultFullUnlockPage(pathname);
   const vaultClient = useVaultClientStatus();
   const vault = useVault();
   const clientStatus = vaultClient.status === "ready" ? vaultClient.clientStatus : null;
+  const serverStatus = vaultClient.status === "ready" ? vaultClient.serverStatus : null;
+  const passkeyAvailability = useVaultDockPasskeyAvailable(serverStatus);
   const isOpen = clientStatus === "unlocked";
   const countdown = useVaultAutoLockCountdown(isOpen);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -91,6 +99,11 @@ export function VaultStatusDock() {
     status: VaultClientStatus;
     expanded: boolean;
   } | null>(null);
+
+  const currentReturnPath = useMemo(
+    () => buildCurrentReturnPath(pathname, searchParams),
+    [pathname, searchParams]
+  );
 
   const expanded = useMemo(() => {
     if (!clientStatus) return false;
@@ -149,16 +162,18 @@ export function VaultStatusDock() {
 
   if (authStatus !== "authenticated") return null;
   if (vaultClient.status !== "ready" || !clientStatus) return null;
+  if (clientStatus === "not_configured" || clientStatus === "setup_incomplete") return null;
+  if (onFullUnlockPage) return null;
 
   const status = clientStatus;
-  const copy = getVaultStatusCopy(status);
-  const unlockHref =
-    status === "locked" ? buildVaultUnlockHref(pathname) : copy.actionHref;
-  const handleLabel = getVaultStatusDockHandleLabel(status, countdown);
   const expandedCopy = getVaultStatusDockExpandedCopy(status, countdown);
-  const serverStatus = vaultClient.serverStatus;
-  const showLtgUnlock =
-    serverStatus.setupComplete && serverStatus.vaultVersion === "vault-v2";
+  const showLtgUnlock = serverStatus?.setupComplete && serverStatus.vaultVersion === "vault-v2";
+  const unlockHref = buildVaultUnlockHref(currentReturnPath);
+  const handleLabel = getVaultStatusDockHandleLabel(status, countdown);
+  const fullUnlockLinkLabel =
+    passkeyAvailability.hasEnvelope && !passkeyAvailability.showPasskey
+      ? "Open full unlock page"
+      : "More unlock options";
 
   function lockNow() {
     lockVaultSessionManually();
@@ -249,9 +264,6 @@ export function VaultStatusDock() {
             <VaultStatusDockChevron expanded />
           </button>
         </div>
-        <p className="vault-status-dock-panel__body vault-status-dock-panel__body--compact">
-          {expandedCopy.body}
-        </p>
         <VaultDockQuickUnlock
           loading={vault.loading}
           error={vault.error}
@@ -271,54 +283,12 @@ export function VaultStatusDock() {
             className="vault-status-dock-panel__fallback-link"
             onClick={openFullUnlockPage}
           >
-            Open full unlock page
+            {fullUnlockLinkLabel}
           </Link>
         </p>
       </div>
     );
   }
 
-  const setupAction = (
-    <Link
-      href={unlockHref}
-      className="vault-status-dock__action vault-status-dock__action--primary"
-    >
-      {copy.actionLabel}
-    </Link>
-  );
-
-  return (
-    <div
-      ref={panelRef}
-      className={cn(
-        "vault-status-dock-panel vault-status-dock-panel--narrow",
-        status === "locked" && "vault-status-dock-panel--closed"
-      )}
-      data-testid="vault-status-dock"
-      data-vault-state={isOpen ? "open" : "closed"}
-      data-expanded="true"
-      role="status"
-      aria-live="polite"
-    >
-      <div className="vault-status-dock-panel__head">
-        <span className={cn("vault-status-dock__icon vault-status-dock__icon--compact", iconToneClass(status))}>
-          <VaultStatusIcon status={status} />
-        </span>
-        <p className="vault-status-dock-panel__title">{expandedCopy.title}</p>
-        <button
-          type="button"
-          className="vault-status-dock__toggle"
-          aria-expanded={true}
-          aria-label="Collapse vault status"
-          onClick={collapse}
-        >
-          <VaultStatusDockChevron expanded />
-        </button>
-      </div>
-      <p className="vault-status-dock-panel__body vault-status-dock-panel__body--compact">
-        {expandedCopy.body}
-      </p>
-      {setupAction && <div className="vault-status-dock-panel__actions">{setupAction}</div>}
-    </div>
-  );
+  return null;
 }

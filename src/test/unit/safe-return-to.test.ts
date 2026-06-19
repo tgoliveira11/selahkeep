@@ -44,6 +44,13 @@ describe("buildVaultUnlockHref", () => {
     );
   });
 
+  it("includes returnTo for notes paths with query strings", () => {
+    expect(buildVaultUnlockHref("/notes/abc?view=full")).toBe(
+      "/vault/unlock?returnTo=%2Fnotes%2Fabc%3Fview%3Dfull"
+    );
+    expect(sanitizeVaultReturnTo("/notes/abc?view=full")).toBe("/notes/abc?view=full");
+  });
+
   it("omits returnTo when path is unsafe", () => {
     expect(buildVaultUnlockHref("https://evil.test")).toBe("/vault/unlock");
   });

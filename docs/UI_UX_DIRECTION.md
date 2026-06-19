@@ -347,8 +347,10 @@ On detail view, slots are buttons (`interactive` prop). Clicks must not navigate
 
 `VaultLockedState` explains what happened and what to do next:
 
-- **Unlock here** — expands vault dock quick unlock when available.
-- **Open full unlock page** — `/vault/unlock?returnTo=…`
+- **Unlock here** — expands vault dock quick unlock when a vault is configured.
+- **More unlock options** — `/vault/unlock?returnTo=…` (password, recovery phrase, passkey on full page)
+
+**Vault Dock** (`docs/VAULT_DOCK_UX.md`): hidden before vault setup and on `/vault/unlock`. When locked, shows one primary method (passkey if configured, else vault password). Recovery phrase is never in the dock.
 
 No decrypted note content or metadata on locked `/notes/[id]`.
 

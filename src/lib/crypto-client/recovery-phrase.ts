@@ -5,11 +5,13 @@ import {
   assertRecoveryPhraseConfirmation as assertRecoveryPhraseConfirmationCore,
   type RecoveryPhraseWordCount,
 } from "@/modules/vault/core/envelopes/recovery-envelope";
+import { RecoveryPhraseConfirmationError } from "@tgoliveira/vault-core";
 
 export {
   normalizeRecoveryPhrase,
   validateRecoveryPhraseFormat,
   assertRecoveryPhraseUnlockInput,
+  assertRecoveryPhraseWordConfirmation,
   pickRecoveryConfirmationIndices,
   getRecoveryConfirmationPromptCount,
   getRecoveryPhraseWordCount,
@@ -20,6 +22,8 @@ export {
   deriveRecoveryPhraseKeyFromMetadata,
   type RecoveryPhraseWordCount,
 } from "@/modules/vault/core/envelopes/recovery-envelope";
+
+export { RecoveryPhraseConfirmationError } from "@tgoliveira/vault-core";
 
 export type RecoveryPhraseLength = RecoveryPhraseWordCount;
 
@@ -42,13 +46,7 @@ export function isValidRecoveryPhraseLength(length: number): length is RecoveryP
   return length === 12 || length === 24;
 }
 
-export class RecoveryPhraseConfirmationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "RecoveryPhraseConfirmationError";
-  }
-}
-
+/** @deprecated Prefer assertRecoveryPhraseChallengeAnswers for setup word challenges. */
 export function assertRecoveryPhraseConfirmation(
   originalPhrase: string,
   confirmationPhrase: string
