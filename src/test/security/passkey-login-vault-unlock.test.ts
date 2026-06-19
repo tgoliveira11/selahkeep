@@ -43,7 +43,10 @@ describe("passkey account login and vault unlock security boundaries", () => {
 
   it("keeps explicit signed-in vault unlock in the product flow", () => {
     const unlock = readSource("src/features/passkey/unlock-with-passkey.ts");
-    expect(unlock).toContain('"/api/passkeys/authenticate"');
+    const helper = readSource("src/lib/passkey/vault-unlock-authenticate.ts");
+    expect(unlock).toContain("runVaultUnlockAuthenticationCeremony");
+    expect(unlock).toContain("verifyVaultUnlockAuthentication");
+    expect(helper).toContain('purpose: VAULT_UNLOCK_AUTHENTICATE_PURPOSE');
     expect(unlock).toContain("unlockVaultFromPasskeyEnvelope");
     expect(unlock).not.toContain("signIn(");
   });

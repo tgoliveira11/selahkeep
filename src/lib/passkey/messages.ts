@@ -34,11 +34,23 @@ export const PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE =
 export const PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE =
   "Passkey vault unlock was disabled. This passkey can still sign you in.";
 
+export const PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE =
+  "Passkey vault unlock is not configured yet.";
+
+export const PASSKEY_ACCOUNT_ONLY_FOR_SIGN_IN_MESSAGE =
+  "This passkey is for account sign-in, not vault unlock.";
+
+export const PASSKEY_NOT_LINKED_TO_VAULT_UNLOCK_MESSAGE =
+  "This passkey is not linked to vault unlock.";
+
+export const PASSKEY_NOT_AVAILABLE_FOR_VAULT_UNLOCK_MESSAGE =
+  "This passkey is not available for vault unlock.";
+
 export const PASSKEY_UNLOCK_NO_ENVELOPE_MESSAGE =
   "You are signed in, but this passkey is not set up to unlock your vault.";
 
 export const PASSKEY_UNLOCK_PRF_UNAVAILABLE_MESSAGE =
-  "This browser or passkey provider cannot unlock your vault with passkey yet.";
+  "Passkey vault unlock is not supported by this browser or passkey provider.";
 
 export const PASSKEY_UNLOCK_DECRYPT_FAILED_MESSAGE =
   "We could not unlock your vault with this passkey. Use your vault password or recovery phrase.";
@@ -54,3 +66,6 @@ export const PASSKEY_VAULT_UNLOCK_READONLY_HEADLINE =
 
 export const PASSKEY_VAULT_UNLOCK_READONLY_MESSAGE =
   "This browser supports passkeys for sign-in, but it does not report PRF support. PRF is required to test, replace, or disable passkey vault unlock. Use a PRF-compatible browser where vault unlock was configured, or unlock with your vault password or recovery phrase.";
+
+export const PASSKEY_PLATFORM_AUTHENTICATOR_CONFLICT_MESSAGE =
+  "This passkey already exists on this device. Remove it from your password manager or use a different passkey.";

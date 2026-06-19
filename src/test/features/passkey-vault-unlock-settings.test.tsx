@@ -105,7 +105,18 @@ describe("PasskeyVaultUnlockSetup", () => {
     });
     mockVaultUnlockList([]);
     mocks.probeEnvironment.mockResolvedValue(mockEnvironment());
-    mocks.apiPost.mockResolvedValue({ challenge: "abc", extensions: { prf: { eval: {} } } });
+    mocks.apiPost.mockImplementation(async (path: string, body?: Record<string, unknown>) => {
+      if (path === "/api/passkeys/authenticate" && body?.action === "options") {
+        return {
+          challenge: "abc",
+          extensions: { prf: { eval: {} } },
+          allowCredentials: [
+            { id: "cred-1", type: "public-key", transports: ["internal"] },
+          ],
+        };
+      }
+      return { challenge: "abc", extensions: { prf: { eval: {} } } };
+    });
     mocks.startAuthentication.mockResolvedValue({
       id: "cred-1",
       clientExtensionResults: {},
@@ -183,6 +194,10 @@ describe("PasskeyVaultUnlockSetup", () => {
     fireEvent.click(await screen.findByRole("button", { name: /set up passkey vault unlock/i }));
 
     await waitFor(() => {
+      expect(mocks.apiPost).toHaveBeenCalledWith("/api/passkeys/register", {
+        action: "options",
+        vaultOnly: true,
+      });
       expect(mocks.startRegistration).toHaveBeenCalled();
       expect(mocks.apiPost).toHaveBeenCalledWith(
         "/api/passkeys/register",
@@ -281,7 +296,10 @@ describe("PasskeyVaultUnlockSetup", () => {
     fireEvent.click(await screen.findByRole("button", { name: /^test$/i }));
 
     await waitFor(() => {
-      expect(mocks.apiPost).toHaveBeenCalledWith("/api/passkeys/authenticate", { action: "options" });
+      expect(mocks.apiPost).toHaveBeenCalledWith("/api/passkeys/authenticate", {
+        action: "options",
+        purpose: "vault_unlock",
+      });
     });
     expect(await screen.findByText(PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE)).toBeTruthy();
   });

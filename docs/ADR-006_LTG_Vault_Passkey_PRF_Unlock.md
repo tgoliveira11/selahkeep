@@ -56,6 +56,12 @@ After account passkey verify, the product looks up:
 
 Lookup for pre-session flows uses package-issued `loginToken` via `login-token-repository` (read-only).
 
+Vault-only passkeys use a deterministic opaque WebAuthn user handle derived specifically for the
+vault credential, distinct from the account passkey user handle. This is required for Apple
+platform authenticators, which replace an existing device passkey when a new credential is
+registered for the same RP ID and user handle. The derived handle contains no email or plaintext
+note data and is used only during vault-passkey registration.
+
 ## 7. Server-side storage
 
 | Store | Fields |

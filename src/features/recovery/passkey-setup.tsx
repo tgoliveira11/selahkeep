@@ -17,6 +17,7 @@ import {
 import { apiClient } from "@/lib/api-client/client";
 import { passkeysApi } from "@/lib/api-client/passkeys";
 import { prepareRegistrationOptions } from "@/lib/passkey/prepare-webauthn-options";
+import { toPasskeyRegistrationErrorMessage } from "@/lib/passkey/webauthn-config";
 import {
   getPasskeyPrfDiagnosticHeadline,
   getPasskeyPrfDiagnosticMessage,
@@ -80,6 +81,7 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
 
       const options = (await apiClient.post("/api/passkeys/register", {
         action: "options",
+        vaultOnly: true,
       })) as PublicKeyCredentialCreationOptionsJSON;
 
       let attestation;
@@ -143,7 +145,8 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         return;
       }
       setOutcome("failed");
-      setError(e instanceof Error ? e.message : "Passkey registration failed");
+      const registrationMessage = toPasskeyRegistrationErrorMessage(e);
+      setError(registrationMessage ?? (e instanceof Error ? e.message : "Passkey registration failed"));
     } finally {
       setLoading(false);
     }

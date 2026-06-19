@@ -27,7 +27,12 @@ export async function POST(request: Request) {
     const ip = getClientIp(request);
 
     if (parsed.data.action === "options") {
-      const options = await passkeyService.getRegistrationOptions(user.id, user.email, ip);
+      const options = await passkeyService.getRegistrationOptions(
+        user.id,
+        user.email,
+        ip,
+        parsed.data.vaultOnly ? { vaultOnly: true } : undefined
+      );
       return NextResponse.json(options);
     }
 

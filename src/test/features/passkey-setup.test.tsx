@@ -97,6 +97,10 @@ describe("PasskeySetup", () => {
 
     await waitFor(() => {
       expect(mocks.apiPost).toHaveBeenCalledWith("/api/passkeys/register", {
+        action: "options",
+        vaultOnly: true,
+      });
+      expect(mocks.apiPost).toHaveBeenCalledWith("/api/passkeys/register", {
         action: "verify",
         response: expect.any(Object),
         encryptedVaultKey: { version: "enc-v1" },

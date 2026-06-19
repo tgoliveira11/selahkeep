@@ -1,4 +1,5 @@
 import { runInTransaction } from "@/lib/db/transaction";
+import { createHash } from "node:crypto";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -13,7 +14,17 @@ import { passkeyRepository } from "@/server/repositories/passkey-repository";
 import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
 import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
-import { passkeyPrfExtensions } from "@/lib/passkey/prf";
+import { passkeyPrfExtensions, passkeyPrfAuthExtensions } from "@/lib/passkey/prf";
+import {
+  toAllowCredentialDescriptor,
+  persistRegistrationTransports,
+  vaultRegistrationExcludeCredentials,
+} from "@/lib/passkey/passkey-transports";
+import {
+  PASSKEY_ACCOUNT_ONLY_FOR_SIGN_IN_MESSAGE,
+  PASSKEY_NOT_LINKED_TO_VAULT_UNLOCK_MESSAGE,
+  PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE,
+} from "@/lib/passkey/messages";
 import {
   getWebAuthnOrigins,
   getWebAuthnRpId,
@@ -27,8 +38,33 @@ const rpName = getWebAuthnRpName();
 const rpID = getWebAuthnRpId();
 const origins = getWebAuthnOrigins();
 
+export type PasskeyAuthenticatePurpose = "vault_unlock";
+
+type PasskeyAuthenticationOptions = {
+  purpose?: PasskeyAuthenticatePurpose;
+};
+
+type PasskeyRegistrationOptions = {
+  vaultOnly?: boolean;
+};
+
+/** Apple overwrites a passkey registered with the same RP ID + user handle. */
+export function vaultPasskeyUserHandle(userId: string): Uint8Array<ArrayBuffer> {
+  const digest = createHash("sha256")
+    .update(`selahkeep:vault-passkey:${userId}`)
+    .digest();
+  const userHandle = new Uint8Array(new ArrayBuffer(digest.byteLength));
+  userHandle.set(digest);
+  return userHandle;
+}
+
 export const passkeyService = {
-  async getRegistrationOptions(userId: string, userName: string, ip?: string) {
+  async getRegistrationOptions(
+    userId: string,
+    userName: string,
+    ip?: string,
+    regOptions?: PasskeyRegistrationOptions
+  ) {
     await enforceRateLimit({
       operation: "passkey.register",
       userId,
@@ -37,20 +73,30 @@ export const passkeyService = {
     });
 
     const existing = await passkeyRepository.findByUserId(userId);
+    const vaultOnly = Boolean(regOptions?.vaultOnly);
+    const excludeCredentials = vaultOnly
+      ? vaultRegistrationExcludeCredentials(existing)
+      : existing.map((credential) => toAllowCredentialDescriptor(credential));
+
     const options = await generateRegistrationOptions({
       rpName,
       rpID,
-      userName,
-      userID: new TextEncoder().encode(userId),
+      userName: vaultOnly ? `${userName} · SelahKeep vault` : userName,
+      userID: vaultOnly
+        ? vaultPasskeyUserHandle(userId)
+        : new TextEncoder().encode(userId),
       attestationType: "none",
-      excludeCredentials: existing.map((c) => ({
-        id: c.credentialId,
-        transports: (c.transports as AuthenticatorTransport[]) ?? undefined,
-      })),
-      authenticatorSelection: {
-        residentKey: "preferred",
-        userVerification: "preferred",
-      },
+      excludeCredentials,
+      authenticatorSelection: vaultOnly
+        ? {
+            authenticatorAttachment: "platform",
+            residentKey: "preferred",
+            userVerification: "required",
+          }
+        : {
+            residentKey: "preferred",
+            userVerification: "preferred",
+          },
       extensions: passkeyPrfExtensions(userId),
     });
 
@@ -122,7 +168,7 @@ export const passkeyService = {
           credentialId: credential.id,
           publicKey: Buffer.from(credential.publicKey).toString("base64url"),
           counter: String(credential.counter),
-          transports: credential.transports,
+          transports: persistRegistrationTransports(credential.transports),
           friendlyName: vaultOnly ? "Vault passkey" : null,
           signInEnabled: vaultOnly ? false : true,
           vaultUnlockEnabled: Boolean(encryptedVaultKey && options?.prfVaultEnvelope),
@@ -154,7 +200,11 @@ export const passkeyService = {
     };
   },
 
-  async getAuthenticationOptions(userId?: string, ip?: string) {
+  async getAuthenticationOptions(
+    userId?: string,
+    ip?: string,
+    authOptions?: PasskeyAuthenticationOptions
+  ) {
     await enforceRateLimit({
       operation: "passkey.authenticate",
       userId,
@@ -162,22 +212,39 @@ export const passkeyService = {
       endpoint: "/api/passkeys/authenticate",
     });
 
-    let allowCredentials: { id: string; transports?: AuthenticatorTransport[] }[] | undefined;
-    if (userId) {
-      const creds = await passkeyRepository.findByUserId(userId);
-      if (creds.length > 0) {
-        allowCredentials = creds.map((c) => ({
-          id: c.credentialId,
-          transports: (c.transports as AuthenticatorTransport[]) ?? undefined,
-        }));
+    const purpose = authOptions?.purpose;
+    let credentials = userId ? await passkeyRepository.findByUserId(userId) : [];
+
+    if (purpose === "vault_unlock") {
+      if (!userId) {
+        throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
+      }
+      credentials = credentials.filter((credential) => credential.vaultUnlockEnabled);
+      if (credentials.length === 0) {
+        throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
       }
     }
+
+    const allowCredentials =
+      userId && credentials.length > 0
+        ? credentials.map((credential) => toAllowCredentialDescriptor(credential))
+        : undefined;
+
+    const vaultCredentialIds = credentials.map((credential) => credential.credentialId);
+    const extensions =
+      userId && purpose === "vault_unlock"
+        ? vaultCredentialIds.length > 1
+          ? passkeyPrfAuthExtensions(userId, vaultCredentialIds)
+          : passkeyPrfExtensions(userId)
+        : userId
+          ? passkeyPrfExtensions(userId)
+          : undefined;
 
     const options = await generateAuthenticationOptions({
       rpID,
       allowCredentials,
-      userVerification: "preferred",
-      extensions: userId ? passkeyPrfExtensions(userId) : undefined,
+      userVerification: purpose === "vault_unlock" ? "required" : "preferred",
+      extensions,
     });
 
     await passkeyRepository.storeChallenge({
@@ -190,7 +257,11 @@ export const passkeyService = {
     return options;
   },
 
-  async verifyAuthentication(userId: string, response: AuthenticationResponseJSON) {
+  async verifyAuthentication(
+    userId: string,
+    response: AuthenticationResponseJSON,
+    authOptions?: PasskeyAuthenticationOptions
+  ) {
     const clientData = JSON.parse(
       Buffer.from(response.response.clientDataJSON, "base64url").toString()
     );
@@ -244,6 +315,32 @@ export const passkeyService = {
     );
 
     await passkeyRepository.updateLastUsedAt(credential.credentialId);
+
+    const purpose = authOptions?.purpose;
+
+    if (purpose === "vault_unlock") {
+      if (!credential.vaultUnlockEnabled) {
+        await auditRepository.record("failed_unlock_attempt", userId, { method: "passkey" });
+        throw new ChallengeError(PASSKEY_ACCOUNT_ONLY_FOR_SIGN_IN_MESSAGE);
+      }
+
+      const envelope = await vaultRepository.findActivePasskeyEnvelopeByCredentialId(
+        userId,
+        credential.credentialId
+      );
+
+      if (!envelope?.encryptedVaultKey) {
+        await auditRepository.record("failed_unlock_attempt", userId, { method: "passkey" });
+        throw new ChallengeError(PASSKEY_NOT_LINKED_TO_VAULT_UNLOCK_MESSAGE);
+      }
+
+      return {
+        verified: true,
+        encryptedVaultKey: envelope.encryptedVaultKey,
+        prfRequired:
+          (envelope.publicMetadata as { prfRequired?: boolean } | null)?.prfRequired ?? true,
+      };
+    }
 
     const envelope = credential.vaultUnlockEnabled
       ? await vaultRepository.findActivePasskeyEnvelopeByCredentialId(

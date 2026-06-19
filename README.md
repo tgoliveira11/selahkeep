@@ -1,6 +1,6 @@
 # SelahKeep — Private Encrypted Notes MVP
 
-> **Product:** **SelahKeep** — a private encrypted space for prayers, reflections, and notes. Former working name: LTG Vault. Primary UI accent: **purple** (`docs/UI_UX_DIRECTION.md`). Vault setup: `/vault/setup` (vault password + BIP39 recovery phrase). See [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md) and [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md).
+> **Product:** **SelahKeep** — a private encrypted space for prayers, reflections, and notes. Former working name: LTG Vault. Primary UI accent: **purple** (`docs/UI_UX_DIRECTION.md`). Vault setup: `/vault/setup` (vault password + BIP39 recovery phrase). See [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md), [`docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`](./docs/LTG_VAULT_IMPLEMENTATION_PLAN.md), and [`CHANGELOG.md`](./CHANGELOG.md).
 
 Web-first responsive MVP for private encrypted notes in a personal vault.
 
@@ -12,7 +12,7 @@ Web-first responsive MVP for private encrypted notes in a personal vault.
 
 - Next.js + TypeScript + React
 - PostgreSQL + Drizzle ORM
-- **Account authentication:** [`@tgoliveira/secure-auth@0.1.22-internal`](https://www.npmjs.com/package/@tgoliveira/secure-auth) (experimental 0.1.x — security review before production)
+- **Account authentication:** [`@tgoliveira/secure-auth@0.1.25`](https://www.npmjs.com/package/@tgoliveira/secure-auth) (experimental 0.1.x — security review before production)
 - Web Crypto API (AES-GCM) + Argon2id recovery KDF
 - WebAuthn passkeys (@simplewebauthn) — vault unlock via PRF is app-specific; account sign-in passkeys are provided by secure-auth
 
@@ -299,6 +299,9 @@ All tests run through **Vitest** (`src/test/`). Browser E2E (Playwright) was int
 
 Recent passkey-related coverage includes:
 
+- Touch ID vs QR vault unlock transport preservation and platform registration (`docs/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md`, `passkey-transports.test.ts`, `vault-unlock-authenticate.test.ts`)
+- Vault passkey lifecycle disable/re-register (`docs/PASSKEY_VAULT_LIFECYCLE.md`, `passkey-vault-lifecycle.test.ts`)
+- Dual account + vault passkey unlock filtering (`CHANGELOG.md`, `src/test/security/dual-passkey-vault-unlock.test.ts`)
 - Passkey account-login / vault-unlock separation (`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`, `src/test/security/passkey-login-vault-unlock.test.ts`)
 - PRF salt derivation (`src/test/security/passkey-prf.test.ts`)
 - PRF support pre-check (`src/test/unit/prf-support.test.ts`)

@@ -45,7 +45,8 @@ Account passkeys and vault passkeys are **independent**.
 - A vault passkey unlocks the encrypted vault using WebAuthn PRF after the user is signed in.
 - Users may configure vault passkey unlock without first configuring account passkey sign-in (vault must be unlocked; browser/provider must support PRF).
 - Signing in with an account passkey never unlocks the vault by itself.
-- Vault-only setup: `POST /api/passkeys/register` with `vaultOnly: true` creates `signInEnabled: false`, `vaultUnlockEnabled: true` credentials.
+- Vault-only setup: `POST /api/passkeys/register` with `vaultOnly: true` creates `signInEnabled: false`, `vaultUnlockEnabled: true` credentials. Vault-only registration prefers `authenticatorAttachment: "platform"`.
+- Vault unlock WebAuthn: `POST /api/passkeys/authenticate` with `purpose: "vault_unlock"` — `allowCredentials` includes **only** `vaultUnlockEnabled` credentials; account-only passkeys are excluded. Stored transports are replayed. Vault-only registration uses a separate opaque WebAuthn user handle so Apple password managers do not overwrite it when an account passkey is added. Vault-only disable revokes credential rows; dual-purpose disable clears vault flag only. See `docs/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md` and `docs/PASSKEY_VAULT_LIFECYCLE.md`.
 
 - Passkeys must not be used as raw encryption keys
 - Account session alone never unlocks the vault
@@ -156,7 +157,7 @@ Plaintext passwords are redacted from logs (`safeLogger`) and blocked from audit
 
 These flows protect **account authentication only**. They do **not** unlock, recover, rotate, or decrypt the private letters vault. User-facing copy states this on reset and change-password screens.
 
-**Account authentication** is implemented by `@tgoliveira/secure-auth@0.1.22-internal` (thin app routes + `createSecureAuth` in `src/lib/secure-auth.ts`). See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md).
+**Account authentication** is implemented by `@tgoliveira/secure-auth@0.1.25` (thin app routes + `createSecureAuth` in `src/lib/secure-auth.ts`). See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md).
 
 **Package API security (0.1.21+)** — enforced inside `@tgoliveira/secure-auth` route handlers, not only in app middleware:
 
@@ -245,11 +246,15 @@ Safe audit events only (no plaintext letters, recovery codes, keys, or ciphertex
 - OAuth + TOTP behavior is unchanged (partial session until `/login/2fa`)
 - Successful passkey login issues the same one-time `login-token` session as post-TOTP credentials login (`twoFactorVerified: true`)
 - Account passkey login never unlocks the vault and never requests vault PRF output
-- After authentication, passkey vault unlock is a separate explicit client-side PRF ceremony (`src/features/passkey/unlock-with-passkey.ts`)
+- After authentication, passkey vault unlock is a separate explicit client-side PRF ceremony (`src/features/passkey/unlock-with-passkey.ts`) using `purpose: "vault_unlock"` on `POST /api/passkeys/authenticate`
 - If the passkey has no vault envelope or PRF is unavailable, the account remains signed in and the vault remains locked
 - Account passkey management: `GET /api/account/passkeys`, register/remove (package), optional vault unlock enable (`enable-vault-unlock`), status/revoke (`GET/DELETE .../vault-unlock`)
 
 ## Passkey vault unlock (PRF)
+
+- Vault unlock authenticate purpose filters to `vaultUnlockEnabled` credentials only; dual-passkey users (account + vault) are supported
+- Vault unlock replays stored WebAuthn `transports` and keeps the matching credential descriptor intact; credential separation is provided by the vault-specific user handle, not by forcing an inaccurate transport (see `docs/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md`)
+- Shared client helper: `src/lib/passkey/vault-unlock-authenticate.ts` (settings Test, dock unlock, `/vault/unlock`)
 
 - Passkey **authentication** is separate from vault **decryption**
 - Vault envelopes use WebAuthn **PRF** output as key-wrapping key (not raw signature bytes)

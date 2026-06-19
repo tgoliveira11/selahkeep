@@ -30,7 +30,7 @@ Credentials login (`?mode=credentials` → native POST → `/login/complete`) wa
 
 ### Mobile OAuth redirect loop
 
-- Package `OAuthTwoFactorForm` (`@tgoliveira/secure-auth` 0.1.19-internal):
+- Package `OAuthTwoFactorForm` (`@tgoliveira/secure-auth` 0.1.25):
   1. `authLoginApi.verifyOAuthTwoFactor`
   2. `await update({ twoFactorUpgradeToken })`
   3. `router.push(afterLoginPath)` — **immediate client navigation**

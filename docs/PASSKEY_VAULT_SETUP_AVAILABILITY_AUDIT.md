@@ -31,12 +31,41 @@ That requirement was a **UI/architecture coupling mistake**, not a browser limit
 
 ## Current model
 
+### Vault passkey unlock authenticate purpose
+
+When the user unlocks the vault with a passkey (dock, `/vault/unlock`, or settings Test), the client calls:
+
+```text
+POST /api/passkeys/authenticate
+{ action: "options" | "verify", purpose: "vault_unlock" }
+```
+
+Server behavior for `purpose: "vault_unlock"`:
+
+1. `allowCredentials` includes **only** credentials where `vaultUnlockEnabled === true`.
+2. Account-only passkeys (`signInEnabled: true`, `vaultUnlockEnabled: false`) are **excluded**.
+3. Stored WebAuthn **transports** are replayed in `allowCredentials` when available (not stripped client-side).
+4. If no vault-enabled passkeys exist, the server returns a clear error before WebAuthn starts.
+5. Verify rejects account-only credentials and never returns `verified: true` with a null envelope.
+6. Multiple vault credentials use `passkeyPrfAuthExtensions(userId, credentialIds)` (`evalByCredential`).
+
+Shared client helper: `src/lib/passkey/vault-unlock-authenticate.ts` — used by settings Test, real unlock, and dock unlock. Filtering to a specific credential preserves the matching server entry including `transports`.
+
+See `docs/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md` for Touch ID vs QR-code prompt regression details.
+
+`/api/vault/status` is **not** required for the passkey unlock ceremony (envelope comes from authenticate verify). A transient 401 on status is unrelated noise unless it blocks the whole vault UI; it does not clear a successful vault session after unlock.
+
+No `@tgoliveira/vault-core` change was required for this fix.
+
 ### Vault passkey setup ceremony
 
-- Route: `POST /api/passkeys/register` with `vaultOnly: true` and `prfVaultEnvelope: true`
+- Route: `POST /api/passkeys/register` with `vaultOnly: true` and `prfVaultEnvelope: true` on both **options** and **verify**
+- Registration options: `authenticatorAttachment: "platform"`, `userVerification: "required"` (vault-only only)
+- `excludeCredentials`: only active `vaultUnlockEnabled` credentials — account-only passkeys are **not** excluded
 - Creates credential with `signInEnabled: false`, `vaultUnlockEnabled: true`
 - Stores `passkey_authorized_device` envelope (PRF required)
 - PRF output stays client-side; server receives encrypted envelope only
+- See `docs/PASSKEY_VAULT_LIFECYCLE.md` for disable/re-registration lifecycle
 
 ### Optional dual capability
 
@@ -69,6 +98,10 @@ An account passkey may also enable vault unlock via `POST /api/account/passkeys/
 | Settings UI | `src/features/passkey/passkey-vault-unlock-setup.tsx` |
 | Vault-only register | `src/app/api/passkeys/register/route.ts`, `passkey-service.ts` |
 | List vault passkeys | `GET /api/passkeys/vault-unlock` |
+| Vault unlock authenticate | `POST /api/passkeys/authenticate` with `purpose: "vault_unlock"` |
+| Shared unlock client | `src/lib/passkey/vault-unlock-authenticate.ts` |
+| Transport helpers | `src/lib/passkey/passkey-transports.ts` |
+| Touch ID / QR fix doc | `docs/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md` |
 
 ---
 

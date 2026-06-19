@@ -7,6 +7,7 @@ import { z } from "zod";
 
 const authSchema = z.object({
   action: z.enum(["options", "verify"]),
+  purpose: z.literal("vault_unlock").optional(),
   response: z.unknown().optional(),
 });
 
@@ -22,8 +23,11 @@ export async function POST(request: Request) {
 
     const ip = getClientIp(request);
 
+    const purpose = parsed.data.purpose;
+    const authOptions = purpose ? { purpose } : undefined;
+
     if (parsed.data.action === "options") {
-      const options = await passkeyService.getAuthenticationOptions(user.id, ip);
+      const options = await passkeyService.getAuthenticationOptions(user.id, ip, authOptions);
       return NextResponse.json(options);
     }
 
@@ -33,7 +37,8 @@ export async function POST(request: Request) {
 
     const result = await passkeyService.verifyAuthentication(
       user.id,
-      parsed.data.response as Parameters<typeof passkeyService.verifyAuthentication>[1]
+      parsed.data.response as Parameters<typeof passkeyService.verifyAuthentication>[1],
+      authOptions
     );
     return NextResponse.json(result);
   } catch (error) {

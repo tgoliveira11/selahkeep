@@ -18,8 +18,13 @@ import {
   extractPasskeyPrfOutput,
   wrapVaultKeyForPasskey,
 } from "@/lib/crypto-client/passkey-vault";
-import { prepareAuthenticationOptions } from "@/lib/passkey/prepare-webauthn-options";
-import { prepareRegistrationOptions } from "@/lib/passkey/prepare-webauthn-options";
+import {
+  runVaultUnlockAuthenticationCeremony,
+} from "@/lib/passkey/vault-unlock-authenticate";
+import {
+  prepareAuthenticationOptions,
+  prepareRegistrationOptions,
+} from "@/lib/passkey/prepare-webauthn-options";
 import {
   getPasskeyPrfDiagnosticHeadline,
   getPasskeyPrfDiagnosticMessage,
@@ -32,6 +37,7 @@ import {
   type PasskeyPrfDiagnosticReason,
   type PasskeyPrfEnvironmentSnapshot,
 } from "@/lib/passkey/passkey-prf-diagnostics";
+import { toPasskeyRegistrationErrorMessage } from "@/lib/passkey/webauthn-config";
 import {
   PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE,
   PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE,
@@ -185,6 +191,7 @@ export function PasskeyVaultUnlockSetup({
 
       const options = (await apiClient.post("/api/passkeys/register", {
         action: "options",
+        vaultOnly: true,
       })) as PublicKeyCredentialCreationOptionsJSON;
 
       const attestation = await startRegistration({
@@ -222,7 +229,8 @@ export function PasskeyVaultUnlockSetup({
         setError(getPasskeyPrfDiagnosticMessage("ceremony_cancelled"));
         return;
       }
-      setError(e instanceof Error ? e.message : "Could not set up passkey vault unlock.");
+      const registrationMessage = toPasskeyRegistrationErrorMessage(e);
+      setError(registrationMessage ?? (e instanceof Error ? e.message : "Could not set up passkey vault unlock."));
     } finally {
       setLoadingId(null);
     }
@@ -246,18 +254,8 @@ export function PasskeyVaultUnlockSetup({
         return;
       }
 
-      const options = (await apiClient.post("/api/passkeys/authenticate", {
-        action: "options",
-      })) as PublicKeyCredentialRequestOptionsJSON;
-
-      const filteredOptions: PublicKeyCredentialRequestOptionsJSON = {
-        ...options,
-        allowCredentials: passkey?.credentialId
-          ? [{ id: passkey.credentialId, type: "public-key" }]
-          : options.allowCredentials,
-      };
-
-      const { prfOutput } = await runCeremonyWithOptions(filteredOptions);
+      const assertion = await runVaultUnlockAuthenticationCeremony(passkey?.credentialId);
+      const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults);
 
       if (!prfOutput) {
         const reason = resolveCeremonyDiagnosticReason({ prfOutputPresent: false });

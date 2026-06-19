@@ -5,7 +5,7 @@
 
 | # | Criterion | Status | Evidence | Tests | Notes |
 |---|-----------|--------|----------|-------|-------|
-| 1 | Authentication from `@tgoliveira/secure-auth` | ✅ Pass | `src/lib/secure-auth.ts`, auth API routes delegate to package | `secure-auth-env-and-imports.test.ts`, `no-local-auth-implementation.test.ts` | Package `@0.1.19-internal` — not modified |
+| 1 | Authentication from `@tgoliveira/secure-auth` | ✅ Pass | `src/lib/secure-auth.ts`, auth API routes delegate to package | `secure-auth-env-and-imports.test.ts`, `no-local-auth-implementation.test.ts` | Package `@0.1.25` — not modified |
 | 2 | No competing local auth/account implementation | ✅ Pass | No local user password routes; register/login delegate | `no-local-auth-implementation.test.ts`, `password-storage.test.ts` | |
 | 3 | Product branded **SelahKeep** on public pages | ✅ Pass | `home-copy.ts`, `nav.tsx`, `site-footer.tsx`, `layout.tsx` metadata | `home-page.test.tsx`, `site-layout.test.tsx`, `accessibility.test.tsx` | `APP_SLUG` remains `letters-to-god` for passkey continuity |
 | 4 | User can create a vault | ✅ Pass | `/vault/setup`, `use-ltg-vault-setup.ts` | `vault-setup-crypto-integration.test.ts`, `vault-service.test.ts` | |
@@ -16,7 +16,7 @@
 | 9 | User can unlock with vault password | ✅ Pass | `/vault/unlock`, `unlockFromVaultPassword` | `crypto-vault-unlock.test.ts` | |
 | 10 | User can unlock with recovery phrase | ✅ Pass | `unlockFromRecoveryPhrase` | `crypto-vault-unlock.test.ts` | Legacy `recovery_code` still supported |
 | 11 | User can associate passkey with vault unlock | ✅ Pass | `/vault/settings` `PasskeyVaultUnlockSetup`, `vault-passkey-availability.ts`, enable-vault-unlock API | `passkey-vault-unlock-settings.test.tsx`, `vault-passkey-availability.test.ts`, `passkey-vault-plaintext-rejection.test.ts` | Account passkey prerequisite shown separately from browser unsupported |
-| 12 | User can unlock with compatible passkey vault envelope | ✅ Pass | `unlock-with-passkey.ts`, PRF envelope | `passkey-login-vault-unlock.test.ts` | |
+| 12 | User can unlock with compatible passkey vault envelope | ✅ Pass | `unlock-with-passkey.ts`, `vault-unlock-authenticate.ts`, transport replay via `passkey-transports.ts` | `unlock-with-passkey.test.ts`, `vault-unlock-authenticate.test.ts`, `dual-passkey-vault-unlock.test.ts`, `passkey-transports.test.ts`, `passkey-vault-lifecycle.test.ts` | Dual account + vault passkeys; platform registration; lifecycle disable/re-register — see `docs/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md`, `docs/PASSKEY_VAULT_LIFECYCLE.md` |
 | 13 | User can create/edit/delete/archive Markdown notes | ✅ Pass | `/notes`, `/notes/new`, `/notes/[id]` | `notes-ux.test.tsx`, `notes-routes.test.ts`, `note-service.test.ts`, `note-org-metadata.test.ts` | Trash = client metadata; permanent delete = server soft delete |
 | 14 | User can assign one category and multiple tags per note | ✅ Pass | `CategoryTagFields`, `TagChipInput`, encrypted vault index | `category-tag-crypto.test.ts`, `tag-normalization.test.ts`, `notes-ux.test.tsx`, `notes-new-field-order.test.tsx` | Tags normalized; `#` display-only; template categories on save; reserved names blocked |
 | 15 | User can mark notes as answered | ✅ Pass | Encrypted metadata `answered` flag | `answered-metadata.test.ts`, `notes-ux.test.tsx` | Not on `/notes/new` |

@@ -2,6 +2,7 @@ import {
   resolveWebAuthnOrigins,
   resolveWebAuthnSettings,
 } from "@/lib/env/webauthn-from-env";
+import { PASSKEY_PLATFORM_AUTHENTICATOR_CONFLICT_MESSAGE } from "@/lib/passkey/messages";
 
 /** Allowed WebAuthn origins for registration and authentication verification. */
 export function getWebAuthnOrigins(): string[] {
@@ -52,4 +53,29 @@ export function toPasskeyVerificationErrorMessage(error: unknown): string {
   }
 
   return "Passkey authentication failed. Try again or use your recovery code.";
+}
+
+/**
+ * Maps WebAuthn registration failures to user-safe copy (no secrets).
+ */
+export function toPasskeyRegistrationErrorMessage(error: unknown): string | null {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+
+  const message = error.message.toLowerCase();
+
+  if (
+    error.name === "InvalidStateError" ||
+    message.includes("already registered") ||
+    message.includes("identifier already") ||
+    message.includes("identifier is already") ||
+    message.includes("already used") ||
+    message.includes("already exists on this device") ||
+    message.includes("a passkey already exists")
+  ) {
+    return PASSKEY_PLATFORM_AUTHENTICATOR_CONFLICT_MESSAGE;
+  }
+
+  return null;
 }

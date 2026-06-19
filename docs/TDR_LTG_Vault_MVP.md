@@ -10,7 +10,7 @@
 | **Repository** | [https://github.com/tgoliveira11/letter-to-god](https://github.com/tgoliveira11/letter-to-god) |
 | **Product name** | SelahKeep |
 | **Product direction** | Encrypted private vault for prayers, reflections, and personal notes |
-| **Primary auth dependency** | `@tgoliveira/secure-auth@0.1.19-internal` |
+| **Primary auth dependency** | `@tgoliveira/secure-auth@0.1.25` |
 | **Decision type** | Product / Architecture / Security / MVP Scope |
 
 ---
@@ -143,7 +143,7 @@ The project should broadly keep the existing architecture:
 The account system must come from:
 
 ```text
-@tgoliveira/secure-auth@0.1.19-internal
+@tgoliveira/secure-auth@0.1.25
 ```
 
 The app must **not** keep competing local authentication/account implementations.
@@ -688,7 +688,7 @@ The MVP is acceptable when:
 | 8 | Export/import: **deferred**; document unavailable before public beta |
 | 9 | Passkey vault unlock: **part of MVP** |
 | 10 | Encrypted attachments: **deferred** |
-| 11 | Authentication: **`@tgoliveira/secure-auth@0.1.19-internal`** |
+| 11 | Authentication: **`@tgoliveira/secure-auth@0.1.25`** |
 | 12 | Vault decryption: **product-owned** (`letter-to-god`) |
 
 ---

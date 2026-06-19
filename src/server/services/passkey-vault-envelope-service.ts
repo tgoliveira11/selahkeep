@@ -9,6 +9,7 @@ import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
 import { enforceRateLimit } from "@/server/policies/rate-limit";
 import { passkeyPrfExtensions } from "@/lib/passkey/prf";
+import { toAllowCredentialDescriptor } from "@/lib/passkey/passkey-transports";
 import {
   getWebAuthnOrigins,
   getWebAuthnRpId,
@@ -108,12 +109,7 @@ export const passkeyVaultEnvelopeService = {
 
     const options = await generateAuthenticationOptions({
       rpID,
-      allowCredentials: [
-        {
-          id: credential.credentialId,
-          transports: (credential.transports as AuthenticatorTransport[]) ?? undefined,
-        },
-      ],
+      allowCredentials: [toAllowCredentialDescriptor(credential)],
       userVerification: "required",
       extensions: passkeyPrfExtensions(userId),
     });
@@ -282,12 +278,7 @@ export const passkeyVaultEnvelopeService = {
 
     const options = await generateAuthenticationOptions({
       rpID,
-      allowCredentials: [
-        {
-          id: credential.credentialId,
-          transports: (credential.transports as AuthenticatorTransport[]) ?? undefined,
-        },
-      ],
+      allowCredentials: [toAllowCredentialDescriptor(credential)],
       userVerification: "required",
       extensions: passkeyPrfExtensions(userId),
     });
@@ -325,12 +316,17 @@ export const passkeyVaultEnvelopeService = {
         }
       }
 
-      await passkeyRepository.updateCredentialFlags(
-        credential.id,
-        userId,
-        { vaultUnlockEnabled: false },
-        tx
-      );
+      if (!credential.signInEnabled) {
+        await passkeyRepository.revoke(credential.id, userId, tx);
+        await auditRepository.record("passkey_removed", userId, undefined, tx);
+      } else {
+        await passkeyRepository.updateCredentialFlags(
+          credential.id,
+          userId,
+          { vaultUnlockEnabled: false },
+          tx
+        );
+      }
 
       await auditRepository.record(
         "passkey_vault_unlock_disabled",
