@@ -5,6 +5,7 @@ import { PasskeyVaultUnlockSetup } from "@/features/passkey/passkey-vault-unlock
 import {
   PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE,
   PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE,
+  PASSKEY_VAULT_UNLOCK_ENABLED_REFRESH_WARNING,
   PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE,
 } from "@/lib/passkey/messages";
 import { USER_ID } from "@/test/helpers/fixtures";
@@ -209,6 +210,35 @@ describe("PasskeyVaultUnlockSetup", () => {
       );
     });
     expect(await screen.findByText(PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE)).toBeTruthy();
+  });
+
+  it("keeps registration successful when the post-registration status refresh fails", async () => {
+    mocks.probeEnvironment.mockResolvedValue(
+      mockEnvironment({ capabilityProbe: "supported", clientCapabilitiesPrf: true })
+    );
+    let vaultListRequests = 0;
+    mocks.apiGet.mockImplementation(async (path: string) => {
+      if (path !== "/api/passkeys/vault-unlock") {
+        throw new Error(`Unexpected GET ${path}`);
+      }
+      vaultListRequests += 1;
+      if (vaultListRequests === 1) {
+        return { passkeys: [], serverEnvelopeConfigured: false };
+      }
+      throw new Error("Internal server error");
+    });
+
+    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
+    fireEvent.click(await screen.findByRole("button", { name: /set up passkey vault unlock/i }));
+
+    expect(
+      await screen.findByText(PASSKEY_VAULT_UNLOCK_ENABLED_REFRESH_WARNING)
+    ).toBeTruthy();
+    expect(screen.queryByText(/^Internal server error$/i)).toBeNull();
+    expect(mocks.apiPost).toHaveBeenCalledWith(
+      "/api/passkeys/register",
+      expect.objectContaining({ action: "verify", vaultOnly: true })
+    );
   });
 
   it("requires unlocked vault before setup", async () => {

@@ -41,6 +41,7 @@ import { toPasskeyRegistrationErrorMessage } from "@/lib/passkey/webauthn-config
 import {
   PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE,
   PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE,
+  PASSKEY_VAULT_UNLOCK_ENABLED_REFRESH_WARNING,
   PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE,
 } from "@/lib/passkey/messages";
 import {
@@ -222,7 +223,13 @@ export function PasskeyVaultUnlockSetup({
       });
 
       setMessage(PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE);
-      await loadPasskeys();
+      try {
+        await loadPasskeys();
+      } catch {
+        // Registration and envelope persistence already succeeded. A secondary
+        // status refresh must not turn that success into a registration error.
+        setMessage(PASSKEY_VAULT_UNLOCK_ENABLED_REFRESH_WARNING);
+      }
     } catch (e) {
       if (isCeremonyCancellation(e)) {
         setDiagnosticReason("ceremony_cancelled");

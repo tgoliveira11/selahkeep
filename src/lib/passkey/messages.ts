@@ -31,6 +31,9 @@ export const PASSKEY_LOGIN_UNSUPPORTED_MESSAGE =
 export const PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE =
   "Passkey vault unlock is now enabled for this passkey.";
 
+export const PASSKEY_VAULT_UNLOCK_ENABLED_REFRESH_WARNING =
+  "Passkey vault unlock is enabled, but the updated status could not be loaded. Refresh this page to update it.";
+
 export const PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE =
   "Passkey vault unlock was disabled. This passkey can still sign you in.";
 
