@@ -50,7 +50,7 @@ src/
   features/            # Client feature flows (passkey, vault)
   lib/
     crypto-client/     # Note encryption + legacy shims re-exporting src/modules/vault
-    modules/vault/     # Vault envelopes, session, passkey PRF (@tgoliveira/vault-core)
+    modules/vault/     # Vault envelopes, session, passkey PRF (@tgoliveira/vault-core@0.2.0)
     api-client/        # HTTP client for API
     validation/        # Shared Zod schemas
     db/                # Drizzle client (server-only)

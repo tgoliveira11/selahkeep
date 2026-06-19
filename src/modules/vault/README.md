@@ -22,7 +22,7 @@ Product-owned vault layer. Account authentication (`@tgoliveira/secure-auth`) an
 ## Dependency
 
 ```json
-"@tgoliveira/vault-core": "^0.1.1"
+"@tgoliveira/vault-core": "^0.2.0"
 ```
 
 Note encryption (title/body/metadata) remains in `src/lib/crypto-client/` — product-specific AAD fields beyond vault-core `VaultAadField`.

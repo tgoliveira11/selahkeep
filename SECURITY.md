@@ -268,6 +268,7 @@ Challenges scoped by user ID and type; expire after 5 minutes; deleted on use vi
 
 ## Vault session hardening
 
+- **Vault crypto:** `@tgoliveira/vault-core@0.2.0` (envelopes, UVK)
 - **In-memory UVK** — owned exclusively by `src/lib/crypto-client/vault-session.ts`; unlock flows call `setUnlockedVaultSession`; UI reads `hasUnlockedVaultSession()`. `@tgoliveira/vault-core/browser` session exports are not used as app state (PRF helpers only via `vault-passkey-browser.ts`).
 - **Activity detection:** window events plus document capture (`keydown`, `input`, `pointerdown`, `compositionstart`, `compositionend`, `paste`); note editor calls `touchVaultActivity()` on change.
 - **Vault status UI:** global `VaultStatusDock` inside authenticated header when signed in (no note title/body/category/tag or vault secrets in the dock); collapsed handle shows `Closed` when locked or countdown when open

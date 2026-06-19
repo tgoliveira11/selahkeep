@@ -65,10 +65,15 @@ export async function unwrapVaultKeyFromPassword(
         kdfMetadata,
         scope
       )
-    : await unlockWithPasswordEnvelope(vaultPassword, {
-        encryptedVaultKey: asVaultCorePayload(encryptedVaultKey),
-        kdfMetadata: kdfMetadata as VaultCoreKdfMetadata,
-      });
+    : await unlockWithPasswordEnvelope(
+        vaultPassword,
+        {
+          encryptedVaultKey: asVaultCorePayload(encryptedVaultKey),
+          kdfMetadata: kdfMetadata as VaultCoreKdfMetadata,
+        },
+        scope,
+        SELAHKEEP_VAULT_PROFILE
+      );
 
   if (options?.applySession ?? true) {
     setUnlockedVaultSession({

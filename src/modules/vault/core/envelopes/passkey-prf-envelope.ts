@@ -46,7 +46,12 @@ export async function unwrapVaultKeyFromPasskey(
   const scope = envelopeScope(options?.userId ?? encryptedVaultKey.aad.userId, options?.resourceId);
   const vaultKey = isLegacyVaultKeyEnvelope(encryptedVaultKey)
     ? await unwrapLegacyVaultKeyFromPasskey(encryptedVaultKey, prfOutput, scope)
-    : await unwrapVaultKeyFromPasskeyCore(asVaultCorePayload(encryptedVaultKey), prfOutput);
+    : await unwrapVaultKeyFromPasskeyCore(
+        asVaultCorePayload(encryptedVaultKey),
+        prfOutput,
+        scope,
+        SELAHKEEP_VAULT_PROFILE
+      );
 
   if (options?.applySession ?? true) {
     setUnlockedVaultSession({ userVaultKey: vaultKey, method: "passkey_prf" });
@@ -71,7 +76,9 @@ export async function unlockVaultFromPasskeyEnvelope(
     : await unlockVaultFromPasskeyEnvelopeCore(
         asVaultCorePayload(encryptedVaultKey),
         prfOutput,
-        options
+        scope,
+        SELAHKEEP_VAULT_PROFILE,
+        { prfRequired: options?.prfRequired }
       );
 
   if (options?.applySession ?? true) {

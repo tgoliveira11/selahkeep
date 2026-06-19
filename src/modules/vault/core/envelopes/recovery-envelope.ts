@@ -75,6 +75,8 @@ export async function unwrapVaultKeyFromRecoveryPhrase(
           encryptedVaultKey: asVaultCorePayload(encryptedVaultKey),
           kdfMetadata: kdfMetadata as VaultCoreKdfMetadata,
         },
+        scope,
+        SELAHKEEP_VAULT_PROFILE,
         { expectedWordCount: options?.expectedWordCount ?? null }
       );
 
