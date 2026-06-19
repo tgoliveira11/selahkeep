@@ -10,20 +10,21 @@ import {
 import { USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
-  listPasskeys: vi.fn(),
+  vaultStatus: vi.fn(),
   getSessionVaultKey: vi.fn(),
   apiGet: vi.fn(),
   apiPost: vi.fn(),
   apiDelete: vi.fn(),
   startAuthentication: vi.fn(),
+  startRegistration: vi.fn(),
   extractPasskeyPrfOutput: vi.fn(),
   wrapVaultKeyForPasskey: vi.fn(),
   probeEnvironment: vi.fn(),
 }));
 
-vi.mock("@tgoliveira/secure-auth/client", () => ({
-  passkeyAccountApi: {
-    list: mocks.listPasskeys,
+vi.mock("@/lib/api-client/vault", () => ({
+  vaultApi: {
+    status: mocks.vaultStatus,
   },
 }));
 
@@ -41,6 +42,7 @@ vi.mock("@/lib/api-client/client", () => ({
 
 vi.mock("@simplewebauthn/browser", () => ({
   startAuthentication: mocks.startAuthentication,
+  startRegistration: mocks.startRegistration,
 }));
 
 vi.mock("@/lib/crypto-client/passkey-vault", () => ({
@@ -50,6 +52,7 @@ vi.mock("@/lib/crypto-client/passkey-vault", () => ({
 
 vi.mock("@/lib/passkey/prepare-webauthn-options", () => ({
   prepareAuthenticationOptions: (options: unknown) => options,
+  prepareRegistrationOptions: (options: unknown) => options,
 }));
 
 vi.mock("@/lib/passkey/passkey-prf-diagnostics", async (importOriginal) => {
@@ -73,101 +76,155 @@ function mockEnvironment(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function mockVaultUnlockList(
+  passkeys: Array<{
+    id: string;
+    friendlyName: string;
+    signInEnabled: boolean;
+    vaultUnlockEnabled: boolean;
+    prfSupported: boolean | null;
+    credentialId: string;
+  }> = []
+) {
+  mocks.apiGet.mockImplementation(async (path: string) => {
+    if (path === "/api/passkeys/vault-unlock") {
+      return { passkeys, serverEnvelopeConfigured: passkeys.some((p) => p.vaultUnlockEnabled) };
+    }
+    throw new Error(`Unexpected GET ${path}`);
+  });
+}
+
 describe("PasskeyVaultUnlockSetup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getSessionVaultKey.mockReturnValue({} as CryptoKey);
-    mocks.listPasskeys.mockResolvedValue({
-      passkeys: [{ id: "pk-1", friendlyName: "MacBook", signInEnabled: true }],
+    mocks.vaultStatus.mockResolvedValue({
+      hasPasskey: false,
+      vaultConfigured: true,
+      availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: false },
     });
-    mocks.apiGet.mockResolvedValue({
-      signInEnabled: true,
-      vaultUnlockEnabled: false,
-      prfSupported: null,
-      credentialId: "cred-1",
-    });
+    mockVaultUnlockList([]);
     mocks.probeEnvironment.mockResolvedValue(mockEnvironment());
     mocks.apiPost.mockResolvedValue({ challenge: "abc", extensions: { prf: { eval: {} } } });
     mocks.startAuthentication.mockResolvedValue({
       id: "cred-1",
       clientExtensionResults: {},
     });
+    mocks.startRegistration.mockResolvedValue({
+      id: "cred-new",
+      clientExtensionResults: {},
+    });
     mocks.extractPasskeyPrfOutput.mockReturnValue(new Uint8Array(32));
     mocks.wrapVaultKeyForPasskey.mockResolvedValue({ version: "enc-v1" });
   });
 
-  it("explains account passkey login is separate from vault unlock", async () => {
+  it("1. does not render Set up account passkey first", async () => {
     render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
-    expect(await screen.findByText(/account passkeys sign you in to selahkeep/i)).toBeTruthy();
-    expect(screen.getByText(/webauthn prf extension/i)).toBeTruthy();
+    await screen.findByText(/independent/i);
+    expect(screen.queryByText(/set up account passkey first/i)).toBeNull();
+  });
+
+  it("2. does not render link-a-compatible-passkey copy", async () => {
+    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
+    await screen.findByText(/independent/i);
+    expect(screen.queryByText(/link a compatible passkey/i)).toBeNull();
+  });
+
+  it("3. shows PRF unsupported when browser lacks PRF, not account passkey messaging", async () => {
+    mocks.probeEnvironment.mockResolvedValue(
+      mockEnvironment({ capabilityProbe: "unsupported", webauthnAvailable: true })
+    );
+    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
+    expect(await screen.findByText(/not supported by this browser or passkey provider/i)).toBeTruthy();
+    expect(screen.queryByText(/set up account passkey first/i)).toBeNull();
+  });
+
+  it("4. explains account passkeys and vault passkeys are independent", async () => {
+    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
+    expect(await screen.findByText(/account passkeys and vault passkeys are independent/i)).toBeTruthy();
+  });
+
+  it("5. shows setup when vault is unlocked and PRF is available without account passkey", async () => {
+    mocks.probeEnvironment.mockResolvedValue(
+      mockEnvironment({ capabilityProbe: "supported", clientCapabilitiesPrf: true })
+    );
+    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
+    expect(await screen.findByRole("button", { name: /set up passkey vault unlock/i })).toBeTruthy();
   });
 
   it("shows unknown capability notice without blocking setup", async () => {
     render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
-    expect(await screen.findByText(/could not be confirmed before setup/i)).toBeTruthy();
-    expect(screen.getByRole("button", { name: /set up vault unlock/i })).toBeTruthy();
+    expect(await screen.findByText(/could not be confirmed yet/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /set up passkey vault unlock/i })).toBeTruthy();
   });
 
-  it("enables vault unlock when PRF output is returned", async () => {
+  it("shows configured state when vault unlock passkey exists", async () => {
+    mockVaultUnlockList([
+      {
+        id: "pk-1",
+        friendlyName: "Vault passkey",
+        signInEnabled: false,
+        vaultUnlockEnabled: true,
+        prfSupported: true,
+        credentialId: "cred-1",
+      },
+    ]);
+
     render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
-    fireEvent.click(await screen.findByRole("button", { name: /set up vault unlock/i }));
+    expect(await screen.findByText(/passkey vault unlock is configured/i)).toBeTruthy();
+    expect(screen.getByText(/vault unlock: configured/i)).toBeTruthy();
+  });
+
+  it("registers vault-only passkey when PRF output is returned", async () => {
+    mocks.probeEnvironment.mockResolvedValue(
+      mockEnvironment({ capabilityProbe: "supported", clientCapabilitiesPrf: true })
+    );
+    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
+    fireEvent.click(await screen.findByRole("button", { name: /set up passkey vault unlock/i }));
 
     await waitFor(() => {
+      expect(mocks.startRegistration).toHaveBeenCalled();
       expect(mocks.apiPost).toHaveBeenCalledWith(
-        `/api/account/passkeys/pk-1/enable-vault-unlock`,
+        "/api/passkeys/register",
         expect.objectContaining({
           action: "verify",
           prfVaultEnvelope: true,
+          vaultOnly: true,
         })
       );
     });
     expect(await screen.findByText(PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE)).toBeTruthy();
   });
 
-  it("allows setup attempt when capability probe is unknown", async () => {
-    mocks.probeEnvironment.mockResolvedValue(mockEnvironment({ capabilityProbe: "unknown" }));
-    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
-    fireEvent.click(await screen.findByRole("button", { name: /set up vault unlock/i }));
-    await waitFor(() => expect(mocks.startAuthentication).toHaveBeenCalled());
-  });
-
-  it("allows setup when client capabilities deny PRF pre-ceremony", async () => {
-    mocks.probeEnvironment.mockResolvedValue(
-      mockEnvironment({ capabilityProbe: "unknown", clientCapabilitiesPrf: false })
-    );
-    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
-    fireEvent.click(await screen.findByRole("button", { name: /set up vault unlock/i }));
-    await waitFor(() => expect(mocks.startAuthentication).toHaveBeenCalled());
-    expect(screen.queryByText(/PRF extension is not supported/i)).toBeNull();
+  it("requires unlocked vault before setup", async () => {
+    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked={false} />);
+    expect(await screen.findByText(/unlock your vault to set up passkey vault unlock/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /set up passkey vault unlock/i })).toBeNull();
   });
 
   it("shows prf_not_returned when ceremony omits PRF output", async () => {
     mocks.extractPasskeyPrfOutput.mockReturnValue(null);
     render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
-    fireEvent.click(await screen.findByRole("button", { name: /set up vault unlock/i }));
-    expect(await screen.findByText(/Authentication completed, but your passkey or browser did not return PRF output/i)).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: /set up passkey vault unlock/i }));
+    expect(
+      await screen.findByText(
+        /Authentication completed, but your passkey or browser did not return PRF output/i
+      )
+    ).toBeTruthy();
     expect(mocks.wrapVaultKeyForPasskey).not.toHaveBeenCalled();
   });
 
-  it("requires unlocked vault to set up passkey vault unlock", async () => {
-    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked={false} />);
-    const button = await screen.findByRole("button", { name: /set up vault unlock/i });
-    expect(button).toBeDisabled();
-  });
-
   it("disables vault unlock for configured passkey with PRF proof", async () => {
-    mocks.apiGet.mockResolvedValue({
-      signInEnabled: true,
-      vaultUnlockEnabled: true,
-      prfSupported: true,
-      credentialId: "cred-1",
-    });
-    mocks.apiPost.mockImplementation(async (path: string, body: unknown) => {
-      if (path.includes("/vault-unlock") && (body as { action?: string }).action === "disable-options") {
-        return { challenge: "abc", extensions: { prf: { eval: {} } } };
-      }
-      return { challenge: "abc", extensions: { prf: { eval: {} } } };
-    });
+    mockVaultUnlockList([
+      {
+        id: "pk-1",
+        friendlyName: "Vault passkey",
+        signInEnabled: false,
+        vaultUnlockEnabled: true,
+        prfSupported: true,
+        credentialId: "cred-1",
+      },
+    ]);
 
     render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
     fireEvent.click(await screen.findByRole("button", { name: /^disable$/i }));
@@ -181,7 +238,7 @@ describe("PasskeyVaultUnlockSetup", () => {
     expect(await screen.findByText(PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE)).toBeTruthy();
   });
 
-  it("shows read-only passkey vault status when WebAuthn is unavailable but envelope exists", async () => {
+  it("shows read-only configured state without destructive actions in unsupported browser", async () => {
     mocks.probeEnvironment.mockResolvedValue(
       mockEnvironment({
         webauthnAvailable: false,
@@ -189,28 +246,36 @@ describe("PasskeyVaultUnlockSetup", () => {
         capabilityProbe: "unsupported",
       })
     );
-    mocks.apiGet.mockResolvedValue({
-      signInEnabled: true,
-      vaultUnlockEnabled: true,
-      prfSupported: true,
-      credentialId: "cred-1",
-    });
+    mockVaultUnlockList([
+      {
+        id: "pk-1",
+        friendlyName: "Vault passkey",
+        signInEnabled: false,
+        vaultUnlockEnabled: true,
+        prfSupported: true,
+        credentialId: "cred-1",
+      },
+    ]);
 
     render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
     expect(
-      await screen.findByText(/cannot be managed in this browser/i)
+      await screen.findByText(/configured, but unavailable in this browser/i)
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^disable$/i })).toBeNull();
-    expect(screen.queryByRole("button", { name: /^replace$/i })).toBeNull();
+    expect(mocks.apiDelete).not.toHaveBeenCalled();
   });
 
   it("tests configured passkey via authenticate options", async () => {
-    mocks.apiGet.mockResolvedValue({
-      signInEnabled: true,
-      vaultUnlockEnabled: true,
-      prfSupported: true,
-      credentialId: "cred-1",
-    });
+    mockVaultUnlockList([
+      {
+        id: "pk-1",
+        friendlyName: "Vault passkey",
+        signInEnabled: false,
+        vaultUnlockEnabled: true,
+        prfSupported: true,
+        credentialId: "cred-1",
+      },
+    ]);
 
     render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
     fireEvent.click(await screen.findByRole("button", { name: /^test$/i }));
@@ -220,57 +285,17 @@ describe("PasskeyVaultUnlockSetup", () => {
     });
     expect(await screen.findByText(PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE)).toBeTruthy();
   });
+});
 
-  it("shows configured state when vault unlock envelope exists", async () => {
-    mocks.apiGet.mockResolvedValue({
-      signInEnabled: true,
-      vaultUnlockEnabled: true,
-      prfSupported: true,
-      credentialId: "cred-1",
-    });
-
-    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
-    expect(await screen.findByText(/passkey vault unlock configured/i)).toBeTruthy();
-    expect(screen.getByText(/vault unlock: configured/i)).toBeTruthy();
-  });
-
-  it("replaces configured passkey vault unlock after PRF disable proof", async () => {
-    mocks.apiGet
-      .mockResolvedValueOnce({
-        signInEnabled: true,
-        vaultUnlockEnabled: true,
-        prfSupported: true,
-        credentialId: "cred-1",
-      })
-      .mockResolvedValue({
-        signInEnabled: true,
-        vaultUnlockEnabled: false,
-        prfSupported: null,
-        credentialId: "cred-1",
-      });
-    mocks.apiPost.mockImplementation(async (path: string, body: unknown) => {
-      const payload = body as { action?: string };
-      if (path.includes("/vault-unlock") && payload.action === "disable-options") {
-        return { challenge: "abc", extensions: { prf: { eval: {} } } };
-      }
-      if (path.includes("/enable-vault-unlock") && payload.action === "options") {
-        return { challenge: "abc", extensions: { prf: { eval: {} } } };
-      }
-      return { success: true };
-    });
-
-    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
-    fireEvent.click(await screen.findByRole("button", { name: /^replace$/i }));
-
-    await waitFor(() => {
-      expect(mocks.apiDelete).toHaveBeenCalled();
-      expect(mocks.wrapVaultKeyForPasskey).toHaveBeenCalled();
-    });
-  });
-
-  it("prompts to add account passkey when none exist", async () => {
-    mocks.listPasskeys.mockResolvedValue({ passkeys: [] });
-    render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
-    expect(await screen.findByText(/add an account passkey/i)).toBeTruthy();
+describe("passkey vault setup documentation guard", () => {
+  it("27-30. docs do not require account passkey before vault passkey setup", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const root = join(import.meta.dirname, "../../..");
+    const audit = readFileSync(join(root, "docs/PASSKEY_VAULT_SETUP_AVAILABILITY_AUDIT.md"), "utf8");
+    expect(audit.toLowerCase()).not.toContain("set up account passkey first");
+    expect(audit.toLowerCase()).not.toMatch(/account passkey is required before vault passkey/);
+    expect(audit).toMatch(/independent/i);
+    expect(audit).toMatch(/never unlocks the vault by itself/i);
   });
 });

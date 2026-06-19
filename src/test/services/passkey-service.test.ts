@@ -127,6 +127,39 @@ describe("passkey service", () => {
     );
   });
 
+  it("registers vault-only passkey with signInEnabled false when vaultOnly is set", async () => {
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "reg-challenge" });
+    mocks.verifyRegistrationResponse.mockResolvedValue({
+      verified: true,
+      registrationInfo: {
+        credential: {
+          id: "cred-id",
+          publicKey: new Uint8Array(32),
+          counter: 0,
+          transports: ["internal"],
+        },
+        credentialDeviceType: "singleDevice",
+        credentialBackedUp: false,
+      },
+    });
+
+    await passkeyService.verifyRegistration(
+      USER_ID,
+      registrationResponse("reg-challenge"),
+      encryptedPayload("vault_key", USER_ID),
+      { prfVaultEnvelope: true, vaultOnly: true }
+    );
+
+    expect(mocks.createCredential).toHaveBeenCalledWith(
+      expect.objectContaining({
+        signInEnabled: false,
+        vaultUnlockEnabled: true,
+        friendlyName: "Vault passkey",
+      }),
+      expect.anything()
+    );
+  });
+
   it("verifyRegistration rejects invalid challenge", async () => {
     mocks.consumeValidChallenge.mockRejectedValue(new Error("Invalid or expired challenge"));
     await expect(

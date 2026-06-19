@@ -68,7 +68,7 @@ export const passkeyService = {
     userId: string,
     response: RegistrationResponseJSON,
     encryptedVaultKey?: EncryptedPayload,
-    options?: { prfVaultEnvelope?: boolean }
+    options?: { prfVaultEnvelope?: boolean; vaultOnly?: boolean }
   ) {
     const clientData = JSON.parse(
       Buffer.from(response.response.clientDataJSON, "base64url").toString()
@@ -110,6 +110,11 @@ export const passkeyService = {
       assertVaultKeyAad(userId, encryptedVaultKey);
     }
 
+    const vaultOnly = Boolean(options?.vaultOnly);
+    if (vaultOnly && !wantsVaultEnvelope) {
+      throw new ChallengeError("Vault-only passkeys require a PRF vault envelope.");
+    }
+
     await runInTransaction(async (tx) => {
       await passkeyRepository.createCredential(
         {
@@ -118,7 +123,8 @@ export const passkeyService = {
           publicKey: Buffer.from(credential.publicKey).toString("base64url"),
           counter: String(credential.counter),
           transports: credential.transports,
-          signInEnabled: true,
+          friendlyName: vaultOnly ? "Vault passkey" : null,
+          signInEnabled: vaultOnly ? false : true,
           vaultUnlockEnabled: Boolean(encryptedVaultKey && options?.prfVaultEnvelope),
           prfSupported: encryptedVaultKey && options?.prfVaultEnvelope ? true : null,
         },
@@ -251,6 +257,42 @@ export const passkeyService = {
       encryptedVaultKey: envelope?.encryptedVaultKey ?? null,
       prfRequired:
         (envelope?.publicMetadata as { prfRequired?: boolean } | null)?.prfRequired ?? true,
+    };
+  },
+
+  async listVaultUnlockCredentials(userId: string) {
+    const credentials = await passkeyRepository.findByUserId(userId);
+    const envelope = await vaultRepository.findActiveEnvelopeByMethod(
+      userId,
+      "passkey_authorized_device"
+    );
+
+    const vaultCredentials = credentials.filter((credential) => credential.vaultUnlockEnabled);
+
+    if (vaultCredentials.length === 0 && envelope) {
+      return {
+        passkeys: [] as Array<{
+          id: string;
+          friendlyName: string;
+          signInEnabled: boolean;
+          vaultUnlockEnabled: boolean;
+          prfSupported: boolean | null;
+          credentialId: string;
+        }>,
+        serverEnvelopeConfigured: true,
+      };
+    }
+
+    return {
+      passkeys: vaultCredentials.map((credential) => ({
+        id: credential.id,
+        friendlyName: credential.friendlyName ?? "Vault passkey",
+        signInEnabled: credential.signInEnabled,
+        vaultUnlockEnabled: credential.vaultUnlockEnabled,
+        prfSupported: credential.prfSupported,
+        credentialId: credential.credentialId,
+      })),
+      serverEnvelopeConfigured: Boolean(envelope),
     };
   },
 

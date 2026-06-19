@@ -119,6 +119,7 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
           response: attestation,
           encryptedVaultKey,
           prfVaultEnvelope: true,
+          vaultOnly: true,
         }
       );
 

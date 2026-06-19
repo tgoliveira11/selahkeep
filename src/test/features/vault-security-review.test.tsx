@@ -106,7 +106,7 @@ describe("VaultSecurityReview", () => {
     render(<VaultSecurityReview serverStatus={serverStatus} />);
 
     expect(await screen.findByText(/passkey vault unlock compatibility/i)).toBeTruthy();
-    expect(screen.getByText(/account passkey sign-in/i)).toBeTruthy();
+    expect(screen.getAllByText(/account passkey/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/webauthn prf/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/not configured/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: /manage passkey vault unlock/i }).getAttribute("href")).toBe(

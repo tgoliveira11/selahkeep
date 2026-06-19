@@ -37,6 +37,16 @@
 
 Supported unlock methods: **vault password**, **recovery phrase**, **passkey PRF** (`passkey_authorized_device` envelope). Legacy `recovery_code` envelopes remain for older vaults.
 
+### Account passkeys and vault passkeys
+
+Account passkeys and vault passkeys are **independent**.
+
+- An account passkey signs the user in to SelahKeep (`@tgoliveira/secure-auth`).
+- A vault passkey unlocks the encrypted vault using WebAuthn PRF after the user is signed in.
+- Users may configure vault passkey unlock without first configuring account passkey sign-in (vault must be unlocked; browser/provider must support PRF).
+- Signing in with an account passkey never unlocks the vault by itself.
+- Vault-only setup: `POST /api/passkeys/register` with `vaultOnly: true` creates `signInEnabled: false`, `vaultUnlockEnabled: true` credentials.
+
 - Passkeys must not be used as raw encryption keys
 - Account session alone never unlocks the vault
 - Passkey PRF unlock does not cache a local device-secret envelope
@@ -245,7 +255,8 @@ Safe audit events only (no plaintext letters, recovery codes, keys, or ciphertex
 - Vault envelopes use WebAuthn **PRF** output as key-wrapping key (not raw signature bytes)
 - PRF required for passkey envelopes; **no registration fallback** to device-secret wrapping
 - If PRF is unavailable at registration, passkey vault envelope is **not** created and existing passkey envelopes are **not** revoked
-- PRF diagnostics: `src/lib/passkey/passkey-prf-diagnostics.ts`; audit `docs/PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`
+- PRF diagnostics: `src/lib/passkey/passkey-prf-diagnostics.ts`; audits `docs/PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`, `docs/PASSKEY_VAULT_SETUP_AVAILABILITY_AUDIT.md`
+- Availability state: `src/lib/passkey/vault-passkey-availability.ts` — missing account passkey is never reported as browser unsupported; configured envelopes stay read-only in PRF-incompatible browsers
 - Primary UX: `/vault/settings` (not `/vault/recovery`) for enable/test/replace/disable; PRF-unsupported browsers see read-only status and cannot disable/replace without a PRF ceremony proof
 - Vault unlock `returnTo` query param is sanitized (`sanitizeVaultReturnTo`) to internal paths only (`/notes`, `/vault/settings`, `/vault/security`, `/vault/recovery`, `/settings/account`); disabling passkey vault unlock requires DELETE/POST with verified WebAuthn assertion including PRF client extension results
 

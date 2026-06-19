@@ -18,7 +18,9 @@ import { useVaultSettings } from "@/features/notes/use-vault-settings";
 import type { VaultUnlockBehavior } from "@/lib/crypto-client/vault-settings";
 import { applyUnlockBehavior } from "@/features/notes/eager-decrypt-notes";
 import { PasskeyVaultUnlockSetup } from "@/features/passkey/passkey-vault-unlock-setup";
-import { PASSKEY_VAULT_UNLOCK_ACCOUNT_LOGIN_NOTE } from "@/lib/passkey/messages";
+import {
+  VAULT_PASSKEY_SECTION_INTRO,
+} from "@/lib/passkey/vault-passkey-availability-messages";
 
 const OPTIONS: Array<{
   value: VaultUnlockBehavior;
@@ -151,7 +153,7 @@ export default function VaultSettingsPage() {
 
           <Card className="space-y-3 border-dashed">
             <h2 className="font-medium">Passkey vault unlock</h2>
-            <p className="text-sm text-[var(--muted)]">{PASSKEY_VAULT_UNLOCK_ACCOUNT_LOGIN_NOTE}</p>
+            <p className="text-sm text-[var(--muted)]">{VAULT_PASSKEY_SECTION_INTRO}</p>
             {userId && (
               <PasskeyVaultUnlockSetup userId={userId} vaultUnlocked={vaultUnlocked} />
             )}

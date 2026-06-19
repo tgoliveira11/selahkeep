@@ -24,13 +24,15 @@ export type PasskeyVaultUnlockDisplayStatus =
 
 export function derivePasskeyVaultUnlockDisplayStatus(
   hasPasskeyEnvelope: boolean,
-  prfProbe: PasskeyPrfSupport | null
+  prfProbe: PasskeyPrfSupport | null,
+  options?: { managementBlocked?: boolean }
 ): PasskeyVaultUnlockDisplayStatus {
   if (!hasPasskeyEnvelope) return "not_configured";
+  if (options?.managementBlocked) return "unavailable_in_browser";
   if (prfProbe === "unsupported") return "unsupported_in_browser";
   if (prfProbe === "supported") return "configured";
   if (prfProbe === "unknown") return "unknown_support";
-  return "unavailable_in_browser";
+  return "configured";
 }
 
 export function formatPasskeyVaultUnlockStatus(status: PasskeyVaultUnlockDisplayStatus): string {

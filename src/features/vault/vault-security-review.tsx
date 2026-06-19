@@ -20,13 +20,15 @@ import {
   formatPasskeyVaultUnlockStatus,
 } from "@/lib/vault/vault-health-summary";
 import {
-  getPasskeyPrfDiagnosticHeadline,
-  getPasskeyPrfDiagnosticMessage,
-  mapCapabilityProbeToReason,
   probePasskeyPrfEnvironmentAsync,
+  isPasskeyPrfManagementBlocked,
   type PasskeyPrfEnvironmentSnapshot,
 } from "@/lib/passkey/passkey-prf-diagnostics";
-import { PASSKEY_VAULT_UNLOCK_ACCOUNT_LOGIN_NOTE } from "@/lib/passkey/messages";
+import { deriveVaultPasskeyAvailability } from "@/lib/passkey/vault-passkey-availability";
+import {
+  getVaultPasskeyAvailabilityCopy,
+  VAULT_PASSKEY_SECTION_INTRO,
+} from "@/lib/passkey/vault-passkey-availability-messages";
 import { recordVaultSecurityEvent } from "@/features/vault/record-vault-security-event";
 import { cn } from "@/lib/ui/cn";
 
@@ -61,8 +63,21 @@ export function VaultSecurityReview({ serverStatus }: VaultSecurityReviewProps) 
     serverStatus.availableUnlockMethods?.passkey === true || serverStatus.hasPasskey === true;
   const passkeyDisplayStatus = derivePasskeyVaultUnlockDisplayStatus(
     hasPasskeyEnvelope,
-    prfEnvironment?.capabilityProbe ?? null
+    prfEnvironment?.capabilityProbe ?? null,
+    {
+      managementBlocked: Boolean(
+        prfEnvironment && hasPasskeyEnvelope && isPasskeyPrfManagementBlocked(prfEnvironment)
+      ),
+    }
   );
+
+  const passkeyAvailability = deriveVaultPasskeyAvailability({
+    vaultEnvelopeConfigured: hasPasskeyEnvelope,
+    vaultConfigured: serverStatus.setupComplete === true || serverStatus.hasVault === true,
+    vaultUnlocked: isVaultUnlocked(),
+    environment: prfEnvironment,
+  });
+  const passkeyAvailabilityCopy = getVaultPasskeyAvailabilityCopy(passkeyAvailability);
 
   const health = useMemo(
     () =>
@@ -151,10 +166,6 @@ export function VaultSecurityReview({ serverStatus }: VaultSecurityReviewProps) 
       setDrillLoading(false);
     }
   }, [recoveryPhrase, serverStatus]);
-
-  const prfReason = prfEnvironment
-    ? mapCapabilityProbeToReason(prfEnvironment.capabilityProbe, prfEnvironment)
-    : null;
 
   return (
     <div className="space-y-4">
@@ -264,7 +275,7 @@ export function VaultSecurityReview({ serverStatus }: VaultSecurityReviewProps) 
 
       <Card className="space-y-3 p-5">
         <h2 className="font-medium">Passkey vault unlock compatibility</h2>
-        <p className="text-sm text-[var(--muted)]">{PASSKEY_VAULT_UNLOCK_ACCOUNT_LOGIN_NOTE}</p>
+        <p className="text-sm text-[var(--muted)]">{VAULT_PASSKEY_SECTION_INTRO}</p>
         <p className="text-sm text-[var(--muted)]">
           Vault passkey unlock requires WebAuthn PRF. Some browsers support passkeys for account
           sign-in but do not report PRF support for vault unlock.
@@ -283,21 +294,16 @@ export function VaultSecurityReview({ serverStatus }: VaultSecurityReviewProps) 
                 {formatPasskeyVaultUnlockStatus(passkeyDisplayStatus)}
               </dd>
             </div>
-            {prfReason && prfReason !== "supported" && (
-              <div>
-                <dt className="font-medium">Reason</dt>
-                <dd className="text-[var(--muted)]">
-                  {getPasskeyPrfDiagnosticHeadline(prfReason)} —{" "}
-                  {getPasskeyPrfDiagnosticMessage(prfReason)}
-                </dd>
-              </div>
-            )}
-            {passkeyDisplayStatus === "unsupported_in_browser" && (
-              <p className="text-sm text-[var(--muted)]">
-                Passkey sign-in may work here, but passkey vault unlock is unavailable because this
-                browser or provider does not report PRF support.
-              </p>
-            )}
+            {passkeyAvailabilityCopy &&
+              passkeyAvailability.state !== "not_configured" &&
+              passkeyAvailability.state !== "available" && (
+                <div>
+                  <dt className="font-medium">Compatibility note</dt>
+                  <dd className="text-[var(--muted)]">
+                    {passkeyAvailabilityCopy.headline} {passkeyAvailabilityCopy.explanation}
+                  </dd>
+                </div>
+              )}
           </dl>
         )}
         <Link href="/vault/settings">

@@ -28,6 +28,7 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 |----------|---------|
 | [`PASSKEY_LOGIN_VAULT_UNLOCK.md`](./PASSKEY_LOGIN_VAULT_UNLOCK.md) | Passkey login vs vault unlock integration |
 | [`PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`](./PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md) | PRF diagnostics, capability vs ceremony |
+| [`PASSKEY_VAULT_SETUP_AVAILABILITY_AUDIT.md`](./PASSKEY_VAULT_SETUP_AVAILABILITY_AUDIT.md) | Vault settings availability vs account passkey |
 | [`VAULT_AUTO_LOCK_NORMALIZATION.md`](./VAULT_AUTO_LOCK_NORMALIZATION.md) | Auto-lock config, activity, draft hooks |
 | [`NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md`](./NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md) | Encrypted drafts, autosave, templates |
 | [`EDITOR_IMPLEMENTATION_DECISION.md`](./EDITOR_IMPLEMENTATION_DECISION.md) | Visual note editor (Tiptap) decision |

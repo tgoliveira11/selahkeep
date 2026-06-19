@@ -67,6 +67,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 **`/api-docs` layout:** Swagger UI intentionally renders **without** `SiteShell` (`Nav` / `SiteFooter`) so the vendor UI can use the full viewport. The page still includes the global skip link from the root layout and sets `id="main-content"` on its `<main>`. In production the route returns 404 unless `ENABLE_API_DOCS=true` (see `.env.example` and `docs/API_REFERENCE.md`).
 
 - Passkey registration without PRF does **not** create `passkey_authorized_device` envelopes and does **not** revoke existing passkey envelopes
+- **Account passkeys and vault passkeys are independent** — vault-only setup uses `POST /api/passkeys/register` with `vaultOnly: true` (`signInEnabled: false`); account passkey sign-in never unlocks the vault
 - Passkey-based vault unlock requires PRF support. If PRF is unavailable, the app must not create a passkey vault envelope and must not present that passkey as a recovery method.
 - WebAuthn challenge validation uses atomic `consumeValidChallenge()` only (`findValidChallenge` removed)
 - WebAuthn challenge indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
@@ -131,7 +132,7 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 - **Public marketing:** Home page sections and copy in `src/lib/marketing/home-copy.ts`
 - **Vault setup:** `/vault/setup` — `PasswordSetupFields` (secure-auth) + BIP39 recovery phrase wizard; policy from `src/lib/config/vault-password-policy.ts`
 - **Recovery management:** `/vault/recovery` — status-gated recovery phrase replace (no initial phrase generation post-setup); link to `/vault/settings` for optional passkey vault unlock
-- **Passkey vault unlock:** `/vault/settings` — `PasskeyVaultUnlockSetup`; PRF diagnostics in `src/lib/passkey/passkey-prf-diagnostics.ts`
+- **Passkey vault unlock:** `/vault/settings` — `PasskeyVaultUnlockSetup`; availability state in `src/lib/passkey/vault-passkey-availability.ts`; PRF diagnostics in `src/lib/passkey/passkey-prf-diagnostics.ts`
 - **Vault security review:** `/vault/security` — health summary, protection indicators, local recovery phrase drill (`verifyRecoveryPhraseDrill`), passkey compatibility guide, safe audit event log (`GET/POST /api/vault/security-events`)
 - **Vault unlock:** `VaultDockQuickUnlock` in `VaultStatusDock` (vault password + passkey PRF when available); full `LtgVaultUnlockPanel` on `/vault/unlock` (password, recovery phrase, passkey PRF). Dock links to full page for recovery/fallback; no duplicate unlock form on `/vault/unlock`. Collapsed handle shows `Vault` or countdown; expanded open state is compact with **Lock now**; auto-collapse via `useVaultDockDismiss`.
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + **purple** primary)

@@ -101,6 +101,7 @@ describe("PasskeySetup", () => {
         response: expect.any(Object),
         encryptedVaultKey: { version: "enc-v1" },
         prfVaultEnvelope: true,
+        vaultOnly: true,
       });
     });
     expect(await screen.findByText(PASSKEY_VAULT_REGISTERED_MESSAGE)).toBeTruthy();

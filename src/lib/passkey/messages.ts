@@ -47,7 +47,7 @@ export const PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE =
   "Passkey test succeeded. This browser returned PRF output for your vault unlock passkey.";
 
 export const PASSKEY_VAULT_UNLOCK_ACCOUNT_LOGIN_NOTE =
-  "Account passkey sign-in and passkey vault unlock are separate actions. Signing in never opens your vault; use Unlock with passkey after authentication.";
+  "Use a compatible passkey to unlock your vault after you sign in. This is separate from account passkey sign-in and requires WebAuthn PRF support from your browser and passkey provider.";
 
 export const PASSKEY_VAULT_UNLOCK_READONLY_HEADLINE =
   "Passkey vault unlock is enabled, but cannot be managed in this browser.";

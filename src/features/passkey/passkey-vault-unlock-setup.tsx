@@ -3,20 +3,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   startAuthentication,
+  startRegistration,
+  type PublicKeyCredentialCreationOptionsJSON,
   type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
-import { passkeyAccountApi } from "@tgoliveira/secure-auth/client";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { SuccessState } from "@/components/ui/success-state";
 import { Badge } from "@/components/ui/badge";
 import { apiClient } from "@/lib/api-client/client";
+import { vaultApi } from "@/lib/api-client/vault";
 import { getSessionVaultKey } from "@/lib/crypto-client/vault";
 import {
   extractPasskeyPrfOutput,
   wrapVaultKeyForPasskey,
 } from "@/lib/crypto-client/passkey-vault";
 import { prepareAuthenticationOptions } from "@/lib/passkey/prepare-webauthn-options";
+import { prepareRegistrationOptions } from "@/lib/passkey/prepare-webauthn-options";
 import {
   getPasskeyPrfDiagnosticHeadline,
   getPasskeyPrfDiagnosticMessage,
@@ -32,81 +35,67 @@ import {
 import {
   PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE,
   PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE,
-  PASSKEY_VAULT_UNLOCK_READONLY_HEADLINE,
-  PASSKEY_VAULT_UNLOCK_READONLY_MESSAGE,
   PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE,
 } from "@/lib/passkey/messages";
+import {
+  canAttemptVaultPasskeySetup,
+  deriveVaultPasskeyAvailability,
+  shouldShowVaultPasskeyDestructiveActions,
+  type VaultPasskeyAvailability,
+} from "@/lib/passkey/vault-passkey-availability";
+import {
+  getVaultPasskeyAvailabilityCopy,
+  VAULT_PASSKEY_INDEPENDENCE_NOTE,
+} from "@/lib/passkey/vault-passkey-availability-messages";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
-type AccountPasskey = {
+type VaultUnlockPasskey = {
   id: string;
   friendlyName: string;
-  signInEnabled: boolean;
-};
-
-type VaultUnlockStatus = {
   signInEnabled: boolean;
   vaultUnlockEnabled: boolean;
   prfSupported: boolean | null;
   credentialId: string;
 };
 
-type PasskeyVaultUnlockSectionState =
-  | "not_configured"
-  | "configured"
-  | "unsupported"
-  | "unknown";
-
 interface PasskeyVaultUnlockSetupProps {
   userId: string;
   vaultUnlocked: boolean;
+  vaultConfigured?: boolean;
 }
 
-async function fetchPasskeyVaultData(): Promise<{
-  passkeys: AccountPasskey[];
-  statusById: Record<string, VaultUnlockStatus>;
+async function fetchVaultPasskeyData(): Promise<{
+  passkeys: VaultUnlockPasskey[];
+  serverPasskeyEnvelope: boolean;
+  vaultConfigured: boolean;
 }> {
-  const result = await passkeyAccountApi.list();
-  const signInPasskeys = result.passkeys.filter((passkey) => passkey.signInEnabled);
-  const statuses: Record<string, VaultUnlockStatus> = {};
-  await Promise.all(
-    signInPasskeys.map(async (passkey) => {
-      statuses[passkey.id] = await apiClient.get<VaultUnlockStatus>(
-        `/api/account/passkeys/${passkey.id}/vault-unlock`
-      );
-    })
-  );
-  return { passkeys: signInPasskeys, statusById: statuses };
+  const [vaultUnlock, vaultStatus] = await Promise.all([
+    apiClient.get<{
+      passkeys: VaultUnlockPasskey[];
+      serverEnvelopeConfigured: boolean;
+    }>("/api/passkeys/vault-unlock"),
+    vaultApi.status().catch(() => null),
+  ]);
+
+  const serverPasskeyEnvelope =
+    vaultUnlock.serverEnvelopeConfigured ||
+    vaultStatus?.availableUnlockMethods?.passkey === true ||
+    vaultStatus?.hasPasskey === true;
+
+  return {
+    passkeys: vaultUnlock.passkeys,
+    serverPasskeyEnvelope,
+    vaultConfigured: vaultStatus?.setupComplete === true || vaultStatus?.hasVault === true,
+  };
 }
 
-function deriveSectionState(
-  passkeys: AccountPasskey[],
-  statusById: Record<string, VaultUnlockStatus>,
-  environment: PasskeyPrfEnvironmentSnapshot | null
-): { state: PasskeyVaultUnlockSectionState; reason: PasskeyPrfDiagnosticReason | null } {
-  const configured = passkeys.some((passkey) => statusById[passkey.id]?.vaultUnlockEnabled);
-  if (configured) {
-    return { state: "configured", reason: "supported" };
-  }
-
-  if (!environment) {
-    return { state: "unknown", reason: "unknown" };
-  }
-
-  const preCeremonyReason = resolvePreCeremonyDiagnosticReason(environment);
-  if (preCeremonyReason === "secure_context_required" || preCeremonyReason === "webauthn_unavailable") {
-    return { state: "unsupported", reason: preCeremonyReason };
-  }
-  if (preCeremonyReason === "unsupported") {
-    return { state: "unsupported", reason: "unsupported" };
-  }
-
-  return { state: "not_configured", reason: environment.capabilityProbe === "unknown" ? "unknown" : null };
-}
-
-export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultUnlockSetupProps) {
-  const [passkeys, setPasskeys] = useState<AccountPasskey[]>([]);
-  const [statusById, setStatusById] = useState<Record<string, VaultUnlockStatus>>({});
+export function PasskeyVaultUnlockSetup({
+  userId,
+  vaultUnlocked,
+  vaultConfigured = true,
+}: PasskeyVaultUnlockSetupProps) {
+  const [passkeys, setPasskeys] = useState<VaultUnlockPasskey[]>([]);
+  const [serverPasskeyEnvelope, setServerPasskeyEnvelope] = useState(false);
   const [environment, setEnvironment] = useState<PasskeyPrfEnvironmentSnapshot | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -114,18 +103,18 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
   const [diagnosticReason, setDiagnosticReason] = useState<PasskeyPrfDiagnosticReason | null>(null);
 
   const loadPasskeys = useCallback(async () => {
-    const data = await fetchPasskeyVaultData();
+    const data = await fetchVaultPasskeyData();
     setPasskeys(data.passkeys);
-    setStatusById(data.statusById);
+    setServerPasskeyEnvelope(data.serverPasskeyEnvelope);
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetchPasskeyVaultData(), probePasskeyPrfEnvironmentAsync()])
+    Promise.all([fetchVaultPasskeyData(), probePasskeyPrfEnvironmentAsync()])
       .then(([data, env]) => {
         if (!cancelled) {
           setPasskeys(data.passkeys);
-          setStatusById(data.statusById);
+          setServerPasskeyEnvelope(data.serverPasskeyEnvelope);
           setEnvironment(env);
         }
       })
@@ -137,57 +126,43 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
     };
   }, []);
 
-  const section = useMemo(
-    () => deriveSectionState(passkeys, statusById, environment),
-    [passkeys, statusById, environment]
+  const availability = useMemo(
+    (): VaultPasskeyAvailability =>
+      deriveVaultPasskeyAvailability({
+        vaultEnvelopeConfigured:
+          serverPasskeyEnvelope || passkeys.some((passkey) => passkey.vaultUnlockEnabled),
+        vaultConfigured,
+        vaultUnlocked,
+        environment,
+      }),
+    [passkeys, serverPasskeyEnvelope, vaultConfigured, vaultUnlocked, environment]
   );
 
-  async function runEnableCeremony(passkeyId: string) {
-    const options = (await apiClient.post(
-      `/api/account/passkeys/${passkeyId}/enable-vault-unlock`,
-      { action: "options" }
-    )) as PublicKeyCredentialRequestOptionsJSON;
+  const availabilityCopy = useMemo(
+    () => getVaultPasskeyAvailabilityCopy(availability),
+    [availability]
+  );
 
-    return runCeremonyWithOptions(options);
-  }
-
-  async function runTestCeremony(passkeyId: string) {
-    const status = statusById[passkeyId];
-    const options = (await apiClient.post("/api/passkeys/authenticate", {
-      action: "options",
-    })) as PublicKeyCredentialRequestOptionsJSON;
-
-    const filteredOptions: PublicKeyCredentialRequestOptionsJSON = {
-      ...options,
-      allowCredentials: status?.credentialId
-        ? [{ id: status.credentialId, type: "public-key" }]
-        : options.allowCredentials,
-    };
-
-    return runCeremonyWithOptions(filteredOptions);
-  }
+  const managementBlocked = isPasskeyPrfManagementBlocked(environment);
+  const setupAllowed = canAttemptVaultPasskeySetup(availability);
+  const showPrimarySetup =
+    setupAllowed &&
+    vaultUnlocked &&
+    !managementBlocked &&
+    availability.state !== "browser_unsupported" &&
+    availability.state !== "prf_unsupported" &&
+    passkeys.every((passkey) => !passkey.vaultUnlockEnabled);
 
   async function runCeremonyWithOptions(options: PublicKeyCredentialRequestOptionsJSON) {
     const assertion = await startAuthentication({
       optionsJSON: prepareAuthenticationOptions(options),
     });
-
     const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults);
-
     return { assertion, prfOutput };
   }
 
-  async function runDisableCeremony(passkeyId: string) {
-    const options = (await apiClient.post(
-      `/api/account/passkeys/${passkeyId}/vault-unlock`,
-      { action: "disable-options" }
-    )) as PublicKeyCredentialRequestOptionsJSON;
-
-    return runCeremonyWithOptions(options);
-  }
-
-  async function handleEnable(passkeyId: string) {
-    setLoadingId(passkeyId);
+  async function handleRegisterVaultPasskey() {
+    setLoadingId("register");
     setError(null);
     setMessage(null);
     setDiagnosticReason(null);
@@ -195,7 +170,7 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
     try {
       const vaultKey = getSessionVaultKey();
       if (!vaultKey) {
-        throw new Error("Unlock your vault before enabling passkey vault unlock.");
+        throw new Error("Unlock your vault before setting up passkey vault unlock.");
       }
 
       const env = environment ?? (await probePasskeyPrfEnvironmentAsync());
@@ -208,8 +183,15 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
         return;
       }
 
-      const { assertion, prfOutput } = await runEnableCeremony(passkeyId);
+      const options = (await apiClient.post("/api/passkeys/register", {
+        action: "options",
+      })) as PublicKeyCredentialCreationOptionsJSON;
 
+      const attestation = await startRegistration({
+        optionsJSON: prepareRegistrationOptions(options),
+      });
+
+      const prfOutput = extractPasskeyPrfOutput(attestation.clientExtensionResults);
       if (!prfOutput) {
         const reason = resolveCeremonyDiagnosticReason({ prfOutputPresent: false });
         setDiagnosticReason(reason);
@@ -224,24 +206,23 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
         userId
       );
 
-      await apiClient.post(`/api/account/passkeys/${passkeyId}/enable-vault-unlock`, {
+      await apiClient.post("/api/passkeys/register", {
         action: "verify",
-        response: assertion,
+        response: attestation,
         encryptedVaultKey,
         prfVaultEnvelope: true,
-        prfSupported: env.capabilityProbe === "supported",
+        vaultOnly: true,
       });
 
       setMessage(PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE);
       await loadPasskeys();
     } catch (e) {
       if (isCeremonyCancellation(e)) {
-        const reason: PasskeyPrfDiagnosticReason = "ceremony_cancelled";
-        setDiagnosticReason(reason);
-        setError(getPasskeyPrfDiagnosticMessage(reason));
+        setDiagnosticReason("ceremony_cancelled");
+        setError(getPasskeyPrfDiagnosticMessage("ceremony_cancelled"));
         return;
       }
-      setError(e instanceof Error ? e.message : "Could not enable passkey vault unlock.");
+      setError(e instanceof Error ? e.message : "Could not set up passkey vault unlock.");
     } finally {
       setLoadingId(null);
     }
@@ -254,6 +235,7 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
     setDiagnosticReason(null);
 
     try {
+      const passkey = passkeys.find((item) => item.id === passkeyId);
       const env = environment ?? (await probePasskeyPrfEnvironmentAsync());
       setEnvironment(env);
 
@@ -264,7 +246,18 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
         return;
       }
 
-      const { prfOutput } = await runTestCeremony(passkeyId);
+      const options = (await apiClient.post("/api/passkeys/authenticate", {
+        action: "options",
+      })) as PublicKeyCredentialRequestOptionsJSON;
+
+      const filteredOptions: PublicKeyCredentialRequestOptionsJSON = {
+        ...options,
+        allowCredentials: passkey?.credentialId
+          ? [{ id: passkey.credentialId, type: "public-key" }]
+          : options.allowCredentials,
+      };
+
+      const { prfOutput } = await runCeremonyWithOptions(filteredOptions);
 
       if (!prfOutput) {
         const reason = resolveCeremonyDiagnosticReason({ prfOutputPresent: false });
@@ -277,9 +270,8 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
       setDiagnosticReason("supported");
     } catch (e) {
       if (isCeremonyCancellation(e)) {
-        const reason: PasskeyPrfDiagnosticReason = "ceremony_cancelled";
-        setDiagnosticReason(reason);
-        setError(getPasskeyPrfDiagnosticMessage(reason));
+        setDiagnosticReason("ceremony_cancelled");
+        setError(getPasskeyPrfDiagnosticMessage("ceremony_cancelled"));
         return;
       }
       setError(e instanceof Error ? e.message : "Passkey test failed.");
@@ -288,7 +280,7 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
     }
   }
 
-  async function handleReplace(passkeyId: string) {
+  async function handleDisable(passkeyId: string) {
     setLoadingId(passkeyId);
     setError(null);
     setMessage(null);
@@ -296,47 +288,32 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
 
     try {
       if (isPasskeyPrfManagementBlocked(environment)) {
-        setError(PASSKEY_VAULT_UNLOCK_READONLY_MESSAGE);
+        setError(
+          getVaultPasskeyAvailabilityCopy({
+            state: "configured",
+            unavailableInThisBrowser: true,
+          })!.explanation
+        );
         return;
       }
 
-      await handleDisable(passkeyId, { skipMessage: true });
-      await handleEnable(passkeyId);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not replace passkey vault unlock.");
-      setLoadingId(null);
-    }
-  }
+      const options = (await apiClient.post(`/api/account/passkeys/${passkeyId}/vault-unlock`, {
+        action: "disable-options",
+      })) as PublicKeyCredentialRequestOptionsJSON;
 
-  async function handleDisable(passkeyId: string, options?: { skipMessage?: boolean }) {
-    setLoadingId(passkeyId);
-    if (!options?.skipMessage) {
-      setError(null);
-      setMessage(null);
-      setDiagnosticReason(null);
-    }
-
-    try {
-      if (isPasskeyPrfManagementBlocked(environment)) {
-        setError(PASSKEY_VAULT_UNLOCK_READONLY_MESSAGE);
-        return;
-      }
-
-      const { assertion } = await runDisableCeremony(passkeyId);
+      const { assertion } = await runCeremonyWithOptions(options);
 
       await apiClient.delete(`/api/account/passkeys/${passkeyId}/vault-unlock`, {
         response: assertion,
         prfVaultEnvelope: true,
       });
-      if (!options?.skipMessage) {
-        setMessage(PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE);
-      }
+
+      setMessage(PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE);
       await loadPasskeys();
     } catch (e) {
       if (isCeremonyCancellation(e)) {
-        const reason: PasskeyPrfDiagnosticReason = "ceremony_cancelled";
-        setDiagnosticReason(reason);
-        setError(getPasskeyPrfDiagnosticMessage(reason));
+        setDiagnosticReason("ceremony_cancelled");
+        setError(getPasskeyPrfDiagnosticMessage("ceremony_cancelled"));
         return;
       }
       setError(e instanceof Error ? e.message : "Could not disable passkey vault unlock.");
@@ -345,119 +322,94 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
     }
   }
 
-  if (passkeys.length === 0) {
-    return (
-      <div className="space-y-4">
-        <p className="text-sm leading-relaxed text-[var(--muted)]">
-          Account passkeys sign you in to SelahKeep. Passkey <strong>vault unlock</strong> is a
-          separate optional step that requires browser PRF support.
-        </p>
-        <p className="text-sm text-[var(--muted)]">
-          Add an account passkey in account security settings first, then return here to enable vault
-          unlock for it.
-        </p>
-      </div>
-    );
-  }
-
-  const managementBlocked = isPasskeyPrfManagementBlocked(environment);
-  const showUnknownNotice = section.state === "not_configured" && section.reason === "unknown";
+  const alertVariant =
+    availabilityCopy?.variant === "success"
+      ? "success"
+      : availabilityCopy?.variant === "warning"
+        ? "warning"
+        : availabilityCopy?.variant === "info"
+          ? "info"
+          : "muted";
 
   return (
     <div className="space-y-4">
-      <p className="text-sm leading-relaxed text-[var(--muted)]">
-        Account passkeys sign you in to SelahKeep. Passkey <strong>vault unlock</strong> is separate:
-        it uses the WebAuthn PRF extension to unwrap your vault on this device after sign-in.
-      </p>
+      <p className="text-sm leading-relaxed text-[var(--muted)]">{VAULT_PASSKEY_INDEPENDENCE_NOTE}</p>
 
-      {section.state === "configured" && !managementBlocked && (
-        <Alert variant="success" title="Passkey vault unlock configured">
-          At least one account passkey can unlock your vault on PRF-capable browsers.
+      {availabilityCopy && (
+        <Alert variant={alertVariant} title={availabilityCopy.headline}>
+          {availabilityCopy.explanation}
         </Alert>
       )}
 
-      {managementBlocked &&
-        passkeys.some((passkey) => statusById[passkey.id]?.vaultUnlockEnabled) && (
-          <Alert variant="warning" title={PASSKEY_VAULT_UNLOCK_READONLY_HEADLINE}>
-            {PASSKEY_VAULT_UNLOCK_READONLY_MESSAGE}
-          </Alert>
-        )}
-
-      {section.state === "unsupported" && section.reason && (
-        <Alert variant="warning" title={getPasskeyPrfDiagnosticHeadline(section.reason)}>
-          {getPasskeyPrfDiagnosticMessage(section.reason)}
-        </Alert>
+      {showPrimarySetup && (
+        <Button
+          variant="secondary"
+          className="w-full sm:w-auto"
+          disabled={loadingId === "register"}
+          onClick={() => void handleRegisterVaultPasskey()}
+        >
+          {loadingId === "register" ? "Working…" : "Set up passkey vault unlock"}
+        </Button>
       )}
 
-      {showUnknownNotice && (
-        <Alert variant="muted" title={getPasskeyPrfDiagnosticHeadline("unknown")}>
-          {getPasskeyPrfDiagnosticMessage("unknown")}
-        </Alert>
+      {passkeys.length > 0 && (
+        <ul className="space-y-3">
+          {passkeys.map((passkey) => {
+            const readOnlyConfigured =
+              passkey.vaultUnlockEnabled &&
+              !shouldShowVaultPasskeyDestructiveActions(availability, passkey.vaultUnlockEnabled);
+            const canManage =
+              vaultUnlocked &&
+              !managementBlocked &&
+              setupAllowed &&
+              availability.state !== "browser_unsupported" &&
+              availability.state !== "prf_unsupported";
+            return (
+              <li
+                key={passkey.id}
+                className="flex flex-col gap-3 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="space-y-1">
+                  <p className="font-medium text-[var(--foreground)]">{passkey.friendlyName}</p>
+                  <p className="text-sm text-[var(--muted)]">
+                    {passkey.signInEnabled
+                      ? "Also used for account passkey sign-in."
+                      : "Vault unlock passkey only — not used for account sign-in."}
+                  </p>
+                  <Badge variant="success">Vault unlock: configured</Badge>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {readOnlyConfigured ? null : (
+                    <>
+                      <Button
+                        variant="secondary"
+                        disabled={loadingId === passkey.id}
+                        onClick={() => void handleTest(passkey.id)}
+                      >
+                        {loadingId === passkey.id ? "Working…" : "Test"}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        disabled={!canManage || loadingId === passkey.id}
+                        onClick={() => void handleDisable(passkey.id)}
+                      >
+                        Disable
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
 
-      {!vaultUnlocked && !managementBlocked && (
-        <Alert variant="warning">
-          Unlock your vault to set up, replace, or disable passkey vault unlock.
-        </Alert>
+      {passkeys.length === 0 && serverPasskeyEnvelope && (
+        <p className="text-sm text-[var(--muted)]">
+          A passkey vault unlock envelope exists on your account. Use a PRF-compatible browser where
+          it was configured, or unlock with your vault password or recovery phrase.
+        </p>
       )}
-
-      <ul className="space-y-3">
-        {passkeys.map((passkey) => {
-          const status = statusById[passkey.id];
-          const vaultEnabled = status?.vaultUnlockEnabled ?? false;
-          const readOnlyConfigured = vaultEnabled && managementBlocked;
-          const canManage = vaultUnlocked && !managementBlocked && section.state !== "unsupported";
-          return (
-            <li
-              key={passkey.id}
-              className="flex flex-col gap-3 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-4 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="space-y-1">
-                <p className="font-medium text-[var(--foreground)]">{passkey.friendlyName}</p>
-                <p className="text-sm text-[var(--muted)]">Signs you in to your SelahKeep account.</p>
-                <Badge variant={vaultEnabled ? "success" : "muted"}>
-                  Vault unlock: {vaultEnabled ? "configured" : "not configured"}
-                </Badge>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {!vaultEnabled ? (
-                  <Button
-                    variant="secondary"
-                    disabled={!canManage || loadingId === passkey.id}
-                    onClick={() => void handleEnable(passkey.id)}
-                  >
-                    {loadingId === passkey.id ? "Working…" : "Set up vault unlock"}
-                  </Button>
-                ) : readOnlyConfigured ? null : (
-                  <>
-                    <Button
-                      variant="secondary"
-                      disabled={loadingId === passkey.id}
-                      onClick={() => void handleTest(passkey.id)}
-                    >
-                      {loadingId === passkey.id ? "Working…" : "Test"}
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      disabled={!canManage || loadingId === passkey.id}
-                      onClick={() => void handleReplace(passkey.id)}
-                    >
-                      Replace
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      disabled={!canManage || loadingId === passkey.id}
-                      onClick={() => void handleDisable(passkey.id)}
-                    >
-                      Disable
-                    </Button>
-                  </>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
 
       {message && <SuccessState message={message} />}
       {error && (
@@ -469,7 +421,6 @@ export function PasskeyVaultUnlockSetup({ userId, vaultUnlocked }: PasskeyVaultU
           {error}
         </Alert>
       )}
-
     </div>
   );
 }
