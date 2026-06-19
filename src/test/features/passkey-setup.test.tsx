@@ -107,18 +107,16 @@ describe("PasskeySetup", () => {
     expect(onStatusChange).toHaveBeenCalled();
   });
 
-  it("shows unsupported diagnostic when PRF capability is explicitly denied", async () => {
+  it("allows ceremony when client capabilities deny PRF pre-ceremony", async () => {
     mocks.probeEnvironment.mockResolvedValue(
-      mockEnvironment({ capabilityProbe: "unsupported", clientCapabilitiesPrf: false })
+      mockEnvironment({ capabilityProbe: "unknown", clientCapabilitiesPrf: false })
     );
 
     render(<PasskeySetup userId={USER_ID} hasPasskey={false} onStatusChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /set up passkey/i }));
 
-    expect(await screen.findByText(/PRF extension is not supported/i)).toBeTruthy();
-    expect(mocks.startRegistration).not.toHaveBeenCalled();
-    expect(mocks.apiPost).not.toHaveBeenCalled();
-    expect(screen.queryByText(PASSKEY_ORPHAN_CREDENTIAL_NOTE)).toBeNull();
+    await waitFor(() => expect(mocks.startRegistration).toHaveBeenCalled());
+    expect(screen.queryByText(/PRF extension is not supported/i)).toBeNull();
   });
 
   it("allows ceremony when capability probe is unknown", async () => {
@@ -158,16 +156,20 @@ describe("PasskeySetup", () => {
     expect(screen.queryByText(/did not return PRF output/i)).toBeNull();
   });
 
-  it("does not present passkey as vault recovery when PRF is unavailable", async () => {
+  it("blocks passkey setup when WebAuthn is unavailable", async () => {
     mocks.probeEnvironment.mockResolvedValue(
-      mockEnvironment({ capabilityProbe: "unsupported", clientCapabilitiesPrf: false })
+      mockEnvironment({
+        webauthnAvailable: false,
+        credentialsApiAvailable: false,
+        capabilityProbe: "unsupported",
+      })
     );
 
     render(<PasskeySetup userId={USER_ID} hasPasskey={false} onStatusChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /set up passkey/i }));
 
-    await screen.findByText(/PRF extension is not supported/i);
-    expect(screen.queryByText(PASSKEY_VAULT_REGISTERED_MESSAGE)).toBeNull();
+    expect(await screen.findByText(/WebAuthn not available/i)).toBeTruthy();
+    expect(mocks.startRegistration).not.toHaveBeenCalled();
     expect(mocks.wrapVaultKeyForPasskey).not.toHaveBeenCalled();
   });
 });

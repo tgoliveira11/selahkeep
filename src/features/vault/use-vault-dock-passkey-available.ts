@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { VaultStatus } from "@/lib/api-client/vault";
-import {
-  detectPasskeyPrfSupport,
-  type PasskeyPrfSupport,
-} from "@/lib/passkey/prf-support";
+import { isPrfExtensionSupported } from "@/lib/passkey/prf-support";
 
 export type VaultDockPasskeyAvailability = {
   hasEnvelope: boolean;
@@ -19,24 +15,12 @@ export function useVaultDockPasskeyAvailable(
 ): VaultDockPasskeyAvailability {
   const hasEnvelope =
     vaultStatus?.availableUnlockMethods?.passkey ?? vaultStatus?.hasPasskey ?? false;
-  const [prfSupport, setPrfSupport] = useState<PasskeyPrfSupport | null>(null);
-
-  useEffect(() => {
-    if (!hasEnvelope) return;
-    let cancelled = false;
-    void detectPasskeyPrfSupport().then((result) => {
-      if (!cancelled) setPrfSupport(result);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [hasEnvelope]);
 
   if (!hasEnvelope) {
     return { hasEnvelope: false, showPasskey: false, prfExplicitlyUnsupported: false };
   }
 
-  if (prfSupport === "unsupported") {
+  if (!isPrfExtensionSupported()) {
     return { hasEnvelope: true, showPasskey: false, prfExplicitlyUnsupported: true };
   }
 

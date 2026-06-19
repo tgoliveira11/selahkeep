@@ -131,14 +131,14 @@ describe("PasskeyVaultUnlockSetup", () => {
     await waitFor(() => expect(mocks.startAuthentication).toHaveBeenCalled());
   });
 
-  it("blocks setup when capability probe is explicitly unsupported", async () => {
+  it("allows setup when client capabilities deny PRF pre-ceremony", async () => {
     mocks.probeEnvironment.mockResolvedValue(
-      mockEnvironment({ capabilityProbe: "unsupported", clientCapabilitiesPrf: false })
+      mockEnvironment({ capabilityProbe: "unknown", clientCapabilitiesPrf: false })
     );
     render(<PasskeyVaultUnlockSetup userId={USER_ID} vaultUnlocked />);
     fireEvent.click(await screen.findByRole("button", { name: /set up vault unlock/i }));
-    expect(await screen.findByText(/PRF extension is not supported/i)).toBeTruthy();
-    expect(mocks.startAuthentication).not.toHaveBeenCalled();
+    await waitFor(() => expect(mocks.startAuthentication).toHaveBeenCalled());
+    expect(screen.queryByText(/PRF extension is not supported/i)).toBeNull();
   });
 
   it("shows prf_not_returned when ceremony omits PRF output", async () => {
@@ -181,9 +181,13 @@ describe("PasskeyVaultUnlockSetup", () => {
     expect(await screen.findByText(PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE)).toBeTruthy();
   });
 
-  it("shows read-only passkey vault status when PRF is unsupported but envelope exists", async () => {
+  it("shows read-only passkey vault status when WebAuthn is unavailable but envelope exists", async () => {
     mocks.probeEnvironment.mockResolvedValue(
-      mockEnvironment({ capabilityProbe: "unsupported", clientCapabilitiesPrf: false })
+      mockEnvironment({
+        webauthnAvailable: false,
+        credentialsApiAvailable: false,
+        capabilityProbe: "unsupported",
+      })
     );
     mocks.apiGet.mockResolvedValue({
       signInEnabled: true,

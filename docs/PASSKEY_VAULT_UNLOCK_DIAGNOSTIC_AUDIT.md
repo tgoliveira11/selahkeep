@@ -32,13 +32,16 @@
 1. `isPasskeySupported()` — `window.PublicKeyCredential` defined
 2. If `PublicKeyCredential.getClientCapabilities` missing → **`unknown`**
 3. If `capabilities["extension:prf"] === true` → **`supported`**
-4. If `capabilities["extension:prf"] === false` → **`unsupported`**
+4. If `capabilities["extension:prf"] === false` → **`unknown`** (probe can lie; try ceremony)
 5. Otherwise → **`unknown`**
+
+UI affordances use `isPrfExtensionSupported()` — optimistic when WebAuthn exposes
+`getClientExtensionResults`; only false when WebAuthn is unavailable.
 
 Consolidated in `src/lib/passkey/passkey-prf-diagnostics.ts`:
 
 - `probePasskeyPrfEnvironment()` / `probePasskeyPrfEnvironmentAsync()`
-- `shouldBlockPasskeyVaultSetupBeforeCeremony()` — blocks only on secure-context failure, WebAuthn missing, or explicit `unsupported` capability
+- `shouldBlockPasskeyVaultSetupBeforeCeremony()` — blocks only on secure-context failure or WebAuthn missing
 - **`unknown` does not block** — user may attempt setup
 
 ### Post-ceremony (source of truth)
@@ -55,7 +58,7 @@ Envelope is created **only** when PRF output is present client-side and `prfVaul
 |---------|-------------|----------------------|
 | `!window.isSecureContext` | `secure_context_required` | Secure connection required |
 | No `PublicKeyCredential` / `navigator.credentials` | `webauthn_unavailable` | WebAuthn not available |
-| `getClientCapabilities()["extension:prf"] === false` | `unsupported` | PRF extension not supported on this browser |
+| `getClientCapabilities()["extension:prf"] === false` | (informational only) | Recorded in diagnostics; setup **not** blocked — try ceremony |
 | Ceremony dismissed (`NotAllowedError`) | `ceremony_cancelled` | Passkey ceremony cancelled |
 | Ceremony OK but no PRF in results | `prf_not_returned` | Passkey did not return PRF output |
 | Capability probe inconclusive | `unknown` | PRF support could not be confirmed (informational; setup allowed) |
@@ -68,7 +71,7 @@ Envelope is created **only** when PRF output is present client-side and `prfVaul
 
 | Probe | When | Trust level |
 |-------|------|-------------|
-| `getClientCapabilities()["extension:prf"]` | Before ceremony | Hint only; `missing` ≠ unsupported |
+| `getClientCapabilities()["extension:prf"]` | Before ceremony | Hint only; `false` or `missing` ≠ unsupported |
 | `clientExtensionResults.prf` after WebAuthn | After ceremony | **Authoritative** for envelope create/unwrap |
 
 SelahKeep never creates a `passkey_prf` / `passkey_authorized_device` envelope without post-ceremony PRF output.

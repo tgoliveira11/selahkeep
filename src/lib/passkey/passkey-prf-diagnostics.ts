@@ -166,9 +166,6 @@ export function isPasskeyPrfManagementBlocked(
   environment: PasskeyPrfEnvironmentSnapshot | null
 ): boolean {
   if (!environment) return false;
-  if (environment.clientCapabilitiesPrf === false) {
-    return true;
-  }
   return shouldBlockPasskeyVaultSetupBeforeCeremony(environment);
 }
 

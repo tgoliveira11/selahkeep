@@ -7,9 +7,24 @@ type PublicKeyCredentialWithCapabilities = typeof PublicKeyCredential & {
 };
 
 /**
+ * Optimistic PRF gate for UI affordances (vault dock, settings entry points).
+ * Matches vault-core: only false when WebAuthn is unavailable. Ceremony PRF output
+ * remains the authoritative check for envelope create/unwrap.
+ */
+export function isPrfExtensionSupported(): boolean {
+  if (!isPasskeySupported()) {
+    return false;
+  }
+  return (
+    typeof PublicKeyCredential !== "undefined" &&
+    "getClientExtensionResults" in PublicKeyCredential.prototype
+  );
+}
+
+/**
  * Best-effort PRF support detection before starting WebAuthn registration.
- * Returns "unknown" when the browser does not expose capability probes — caller
- * must still verify PRF output after registration and fail closed server-side.
+ * Returns "unknown" when the browser does not expose capability probes or reports
+ * `extension:prf === false` — callers must verify PRF output after the ceremony.
  */
 export async function detectPasskeyPrfSupport(): Promise<PasskeyPrfSupport> {
   if (!isPasskeySupported()) {
@@ -26,9 +41,7 @@ export async function detectPasskeyPrfSupport(): Promise<PasskeyPrfSupport> {
     if (capabilities["extension:prf"] === true) {
       return "supported";
     }
-    if (capabilities["extension:prf"] === false) {
-      return "unsupported";
-    }
+    // Some browsers report false pre-ceremony while still returning PRF output.
     return "unknown";
   } catch {
     return "unknown";

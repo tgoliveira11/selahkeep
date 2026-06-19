@@ -62,14 +62,17 @@ describe("passkey PRF diagnostics", () => {
     expect(resolvePreCeremonyDiagnosticReason(env)).toBeNull();
   });
 
-  it("blocks setup when capability probe is explicitly unsupported", async () => {
+  it("does not block setup when client capabilities deny PRF pre-ceremony", async () => {
     globalThis.PublicKeyCredential = {
+      isUserVerifyingPlatformAuthenticatorAvailable: async () => true,
       getClientCapabilities: async () => ({ "extension:prf": false }),
     } as unknown as typeof PublicKeyCredential;
 
     const env = await probePasskeyPrfEnvironmentAsync();
-    expect(shouldBlockPasskeyVaultSetupBeforeCeremony(env)).toBe(true);
-    expect(resolvePreCeremonyDiagnosticReason(env)).toBe("unsupported");
+    expect(env.capabilityProbe).toBe("unknown");
+    expect(env.clientCapabilitiesPrf).toBe(false);
+    expect(shouldBlockPasskeyVaultSetupBeforeCeremony(env)).toBe(false);
+    expect(resolvePreCeremonyDiagnosticReason(env)).toBeNull();
   });
 
   it("resolves ceremony cancellation", () => {
@@ -113,7 +116,7 @@ describe("passkey PRF diagnostics", () => {
     expect(report).not.toMatch(/prfOutput|uvk|secret/i);
   });
 
-  it("blocks passkey vault management when PRF is explicitly unsupported", () => {
+  it("does not block passkey vault management on clientCapabilitiesPrf false alone", () => {
     expect(
       isPasskeyPrfManagementBlocked({
         userAgent: "test",
@@ -124,6 +127,6 @@ describe("passkey PRF diagnostics", () => {
         clientCapabilitiesPrf: false,
         capabilityProbe: "unknown",
       })
-    ).toBe(true);
+    ).toBe(false);
   });
 });
