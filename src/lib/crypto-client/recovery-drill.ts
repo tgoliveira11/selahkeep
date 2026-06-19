@@ -1,5 +1,10 @@
 import type { EncryptedPayload, KdfMetadata } from "@/lib/validation/encrypted-payload";
-import { decryptField, exportAesKey, importAesKey } from "./aes-gcm";
+import {
+  decryptField,
+  importAesKey,
+  exportAesKey,
+  type EncryptedPayload as VaultCoreEncryptedPayload,
+} from "@tgoliveira/vault-core";
 import { getSessionVaultKey } from "./vault";
 import { deriveRecoveryPhraseKeyFromMetadata } from "./recovery-phrase";
 import { base64UrlToBytes } from "./encoding";
@@ -19,7 +24,7 @@ async function unwrapVaultKeyOnly(
   }
   const derivedKey = await deriveRecoveryPhraseKeyFromMetadata(recoveryPhrase, kdfMetadata);
   const keyBytes = base64UrlToBytes(
-    await decryptField(encryptedVaultKey, derivedKey)
+    await decryptField(encryptedVaultKey as VaultCoreEncryptedPayload, derivedKey)
   );
   return importAesKey(keyBytes);
 }

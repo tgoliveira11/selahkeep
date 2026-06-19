@@ -9,7 +9,7 @@ import {
 import {
   lockVaultSessionManually,
   registerVaultUnloadGuard,
-  touchVaultSession,
+  unlockVaultSession,
 } from "@/lib/crypto-client/vault-session";
 import { vaultApi } from "@/lib/api-client/vault";
 import { unlockVaultWithPasskey } from "@/features/passkey/unlock-with-passkey";
@@ -39,7 +39,7 @@ export function useVault() {
     setError(null);
     try {
       const key = await unlockVaultWithPasskey(session.user.id);
-      touchVaultSession();
+      unlockVaultSession(key);
       void recordVaultSecurityEvent("vault_unlocked", { method: "passkey_prf" });
       return key;
     } catch (e) {
@@ -66,7 +66,6 @@ export function useVault() {
           kdfMetadata,
           { explicit: true }
         );
-        touchVaultSession();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Recovery unlock failed");
         throw e;
@@ -93,7 +92,6 @@ export function useVault() {
           kdfMetadata as KdfMetadata,
           { explicit: true }
         );
-        touchVaultSession();
         void recordVaultSecurityEvent("vault_unlocked", { method: "password" });
       } catch (e) {
         setError(e instanceof Error ? e.message : "Vault password unlock failed");
@@ -121,7 +119,6 @@ export function useVault() {
           kdfMetadata as KdfMetadata,
           { explicit: true }
         );
-        touchVaultSession();
         void recordVaultSecurityEvent("vault_unlocked", { method: "recovery_phrase" });
       } catch (e) {
         setError(e instanceof Error ? e.message : "Recovery phrase unlock failed");

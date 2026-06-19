@@ -13,6 +13,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["@tgoliveira/vault-core"],
   turbopack: {
     resolveAlias: {
       "@tgoliveira/secure-auth/react/client": "./src/lib/secure-auth/vault-passkey-react-client.ts",

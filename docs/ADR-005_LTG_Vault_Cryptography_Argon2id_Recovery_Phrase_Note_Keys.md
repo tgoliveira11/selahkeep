@@ -62,7 +62,7 @@ Future `kdf-v2` may increase memory/iterations. Clients read `version` + paramet
 
 64 MiB Argon2id may be slow on low-memory mobile browsers. Setup and unlock show a calm progress state. If Argon2id becomes unavailable, the client **fails closed** — no PBKDF2 downgrade for vault password or recovery phrase.
 
-Implementation: `src/lib/crypto-client/argon2id.ts`, `src/lib/crypto-client/vault-kdf.ts`.
+Implementation: `@tgoliveira/vault-core` (Argon2id KDF); SelahKeep wrappers in `src/modules/vault/core/envelopes/`. Legacy shim paths: `src/lib/crypto-client/vault-kdf.ts`, `src/lib/crypto-client/argon2id.ts`.
 
 ---
 
@@ -122,7 +122,7 @@ The recovery phrase **restores access to the vault** (unwraps UVK). It does **no
 
 Recovery phrase never sent to server, never logged, never stored in DB.
 
-Implementation: `src/lib/crypto-client/recovery-phrase.ts`.
+Implementation: `src/modules/vault/core/envelopes/recovery-envelope.ts` (re-exported from `src/lib/crypto-client/recovery-phrase.ts`).
 
 ---
 

@@ -27,9 +27,9 @@
 - Structured payload: `version`, `alg`, `iv`, `ciphertext`, `aad`
 - **AAD binding (server + client):** `aad.userId` must match session user; `aad.resourceId` must match persisted note/vault id; `aad.field` must match the encrypted field.
 - **Note IDs:** client generates UUID; server persists the same id.
-- **vault password KDF (new setups):** Argon2id only via `hash-wasm` — no PBKDF2 fallback (`src/lib/crypto-client/vault-kdf.ts`, ADR-005)
+- **vault password KDF (new setups):** Argon2id only via `@tgoliveira/vault-core` / `hash-wasm` — no PBKDF2 fallback (ADR-005; `src/modules/vault/core/envelopes/password-envelope.ts`)
 - **Vault password policy (setup UI):** `VAULT_PASSWORD_*` env vars mapped in `src/lib/config/vault-password-policy.ts` and passed explicitly to `PasswordSetupFields` on `/vault/setup`. Separate from account `AUTH_PASSWORD_*` policy. Vault password never leaves the browser.
-- **recovery phrase (new setups):** BIP39 English, 12 or 24 words (`src/lib/crypto-client/recovery-phrase.ts`)
+- **recovery phrase (new setups):** BIP39 English, 12 or 24 words (`src/modules/vault/core/envelopes/recovery-envelope.ts`, shim: `src/lib/crypto-client/recovery-phrase.ts`)
 - **Legacy recovery code KDF:** Argon2id preferred; PBKDF2-SHA-256 fallback (600k iterations) with versioned `kdf-v1` metadata — legacy `recovery_code` envelopes only
 - Recovery codes: ≥128 bits entropy (project-specific wordlist, not BIP39; currently 17 words from 252 unique words ≈ 135.6 bits); uniform word selection + rejection sampling; shown only at generation/regeneration; never stored plaintext
 

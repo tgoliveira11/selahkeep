@@ -22,7 +22,7 @@ See `docs/MODULE_BOUNDARIES.md` for responsibilities and forbidden cross-module 
 
 ```text
 React UI (src/app, src/components, src/features)
-  -> Crypto Client Layer (src/lib/crypto-client, vault module API)
+  -> Crypto Client Layer (`@tgoliveira/vault-core` + `src/modules/vault/`, note crypto in `src/lib/crypto-client/`)
   -> API Client (src/lib/api-client)
   -> API Route Layer (src/app/api) — thin handlers
   -> Module services (src/modules/*/services)
@@ -49,7 +49,8 @@ src/
     notes/             # NoteCard
   features/            # Client feature flows (passkey, vault)
   lib/
-    crypto-client/     # Client-side encryption ONLY (vault boundary)
+    crypto-client/     # Note encryption + legacy shims re-exporting src/modules/vault
+    modules/vault/     # Vault envelopes, session, passkey PRF (@tgoliveira/vault-core)
     api-client/        # HTTP client for API
     validation/        # Shared Zod schemas
     db/                # Drizzle client (server-only)
@@ -192,7 +193,7 @@ Passkey sign-in follows package rules when 2FA is enabled (pending challenge unt
 
 `src/lib/vault/vault-auto-lock-config.ts` — configurable inactivity timeout (default 15 min).
 
-`src/lib/crypto-client/vault-session.ts` — single inactivity timer, `registerVaultBeforeAutoLock`, manual vs inactivity lock distinction (`wasVaultLockedByInactivity`), unload guard, `getVaultAutoLockRemainingMs()` for dock countdown.
+`src/modules/vault/client/vault-session.ts` — SelahKeep auto-lock extensions on vault-core memory session: `registerVaultBeforeAutoLock`, manual vs inactivity lock (`wasVaultLockedByInactivity`), note body cache clear on lock, unload guard, `getVaultAutoLockRemainingMs()` for dock countdown.
 
 `src/features/vault/use-vault-activity.ts` — activity listeners + `touchVaultActivity()` for editor paths.
 

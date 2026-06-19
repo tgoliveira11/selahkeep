@@ -1,0 +1,50 @@
+import type { AuthenticationExtensionsClientInputs } from "@simplewebauthn/browser";
+import type { AuthenticationExtensionsClientOutputs } from "@simplewebauthn/browser";
+import { SELAHKEEP_PRF_SALT_PREFIX } from "../selahkeep-profile";
+import {
+  buildPrfSaltBytes,
+  isPasskeySupported as isPasskeySupportedCore,
+  isPrfExtensionSupported as isPrfExtensionSupportedCore,
+  extractPasskeyPrfOutput as extractPasskeyPrfOutputCore,
+} from "@tgoliveira/vault-core/browser";
+
+export async function passkeyPrfSaltBytes(userId: string): Promise<ArrayBuffer> {
+  return buildPrfSaltBytes(SELAHKEEP_PRF_SALT_PREFIX, userId);
+}
+
+export async function buildPasskeyPrfAuthExtensions(
+  userId: string
+): Promise<AuthenticationExtensionsClientInputs> {
+  const salt = await passkeyPrfSaltBytes(userId);
+  return {
+    prf: {
+      eval: {
+        first: new Uint8Array(salt),
+      },
+    },
+  } as AuthenticationExtensionsClientInputs;
+}
+
+/** WebAuthn availability — checks globalThis and window for test/runtime compatibility. */
+export function isPasskeySupported(): boolean {
+  if (isPasskeySupportedCore()) return true;
+  return (
+    typeof window !== "undefined" &&
+    typeof window.PublicKeyCredential !== "undefined"
+  );
+}
+
+export function isPrfExtensionSupported(): boolean {
+  if (!isPasskeySupported()) return false;
+  if (isPrfExtensionSupportedCore()) return true;
+  return (
+    typeof PublicKeyCredential !== "undefined" &&
+    "getClientExtensionResults" in PublicKeyCredential.prototype
+  );
+}
+
+export function extractPasskeyPrfOutput(
+  clientExtensionResults: AuthenticationExtensionsClientOutputs | Record<string, unknown>
+): Uint8Array | null {
+  return extractPasskeyPrfOutputCore(clientExtensionResults as Record<string, unknown>);
+}

@@ -1,4 +1,4 @@
-import { isPasskeySupported } from "@/lib/crypto-client/passkey-vault";
+import { isPasskeySupported } from "@/modules/vault/client/passkey-prf";
 
 export type PasskeyPrfSupport = "supported" | "unsupported" | "unknown";
 

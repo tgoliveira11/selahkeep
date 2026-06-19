@@ -1,39 +1,28 @@
 import type { EncryptedPayload, KdfMetadata } from "@/lib/validation/encrypted-payload";
 import {
-  generateAesKey,
-  exportAesKey,
-  importAesKey,
-  encryptField,
-  decryptField,
-} from "./aes-gcm";
-import { unlockVaultSession } from "./vault-session";
+  generateUserVaultKey,
+  getSessionVaultKey,
+  setSessionVaultKey,
+  lockVault,
+  isVaultUnlocked,
+  clearVaultCoreClientState,
+} from "@/modules/vault/core/vault-key";
 import { purgeTrustedDeviceIdb } from "./vault-idb-cleanup";
 
-export const VAULT_VERSION = "vault-v1";
-export const VAULT_VERSION_V2 = "vault-v2";
+export {
+  generateUserVaultKey,
+  getSessionVaultKey,
+  setSessionVaultKey,
+  lockVault,
+  isVaultUnlocked,
+} from "@/modules/vault/core/vault-key";
 
-let sessionVaultKey: CryptoKey | null = null;
-
-export function getSessionVaultKey(): CryptoKey | null {
-  return sessionVaultKey;
-}
-
-export function setSessionVaultKey(key: CryptoKey | null): void {
-  sessionVaultKey = key;
-}
-
-export function lockVault(): void {
-  sessionVaultKey = null;
-}
-
-export function isVaultUnlocked(): boolean {
-  return sessionVaultKey !== null;
-}
+export { VAULT_VERSION, VAULT_VERSION_V2 } from "@/modules/vault/core/constants";
 
 /** Clears in-memory vault key and purges legacy trusted-device IndexedDB stores. */
 export async function clearVaultClientState(userId: string): Promise<void> {
-  setSessionVaultKey(null);
-  const { resetVaultSessionLockState } = await import("./vault-session");
+  clearVaultCoreClientState();
+  const { resetVaultSessionLockState } = await import("@/modules/vault/client/vault-session");
   resetVaultSessionLockState();
   await purgeTrustedDeviceIdb();
   void userId;
@@ -56,7 +45,7 @@ export async function createEncryptedVaultSettings(
   vaultKey: CryptoKey,
   userId: string,
   settings: VaultSettingsPlaintext
-): Promise<import("@/lib/validation/encrypted-payload").EncryptedPayload> {
+): Promise<EncryptedPayload> {
   return encryptVaultSettings(settings, userId, vaultKey);
 }
 
@@ -65,13 +54,9 @@ export { defaultVaultSettings, encryptVaultSettings, decryptVaultSettings } from
 export async function createEmptyEncryptedVaultIndex(
   vaultKey: CryptoKey,
   userId: string
-): Promise<import("@/lib/validation/encrypted-payload").EncryptedPayload> {
+): Promise<EncryptedPayload> {
   const index = createEmptyVaultIndex();
   return encryptVaultIndex(index, userId, vaultKey);
-}
-
-export async function generateUserVaultKey(): Promise<CryptoKey> {
-  return generateAesKey();
 }
 
 export async function wrapVaultKeyForRecovery(
@@ -81,6 +66,9 @@ export async function wrapVaultKeyForRecovery(
   resourceId: string
 ): Promise<{ encryptedVaultKey: EncryptedPayload; kdfMetadata: KdfMetadata }> {
   const { deriveRecoveryKey } = await import("./recovery-code");
+  const { encryptField } = await import("./aes-gcm");
+  const { exportAesKey } = await import("./aes-gcm");
+  const { bytesToBase64Url } = await import("./encoding");
   const { key: derivedKey, metadata } = await deriveRecoveryKey(recoveryCode);
   const encryptedVaultKey = await encryptField(
     bytesToBase64Url(await exportAesKey(vaultKey)),
@@ -97,10 +85,11 @@ export async function unwrapVaultKeyFromRecovery(
   options?: { explicit?: boolean }
 ): Promise<CryptoKey> {
   const { deriveRecoveryKeyFromMetadata } = await import("./recovery-code");
+  const { decryptField, importAesKey } = await import("./aes-gcm");
+  const { base64UrlToBytes } = await import("./encoding");
+  const { unlockVaultSession } = await import("@/modules/vault/client/vault-session");
   const derivedKey = await deriveRecoveryKeyFromMetadata(recoveryCode, kdfMetadata);
-  const keyBytes = base64UrlToBytes(
-    await decryptField(encryptedVaultKey, derivedKey)
-  );
+  const keyBytes = base64UrlToBytes(await decryptField(encryptedVaultKey, derivedKey));
   const vaultKey = await importAesKey(keyBytes);
   if (options?.explicit ?? true) {
     unlockVaultSession(vaultKey);
@@ -121,23 +110,4 @@ export function generateDefaultNoteTitle(): string {
     hour12: false,
   });
   return `Note from ${formatted}`;
-}
-
-function bytesToBase64Url(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function base64UrlToBytes(base64url: string): Uint8Array {
-  const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-  const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
 }

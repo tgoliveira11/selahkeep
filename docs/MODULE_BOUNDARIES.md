@@ -35,7 +35,7 @@ ui, security, email, audit, rate-limit
   -> vault, notes (product)
 ```
 
-Product modules may use `src/lib/crypto-client` for client-side crypto. They must not import `@tgoliveira/secure-auth/server`.
+Product modules may use `src/lib/crypto-client` (notes) and `src/modules/vault` (vault unlock/setup via `@tgoliveira/vault-core`). They must not import `@tgoliveira/secure-auth/server`.
 
 ## Forbidden (enforced in tests)
 
@@ -48,7 +48,7 @@ Product modules may use `src/lib/crypto-client` for client-side crypto. They mus
 
 **Internally reusable:** email, audit, rate-limit, security, ui utilities
 
-**Product-specific:** vault crypto-client, notes, SelahKeep copy, encrypted vault index
+**Product-specific:** `@tgoliveira/vault-core` integration (`src/modules/vault/`), notes crypto, SelahKeep copy, encrypted vault index
 
 ## Legacy import paths
 

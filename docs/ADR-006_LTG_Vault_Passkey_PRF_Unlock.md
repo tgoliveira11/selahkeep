@@ -44,7 +44,7 @@ During WebAuthn authentication or registration, the client requests the `prf` ex
 2. Encrypt exported UVK with that key → `encryptedVaultKey`.
 3. On unlock, decrypt `encryptedVaultKey` with the same PRF output → import UVK → `unlockVaultSession`.
 
-Implementation: `src/lib/crypto-client/passkey-vault.ts`.
+Implementation: `src/modules/vault/core/envelopes/passkey-prf-envelope.ts` (re-exported from `src/lib/crypto-client/passkey-vault.ts`). PRF salt prefix: `letters-passkey-prf-v1:` (`src/modules/vault/selahkeep-profile.ts`).
 
 ## 6. Credential / envelope matching
 
