@@ -2,14 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { unwrapVaultKeyFromRecovery } from "@/lib/crypto-client/vault";
 import {
-  unwrapVaultKeyFromRecovery,
-  isVaultUnlocked,
-} from "@/lib/crypto-client/vault";
-import {
+  hasUnlockedVaultSession,
   lockVaultSessionManually,
   registerVaultUnloadGuard,
-  unlockVaultSession,
 } from "@/lib/crypto-client/vault-session";
 import { vaultApi } from "@/lib/api-client/vault";
 import { unlockVaultWithPasskey } from "@/features/passkey/unlock-with-passkey";
@@ -39,7 +36,6 @@ export function useVault() {
     setError(null);
     try {
       const key = await unlockVaultWithPasskey(session.user.id);
-      unlockVaultSession(key);
       void recordVaultSecurityEvent("vault_unlocked", { method: "passkey_prf" });
       return key;
     } catch (e) {
@@ -60,12 +56,9 @@ export function useVault() {
         if (!encryptedVaultKey || !kdfMetadata) {
           throw new Error("No recovery code configured");
         }
-        await unwrapVaultKeyFromRecovery(
-          recoveryCode,
-          encryptedVaultKey,
-          kdfMetadata,
-          { explicit: true }
-        );
+        await unwrapVaultKeyFromRecovery(recoveryCode, encryptedVaultKey, kdfMetadata, {
+          applySession: true,
+        });
       } catch (e) {
         setError(e instanceof Error ? e.message : "Recovery unlock failed");
         throw e;
@@ -86,13 +79,18 @@ export function useVault() {
         if (!encryptedVaultKey || !kdfMetadata) {
           throw new Error("Vault password unlock is not configured");
         }
-        await unwrapVaultKeyFromPassword(
+        const vaultKey = await unwrapVaultKeyFromPassword(
           vaultPassword,
           encryptedVaultKey,
           kdfMetadata as KdfMetadata,
-          { explicit: true }
+          {
+            applySession: true,
+            unlockMethod: "password",
+            userId: session.user.id,
+          }
         );
         void recordVaultSecurityEvent("vault_unlocked", { method: "password" });
+        return vaultKey;
       } catch (e) {
         setError(e instanceof Error ? e.message : "Vault password unlock failed");
         throw e;
@@ -113,13 +111,18 @@ export function useVault() {
         if (!encryptedVaultKey || !kdfMetadata) {
           throw new Error("Recovery phrase unlock is not configured");
         }
-        await unwrapVaultKeyFromRecoveryPhrase(
+        const vaultKey = await unwrapVaultKeyFromRecoveryPhrase(
           recoveryPhrase,
           encryptedVaultKey,
           kdfMetadata as KdfMetadata,
-          { explicit: true }
+          {
+            applySession: true,
+            unlockMethod: "recovery_phrase",
+            userId: session.user.id,
+          }
         );
         void recordVaultSecurityEvent("vault_unlocked", { method: "recovery_phrase" });
+        return vaultKey;
       } catch (e) {
         setError(e instanceof Error ? e.message : "Recovery phrase unlock failed");
         throw e;
@@ -133,7 +136,7 @@ export function useVault() {
   return {
     loading,
     error,
-    isUnlocked: isVaultUnlocked(),
+    isUnlocked: hasUnlockedVaultSession(),
     unlockFromPasskey,
     unlockFromRecoveryCode,
     unlockFromVaultPassword,

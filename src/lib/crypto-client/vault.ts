@@ -5,7 +5,7 @@ import {
   setSessionVaultKey,
   lockVault,
   isVaultUnlocked,
-  clearVaultCoreClientState,
+  hasUnlockedVaultSession,
 } from "@/modules/vault/core/vault-key";
 import { purgeTrustedDeviceIdb } from "./vault-idb-cleanup";
 
@@ -15,15 +15,15 @@ export {
   setSessionVaultKey,
   lockVault,
   isVaultUnlocked,
+  hasUnlockedVaultSession,
 } from "@/modules/vault/core/vault-key";
 
 export { VAULT_VERSION, VAULT_VERSION_V2 } from "@/modules/vault/core/constants";
 
 /** Clears in-memory vault key and purges legacy trusted-device IndexedDB stores. */
 export async function clearVaultClientState(userId: string): Promise<void> {
-  clearVaultCoreClientState();
-  const { resetVaultSessionLockState } = await import("@/modules/vault/client/vault-session");
-  resetVaultSessionLockState();
+  const { lockVaultSession } = await import("@/lib/crypto-client/vault-session");
+  lockVaultSession("logout");
   await purgeTrustedDeviceIdb();
   void userId;
 }
@@ -82,19 +82,17 @@ export async function unwrapVaultKeyFromRecovery(
   recoveryCode: string,
   encryptedVaultKey: EncryptedPayload,
   kdfMetadata: KdfMetadata,
-  options?: { explicit?: boolean }
+  options?: { applySession?: boolean }
 ): Promise<CryptoKey> {
   const { deriveRecoveryKeyFromMetadata } = await import("./recovery-code");
   const { decryptField, importAesKey } = await import("./aes-gcm");
   const { base64UrlToBytes } = await import("./encoding");
-  const { unlockVaultSession } = await import("@/modules/vault/client/vault-session");
+  const { setUnlockedVaultSession } = await import("@/lib/crypto-client/vault-session");
   const derivedKey = await deriveRecoveryKeyFromMetadata(recoveryCode, kdfMetadata);
   const keyBytes = base64UrlToBytes(await decryptField(encryptedVaultKey, derivedKey));
   const vaultKey = await importAesKey(keyBytes);
-  if (options?.explicit ?? true) {
-    unlockVaultSession(vaultKey);
-  } else {
-    setSessionVaultKey(vaultKey);
+  if (options?.applySession ?? true) {
+    setUnlockedVaultSession({ userVaultKey: vaultKey, method: "recovery_phrase" });
   }
   return vaultKey;
 }

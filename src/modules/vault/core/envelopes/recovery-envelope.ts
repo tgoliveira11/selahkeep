@@ -6,9 +6,15 @@ import {
   type KdfMetadata as VaultCoreKdfMetadata,
 } from "@tgoliveira/vault-core";
 import type { EncryptedPayload, KdfMetadata } from "@/lib/validation/encrypted-payload";
-import { unlockVaultSession } from "../../client/vault-session";
-import { setSessionVaultKey } from "../vault-key";
+import {
+  setUnlockedVaultSession,
+  type VaultUnlockMethod,
+} from "@/lib/crypto-client/vault-session";
 import { SELAHKEEP_VAULT_PROFILE } from "../../selahkeep-profile";
+import {
+  isLegacyVaultKeyEnvelope,
+  unwrapLegacyVaultKeyFromRecoveryPhrase,
+} from "./legacy-envelope-unlock";
 
 type WrapOptions = {
   userId: string;
@@ -19,13 +25,8 @@ function asVaultCorePayload(payload: EncryptedPayload): VaultCoreEncryptedPayloa
   return payload as VaultCoreEncryptedPayload;
 }
 
-function applyUnlockedVaultKey(vaultKey: CryptoKey, explicit?: boolean): CryptoKey {
-  if (explicit ?? true) {
-    unlockVaultSession(vaultKey);
-  } else {
-    setSessionVaultKey(vaultKey);
-  }
-  return vaultKey;
+function envelopeScope(userId: string, resourceId?: string) {
+  return { userId, resourceId: resourceId ?? userId };
 }
 
 export async function wrapVaultKeyForRecoveryPhrase(
@@ -51,18 +52,39 @@ export async function unwrapVaultKeyFromRecoveryPhrase(
   recoveryPhrase: string,
   encryptedVaultKey: EncryptedPayload,
   kdfMetadata: KdfMetadata,
-  options?: { explicit?: boolean; expectedWordCount?: 12 | 24 | null }
+  options?: {
+    applySession?: boolean;
+    unlockMethod?: VaultUnlockMethod;
+    userId?: string;
+    resourceId?: string;
+    expectedWordCount?: 12 | 24 | null;
+  }
 ): Promise<CryptoKey> {
-  const vaultKey = await unlockWithRecoveryEnvelope(
-    recoveryPhrase,
-    {
-      method: "recovery_phrase",
-      encryptedVaultKey: asVaultCorePayload(encryptedVaultKey),
-      kdfMetadata: kdfMetadata as VaultCoreKdfMetadata,
-    },
-    { expectedWordCount: options?.expectedWordCount ?? null }
-  );
-  return applyUnlockedVaultKey(vaultKey, options?.explicit);
+  const scope = envelopeScope(options?.userId ?? encryptedVaultKey.aad.userId, options?.resourceId);
+  const vaultKey = isLegacyVaultKeyEnvelope(encryptedVaultKey)
+    ? await unwrapLegacyVaultKeyFromRecoveryPhrase(
+        recoveryPhrase,
+        encryptedVaultKey,
+        kdfMetadata,
+        scope
+      )
+    : await unlockWithRecoveryEnvelope(
+        recoveryPhrase,
+        {
+          method: "recovery_phrase",
+          encryptedVaultKey: asVaultCorePayload(encryptedVaultKey),
+          kdfMetadata: kdfMetadata as VaultCoreKdfMetadata,
+        },
+        { expectedWordCount: options?.expectedWordCount ?? null }
+      );
+
+  if (options?.applySession ?? true) {
+    setUnlockedVaultSession({
+      userVaultKey: vaultKey,
+      method: options?.unlockMethod ?? "recovery_phrase",
+    });
+  }
+  return vaultKey;
 }
 
 export {

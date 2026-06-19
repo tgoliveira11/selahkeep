@@ -66,14 +66,21 @@ vi.mock("@/features/vault/use-vault-client-status", () => ({
   })),
 }));
 
-vi.mock("@/lib/crypto-client/vault-session", () => ({
-  lockVaultSession: vi.fn(),
-  lockVaultSessionManually: vi.fn(),
-  subscribeVaultSession: vi.fn(() => () => {}),
-  subscribeVaultActivityTimer: vi.fn(() => () => {}),
-  getVaultAutoLockRemainingMs: vi.fn(() => 14 * 60 * 1000 + 32 * 1000),
-  registerVaultUnloadGuard: vi.fn(() => () => {}),
-}));
+vi.mock("@/lib/crypto-client/vault-session", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/crypto-client/vault-session")>();
+  return {
+    ...actual,
+    subscribeVaultSession: vi.fn(() => () => {}),
+    subscribeVaultActivityTimer: vi.fn(() => () => {}),
+    getVaultAutoLockRemainingMs: vi.fn(() => 14 * 60 * 1000 + 32 * 1000),
+    lockVaultSession: vi.fn(),
+    lockVaultSessionManually: vi.fn(),
+    registerVaultBeforeAutoLock: vi.fn(() => () => {}),
+    isVaultManuallyLocked: vi.fn(() => false),
+    wasVaultLockedByInactivity: vi.fn(() => false),
+    registerVaultUnloadGuard: vi.fn(() => () => {}),
+  };
+});
 
 function mockClientStatus(
   clientStatus: "not_configured" | "setup_incomplete" | "locked" | "unlocked"
@@ -295,6 +302,13 @@ describe("VaultStatusDock", () => {
   });
 
   it("submits inline password unlock without navigation", async () => {
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    const recheck = vi.fn();
+    vi.mocked(useVaultClientStatus).mockReturnValue({
+      ...mockClientStatus("locked"),
+      recheck,
+    });
+
     render(<VaultStatusDock />);
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
     fireEvent.change(screen.getByLabelText(/vault password/i), {
@@ -303,6 +317,7 @@ describe("VaultStatusDock", () => {
     fireEvent.click(screen.getByRole("button", { name: /^unlock vault$/i }));
 
     expect(unlockFromVaultPassword).toHaveBeenCalledWith("vault-secret");
+    await vi.waitFor(() => expect(recheck).toHaveBeenCalledTimes(1));
     const { useRouter } = await import("next/navigation");
     expect(vi.mocked(useRouter)().push).not.toHaveBeenCalled();
   });

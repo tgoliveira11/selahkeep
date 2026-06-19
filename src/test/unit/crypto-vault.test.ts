@@ -41,7 +41,7 @@ describe("vault key lifecycle", () => {
     );
   });
 
-  it("unwraps recovery envelope without explicit session unlock", async () => {
+  it("unwraps recovery envelope without applying session unlock", async () => {
     const vaultKey = await generateUserVaultKey();
     const code = generateRecoveryCode();
     const { encryptedVaultKey, kdfMetadata } = await wrapVaultKeyForRecovery(
@@ -52,12 +52,32 @@ describe("vault key lifecycle", () => {
     );
     setSessionVaultKey(null);
     const restored = await unwrapVaultKeyFromRecovery(code, encryptedVaultKey, kdfMetadata, {
-      explicit: false,
+      applySession: false,
     });
     expect(await crypto.subtle.exportKey("raw", restored)).toEqual(
       await crypto.subtle.exportKey("raw", vaultKey)
     );
-    expect(isVaultUnlocked()).toBe(true);
+    expect(isVaultUnlocked()).toBe(false);
+  });
+
+  it("unwraps recovery envelope and applies session unlock", async () => {
+    const vaultKey = await generateUserVaultKey();
+    const code = generateRecoveryCode();
+    const { encryptedVaultKey, kdfMetadata } = await wrapVaultKeyForRecovery(
+      vaultKey,
+      code,
+      USER_ID,
+      USER_ID
+    );
+    setSessionVaultKey(null);
+    const { lockVaultSessionManually, hasUnlockedVaultSession } = await import(
+      "@/lib/crypto-client/vault-session"
+    );
+    lockVaultSessionManually();
+    await unwrapVaultKeyFromRecovery(code, encryptedVaultKey, kdfMetadata, {
+      applySession: true,
+    });
+    expect(hasUnlockedVaultSession()).toBe(true);
   });
 
   it("clearVaultClientState clears session vault key", async () => {

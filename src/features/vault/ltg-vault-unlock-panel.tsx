@@ -9,29 +9,10 @@ import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import type { VaultStatus } from "@/lib/api-client/vault";
 import { mapVaultUnlockError } from "@/features/vault/vault-unlock-errors";
-import {
-  PASSKEY_LOGIN_PRF_UNAVAILABLE_MESSAGE,
-  PASSKEY_LOGIN_VAULT_LOCKED_MESSAGE,
-  PASSKEY_LOGIN_VAULT_UNLOCKED_MESSAGE,
-} from "@/lib/passkey/messages";
-import { buildPasskeyLoginOutcomeKey } from "@/features/passkey/passkey-login-with-vault-unlock";
-import { APP_PASSKEY_SLUG } from "@/lib/passkey/app-slug";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
 import { cn } from "@/lib/ui/cn";
 
 export type LtgUnlockMode = "password" | "recovery_phrase" | "legacy";
-
-function consumePasskeyLoginNotice(): string | null {
-  if (typeof sessionStorage === "undefined") return null;
-  const key = buildPasskeyLoginOutcomeKey(APP_PASSKEY_SLUG);
-  const outcome = sessionStorage.getItem(key);
-  if (!outcome) return null;
-  sessionStorage.removeItem(key);
-  if (outcome === "vault-unlocked") return PASSKEY_LOGIN_VAULT_UNLOCKED_MESSAGE;
-  if (outcome === "vault-locked") return PASSKEY_LOGIN_VAULT_LOCKED_MESSAGE;
-  if (outcome === "prf-unavailable") return PASSKEY_LOGIN_PRF_UNAVAILABLE_MESSAGE;
-  return null;
-}
 
 interface LtgVaultUnlockPanelProps {
   loading: boolean;
@@ -62,10 +43,6 @@ export function LtgVaultUnlockPanel({
   const [vaultPassword, setVaultPassword] = useState("");
   const [recoveryPhrase, setRecoveryPhrase] = useState("");
   const [legacyRecoveryCode, setLegacyRecoveryCode] = useState("");
-  const [passkeyNotice] = useState<string | null>(() =>
-    layout === "page" ? consumePasskeyLoginNotice() : null
-  );
-
   const isDock = layout === "dock";
   const isLtg = vaultStatus?.setupComplete ?? false;
 
@@ -127,8 +104,6 @@ export function LtgVaultUnlockPanel({
           </p>
         </div>
       )}
-
-      {passkeyNotice && <Alert variant="muted">{passkeyNotice}</Alert>}
 
       {isLtg && onUnlockPasskey && passkeyVaultUnlockAvailable && (
         <Button

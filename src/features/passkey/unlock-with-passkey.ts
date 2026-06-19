@@ -13,7 +13,7 @@ import {
   PasskeyPrfRequiredError,
   unlockVaultFromPasskeyEnvelope,
 } from "@/lib/crypto-client/passkey-vault";
-import { logPasskeyLoginVaultEvent } from "@/features/passkey/passkey-login-audit";
+import { logPasskeyVaultEvent } from "@/features/passkey/passkey-vault-audit";
 import { prepareAuthenticationOptions } from "@/lib/passkey/prepare-webauthn-options";
 
 interface PasskeyAuthResult {
@@ -50,10 +50,10 @@ export async function unlockVaultWithPasskey(userId: string): Promise<CryptoKey>
       prfOutput,
       { prfRequired: result.prfRequired ?? true }
     );
-    logPasskeyLoginVaultEvent("passkey_vault_unlock_succeeded", { method: "passkey" });
+    logPasskeyVaultEvent("passkey_vault_unlock_succeeded", { method: "passkey" });
     return vaultKey;
   } catch (error) {
-    logPasskeyLoginVaultEvent("passkey_vault_unlock_failed", {
+    logPasskeyVaultEvent("passkey_vault_unlock_failed", {
       method: "passkey",
       errorCode: error instanceof Error && error.name === "PasskeyPrfRequiredError" ? "prf_required" : "unwrap_failed",
     });

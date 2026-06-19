@@ -77,29 +77,28 @@ No `passkey_prf` envelope is created. UI shows calm fallback copy. Post-login: u
 
 Account sign-in succeeds. Vault remains locked. User is directed to `/vault/unlock` with messaging that the passkey is not set up for vault unlock.
 
-## 11. Post-login auto-unlock
+## 11. Explicit post-login vault unlock
 
-Vault-only shim `src/features/passkey/passkey-login-with-vault-unlock.ts` wraps package flow:
+Account passkey login and vault unlock are two distinct user actions:
 
-1. `POST /api/auth/passkey/login/options` (PRF enrichment)
-2. WebAuthn assertion
-3. `POST /api/auth/passkey/login/verify` (package delegate — no vault fields)
-4. `POST /api/auth/passkey/login/vault-unlock/metadata` (product, loginToken-gated)
-5. Optional second ceremony via `vault-unlock/options` when PRF was not in first options
-6. Client unwrap if PRF + envelope
-7. `signIn("login-token")` — login never rolled back on vault failure
+1. `@tgoliveira/secure-auth` authenticates the account and establishes the session.
+2. The vault remains locked.
+3. The signed-in user chooses **Unlock with passkey** from `/vault/unlock` or the vault dock.
+4. `POST /api/passkeys/authenticate` runs a product-owned PRF ceremony.
+5. The client unwraps the User Vault Key only after that explicit ceremony succeeds.
 
-Wired via Next/Vitest alias: `@tgoliveira/secure-auth/react/client` → `vault-passkey-react-client.ts`.
+SelahKeep does not alias the package passkey login client, enrich account-login options with vault
+PRF inputs, or expose login-token-gated vault metadata/options routes.
 
 ## 12. Fallback UX
 
 | Case | Message theme |
 |------|----------------|
-| No envelope | Signed in; passkey not set up to unlock vault |
-| PRF unavailable | Signed in; browser cannot unlock vault with passkey |
+| No envelope | Explicit unlock reports that the passkey is not set up for the vault |
+| PRF unavailable | Explicit unlock reports that the browser/provider cannot unlock the vault |
 | Decrypt failure | Use vault password or recovery phrase |
 
-Copy in `src/lib/passkey/messages.ts`. Outcomes stored in `sessionStorage` under `{appSlug}-passkey-login-outcome`.
+Copy is kept in `src/lib/passkey/messages.ts`; account login stores no vault outcome.
 
 ## 13. Browser / provider limitations
 
@@ -111,8 +110,8 @@ Primary passkey vault unlock management: `/vault/settings` (`PasskeyVaultUnlockS
 
 ## 15. Tests proving auth / vault separation
 
-- `passkey-login-vault-unlock.test.ts` — verify route stays package-only; vault metadata on separate route
-- `passkey-login-with-vault-unlock.test.ts` — cases A–D client flow
+- `passkey-login-vault-unlock.test.ts` — package login delegation and explicit vault boundary
+- `unlock-with-passkey.test.ts` — explicit signed-in PRF unlock
 - `passkey-login-boundary.test.ts` — sign-in vs vault capability labels
 - Security: PRF/UVK never in API payloads (`passkey-vault-plaintext-rejection.test.ts`)
 - PRF diagnostics: `src/test/unit/passkey-prf-diagnostics.test.ts`, `src/test/features/passkey-vault-unlock-settings.test.tsx`

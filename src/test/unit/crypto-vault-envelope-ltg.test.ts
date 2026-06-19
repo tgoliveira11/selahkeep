@@ -27,7 +27,7 @@ describe("vault envelopes (LTG Phase 1)", () => {
     expect(kdfMetadata.kdf).toBe("argon2id");
 
     const unwrapped = await unwrapVaultKeyFromPassword(password, encryptedVaultKey, kdfMetadata, {
-      explicit: false,
+      applySession: false,
     });
     const a = new Uint8Array(await exportAesKey(vaultKey));
     const b = new Uint8Array(await exportAesKey(unwrapped));
@@ -46,7 +46,7 @@ describe("vault envelopes (LTG Phase 1)", () => {
       phrase,
       encryptedVaultKey,
       kdfMetadata,
-      { explicit: false }
+      { applySession: false }
     );
     const a = new Uint8Array(await exportAesKey(vaultKey));
     const b = new Uint8Array(await exportAesKey(unwrapped));
@@ -62,7 +62,7 @@ describe("vault envelopes (LTG Phase 1)", () => {
     );
     await expect(
       unwrapVaultKeyFromPassword("wrong-password", encryptedVaultKey, kdfMetadata, {
-        explicit: false,
+        applySession: false,
       })
     ).rejects.toThrow();
   });

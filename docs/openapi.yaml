@@ -667,7 +667,7 @@ paths:
   /api/passkeys/authenticate:
     post:
       tags: [Passkeys]
-      summary: Passkey authentication (options or verify)
+      summary: Explicit signed-in passkey vault unlock (options or verify)
       security:
         - sessionCookie: []
       responses:
@@ -695,7 +695,7 @@ paths:
       summary: Verify passkey sign-in and issue login token
       responses:
         '200':
-          description: Login token and optional vault unlock metadata
+          description: Account login token; no vault unlock metadata
   /api/account/passkeys:
     get:
       tags: [Account]

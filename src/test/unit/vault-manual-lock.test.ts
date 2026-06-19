@@ -9,7 +9,7 @@ describe("manual vault lock", () => {
       "utf-8"
     );
     expect(hook).not.toContain("unwrapVaultKeyFromDevice");
-    expect(hook).toContain("isVaultUnlocked()");
+    expect(hook).toContain("hasUnlockedVaultSession()");
     expect(hook).toContain("Account session alone never unlocks the vault");
   });
 

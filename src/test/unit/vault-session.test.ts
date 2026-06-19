@@ -14,6 +14,7 @@ import {
   getVaultAutoLockRemainingMs,
   subscribeVaultActivityTimer,
   clearVaultAutoLockTimer,
+  resetVaultSessionStoreForTests,
 } from "@/lib/crypto-client/vault-session";
 import { generateUserVaultKey, isVaultUnlocked, setSessionVaultKey } from "@/lib/crypto-client/vault";
 import { setCachedNoteBody, getCachedNoteBody } from "@/features/notes/eager-decrypt-notes";
@@ -21,6 +22,7 @@ import { setCachedNoteBody, getCachedNoteBody } from "@/features/notes/eager-dec
 describe("vault session auto-lock", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    resetVaultSessionStoreForTests();
     clearVaultAutoLockTimer();
     setSessionVaultKey(null);
   });

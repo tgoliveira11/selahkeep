@@ -23,15 +23,6 @@ export type PasskeySetupOutcome =
   | "cancelled"
   | "failed";
 
-export const PASSKEY_LOGIN_VAULT_UNLOCKED_MESSAGE =
-  "Signed in with passkey. Your private notes are unlocked on this device.";
-
-export const PASSKEY_LOGIN_VAULT_LOCKED_MESSAGE =
-  "You are signed in, but your vault is still locked because this passkey is not set up to unlock it.";
-
-export const PASSKEY_LOGIN_PRF_UNAVAILABLE_MESSAGE =
-  "This passkey signed you in, but this browser or passkey provider cannot unlock your vault with it yet.";
-
 export const PASSKEY_LOGIN_CANCELLED_MESSAGE = "Passkey sign-in was cancelled.";
 
 export const PASSKEY_LOGIN_UNSUPPORTED_MESSAGE =
@@ -56,7 +47,7 @@ export const PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE =
   "Passkey test succeeded. This browser returned PRF output for your vault unlock passkey.";
 
 export const PASSKEY_VAULT_UNLOCK_ACCOUNT_LOGIN_NOTE =
-  "Account passkey sign-in and passkey vault unlock are separate. Signing in does not unlock your vault unless vault unlock is configured here.";
+  "Account passkey sign-in and passkey vault unlock are separate actions. Signing in never opens your vault; use Unlock with passkey after authentication.";
 
 export const PASSKEY_VAULT_UNLOCK_READONLY_HEADLINE =
   "Passkey vault unlock is enabled, but cannot be managed in this browser.";

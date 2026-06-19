@@ -8,14 +8,14 @@ function readSource(relativePath: string): string {
   return readFileSync(path.join(root, relativePath), "utf8");
 }
 
-describe("passkey login vault unlock security boundaries", () => {
-  it("uses vault-only passkey login client instead of forbidden local account shim", () => {
+describe("passkey account login and vault unlock security boundaries", () => {
+  it("does not couple account passkey login to vault unlock", () => {
     expect(() => readSource("src/features/passkey/sign-in-with-passkey.ts")).toThrow();
     expect(() => readSource("src/lib/secure-auth/react-client.ts")).toThrow();
-    const vaultLogin = readSource("src/features/passkey/passkey-login-with-vault-unlock.ts");
-    expect(vaultLogin).toContain("passkeyLoginApi.verify");
-    expect(vaultLogin).toContain("vaultUnlockMetadata");
-    expect(vaultLogin).not.toContain("secureAuth.routes");
+    expect(() =>
+      readSource("src/features/passkey/passkey-login-with-vault-unlock.ts")
+    ).toThrow();
+    expect(() => readSource("src/lib/secure-auth/vault-passkey-react-client.ts")).toThrow();
   });
 
   it("delegates account passkey verify to the package route", () => {
@@ -25,18 +25,27 @@ describe("passkey login vault unlock security boundaries", () => {
     expect(verifyRoute).not.toMatch(/decrypt|unwrap|UserVaultKey/i);
   });
 
-  it("keeps vault metadata on a separate product route gated by login token", () => {
-    const metadataRoute = readSource(
-      "src/app/api/auth/passkey/login/vault-unlock/metadata/route.ts"
-    );
-    expect(metadataRoute).toContain("getVaultUnlockMetadataForLogin");
-    expect(metadataRoute).toContain("rejectPasskeyVaultForbiddenFields");
+  it("removes post-login vault metadata and PRF routes", () => {
+    expect(() =>
+      readSource("src/app/api/auth/passkey/login/vault-unlock/metadata/route.ts")
+    ).toThrow();
+    expect(() =>
+      readSource("src/app/api/auth/passkey/login/vault-unlock/options/route.ts")
+    ).toThrow();
   });
 
-  it("keeps vault PRF enrichment on login options only in the product vault service", () => {
+  it("keeps account passkey login options as a pure package delegate", () => {
     const optionsRoute = readSource("src/app/api/auth/passkey/login/options/route.ts");
-    expect(optionsRoute).toContain("passkeyLoginVaultService.enrichLoginOptionsWithVaultPrf");
     expect(optionsRoute).toContain("secureAuth.routes.passkeyLoginOptions.POST");
+    expect(optionsRoute).not.toContain("passkeyLoginVaultService");
+    expect(optionsRoute).not.toMatch(/unwrap|encryptedVaultKey|prfIncluded/);
+  });
+
+  it("keeps explicit signed-in vault unlock in the product flow", () => {
+    const unlock = readSource("src/features/passkey/unlock-with-passkey.ts");
+    expect(unlock).toContain('"/api/passkeys/authenticate"');
+    expect(unlock).toContain("unlockVaultFromPasskeyEnvelope");
+    expect(unlock).not.toContain("signIn(");
   });
 
   it("does not unlock vault from password or OAuth login pages", () => {

@@ -4,8 +4,9 @@ Product-owned vault layer. Account authentication (`@tgoliveira/secure-auth`) an
 
 ## Structure
 
-- `@tgoliveira/vault-core` — reusable crypto, envelopes, recovery phrase, session memory
-- `@tgoliveira/vault-core/react` — headless session hooks (`useVaultUnlocked`, `resolveVaultClientStatus`)
+- `@tgoliveira/vault-core` — reusable crypto and envelope primitives (no app session state)
+- `src/lib/crypto-client/vault-session.ts` — SelahKeep in-memory UVK + lock/auto-lock controller
+- `src/lib/crypto-client/vault-passkey-browser.ts` — approved adapter for vault-core browser PRF helpers
 - `selahkeep-profile.ts` — frozen SelahKeep AAD/PRF compatibility constants
 - `core/` — profile-bound envelope wrappers
 - `client/` — browser session extensions (auto-lock draft flush, note cache clear), passkey PRF salt

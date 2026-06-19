@@ -1,78 +1,61 @@
-# Passkey Login and Vault Unlock
+# Passkey Account Login and Vault Unlock
 
-Last updated: 2026-06-17
+Last updated: 2026-06-19
 
 ## Core rule
 
 ```text
-A passkey may authenticate the account.
-
-The same passkey may unlock the vault only when it has a valid vault envelope
-created with a reviewed PRF-based mechanism.
-
-Otherwise, the user is signed in, but the vault remains locked.
+Account passkey sign-in authenticates the account only.
+Passkey vault unlock is a separate, explicit action performed after sign-in.
 ```
 
-Account authentication and vault decryption are **separate** operations.
+The same physical credential may support both actions, but SelahKeep never treats account login as
+vault unlock. Vault unlock additionally requires a valid PRF envelope and browser/authenticator PRF
+support.
 
-## Integration point
+## Account passkey sign-in
 
 | Layer | Location | Role |
 |-------|----------|------|
-| Login UI | `@tgoliveira/secure-auth/react` `LoginPage` → `LoginPasskeySection` | Calls `signInWithPasskey` from `@tgoliveira/secure-auth/react/client` |
-| App shim | `src/lib/secure-auth/vault-passkey-react-client.ts` (Next/Vitest alias) | Re-exports package client helpers but replaces `signInWithPasskey` |
-| Vault-aware flow | `src/features/passkey/passkey-login-with-vault-unlock.ts` | WebAuthn account auth, optional PRF vault unlock, then `login-token` session |
-| Verify | `POST /api/auth/passkey/login/verify` | Pure package delegate — `loginToken`, `userId`, `credentialId`, `requiresTwoFactor` only |
-| Vault metadata | `POST /api/auth/passkey/login/vault-unlock/metadata` | Product route gated by package `loginToken` |
-| Options enrichment | `POST /api/auth/passkey/login/options` | Delegates to secure-auth, injects PRF extensions when credential can vault-unlock |
-| Follow-up PRF step | `POST /api/auth/passkey/login/vault-unlock/options` | Second WebAuthn ceremony when first login options could not include PRF |
-| Enable vault on account passkey | `POST /api/account/passkeys/[id]/enable-vault-unlock` | Creates PRF envelope while vault is unlocked |
-| Status / revoke | `GET` / `DELETE` `/api/account/passkeys/[id]/vault-unlock` | Per-passkey vault unlock status and revocation |
-| Outcome UX | `/notes`, `/vault/unlock` | Read `{appSlug}-passkey-login-outcome` from `sessionStorage` |
+| Login UI | `@tgoliveira/secure-auth/react` `LoginPage` | Starts account passkey authentication |
+| Options | `POST /api/auth/passkey/login/options` | Pure `secure-auth` package delegate |
+| Verify | `POST /api/auth/passkey/login/verify` | Pure `secure-auth` package delegate |
+| Result | `/notes` | Account session exists; vault remains locked |
 
-## Detecting passkey login
+The app does not alias or replace `@tgoliveira/secure-auth/react/client`, request vault PRF output
+during login, fetch vault envelopes with a login token, or unwrap the User Vault Key in the login flow.
 
-Only `signInWithPasskey` (via vault shim) attempts automatic vault unlock. Password, OAuth, and TOTP flows do not call it.
+## Explicit vault unlock
 
-## Vault-compatible passkey
+After authentication, the user chooses **Unlock with passkey** from `/vault/unlock` or the vault
+status dock. The product-owned flow is:
 
-After account WebAuthn verify:
+1. `POST /api/passkeys/authenticate` with `action: "options"`.
+2. A separate WebAuthn ceremony requests PRF output.
+3. `POST /api/passkeys/authenticate` with `action: "verify"`.
+4. The client unwraps the User Vault Key from the matching PRF envelope.
+5. The in-memory vault session becomes unlocked.
 
-1. `credentialId` from verify response
-2. `POST /api/auth/passkey/login/vault-unlock/metadata` with `loginToken` + `credentialId`
-3. Passkey row: `signInEnabled` and `vaultUnlockEnabled`
-4. Active PRF-based passkey vault envelope for that credential
-5. PRF output from the WebAuthn assertion (or follow-up ceremony)
+Implementation: `src/features/passkey/unlock-with-passkey.ts`.
 
-Unlock reuses `unlockVaultFromPasskeyEnvelope` from `src/lib/crypto-client/passkey-vault.ts`.
+## Configuration
+
+Adding an account passkey does not automatically authorize it for vault unlock. While the vault is
+open, `/vault/settings` performs a separate PRF ceremony and creates the vault envelope through
+`POST /api/account/passkeys/:id/enable-vault-unlock`.
 
 ## Outcomes
 
-| Case | Vault | Redirect | User message |
-|------|-------|----------|--------------|
-| A — valid envelope + PRF | Unlocked | `afterLoginPath` (default `/notes`) | Signed in with passkey. Your private notes are unlocked on this device. |
-| B — no envelope | Locked | `/vault/unlock` | You are signed in, but your vault is still locked because this passkey is not set up to unlock it. |
-| C — PRF unavailable | Locked | `/vault/unlock` | This passkey signed you in, but this browser or passkey provider cannot unlock your vault with it yet. |
-| D — password/OAuth | Locked (no auto-unlock) | Existing auth redirect | N/A |
-
-Login is never rolled back when vault unlock fails.
-
-## Security logging
-
-Client-side `safeLogger` events (no secrets):
-
-- `passkey_login_completed`
-- `passkey_login_vault_auto_unlock_succeeded`
-- `passkey_login_vault_auto_unlock_unavailable`
-- `passkey_vault_unlock_succeeded` / `passkey_vault_unlock_failed`
-- `passkey_vault_unlock_enabled` / `passkey_vault_unlock_disabled` (server audit)
+| Action | Account | Vault |
+|--------|---------|-------|
+| Sign in with account passkey | Signed in | Locked |
+| Unlock with configured PRF passkey | Already signed in | Unlocked |
+| Unlock with unconfigured/incompatible passkey | Already signed in | Locked; password and recovery phrase remain available |
 
 ## Tests
 
-- `src/test/features/passkey-login-with-vault-unlock.test.ts` — client flow cases A–C
-- `src/test/api/passkey-login-vault-routes.test.ts` — options enrichment
-- `src/test/api/passkey-vault-unlock-metadata-route.test.ts` — metadata route
-- `src/test/security/passkey-login-vault-unlock.test.ts` — boundaries
-- `src/test/features/secure-auth-vault-passkey-client-shim.test.ts` — shim wiring
+- `src/test/security/passkey-login-vault-unlock.test.ts` enforces the separation and removal of login coupling.
+- `src/test/features/unlock-with-passkey.test.ts` covers the explicit vault ceremony.
+- `src/test/features/passkey-vault-unlock-settings.test.tsx` covers enable/test/disable management.
 
 See `docs/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md`.

@@ -160,9 +160,9 @@ Failures roll back all related writes.
 
 ## Passkey account sign-in
 
-Account passkey sign-in is owned by `@tgoliveira/secure-auth` (`LoginPage`, `signInWithPasskey` from `@tgoliveira/secure-auth/react/client` via vault shim).
+Account passkey sign-in is owned by `@tgoliveira/secure-auth` (`LoginPage` and package client) and establishes only the account session.
 
-Product-specific vault PRF enrichment remains on `POST /api/auth/passkey/login/options` via `passkeyLoginVaultService`. Verify delegates to `secureAuth.routes.passkeyLoginVerify` (no vault enrichment). Post-login auto-unlock is implemented in `src/features/passkey/passkey-login-with-vault-unlock.ts`, wired through `src/lib/secure-auth/vault-passkey-react-client.ts` (Next/Vitest alias). Vault metadata is fetched from `POST /api/auth/passkey/login/vault-unlock/metadata` (loginToken-gated). Manual unlock and second-ceremony PRF use `/vault/unlock` and `POST /api/auth/passkey/login/vault-unlock/options`. Per-passkey enable/status/revoke: `enable-vault-unlock`, `GET/DELETE .../vault-unlock`.
+Account passkey options and verification are pure package delegates. Passkey vault unlock is a separate signed-in action from `/vault/unlock` or the vault dock using `POST /api/passkeys/authenticate`; no package client alias, login PRF enrichment, or login-token vault metadata routes are used. Per-passkey enable/status/revoke remain product-owned: `enable-vault-unlock`, `GET/DELETE .../vault-unlock`.
 
 See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md) and [`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`](./docs/PASSKEY_LOGIN_VAULT_UNLOCK.md).
 
@@ -193,13 +193,9 @@ Passkey sign-in follows package rules when 2FA is enabled (pending challenge unt
 
 `src/lib/vault/vault-auto-lock-config.ts` — configurable inactivity timeout (default 15 min).
 
-`src/modules/vault/client/vault-session.ts` — SelahKeep auto-lock extensions on vault-core memory session: `registerVaultBeforeAutoLock`, manual vs inactivity lock (`wasVaultLockedByInactivity`), note body cache clear on lock, unload guard, `getVaultAutoLockRemainingMs()` for dock countdown.
+`src/lib/crypto-client/vault-session.ts` — **single app-owned** in-memory UVK + lock state (manual lock, auto-lock, subscribers). `src/modules/vault/client/vault-session.ts` re-exports this module.
 
-`src/features/vault/use-vault-activity.ts` — activity listeners + `touchVaultActivity()` for editor paths.
-
-`src/features/vault/vault-locked-state.tsx` — normalized locked-state UI per route context.
-
-See [`docs/VAULT_AUTO_LOCK_NORMALIZATION.md`](./docs/VAULT_AUTO_LOCK_NORMALIZATION.md).
+See [`docs/VAULT_SESSION_SINGLE_SOURCE_OF_TRUTH_FIX.md`](./docs/VAULT_SESSION_SINGLE_SOURCE_OF_TRUTH_FIX.md) and [`docs/VAULT_AUTO_LOCK_NORMALIZATION.md`](./docs/VAULT_AUTO_LOCK_NORMALIZATION.md).
 
 ## Beta documentation
 

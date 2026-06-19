@@ -6,11 +6,19 @@ import {
   type EncryptedPayload as VaultCoreEncryptedPayload,
 } from "@tgoliveira/vault-core";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
-import { unlockVaultSession } from "../../client/vault-session";
+import { setUnlockedVaultSession } from "@/lib/crypto-client/vault-session";
 import { SELAHKEEP_VAULT_PROFILE } from "../../selahkeep-profile";
+import {
+  isLegacyVaultKeyEnvelope,
+  unwrapLegacyVaultKeyFromPasskey,
+} from "./legacy-envelope-unlock";
 
 function asVaultCorePayload(payload: EncryptedPayload): VaultCoreEncryptedPayload {
   return payload as VaultCoreEncryptedPayload;
+}
+
+function envelopeScope(userId: string, resourceId?: string) {
+  return { userId, resourceId: resourceId ?? userId };
 }
 
 export async function wrapVaultKeyForPasskey(
@@ -32,13 +40,17 @@ export async function wrapVaultKeyForPasskey(
 
 export async function unwrapVaultKeyFromPasskey(
   encryptedVaultKey: EncryptedPayload,
-  prfOutput: Uint8Array
+  prfOutput: Uint8Array,
+  options?: { applySession?: boolean; userId?: string; resourceId?: string }
 ): Promise<CryptoKey> {
-  const vaultKey = await unwrapVaultKeyFromPasskeyCore(
-    asVaultCorePayload(encryptedVaultKey),
-    prfOutput
-  );
-  unlockVaultSession(vaultKey);
+  const scope = envelopeScope(options?.userId ?? encryptedVaultKey.aad.userId, options?.resourceId);
+  const vaultKey = isLegacyVaultKeyEnvelope(encryptedVaultKey)
+    ? await unwrapLegacyVaultKeyFromPasskey(encryptedVaultKey, prfOutput, scope)
+    : await unwrapVaultKeyFromPasskeyCore(asVaultCorePayload(encryptedVaultKey), prfOutput);
+
+  if (options?.applySession ?? true) {
+    setUnlockedVaultSession({ userVaultKey: vaultKey, method: "passkey_prf" });
+  }
   return vaultKey;
 }
 
@@ -46,15 +58,25 @@ export async function unlockVaultFromPasskeyEnvelope(
   userId: string,
   encryptedVaultKey: EncryptedPayload,
   prfOutput: Uint8Array | null,
-  options?: { prfRequired?: boolean }
+  options?: { prfRequired?: boolean; applySession?: boolean; resourceId?: string }
 ): Promise<CryptoKey> {
-  void userId;
-  const vaultKey = await unlockVaultFromPasskeyEnvelopeCore(
-    asVaultCorePayload(encryptedVaultKey),
-    prfOutput,
-    options
-  );
-  unlockVaultSession(vaultKey);
+  const scope = envelopeScope(userId, options?.resourceId);
+  const vaultKey = isLegacyVaultKeyEnvelope(encryptedVaultKey)
+    ? await (async () => {
+        if (!prfOutput) {
+          throw new Error("Passkey PRF output is required to unlock this vault");
+        }
+        return unwrapLegacyVaultKeyFromPasskey(encryptedVaultKey, prfOutput, scope);
+      })()
+    : await unlockVaultFromPasskeyEnvelopeCore(
+        asVaultCorePayload(encryptedVaultKey),
+        prfOutput,
+        options
+      );
+
+  if (options?.applySession ?? true) {
+    setUnlockedVaultSession({ userVaultKey: vaultKey, method: "passkey_prf" });
+  }
   return vaultKey;
 }
 

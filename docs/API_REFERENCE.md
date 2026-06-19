@@ -80,7 +80,7 @@ Passkeys authenticate the account separately from vault decryption. A passkey un
 | `DELETE` | `/api/account/passkeys/:id` | Session |
 | `POST` | `/api/account/passkeys/:id/enable-vault-unlock` | Session (vault unlocked client-side) |
 
-Vault recovery passkeys (PRF envelope while vault unlocked) also use `POST /api/passkeys/register` and `POST /api/passkeys/authenticate` on `/vault/recovery`.
+Passkey vault unlock uses `POST /api/passkeys/authenticate` as a separate signed-in ceremony from `/vault/unlock` or the vault dock. Enabling vault unlock for an account passkey is managed from `/vault/settings`.
 
 ### Vault recovery phrase
 

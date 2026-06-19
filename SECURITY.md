@@ -234,9 +234,9 @@ Safe audit events only (no plaintext letters, recovery codes, keys, or ciphertex
 - Email/password sign-in still requires TOTP when 2FA is enabled
 - OAuth + TOTP behavior is unchanged (partial session until `/login/2fa`)
 - Successful passkey login issues the same one-time `login-token` session as post-TOTP credentials login (`twoFactorVerified: true`)
-- Vault unlock after passkey login happens **client-side only** when a valid PRF-based envelope exists for that credential and PRF output is available (`passkey-login-with-vault-unlock.ts` via react client alias)
-- Discoverable passkey sign-in may prompt a **second WebAuthn step** with PRF (`POST /api/auth/passkey/login/vault-unlock/options`) before the session is completed
-- If the passkey signs in but has no vault envelope (or PRF is unavailable), the vault remains locked and the user is routed to `/vault/unlock`
+- Account passkey login never unlocks the vault and never requests vault PRF output
+- After authentication, passkey vault unlock is a separate explicit client-side PRF ceremony (`src/features/passkey/unlock-with-passkey.ts`)
+- If the passkey has no vault envelope or PRF is unavailable, the account remains signed in and the vault remains locked
 - Account passkey management: `GET /api/account/passkeys`, register/remove (package), optional vault unlock enable (`enable-vault-unlock`), status/revoke (`GET/DELETE .../vault-unlock`)
 
 ## Passkey vault unlock (PRF)
@@ -248,6 +248,10 @@ Safe audit events only (no plaintext letters, recovery codes, keys, or ciphertex
 - PRF diagnostics: `src/lib/passkey/passkey-prf-diagnostics.ts`; audit `docs/PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`
 - Primary UX: `/vault/settings` (not `/vault/recovery`) for enable/test/replace/disable; PRF-unsupported browsers see read-only status and cannot disable/replace without a PRF ceremony proof
 - Vault unlock `returnTo` query param is sanitized (`sanitizeVaultReturnTo`) to internal paths only (`/notes`, `/vault/settings`, `/vault/security`, `/vault/recovery`, `/settings/account`); disabling passkey vault unlock requires DELETE/POST with verified WebAuthn assertion including PRF client extension results
+
+All explicit unlock methods promote the recovered User Vault Key through the client vault-session
+boundary. This clears a prior manual-lock flag, restarts inactivity protection, and notifies UI
+subscribers; vault passwords and recovery phrases remain client-only.
 
 ### Vault security review (`/vault/security`)
 
@@ -264,7 +268,7 @@ Challenges scoped by user ID and type; expire after 5 minutes; deleted on use vi
 
 ## Vault session hardening
 
-- **Inactivity auto-lock** (default 15 minutes; `NEXT_PUBLIC_VAULT_AUTO_LOCK_MINUTES` / `VAULT_AUTO_LOCK_MINUTES`) — remaining time shown in collapsed dock handle (`mm:ss`) and expanded open dock (`Vault open · Auto-locks in mm:ss`). Single timer in `vault-session.ts`; `registerVaultBeforeAutoLock` saves encrypted note drafts before lock.
+- **In-memory UVK** — owned exclusively by `src/lib/crypto-client/vault-session.ts`; unlock flows call `setUnlockedVaultSession`; UI reads `hasUnlockedVaultSession()`. `@tgoliveira/vault-core/browser` session exports are not used as app state (PRF helpers only via `vault-passkey-browser.ts`).
 - **Activity detection:** window events plus document capture (`keydown`, `input`, `pointerdown`, `compositionstart`, `compositionend`, `paste`); note editor calls `touchVaultActivity()` on change.
 - **Vault status UI:** global `VaultStatusDock` inside authenticated header when signed in (no note title/body/category/tag or vault secrets in the dock); collapsed handle shows `Closed` when locked or countdown when open
 - **Inline unlock:** expanded locked dock embeds `VaultDockQuickUnlock` — vault password and passkey PRF (when envelope exists and browser is not PRF-unsupported). Recovery phrase unlock is only on `/vault/unlock`. Same client-only unlock services as the full page; secrets never sent to the server. Dock shows status-only message on `/vault/unlock` (no duplicate form).

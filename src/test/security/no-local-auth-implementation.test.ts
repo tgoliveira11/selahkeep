@@ -84,19 +84,17 @@ describe("no local auth implementation guard", () => {
     }
   });
 
-  it("keeps product vault passkey login options as a thin package delegate plus PRF enrichment", () => {
+  it("keeps account passkey login options as a thin package delegate", () => {
     const source = readSource("src/app/api/auth/passkey/login/options/route.ts");
     expect(source).toContain("secureAuth.routes.passkeyLoginOptions");
-    expect(source).toContain("passkeyLoginVaultService.enrichLoginOptionsWithVaultPrf");
+    expect(source).not.toContain("passkeyLoginVaultService");
     expect(source).not.toMatch(/bcrypt\.(hash|compare)/);
   });
 
-  it("uses vault-only passkey react client shim without reimplementing account verify", () => {
-    const shim = readSource("src/lib/secure-auth/vault-passkey-react-client.ts");
-    expect(shim).toContain("passkey-login-with-vault-unlock");
-    expect(shim).toContain("vault-passkey-react-reexports");
-    expect(shim).toContain("PasswordSetupFields");
-    expect(shim).not.toContain("secureAuth.routes");
+  it("does not override the package passkey login client", () => {
+    expect(() => readSource("src/lib/secure-auth/vault-passkey-react-client.ts")).toThrow();
+    expect(readSource("next.config.ts")).not.toContain("secure-auth/react/client");
+    expect(readSource("vitest.config.ts")).not.toContain("secure-auth/react/client");
   });
 
   it("keeps a single createSecureAuth composition root", () => {

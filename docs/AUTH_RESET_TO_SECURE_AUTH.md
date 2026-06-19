@@ -25,8 +25,7 @@ Remove competing local auth/account implementation. Keep thin `@tgoliveira/secur
 | Notes | pages, API, crypto-client, services, repositories |
 | Vault | init/status, recovery phrase, trusted devices, passkey PRF envelopes |
 | Vault passkeys | `/api/passkeys/**` recovery registration/authentication |
-| Vault login PRF | `/api/auth/passkey/login/options` PRF enrichment via `passkeyLoginVaultService` |
-| Vault unlock after login | `/api/auth/passkey/login/vault-unlock/options` (product-only) |
+| Vault passkey unlock | Separate signed-in ceremony via `/api/passkeys/authenticate` |
 | Enable vault on account passkey | `/api/account/passkeys/[id]/enable-vault-unlock` via `passkeyVaultEnvelopeService` |
 | Session guards | `src/lib/auth/session.ts` using `secureAuth.getServices().getAuthOptions()` |
 | Crypto | `src/lib/crypto-client/**` |
@@ -53,14 +52,13 @@ Package owns: login, register, OAuth, account passkey sign-in, 2FA, password flo
 |------|-------|
 | Account passkey sign-in | **Package** (`passkeyLoginOptions`, `passkeyLoginVerify`, package `signInWithPasskey`) |
 | Account passkey management (list/register/delete) | **Package** (`passkeysList`, `passkeyRegister`, `passkeyById`) |
-| Vault PRF envelope on login options | **Product** (`passkeyLoginVaultService.enrichLoginOptionsWithVaultPrf`) |
-| Second WebAuthn step for vault unlock token | **Product** (`/api/auth/passkey/login/vault-unlock/options`) |
+| Explicit vault passkey unlock | **Product** (`/api/passkeys/authenticate`, after account sign-in) |
 | Recovery passkey register/authenticate | **Product** (`/api/passkeys/**`, `passkeyService`) |
 | Enable vault unlock on existing account passkey | **Product** (`passkeyVaultEnvelopeService`) |
 
 ### TODO_SECURITY_REVIEW_REQUIRED
 
-- Post-login automatic vault unlock previously lived in `sign-in-with-passkey.ts`. After reset, users unlock via `/vault/unlock` unless a future package hook restores PRF-at-login without a local account passkey client.
+- Account passkey login intentionally does not unlock the vault. Users unlock explicitly from `/vault/unlock` or the vault dock.
 - Package `PasskeySettings` may not surface `vaultUnlockEnabled` / enable-vault-unlock UX; product route remains but settings integration needs UX review.
 - Shared `passkey_credentials` table: package writes sign-in credentials; product writes vault flags/envelopes. Coordinate schema migrations with package `authSchema`.
 

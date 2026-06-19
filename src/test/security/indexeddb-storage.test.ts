@@ -38,7 +38,7 @@ describe("vault client state cleanup", () => {
     const vault = readFileSync(join(process.cwd(), "src/lib/crypto-client/vault.ts"), "utf-8");
     expect(vault).toContain("clearVaultClientState");
     expect(vault).toContain("purgeTrustedDeviceIdb");
-    expect(vault).toContain("clearVaultCoreClientState");
+    expect(vault).toContain('lockVaultSession("logout")');
   });
 });
 

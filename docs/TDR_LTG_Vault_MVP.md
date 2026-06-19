@@ -627,7 +627,7 @@ Markdown editor; note CRUD; encrypted per-note metadata and vault index; categor
 
 ### Phase 3 — Passkey Vault Unlock Completion
 
-Associate passkey with vault; PRF envelope; auto-unlock after compatible passkey login when possible; otherwise signed in + vault locked; UX and tests.
+Associate passkey with vault; PRF envelope; account passkey login leaves the vault locked; explicit passkey vault unlock after authentication; UX and tests.
 
 ### Phase 4 — UX Hardening / Private Usability
 

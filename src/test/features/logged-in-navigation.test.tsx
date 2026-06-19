@@ -53,12 +53,21 @@ vi.mock("@/features/vault/use-vault", () => ({
   })),
 }));
 
-vi.mock("@/lib/crypto-client/vault-session", () => ({
-  subscribeVaultSession: vi.fn(() => () => {}),
-  subscribeVaultActivityTimer: vi.fn(() => () => {}),
-  getVaultAutoLockRemainingMs: vi.fn(() => 14 * 60 * 1000 + 32 * 1000),
-  lockVaultSession: vi.fn(),
-}));
+vi.mock("@/lib/crypto-client/vault-session", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/crypto-client/vault-session")>();
+  return {
+    ...actual,
+    subscribeVaultSession: vi.fn(() => () => {}),
+    subscribeVaultActivityTimer: vi.fn(() => () => {}),
+    getVaultAutoLockRemainingMs: vi.fn(() => 14 * 60 * 1000 + 32 * 1000),
+    lockVaultSession: vi.fn(),
+    lockVaultSessionManually: vi.fn(),
+    registerVaultBeforeAutoLock: vi.fn(() => () => {}),
+    isVaultManuallyLocked: vi.fn(() => false),
+    wasVaultLockedByInactivity: vi.fn(() => false),
+    registerVaultUnloadGuard: vi.fn(() => () => {}),
+  };
+});
 
 describe("logged-in navigation", () => {
   beforeEach(() => {

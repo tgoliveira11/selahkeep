@@ -1,8 +1,10 @@
 export { createUserVaultKey, createUserVaultKey as generateUserVaultKey } from "@tgoliveira/vault-core";
 export {
+  clearVaultCoreClientState,
   getSessionVaultKey,
-  setSessionVaultKey,
-  lockVault,
+  getUserVaultKey,
+  hasUnlockedVaultSession,
   isVaultUnlocked,
-  clearVaultClientState as clearVaultCoreClientState,
-} from "@tgoliveira/vault-core/browser";
+  lockVault,
+  setSessionVaultKey,
+} from "@/lib/crypto-client/vault-session";

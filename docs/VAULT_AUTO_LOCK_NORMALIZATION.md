@@ -28,6 +28,11 @@ Invalid or out-of-range values (below 1 minute or above 24 hours) fall back to 1
 
 Manual sign-out and tab unload call `lockVaultSession()` directly.
 
+Manual lock clears the in-memory User Vault Key and marks the client session as explicitly locked.
+Password, recovery phrase, and passkey unlock flows promote the recovered key through
+`unlockVaultSession()` so the manual-lock flag is cleared and subscribers are notified. After an
+inline unlock, the vault status dock explicitly rechecks its view to avoid showing stale locked UI.
+
 ## Activity detection
 
 `src/features/vault/use-vault-activity.ts` (mounted in `src/app/(vault)/layout.tsx`):

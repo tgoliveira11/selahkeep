@@ -256,9 +256,13 @@ export function VaultStatusDock() {
           loading={vault.loading}
           error={vault.error}
           vaultStatus={serverStatus}
-          onUnlockPassword={(password) => vault.unlockFromVaultPassword(password)}
+          onUnlockPassword={async (password) => {
+            await vault.unlockFromVaultPassword(password);
+            vaultClient.recheck();
+          }}
           onUnlockPasskey={async () => {
             await vault.unlockFromPasskey();
+            vaultClient.recheck();
           }}
         />
         <p className="vault-status-dock-panel__fallback">

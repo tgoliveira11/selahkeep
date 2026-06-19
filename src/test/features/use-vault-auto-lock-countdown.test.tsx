@@ -3,11 +3,21 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { useVaultAutoLockCountdown } from "@/features/vault/use-vault-auto-lock-countdown";
 
-vi.mock("@/lib/crypto-client/vault-session", () => ({
-  getVaultAutoLockRemainingMs: vi.fn(() => 90_000),
-  subscribeVaultActivityTimer: vi.fn(() => () => {}),
-  subscribeVaultSession: vi.fn(() => () => {}),
-}));
+vi.mock("@/lib/crypto-client/vault-session", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/crypto-client/vault-session")>();
+  return {
+    ...actual,
+    subscribeVaultSession: vi.fn(() => () => {}),
+    subscribeVaultActivityTimer: vi.fn(() => () => {}),
+    getVaultAutoLockRemainingMs: vi.fn(() => 90_000),
+    lockVaultSession: vi.fn(),
+    lockVaultSessionManually: vi.fn(),
+    registerVaultBeforeAutoLock: vi.fn(() => () => {}),
+    isVaultManuallyLocked: vi.fn(() => false),
+    wasVaultLockedByInactivity: vi.fn(() => false),
+    registerVaultUnloadGuard: vi.fn(() => () => {}),
+  };
+});
 
 function CountdownProbe({ active }: { active: boolean }) {
   const countdown = useVaultAutoLockCountdown(active);

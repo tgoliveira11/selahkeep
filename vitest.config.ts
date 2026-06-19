@@ -58,10 +58,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "@tgoliveira/secure-auth/react/client": path.resolve(
-        __dirname,
-        "./src/lib/secure-auth/vault-passkey-react-client.ts"
-      ),
       // `@tgoliveira/secure-auth` imports `next/server` from its published ESM dist.
       // Vitest's resolver (Node ESM) may not add the `.js` extension for subpath imports,
       // so we alias to the concrete module file to keep tests hermetic.

@@ -6,9 +6,15 @@ import {
   type KdfMetadata as VaultCoreKdfMetadata,
 } from "@tgoliveira/vault-core";
 import type { EncryptedPayload, KdfMetadata } from "@/lib/validation/encrypted-payload";
-import { unlockVaultSession } from "../../client/vault-session";
-import { setSessionVaultKey } from "../vault-key";
+import {
+  setUnlockedVaultSession,
+  type VaultUnlockMethod,
+} from "@/lib/crypto-client/vault-session";
 import { SELAHKEEP_VAULT_PROFILE } from "../../selahkeep-profile";
+import {
+  isLegacyVaultKeyEnvelope,
+  unwrapLegacyVaultKeyFromPassword,
+} from "./legacy-envelope-unlock";
 
 type WrapOptions = {
   userId: string;
@@ -19,13 +25,8 @@ function asVaultCorePayload(payload: EncryptedPayload): VaultCoreEncryptedPayloa
   return payload as VaultCoreEncryptedPayload;
 }
 
-function applyUnlockedVaultKey(vaultKey: CryptoKey, explicit?: boolean): CryptoKey {
-  if (explicit ?? true) {
-    unlockVaultSession(vaultKey);
-  } else {
-    setSessionVaultKey(vaultKey);
-  }
-  return vaultKey;
+function envelopeScope(userId: string, resourceId?: string) {
+  return { userId, resourceId: resourceId ?? userId };
 }
 
 export async function wrapVaultKeyForPassword(
@@ -49,13 +50,33 @@ export async function unwrapVaultKeyFromPassword(
   vaultPassword: string,
   encryptedVaultKey: EncryptedPayload,
   kdfMetadata: KdfMetadata,
-  options?: { explicit?: boolean }
+  options?: {
+    applySession?: boolean;
+    unlockMethod?: VaultUnlockMethod;
+    userId?: string;
+    resourceId?: string;
+  }
 ): Promise<CryptoKey> {
-  const vaultKey = await unlockWithPasswordEnvelope(vaultPassword, {
-    encryptedVaultKey: asVaultCorePayload(encryptedVaultKey),
-    kdfMetadata: kdfMetadata as VaultCoreKdfMetadata,
-  });
-  return applyUnlockedVaultKey(vaultKey, options?.explicit);
+  const scope = envelopeScope(options?.userId ?? encryptedVaultKey.aad.userId, options?.resourceId);
+  const vaultKey = isLegacyVaultKeyEnvelope(encryptedVaultKey)
+    ? await unwrapLegacyVaultKeyFromPassword(
+        vaultPassword,
+        encryptedVaultKey,
+        kdfMetadata,
+        scope
+      )
+    : await unlockWithPasswordEnvelope(vaultPassword, {
+        encryptedVaultKey: asVaultCorePayload(encryptedVaultKey),
+        kdfMetadata: kdfMetadata as VaultCoreKdfMetadata,
+      });
+
+  if (options?.applySession ?? true) {
+    setUnlockedVaultSession({
+      userVaultKey: vaultKey,
+      method: options?.unlockMethod ?? "password",
+    });
+  }
+  return vaultKey;
 }
 
 export {

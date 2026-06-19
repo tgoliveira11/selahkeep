@@ -39,7 +39,7 @@ Branch at planning time: `update-postforge-public-order-rss` (includes auth-rese
 | **Letters crypto** | `src/lib/crypto-client/letters.ts` | Extend to notes + encrypted title in metadata |
 | **Vault crypto** | `src/lib/crypto-client/vault.ts`, `vault-unlock.ts`, `vault-session.ts` | Vault password envelope; Argon2id-only; vault index |
 | **Recovery** | `src/lib/crypto-client/recovery-code.ts` (17-word custom list, `hash-wasm`) | Replace with 12/24-word recovery **phrase** per TDR |
-| **Passkey vault** | `src/lib/crypto-client/passkey-vault.ts`, `src/server/services/passkey-*` | Align with TDR PRF envelope; post-login auto-unlock UX |
+| **Passkey vault** | `src/lib/crypto-client/passkey-vault.ts`, `src/server/services/passkey-*` | PRF envelope; explicit signed-in vault unlock (current decision) |
 | **Trusted devices** | Removed (`docs/TRUSTED_DEVICES_REMOVAL.md`) | Not in LTG MVP; migration `0011_drop_trusted_devices.sql` |
 | **DB product schema** | `src/lib/db/app-schema.ts` | `letters` → `notes`; `vault_envelopes` → `vault_unlock_envelopes`; add `encrypted_vault_index`; remove plaintext `answered` |
 | **DB auth schema** | `@tgoliveira/secure-auth/drizzle/schema` via `src/lib/secure-auth-db.ts` | Package-owned; do not fork |
@@ -314,7 +314,7 @@ Implement encrypted **notes** (evolving from letters): per-note keys wrapped by 
 
 - Full category/tag CRUD UI (Phase 3 — use placeholders in metadata if needed)
 - Local search UI (Phase 3)
-- Passkey auto-unlock (Phase 4)
+- Passkey vault unlock (Phase 4; now an explicit post-login action)
 - Attachments, version history
 - Autosave (remain disabled per AGENTS.md unless TDR overrides)
 
@@ -512,15 +512,15 @@ Categories (one per note), tags (many per note), answered status in encrypted me
 
 ### 1. Goal
 
-Complete passkey vault unlock for MVP: associate passkey with vault, PRF-based envelope, auto-unlock after compatible passkey login when possible; signed-in + vault locked otherwise.
+Complete passkey vault unlock for MVP: associate passkey with vault and create a PRF-based envelope. Current product decision (2026-06-19): account passkey login and vault unlock are separate explicit actions; the earlier auto-unlock design below is superseded.
 
 ### 2. Scope
 
 - Passkey vault unlock ADR (PRF envelope format, opt-in UX)
 - Integrate with package account passkeys (`PasskeySettings`, `/api/account/passkeys/*`) without modifying package
 - Product route: `POST /api/account/passkeys/[id]/enable-vault-unlock` (exists — align with TDR)
-- PRF in login options: `passkeyLoginVaultService`, `/api/auth/passkey/login/vault-unlock/options`
-- Post-login: package `signInWithPasskey` + product vault unlock step (no local account auth client)
+- Account login options/verify remain pure package delegates
+- Post-login: explicit product vault unlock through `/api/passkeys/authenticate`
 - Fallback messaging: “You are signed in, but your vault is still locked.”
 
 ### 3. Non-goals
@@ -534,9 +534,9 @@ Complete passkey vault unlock for MVP: associate passkey with vault, PRF-based e
 
 | Layer | Paths |
 |-------|-------|
-| **Services** | `src/server/services/passkey-vault-envelope-service.ts`, `passkey-login-vault-service.ts`, `passkey-service.ts` |
+| **Services** | `src/server/services/passkey-vault-envelope-service.ts`, `passkey-service.ts` |
 | **Crypto** | `src/lib/crypto-client/passkey-vault.ts`, `src/lib/passkey/prf.ts`, `prf-support.ts` |
-| **API** | `src/app/api/auth/passkey/login/options/route.ts`, `vault-unlock/options/route.ts`, `enable-vault-unlock/route.ts` |
+| **API** | Package-delegated account login routes, `/api/passkeys/authenticate`, `enable-vault-unlock/route.ts` |
 | **UI** | `src/app/(vault)/settings/account/page.tsx` (passkey + “unlock vault too?”), `src/app/(vault)/vault/unlock/page.tsx` |
 | **Features** | `src/features/passkey/unlock-with-passkey.ts`, `passkey-login-audit.ts` |
 | **Tests** | `src/test/security/passkey-login-vault-unlock.test.ts`, `passkey-login-boundary.test.ts`, `passkey-prf.test.ts` |
@@ -550,15 +550,15 @@ Complete passkey vault unlock for MVP: associate passkey with vault, PRF-based e
 ### 6. API impact
 
 - No change to package `passkeyLoginVerify` contract
-- Product enrichment on login options/verify responses (vault metadata only)
-- Vault unlock options consumes package-issued `loginToken` (read-only `login-token-repository`)
+- No product enrichment on account login options or verify responses
+- Explicit vault unlock uses the authenticated account session
 
 ### 7. UI impact
 
 - Opt-in: “Use this passkey to unlock your vault too?”
 - Account security section: passkey list with vault-unlock status
-- Login success paths: auto-unlock or redirect `/vault/unlock`
-- `sessionStorage` outcome flags (existing pattern in `passkey-login-audit`)
+- Login success leaves the vault locked; the vault UI offers an explicit unlock action
+- No account-login vault outcome flags
 
 ### 8. Security considerations
 
@@ -1339,7 +1339,7 @@ Phase 0 ──► Phase 1 (crypto + vault setup)
 | 3 | Plaintext `answered` column legacy | 3 | Medium |
 | 4 | Encrypted vault index corruption / size | 2–3 | Medium |
 | 5 | Package vs product passkey row coordination | 0, 4 | High |
-| 6 | Post-login vault auto-unlock without local auth shim | 4 | Medium |
+| 6 | Explicit post-login vault unlock without local auth shim | 4 | Medium |
 | 7 | Markdown XSS | 2 | High |
 | 8 | Account deletion cascade incomplete | 5 | High |
 | 9 | TDR vs ADR-002 trusted-device scope drift | 1 | Low (document) |

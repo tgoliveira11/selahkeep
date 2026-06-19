@@ -81,7 +81,7 @@ Production hides `/api-docs` unless `ENABLE_API_DOCS=true` in `.env.local`.
 - **`/vault/settings` → Passkey vault unlock** — enable, test, replace, or disable vault unlock per account passkey (requires unlocked vault + WebAuthn PRF)
 - **`/vault/security`** — vault security review: health summary, protection status, recovery phrase drill (local-only), passkey compatibility, and recent safe vault security events (entry from Vault settings)
 - **`/vault/recovery`** — recovery phrase management; optional link to vault settings for passkey vault unlock
-- **Passkey sign-in** may auto-unlock the vault when a compatible PRF envelope exists; otherwise you remain signed in and are guided to `/vault/unlock`
+- **Passkey sign-in** authenticates the account only. Opening the vault is always a separate explicit action from `/vault/unlock` or the vault dock.
 - Details: [`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`](docs/PASSKEY_LOGIN_VAULT_UNLOCK.md)
 
 Run `npm run db:migrate` after pulling passkey account-auth schema updates (`0005_passkey_account_authentication.sql`).
@@ -299,7 +299,7 @@ All tests run through **Vitest** (`src/test/`). Browser E2E (Playwright) was int
 
 Recent passkey-related coverage includes:
 
-- Passkey login + vault unlock integration (`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`, `src/test/security/passkey-login-vault-unlock.test.ts`)
+- Passkey account-login / vault-unlock separation (`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`, `src/test/security/passkey-login-vault-unlock.test.ts`)
 - PRF salt derivation (`src/test/security/passkey-prf.test.ts`)
 - PRF support pre-check (`src/test/unit/prf-support.test.ts`)
 - Passkey setup UX when PRF unavailable (`src/test/features/passkey-setup.test.tsx`)

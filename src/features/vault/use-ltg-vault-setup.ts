@@ -17,7 +17,7 @@ import {
   assertRecoveryPhraseConfirmation,
   type RecoveryPhraseLength,
 } from "@/lib/crypto-client/recovery-phrase";
-import { unlockVaultSession } from "@/lib/crypto-client/vault-session";
+import { setUnlockedVaultSession } from "@/lib/crypto-client/vault-session";
 import { vaultApi } from "@/lib/api-client/vault";
 import { validatePasswordSetup } from "@tgoliveira/secure-auth/client/password-policy";
 import type { PasswordPolicyConfig } from "@tgoliveira/secure-auth/client/password-policy";
@@ -98,7 +98,7 @@ export function useLtgVaultSetup(vaultPasswordPolicy: PasswordPolicyConfig) {
         ],
       });
 
-      unlockVaultSession(vaultKey);
+      setUnlockedVaultSession({ userVaultKey: vaultKey, method: "password" });
       setStep("saving");
       return vaultKey;
     } catch (e) {

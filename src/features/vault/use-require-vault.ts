@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { isVaultUnlocked } from "@/lib/crypto-client/vault";
+import { hasUnlockedVaultSession } from "@/lib/crypto-client/vault";
 import { purgeTrustedDeviceIdb } from "@/lib/crypto-client/vault-idb-cleanup";
 import {
   isVaultManuallyLocked,
+  setUnlockedVaultSession,
   subscribeVaultSession,
-  unlockVaultSession,
 } from "@/lib/crypto-client/vault-session";
 import { applyUnlockBehavior, clearNoteBodyCache } from "@/features/notes/eager-decrypt-notes";
 
@@ -74,7 +74,7 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
         return;
       }
 
-      const vaultUnlocked = isVaultUnlocked();
+      const vaultUnlocked = hasUnlockedVaultSession();
 
       if (!cancelled) {
         setReadyState({ status: "ready", userId, vaultUnlocked });
@@ -113,5 +113,5 @@ export function useRequireVault(): VaultGateState & { recheckVault: () => void }
 
 /** Call after generating a new vault key during first-time setup. */
 export function rememberVaultKey(vaultKey: CryptoKey): void {
-  unlockVaultSession(vaultKey);
+  setUnlockedVaultSession({ userVaultKey: vaultKey, method: "password" });
 }
