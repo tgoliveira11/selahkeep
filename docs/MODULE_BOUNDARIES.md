@@ -56,4 +56,4 @@ Shims under `src/server/services` and `src/lib/*` re-export from `src/modules/*`
 
 ## Historical modularization ADR
 
-`docs/archive/adr/ADR-004_Modularization_and_Reusability_Strategy.md` — archived; boundaries above reflect current SelahKeep state.
+Modularization strategy is reflected in this document and `ARCHITECTURE.md` (historical ADR-004 removed from the repo).

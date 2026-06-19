@@ -14,8 +14,6 @@ Read and follow these documents before implementing:
 - `docs/AUTH_RESET_TO_SECURE_AUTH.md` — auth boundary (`@tgoliveira/secure-auth`)
 - `docs/README.md` — documentation index
 
-**Historical docs** (do not treat as active): `docs/archive/**`
-
 ## Core Rule
 
 **Never implement a backend path that receives or stores plaintext private note title/body/metadata.**

@@ -73,8 +73,14 @@ Residual risk: a malicious script running on this origin (XSS) or compromised br
 - Category and tag **names** live only in the encrypted vault index (v3); never in database columns or API plaintext fields.
 - Note lifecycle fields (`pinned`, `favorite`, `archived`, `trashed`, `trashedAt`) live only in encrypted note metadata and vault index — not in database columns.
 - Answered status is stored only in encrypted note metadata and vault index — not in database columns.
-- **Search and filters** run client-side in memory after vault unlock; there is no server search endpoint and queries never leave the browser. Full-text body search (Track 4) decrypts bodies in memory only while a query is active; snippets and highlights are never persisted. See `docs/SEARCH_AND_DISCOVERY_TRACK_4_IMPLEMENTATION.md`.
-- **Reflective workflows** (Track 5): `resolvedReflection`, `lifecycleEvents`, and prompt text stay in encrypted note metadata only; vault index mirrors `hasResolvedReflection` and `resolvedAt` for list views — no reflection plaintext on server. Remembrance and weekly reflection aggregate decrypted index client-side. No AI. See `docs/REFLECTIVE_SPIRITUAL_WORKFLOWS_TRACK_5_IMPLEMENTATION.md`.
+- **Search and filters** run client-side in memory after vault unlock; there is no server search endpoint and queries never leave the browser. Full-text body search decrypts bodies in memory only while a query is active; snippets and highlights are never persisted.
+
+```text
+TODO_SECURITY_REVIEW_REQUIRED:
+Encrypted persistent search index is deferred. Current search uses in-memory decrypted notes after vault unlock only.
+```
+
+- **Reflective workflows:** `resolvedReflection`, `lifecycleEvents`, and prompt text stay in encrypted note metadata only; vault index mirrors `hasResolvedReflection` and `resolvedAt` for list views — no reflection plaintext on server. Remembrance and weekly reflection aggregate decrypted index client-side. No AI.
 - **Note titles** are required on create in the UI; title text remains in encrypted metadata only.
 - **Tags** are normalized before storage (`src/lib/notes/tag-normalization.ts`, max length **32**); `#` is display-only.
 - **Answered** defaults to `false` on create; only editable on note detail/edit.

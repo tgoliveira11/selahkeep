@@ -14,8 +14,6 @@ const forbiddenPatterns = [
 ];
 
 const allowedPathFragments = [
-  `${path.sep}docs${path.sep}archive${path.sep}`,
-  "TRUSTED_DEVICES_ASSESSMENT.md",
   "TRUSTED_DEVICES_REMOVAL.md",
   "no-old-branding.test.ts",
   "brand.ts",

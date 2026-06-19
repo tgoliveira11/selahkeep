@@ -25,6 +25,6 @@ describe("phased plan priority tracks", () => {
     expect(plan).toMatch(/Remembrance Mode/);
     expect(plan).toMatch(/Weekly Reflection/);
     expect(plan).toMatch(/Prompt Cards/);
-    expect(plan).toMatch(/REFLECTIVE_SPIRITUAL_WORKFLOWS_TRACK_5_IMPLEMENTATION/);
+    expect(plan).toMatch(/Mostly complete/i);
   });
 });

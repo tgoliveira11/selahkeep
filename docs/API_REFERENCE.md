@@ -93,7 +93,7 @@ vault setup (`POST /api/vault/setup`) always creates a `recovery_phrase` envelop
 
 `POST /api/vault/recovery-phrase` atomically revokes the previous active `recovery_phrase` envelope and creates a new one. Legacy `POST /api/recovery-code` remains for older `recovery_code` envelopes only; SelahKeep `/vault/recovery` does not generate new recovery codes.
 
-See `docs/VAULT_RECOVERY_FLOW_AUDIT.md`.
+See `docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md` and `SECURITY.md`.
 
 ### Email verification and account passwords
 

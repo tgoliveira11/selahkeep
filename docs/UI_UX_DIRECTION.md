@@ -394,7 +394,7 @@ Use `AuthenticatedPage` for authenticated routes. Avoid floating controls outsid
 
 Use **SelahKeep**, **private notes**, **recovery phrase**, **vault password**.
 
-Do **not** use deprecated product branding, legacy domain language, or removed features in active UI (see [`UI_UX_SCREEN_AUDIT.md`](./UI_UX_SCREEN_AUDIT.md)).
+Do **not** use deprecated product branding, legacy domain language, or removed features in active UI.
 
 ---
 
@@ -402,7 +402,7 @@ Do **not** use deprecated product branding, legacy domain language, or removed f
 
 **In Phase 1:** tokens, vault setup/unlock, light marketing copy toward “vault” language.
 
-**Track 3 (complete):** pin, favorite, archive, trash/restore/permanent delete, smart local filters, encrypted saved views, cards/list view, duplicate note. `/notes` list controls (search, sort, view, count) share one region with consistent visibility. See `docs/NOTE_ORGANIZATION_LIFECYCLE_TRACK_3_IMPLEMENTATION.md`.
+**Track 3 (complete):** pin, favorite, archive, trash/restore/permanent delete, smart local filters, encrypted saved views, cards/list view, duplicate note. `/notes` list controls (search, sort, view, count) share one region with consistent visibility.
 
 **Phase 3 (complete):** notes list search/filters, category picker, tag chips, answered badge, `/vault/settings` unlock behavior (`metadata_only` vs `decrypt_all`).
 

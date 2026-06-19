@@ -15,10 +15,7 @@ describe("notes search security", () => {
   });
 
   it("documents deferred encrypted persistent search index", () => {
-    const doc = readFileSync(
-      path.join(root, "docs/SEARCH_AND_DISCOVERY_TRACK_4_IMPLEMENTATION.md"),
-      "utf8"
-    );
+    const doc = readFileSync(path.join(root, "SECURITY.md"), "utf8");
     expect(doc).toMatch(/TODO_SECURITY_REVIEW_REQUIRED/);
     expect(doc).toMatch(/in-memory/i);
   });

@@ -100,7 +100,7 @@ const FORBIDDEN: ForbiddenRule[] = [
 
 function findViolations(filePath: string): string[] {
   const rel = relative(ROOT, filePath);
-  if (rel.startsWith("docs/archive/") || rel === "docs/LTG_VAULT_IMPLEMENTATION_PLAN.md") return [];
+  if (rel === "docs/LTG_VAULT_IMPLEMENTATION_PLAN.md") return [];
 
   const lines = readFileSync(filePath, "utf8").split("\n");
   const violations: string[] = [];
@@ -143,7 +143,6 @@ describe("documentation current state", () => {
     const index = readFileSync(join(ROOT, "docs/README.md"), "utf8");
     expect(index).toContain("TDR_LTG_Vault_MVP.md");
     expect(index).toContain("ADR-005");
-    expect(index).toContain("archive/");
     expect(index).not.toContain("docs/ADR-001_");
   });
 });

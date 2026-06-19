@@ -132,10 +132,10 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 - **Vault setup:** `/vault/setup` — `PasswordSetupFields` (secure-auth) + BIP39 recovery phrase wizard; policy from `src/lib/config/vault-password-policy.ts`
 - **Recovery management:** `/vault/recovery` — status-gated recovery phrase replace (no initial phrase generation post-setup); link to `/vault/settings` for optional passkey vault unlock
 - **Passkey vault unlock:** `/vault/settings` — `PasskeyVaultUnlockSetup`; PRF diagnostics in `src/lib/passkey/passkey-prf-diagnostics.ts`
-- **Vault security review:** `/vault/security` — health summary, protection indicators, local recovery phrase drill (`verifyRecoveryPhraseDrill`), passkey compatibility guide, safe audit event log (`GET/POST /api/vault/security-events`); see `docs/VAULT_SECURITY_REVIEW_IMPLEMENTATION.md`
+- **Vault security review:** `/vault/security` — health summary, protection indicators, local recovery phrase drill (`verifyRecoveryPhraseDrill`), passkey compatibility guide, safe audit event log (`GET/POST /api/vault/security-events`)
 - **Vault unlock:** `VaultDockQuickUnlock` in `VaultStatusDock` (vault password + passkey PRF when available); full `LtgVaultUnlockPanel` on `/vault/unlock` (password, recovery phrase, passkey PRF). Dock links to full page for recovery/fallback; no duplicate unlock form on `/vault/unlock`. Collapsed handle shows `Vault` or countdown; expanded open state is compact with **Lock now**; auto-collapse via `useVaultDockDismiss`.
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + **purple** primary)
-- **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview; visual note editor (Tiptap) with Markdown canonical storage — see [`docs/EDITOR_EXPERIENCE_TRACK_2_IMPLEMENTATION.md`](./docs/EDITOR_EXPERIENCE_TRACK_2_IMPLEMENTATION.md); encrypted IndexedDB drafts; quick insert, focus mode, daily note; tag normalization before encrypted index write
+- **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview; visual note editor (Tiptap) with Markdown canonical storage — see [`docs/EDITOR_IMPLEMENTATION_DECISION.md`](./docs/EDITOR_IMPLEMENTATION_DECISION.md); encrypted IndexedDB drafts; quick insert, focus mode, daily note; tag normalization before encrypted index write
 
 ## AAD binding (ADR-005)
 

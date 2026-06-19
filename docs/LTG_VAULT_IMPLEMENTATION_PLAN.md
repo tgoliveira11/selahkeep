@@ -743,7 +743,7 @@ Future enhancements should follow these principles:
 
 ### Priority Track 1 — Security, Recovery, and Trust
 
-**Track status:** **Mostly complete** on `main` (2026-06-16) — vault security review shipped at `/vault/security`. See `docs/VAULT_SECURITY_REVIEW_IMPLEMENTATION.md`.
+**Track status:** **Mostly complete** on `main` (2026-06-16) — vault security review shipped at `/vault/security`.
 
 | Item | Status | Notes |
 |------|--------|-------|
@@ -847,7 +847,7 @@ CTA: **Manage passkey vault unlock** → `/vault/settings`.
 
 ### Priority Track 2 — Writing Experience and Editor Quality
 
-**Track status:** **Mostly complete** on `main` (2026-06-16). See `docs/EDITOR_EXPERIENCE_TRACK_2_IMPLEMENTATION.md`.
+**Track status:** **Mostly complete** on `main` (2026-06-16). See `docs/EDITOR_IMPLEMENTATION_DECISION.md`.
 
 | Item | Status | Notes |
 |------|--------|-------|
@@ -893,7 +893,7 @@ Distraction-free toggle hides non-essential chrome; save/status and vault dock r
 
 ### Priority Track 3 — Organization, Views, and Note Lifecycle ✅
 
-These items help users manage a growing vault. See `docs/NOTE_ORGANIZATION_LIFECYCLE_TRACK_3_IMPLEMENTATION.md`.
+These items help users manage a growing vault. Implemented on `main` — see `SECURITY.md` and `docs/UI_UX_DIRECTION.md`.
 
 #### Pinned Notes ✅
 
@@ -968,7 +968,7 @@ The duplicated note should receive a new Note Key and a new encrypted note body/
 
 ### Priority Track 4 — Search and Discovery ✅
 
-These items increase usefulness once users have many notes. See `docs/SEARCH_AND_DISCOVERY_TRACK_4_IMPLEMENTATION.md`.
+These items increase usefulness once users have many notes. Implemented on `main` — see `SECURITY.md` (client-side search).
 
 #### Local Full-Text Search After Unlock ✅
 
@@ -1014,7 +1014,7 @@ If persisted, the recently viewed list must be encrypted because it may reveal s
 
 ### Priority Track 5 — Reflective and Spiritual Workflows ✅
 
-These features give SelahKeep a stronger product identity beyond generic notes. See `docs/REFLECTIVE_SPIRITUAL_WORKFLOWS_TRACK_5_IMPLEMENTATION.md`.
+These features give SelahKeep a stronger product identity beyond generic notes. Implemented on `main` — see `SECURITY.md` (reflective workflows).
 
 **Status:** Implemented (2026-06-18).
 
@@ -1376,7 +1376,8 @@ Phase 0 ──► Phase 1 (crypto + vault setup)
 | [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./AUTH_RESET_TO_SECURE_AUTH.md) | Phase 0 auth boundary |
 | [`docs/ADR-005_*`](./ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md) | Active vault crypto |
 | [`docs/ADR-006_*`](./ADR-006_LTG_Vault_Passkey_PRF_Unlock.md) | Active passkey PRF unlock |
-| [`docs/archive/adr/`](./archive/adr/) | Historical ADR-001–004 |
+| [`docs/ADR-005_*`](./ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md) | Active vault crypto ADR |
+| [`docs/ADR-006_*`](./ADR-006_LTG_Vault_Passkey_PRF_Unlock.md) | Active passkey PRF ADR |
 | [`docs/README.md`](./README.md) | Documentation index |
 | `AGENTS.md` | Agent workflow + test thresholds |
 

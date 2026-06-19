@@ -419,8 +419,8 @@ describe("UI/UX documentation guards", () => {
     }
   });
 
-  it("UI_UX_SCREEN_AUDIT exists", () => {
-    expect(existsSync(path.join(docsRoot, "UI_UX_SCREEN_AUDIT.md"))).toBe(true);
+  it("UI_UX_DIRECTION exists", () => {
+    expect(existsSync(path.join(docsRoot, "UI_UX_DIRECTION.md"))).toBe(true);
   });
 });
 

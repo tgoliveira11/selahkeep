@@ -43,10 +43,7 @@ describe("reflective workflows security", () => {
   });
 
   it("documents track 5 local-only guarantees", () => {
-    const doc = readFileSync(
-      path.join(root, "docs/REFLECTIVE_SPIRITUAL_WORKFLOWS_TRACK_5_IMPLEMENTATION.md"),
-      "utf8"
-    );
+    const doc = readFileSync(path.join(root, "SECURITY.md"), "utf8");
     expect(doc).toMatch(/No AI/i);
     expect(doc).toMatch(/encrypted note metadata/i);
   });

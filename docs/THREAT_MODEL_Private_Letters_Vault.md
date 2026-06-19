@@ -40,7 +40,7 @@ SelahKeep uses **client-side encryption**. Note title, body, categories, and tag
 | Session invalidation on password change | `password_updated_at` compared to JWT `iat`; sessions issued before update invalidated |
 | Account session management | Server-side `account_sessions` with JWT `sid`; revocation enforced in JWT callback; masked IP display; sessions ≠ vault unlock |
 
-**Historical:** Trusted devices were removed from the product. See `docs/TRUSTED_DEVICES_REMOVAL.md` and `docs/TRUSTED_DEVICES_ASSESSMENT.md`.
+**Historical:** Trusted devices were removed from the product. See `docs/TRUSTED_DEVICES_REMOVAL.md`.
 
 ---
 

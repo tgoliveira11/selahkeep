@@ -103,8 +103,6 @@ On next app load, `src/lib/crypto-client/vault-idb-cleanup.ts` opens IndexedDB `
 Active docs no longer describe trusted devices as a product feature. Historical context remains in:
 
 - `docs/TRUSTED_DEVICES_REMOVAL.md` (this file)
-- `docs/TRUSTED_DEVICES_ASSESSMENT.md`
-- `docs/archive/**`
 
 Updated: `ARCHITECTURE.md`, `SECURITY.md`, `README.md`, `docs/API_REFERENCE.md`, `docs/openapi.yaml`, `docs/MODULE_BOUNDARIES.md`, `docs/LOGGED_IN_NAVIGATION_AUDIT.md`, `docs/UI_UX_DIRECTION.md`, `docs/TDR_LTG_Vault_MVP.md`, `docs/LTG_VAULT_IMPLEMENTATION_PLAN.md`, `docs/VERCEL_ENVIRONMENT_VARIABLES.md`, `.env.example`, `.cursor/rules/testing.md`.
 

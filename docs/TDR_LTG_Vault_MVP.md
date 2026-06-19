@@ -760,10 +760,8 @@ This preserves emotional/spiritual identity while making the product more useful
 
 | Document | Role |
 |----------|------|
-| `docs/archive/TDR_Private_Letters_Vault_MVP_Revised.md` | Historical letters-only TDR (archived) |
 | `docs/ADR-005_*` | Active vault crypto, note keys, recovery phrase |
 | `docs/ADR-006_*` | Active passkey PRF vault unlock |
-| `docs/archive/adr/ADR-001` … `ADR-004` | Historical ADRs (archived) |
 | `docs/AUTH_RESET_TO_SECURE_AUTH.md` | Auth boundary with secure-auth |
 | `docs/LTG_VAULT_IMPLEMENTATION_PLAN.md` | Engineering phased plan (Phases 0–5 complete) |
 | `docs/README.md` | Documentation index |

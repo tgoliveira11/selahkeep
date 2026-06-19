@@ -7,4 +7,3 @@
 - Vault unlock gate before decrypted note content.
 - Markdown preview must be sanitized (DOMPurify).
 - Auth UI from `@tgoliveira/secure-auth/react` — do not fork package internals.
-- Historical UI audits archived under `docs/archive/`.
