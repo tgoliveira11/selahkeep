@@ -30,7 +30,7 @@ Local `drizzle-kit` (`npm run db:migrate`) reads `DATABASE_URL` from `.env.local
 | `DATABASE_URL` | **Required** | Production, Preview | `postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require` | `src/lib/db/*`, Drizzle, `@tgoliveira/secure-auth` | PostgreSQL connection | Use a managed Postgres (Neon, Supabase, RDS, etc.). Run migrations before or as part of deploy (`npm run db:migrate`). |
 | `NEXTAUTH_SECRET` | **Required** | Production, Preview | `<generated-secret>` | `buildSecureAuthConfigFromEnv`, `src/proxy.ts`, session/login hashing | NextAuth JWT signing and app security peppers | Generate: `openssl rand -base64 32`. No `AUTH_SECRET` variable is used in this repo. |
 | `TWO_FACTOR_SECRET_ENCRYPTION_KEY` | **Required** | Production, Preview | `<generated-secret>` | `buildSecureAuthConfigFromEnv`, TOTP/backup-code crypto | Encrypt TOTP secrets at rest | Generate: `openssl rand -base64 32`. Required even if no user enables 2FA — `secureAuth` fails to initialize without it. Key is SHA-256 hashed before use (any non-empty string works; use a strong random value). |
-| `APP_BASE_URL` | **Required** | Production, Preview | `https://selahkeep.com` | `buildSecureAuthConfigFromEnv`, email links, OAuth redirects | Canonical public origin (no trailing slash) | Must match the browser URL users visit. Wrong value breaks email links, OAuth callbacks, and WebAuthn. Legacy fallback: `NEXTAUTH_URL`. Default if unset: `http://localhost:3001` (wrong for Vercel). |
+| `APP_BASE_URL` | **Required** | Production, Preview | `https://www.selahkeep.com` | `buildSecureAuthConfigFromEnv`, email links, OAuth redirects | Canonical public origin (no trailing slash) | Must match the browser URL users visit. Wrong value breaks email links, OAuth callbacks, and WebAuthn. Legacy fallback: `NEXTAUTH_URL`. Default if unset: `http://localhost:3001` (wrong for Vercel). |
 | `EMAIL_PROVIDER` | **Required** (not `console`) | Production | `smtp` | `src/modules/email/core/*` | Email delivery mode | **`Do not use `EMAIL_PROVIDER=console` in production.** Console only logs; no delivery. `resend` and `sendgrid` are recognized but **not implemented** — use `smtp`. |
 | `EMAIL_FROM` | **Required** when `EMAIL_PROVIDER≠console` | Production, Preview | `SelahKeep <noreply@selahkeep.com>` | `secureAuth` email config, `sendEmail()` | SMTP From header | Required for non-console providers (`assertEmailDeliveryConfig`). |
 
@@ -58,7 +58,7 @@ Local `drizzle-kit` (`npm run db:migrate`) reads `DATABASE_URL` from `.env.local
 **Callback URL (production example):**
 
 ```text
-https://selahkeep.com/api/auth/callback/google
+https://www.selahkeep.com/api/auth/callback/google
 ```
 
 ### Apple OAuth
@@ -71,7 +71,7 @@ https://selahkeep.com/api/auth/callback/google
 **Callback URL (production example):**
 
 ```text
-https://selahkeep.com/api/auth/callback/apple
+https://www.selahkeep.com/api/auth/callback/apple
 ```
 
 ### Microsoft OAuth (Entra ID / Azure AD)
@@ -85,7 +85,7 @@ https://selahkeep.com/api/auth/callback/apple
 **Callback URL (production example)** — NextAuth provider ID is `azure-ad`, **not** `microsoft`:
 
 ```text
-https://selahkeep.com/api/auth/callback/azure-ad
+https://www.selahkeep.com/api/auth/callback/azure-ad
 ```
 
 Register as a **Web** platform redirect URI in Microsoft Entra (not SPA-only).
@@ -94,24 +94,24 @@ Register as a **Web** platform redirect URI in Microsoft Entra (not SPA-only).
 
 | Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
 |----------|-----------|--------------|---------------|---------|---------|-------|
-| `APP_BASE_URL` | **Required** | Production, Preview | `https://selahkeep.com` | WebAuthn origin fallback | Canonical site URL | **Must match the hostname in your browser address bar.** If you open a custom domain, all WebAuthn vars must use that domain — not the `.vercel.app` hostname. |
+| `APP_BASE_URL` | **Required** | Production, Preview | `https://www.selahkeep.com` | WebAuthn origin fallback | Canonical site URL | **Must match the hostname in your browser address bar.** The apex domain redirects to `www`, so production must use the `www` origin. |
 | `WEBAUTHN_RP_ID` | Optional | Production, Preview | `selahkeep.com` | secure-auth, passkeys | Relying party ID | Hostname only (no `https://`). When unset, derived from `WEBAUTHN_ORIGIN` / `APP_BASE_URL`. **Must match the site you visit** (or be a parent domain, e.g. `example.com` for `www.example.com`). |
-| `WEBAUTHN_ORIGIN` | Optional | Production, Preview | `https://selahkeep.com` | secure-auth, passkeys | WebAuthn origin | Full origin with scheme, no trailing slash. Defaults to `APP_BASE_URL`. |
+| `WEBAUTHN_ORIGIN` | Optional | Production, Preview | `https://www.selahkeep.com` | secure-auth, passkeys | WebAuthn origin | Full origin with scheme, no trailing slash. Defaults to `APP_BASE_URL`. |
 | `WEBAUTHN_RP_NAME` | Optional | Production, Preview | `SelahKeep` | passkey UI | Display name | Default `APP_NAME`. |
 
-**Common mistake:** `WEBAUTHN_RP_ID=selahkeep.com` while browsing `https://selahkeep.com` (or a Vercel preview URL like `https://letter-to-god-git-main-….vercel.app`). WebAuthn rejects that with *“The RP ID … is invalid for this domain”*.
+**Common mistake:** configuring `WEBAUTHN_ORIGIN=https://selahkeep.com` while the apex domain redirects users to `https://www.selahkeep.com`. WebAuthn origin verification is exact and rejects the `www` ceremony response. `WEBAUTHN_RP_ID=selahkeep.com` remains correct because an RP ID may be the registrable parent domain.
 
 **Fix:** Set all of these to the **same host you actually use**:
 
 ```text
 # Custom domain example
-APP_BASE_URL=https://selahkeep.com
-WEBAUTHN_ORIGIN=https://selahkeep.com
+APP_BASE_URL=https://www.selahkeep.com
+WEBAUTHN_ORIGIN=https://www.selahkeep.com
 WEBAUTHN_RP_ID=selahkeep.com
 
 # Default Vercel domain example (only if users open this URL)
-APP_BASE_URL=https://selahkeep.com
-WEBAUTHN_ORIGIN=https://selahkeep.com
+APP_BASE_URL=https://www.selahkeep.com
+WEBAUTHN_ORIGIN=https://www.selahkeep.com
 WEBAUTHN_RP_ID=selahkeep.com
 ```
 
@@ -237,9 +237,9 @@ Replace the host with your production domain (example: `selahkeep.com`):
 
 | Provider | Callback path |
 |----------|----------------|
-| Google | `https://selahkeep.com/api/auth/callback/google` |
-| Apple | `https://selahkeep.com/api/auth/callback/apple` |
-| Microsoft (Entra) | `https://selahkeep.com/api/auth/callback/azure-ad` |
+| Google | `https://www.selahkeep.com/api/auth/callback/google` |
+| Apple | `https://www.selahkeep.com/api/auth/callback/apple` |
+| Microsoft (Entra) | `https://www.selahkeep.com/api/auth/callback/azure-ad` |
 
 For **Preview** deployments, register preview URLs in each provider console or use separate OAuth apps for staging.
 
@@ -251,7 +251,7 @@ For **Preview** deployments, register preview URLs in each provider console or u
 DATABASE_URL=<postgresql-connection-string>
 NEXTAUTH_SECRET=<openssl rand -base64 32>
 TWO_FACTOR_SECRET_ENCRYPTION_KEY=<openssl rand -base64 32>
-APP_BASE_URL=https://selahkeep.com
+APP_BASE_URL=https://www.selahkeep.com
 EMAIL_PROVIDER=smtp
 EMAIL_FROM=SelahKeep <noreply@selahkeep.com>
 SMTP_HOST=<smtp-host>
@@ -260,7 +260,7 @@ SMTP_SECURE=false
 SMTP_USER=<smtp-user>
 SMTP_PASSWORD=<smtp-password>
 WEBAUTHN_RP_ID=selahkeep.com
-WEBAUTHN_ORIGIN=https://selahkeep.com
+WEBAUTHN_ORIGIN=https://www.selahkeep.com
 AUTH_RATE_LIMIT_STORE=postgres
 RATE_LIMIT_STORE=postgres
 ```
@@ -278,7 +278,7 @@ Add OAuth variables only for providers you enable. Run database migrations again
 | No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.1.25` from npm registry |
 | Private registry | Public npm scope `@tgoliveira` — no extra `.npmrc` required for Vercel |
 | Local `npm run build` | Passes |
-| Production domain (example) | `https://selahkeep.com` |
+| Production domain | `https://www.selahkeep.com` |
 | Package health | `GET /api/auth/package-health` → `version: 0.1.25` |
 | Production deploy validated | **Not re-run in this phase** — redeploy after env review |
 
@@ -289,7 +289,7 @@ Add OAuth variables only for providers you enable. Run database migrations again
 After deploy:
 
 ```bash
-curl https://selahkeep.com/api/auth/package-health
+curl https://www.selahkeep.com/api/auth/package-health
 ```
 
 Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.25" }` when runtime secrets and DB are configured.
@@ -308,7 +308,7 @@ Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.25" 
 
 | Topic | Notes |
 |-------|-------|
-| Production domain | Example `https://selahkeep.com` is from deployment guidance; confirm the live custom domain in Vercel → Domains. |
+| Production domain | `https://www.selahkeep.com`; the apex domain redirects to this canonical host. |
 | Preview `APP_BASE_URL` | Must match each preview URL or auth/email/passkeys will break unless you use a fixed staging domain. |
 | `resend` / `sendgrid` | Listed in `EmailProvider` type but throw at runtime — **not supported** yet. |
 | Apple Sign In | Only `AUTH_APPLE_CLIENT_ID` + `AUTH_APPLE_CLIENT_SECRET` are wired; generating the Apple JWT secret is external to this repo. |
