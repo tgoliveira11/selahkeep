@@ -3,6 +3,7 @@ import {
   noteVersionService,
   NotFoundError,
   AadValidationError,
+  VersionsUnavailableError,
 } from "@/server/services/note-version-service";
 import { createNoteVersionInput, NOTE_ID, USER_ID, VERSION_ID } from "@/test/helpers/fixtures";
 
@@ -131,5 +132,31 @@ describe("note version service", () => {
     await expect(
       noteVersionService.getById(NOTE_ID, VERSION_ID, USER_ID)
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("list degrades to [] when the note_versions table is missing (42P01)", async () => {
+    mocks.findByNoteId.mockRejectedValue({ code: "42P01" });
+    await expect(noteVersionService.list(NOTE_ID, USER_ID)).resolves.toEqual([]);
+  });
+
+  it("create throws VersionsUnavailableError when the table is missing", async () => {
+    mocks.maxVersionNumber.mockRejectedValue(
+      Object.assign(new Error('relation "note_versions" does not exist'), { code: "42P01" })
+    );
+    await expect(
+      noteVersionService.create(NOTE_ID, USER_ID, createNoteVersionInput())
+    ).rejects.toBeInstanceOf(VersionsUnavailableError);
+  });
+
+  it("getById maps a missing table to NotFoundError", async () => {
+    mocks.findByIdForNote.mockRejectedValue({ code: "42P01" });
+    await expect(
+      noteVersionService.getById(NOTE_ID, VERSION_ID, USER_ID)
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("rethrows unexpected repository errors", async () => {
+    mocks.findByNoteId.mockRejectedValue(new Error("boom"));
+    await expect(noteVersionService.list(NOTE_ID, USER_ID)).rejects.toThrow("boom");
   });
 });

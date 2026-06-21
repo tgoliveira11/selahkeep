@@ -34,6 +34,9 @@ export function apiError(error: unknown, endpoint: string) {
     if (named.name === "ReauthenticationRequiredError") {
       return NextResponse.json({ error: named.message }, { status: 401 });
     }
+    if (named.name === "VersionsUnavailableError") {
+      return NextResponse.json({ error: named.message }, { status: 503 });
+    }
   }
   safeLogger.error("API error", { endpoint, error: error instanceof Error ? error.message : "unknown" });
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });

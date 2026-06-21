@@ -26,6 +26,9 @@ vi.mock("@/server/services/note-version-service", () => ({
   NotFoundError: class NotFoundError extends Error {
     name = "NotFoundError";
   },
+  VersionsUnavailableError: class VersionsUnavailableError extends Error {
+    name = "VersionsUnavailableError";
+  },
 }));
 
 function jsonRequest(body: unknown, method = "POST") {
@@ -77,6 +80,17 @@ describe("note versions API route", () => {
     });
     expect(res.status).toBe(200);
     expect(mocks.getById).toHaveBeenCalledWith(NOTE_ID, VERSION_ID, USER_ID);
+  });
+
+  it("POST returns 503 when the versions table is unavailable", async () => {
+    const { VersionsUnavailableError } = await import(
+      "@/server/services/note-version-service"
+    );
+    mocks.create.mockRejectedValue(new VersionsUnavailableError("unavailable"));
+    const res = await POST(jsonRequest(createNoteVersionInput()), {
+      params: Promise.resolve({ id: NOTE_ID }),
+    });
+    expect(res.status).toBe(503);
   });
 
   it("GET one version returns 404 when missing", async () => {
