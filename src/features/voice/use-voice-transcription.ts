@@ -20,6 +20,9 @@ export type VoiceStatus = "idle" | "recording" | "processing" | "ready" | "error
 const PARTIAL_INTERVAL_MS = 2500;
 /** Minimum recorded duration before the first partial pass runs. */
 const MIN_PARTIAL_SECONDS = 0.6;
+/** Same-origin AudioWorklet module that captures raw PCM off the main thread. */
+const CAPTURE_WORKLET_URL = "/worklets/audio-capture-worklet.js";
+const CAPTURE_WORKLET_NAME = "audio-capture";
 
 interface UseVoiceTranscriptionResult {
   supported: boolean;
@@ -48,6 +51,7 @@ function isSupported(): boolean {
   return (
     typeof window !== "undefined" &&
     typeof Worker !== "undefined" &&
+    typeof AudioWorkletNode !== "undefined" &&
     typeof navigator !== "undefined" &&
     !!navigator.mediaDevices?.getUserMedia &&
     getAudioContextCtor() !== null
@@ -64,7 +68,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
   const workerRef = useRef<Worker | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const captureNodeRef = useRef<AudioWorkletNode | null>(null);
   const silentRef = useRef<GainNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const pcmRef = useRef<Float32Array[]>([]);
@@ -150,10 +154,15 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    if (processorRef.current) {
-      processorRef.current.onaudioprocess = null;
+    if (captureNodeRef.current) {
+      captureNodeRef.current.port.onmessage = null;
       try {
-        processorRef.current.disconnect();
+        captureNodeRef.current.port.close();
+      } catch {
+        /* already closed */
+      }
+      try {
+        captureNodeRef.current.disconnect();
       } catch {
         /* already disconnected */
       }
@@ -170,7 +179,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
     }
     streamRef.current?.getTracks().forEach((track) => track.stop());
     const ctx = ctxRef.current;
-    processorRef.current = null;
+    captureNodeRef.current = null;
     sourceRef.current = null;
     silentRef.current = null;
     streamRef.current = null;
@@ -204,20 +213,27 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
         ctxRef.current = ctx;
         sampleRateRef.current = ctx.sampleRate || WHISPER_SAMPLE_RATE;
 
+        // Capture raw PCM off the main thread via an AudioWorklet.
+        await ctx.audioWorklet.addModule(CAPTURE_WORKLET_URL);
+
         const source = ctx.createMediaStreamSource(stream);
         sourceRef.current = source;
-        const processor = ctx.createScriptProcessor(4096, 1, 1);
-        processorRef.current = processor;
-        processor.onaudioprocess = (event: AudioProcessingEvent) => {
-          const channel = event.inputBuffer.getChannelData(0);
-          pcmRef.current.push(new Float32Array(channel));
+        const captureNode = new AudioWorkletNode(ctx, CAPTURE_WORKLET_NAME, {
+          numberOfInputs: 1,
+          numberOfOutputs: 1,
+          channelCount: 1,
+        });
+        captureNodeRef.current = captureNode;
+        captureNode.port.onmessage = (event: MessageEvent<Float32Array>) => {
+          pcmRef.current.push(new Float32Array(event.data));
         };
-        // Route through a muted gain node so capture runs without audible echo.
+        // Route through a muted gain node so the graph keeps pulling audio
+        // without any audible echo.
         const silent = ctx.createGain();
         silent.gain.value = 0;
         silentRef.current = silent;
-        source.connect(processor);
-        processor.connect(silent);
+        source.connect(captureNode);
+        captureNode.connect(silent);
         silent.connect(ctx.destination);
 
         ensureWorker();

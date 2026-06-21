@@ -3,25 +3,30 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { VoiceCapturePanel } from "@/features/voice/voice-capture-panel";
 
-interface FakeProcessor {
-  onaudioprocess: ((e: { inputBuffer: { getChannelData: () => Float32Array } }) => void) | null;
-  connect: () => void;
-  disconnect: () => void;
+interface FakePort {
+  onmessage: ((e: { data: Float32Array }) => void) | null;
+  postMessage: () => void;
+  close: () => void;
 }
 
-let lastProcessor: FakeProcessor | null = null;
+let lastNode: { port: FakePort } | null = null;
+
+class FakeAudioWorkletNode {
+  port: FakePort = { onmessage: null, postMessage: () => {}, close: () => {} };
+  constructor() {
+    lastNode = this;
+  }
+  connect() {}
+  disconnect() {}
+}
 
 class FakeAudioContext {
   sampleRate = 16_000;
   state: "running" | "closed" = "running";
   destination = {};
+  audioWorklet = { addModule: vi.fn(async () => {}) };
   createMediaStreamSource() {
     return { connect: () => {}, disconnect: () => {} };
-  }
-  createScriptProcessor(): FakeProcessor {
-    const node: FakeProcessor = { onaudioprocess: null, connect: () => {}, disconnect: () => {} };
-    lastProcessor = node;
-    return node;
   }
   createGain() {
     return { gain: { value: 1 }, connect: () => {}, disconnect: () => {} };
@@ -48,6 +53,7 @@ class FakeWorker {
 
 function installSupportedEnv() {
   vi.stubGlobal("AudioContext", FakeAudioContext);
+  vi.stubGlobal("AudioWorkletNode", FakeAudioWorkletNode);
   vi.stubGlobal("Worker", FakeWorker);
   Object.defineProperty(navigator, "mediaDevices", {
     configurable: true,
@@ -59,15 +65,13 @@ function installSupportedEnv() {
 
 function pushAudio(seconds = 1) {
   act(() => {
-    lastProcessor?.onaudioprocess?.({
-      inputBuffer: { getChannelData: () => new Float32Array(16_000 * seconds) },
-    });
+    lastNode?.port.onmessage?.({ data: new Float32Array(16_000 * seconds) });
   });
 }
 
 describe("VoiceCapturePanel (streaming)", () => {
   beforeEach(() => {
-    lastProcessor = null;
+    lastNode = null;
     lastWorker = null;
     const store = new Map<string, string>();
     Object.defineProperty(window, "localStorage", {

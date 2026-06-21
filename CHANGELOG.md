@@ -15,7 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Voice dictation is now **near real-time**. Instead of waiting for the recording to finish, audio is captured continuously (Web Audio `AudioContext`/`ScriptProcessor`) and the accumulated buffer is re-transcribed on-device every ~2.5s, showing a live transcript while you speak; a final pass runs on Stop. Everything still runs locally — no audio or transcript leaves the device.
+- Voice dictation is now **near real-time**. Instead of waiting for the recording to finish, audio is captured continuously and the accumulated buffer is re-transcribed on-device every ~2.5s, showing a live transcript while you speak; a final pass runs on Stop. Everything still runs locally — no audio or transcript leaves the device.
+- Voice capture now runs on a dedicated **AudioWorklet** (`/worklets/audio-capture-worklet.js`) on the audio thread instead of the deprecated main-thread `ScriptProcessor`, for glitch-free capture while transcription runs.
 
 ### Added
 
