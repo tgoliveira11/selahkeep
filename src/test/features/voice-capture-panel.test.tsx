@@ -1,7 +1,8 @@
 /** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { VoiceCapturePanel } from "@/features/voice/voice-capture-panel";
+import { resetTranscriptionWorkerForTests } from "@/features/voice/transcription-worker-client";
 
 interface FakePort {
   onmessage: ((e: { data: Float32Array }) => void) | null;
@@ -71,6 +72,7 @@ function pushAudio(seconds = 1) {
 
 describe("VoiceCapturePanel (streaming)", () => {
   beforeEach(() => {
+    resetTranscriptionWorkerForTests();
     lastNode = null;
     lastWorker = null;
     const store = new Map<string, string>();

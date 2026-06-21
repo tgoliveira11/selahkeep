@@ -88,12 +88,15 @@ The privacy notice on the page is extended: *"Voice is transcribed on your devic
 - **Pure, testable logic** lives in `src/lib/voice/**`: supported-language list + validation, audio resample/mono-mixdown to 16 kHz Float32, and transcript normalization (trim, collapse whitespace, capitalize). These are unit-tested without the model.
 - **Heavy, browser-only logic** (model + mic) lives in `src/features/voice/**` and the worker, dynamically imported, mocked in tests. `src/features/voice/**` is intentionally **outside** the enforced coverage scope (like other `src/features/*` UI), so the heavy worker code does not distort coverage; its pure dependencies are tested.
 - **No new API routes, no new DB columns, no server code.** The note that results from dictation is saved through the **existing** `POST /api/notes` encrypted flow — there is literally no server-side awareness that a note originated from voice.
+- **App-wide singleton worker + background warm-up** (`src/features/voice/transcription-worker-client.ts`): the Whisper worker is created once and shared (a single `onmessage` fans out to subscribers). `VoiceWarmup` (mounted in the authenticated `(vault)` layout) schedules `warmUpTranscription()` during browser idle time, which downloads the weights and initializes the pipeline ahead of first use. Warm-up is gated: skipped when voice is disabled, the browser lacks `Worker`/`AudioWorkletNode`/`getUserMedia`, or the connection reports `saveData`/2g. The dictation panel reuses the same (warm) worker, so first dictation is instant; the worker is intentionally **not** terminated on panel unmount (only the mic/audio graph is released).
 
 ### 5.1 Worker contract
 
 ```text
-main → worker:  { type: "transcribe", audio: Float32Array(16kHz mono), language: "en"|"pt"|"es" }
+main → worker:  { type: "warmup", modelId, modelHost? }                        // background pre-load
+main → worker:  { type: "transcribe", audio: Float32Array(16kHz mono), language: "en"|"pt"|"es", modelId, modelHost? }
 worker → main:  { type: "progress", stage: "model" | "inference", value: 0..1 }
+worker → main:  { type: "ready" }                                              // warm-up complete
 worker → main:  { type: "result", text: string }
 worker → main:  { type: "error", message: string }
 ```

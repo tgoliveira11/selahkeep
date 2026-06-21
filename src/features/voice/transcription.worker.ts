@@ -8,17 +8,20 @@
  * `docs/TDR_Local_Voice_Notes.md`.
  */
 
-export type TranscribeRequest = {
-  type: "transcribe";
-  audio: Float32Array;
-  language: string;
-  modelId: string;
-  modelHost?: string;
-};
+export type TranscribeRequest =
+  | {
+      type: "transcribe";
+      audio: Float32Array;
+      language: string;
+      modelId: string;
+      modelHost?: string;
+    }
+  | { type: "warmup"; modelId: string; modelHost?: string };
 
 export type TranscribeResponse =
   | { type: "progress"; stage: "model" | "inference"; value: number }
   | { type: "result"; text: string }
+  | { type: "ready" }
   | { type: "error"; message: string };
 
 // Lazily-created singleton pipeline, reused across requests.
@@ -64,7 +67,24 @@ function post(message: TranscribeResponse) {
 
 self.onmessage = async (event: MessageEvent<TranscribeRequest>) => {
   const data = event.data;
-  if (!data || data.type !== "transcribe") return;
+  if (!data) return;
+
+  // Background warm-up: download weights + initialize the pipeline ahead of
+  // the first dictation so first use is instant. Does not transcribe.
+  if (data.type === "warmup") {
+    try {
+      await getTranscriber(data.modelId, data.modelHost);
+      post({ type: "ready" });
+    } catch (error) {
+      post({
+        type: "error",
+        message: error instanceof Error ? error.message : "Model warm-up failed",
+      });
+    }
+    return;
+  }
+
+  if (data.type !== "transcribe") return;
 
   try {
     const transcriber = (await getTranscriber(data.modelId, data.modelHost)) as (

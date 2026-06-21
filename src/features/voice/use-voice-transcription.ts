@@ -9,10 +9,12 @@ import {
 import { formatTranscript } from "@/lib/voice/transcript-format";
 import { getVoiceModelId, getVoiceModelHost } from "@/lib/voice/voice-config";
 import type { VoiceLanguageCode } from "@/lib/voice/voice-languages";
-import type {
-  TranscribeRequest,
-  TranscribeResponse,
-} from "./transcription.worker";
+import type { TranscribeRequest } from "./transcription.worker";
+import {
+  getTranscriptionWorker,
+  postTranscription,
+  subscribeTranscription,
+} from "./transcription-worker-client";
 
 export type VoiceStatus = "idle" | "recording" | "processing" | "ready" | "error";
 
@@ -65,7 +67,6 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
 
-  const workerRef = useRef<Worker | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const captureNodeRef = useRef<AudioWorkletNode | null>(null);
@@ -80,35 +81,28 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const transcribeRef = useRef<(final: boolean) => void>(() => {});
 
-  const ensureWorker = useCallback((): Worker => {
-    if (!workerRef.current) {
-      const worker = new Worker(new URL("./transcription.worker.ts", import.meta.url), {
-        type: "module",
-      });
-      worker.onmessage = (event: MessageEvent<TranscribeResponse>) => {
-        const message = event.data;
-        if (message.type === "progress") {
-          setProgress(message.value);
-          return;
-        }
-        processingRef.current = false;
-        if (message.type === "error") {
-          setError(message.message);
-          setStatus("error");
-          return;
-        }
-        // result
-        setTranscript(formatTranscript(message.text));
-        if (inFlightFinalRef.current) {
-          setStatus("ready");
-        } else if (pendingFinalRef.current) {
-          pendingFinalRef.current = false;
-          transcribeRef.current(true);
-        }
-      };
-      workerRef.current = worker;
-    }
-    return workerRef.current;
+  // Subscribe to the shared (warm) worker for the lifetime of the hook.
+  useEffect(() => {
+    return subscribeTranscription((message) => {
+      if (message.type === "progress") {
+        setProgress(message.value);
+        return;
+      }
+      if (message.type === "ready") return; // background warm-up acknowledgement
+      processingRef.current = false;
+      if (message.type === "error") {
+        setError(message.message);
+        setStatus("error");
+        return;
+      }
+      setTranscript(formatTranscript(message.text));
+      if (inFlightFinalRef.current) {
+        setStatus("ready");
+      } else if (pendingFinalRef.current) {
+        pendingFinalRef.current = false;
+        transcribeRef.current(true);
+      }
+    });
   }, []);
 
   const transcribe = useCallback(
@@ -130,7 +124,6 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
 
       const merged = concatFloat32(chunks);
       const pcm = resampleLinear(merged, sampleRateRef.current, WHISPER_SAMPLE_RATE);
-      const worker = ensureWorker();
       processingRef.current = true;
       inFlightFinalRef.current = final;
       const request: TranscribeRequest = {
@@ -140,9 +133,9 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
         modelId: getVoiceModelId(),
         modelHost: getVoiceModelHost(),
       };
-      worker.postMessage(request, [pcm.buffer]);
+      postTranscription(request, [pcm.buffer]);
     },
-    [ensureWorker]
+    []
   );
 
   useEffect(() => {
@@ -236,7 +229,8 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
         captureNode.connect(silent);
         silent.connect(ctx.destination);
 
-        ensureWorker();
+        // Ensure the (possibly already warm) shared worker exists.
+        getTranscriptionWorker();
         intervalRef.current = setInterval(
           () => transcribeRef.current(false),
           PARTIAL_INTERVAL_MS
@@ -248,7 +242,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
         setStatus("error");
       }
     },
-    [supported, ensureWorker, teardownCapture]
+    [supported, teardownCapture]
   );
 
   const stopRecording = useCallback(() => {
@@ -270,10 +264,10 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
   }, [teardownCapture]);
 
   useEffect(() => {
+    // Release the microphone/audio graph on unmount, but keep the shared
+    // (warm) transcription worker alive for instant reuse.
     return () => {
       teardownCapture();
-      workerRef.current?.terminate();
-      workerRef.current = null;
     };
   }, [teardownCapture]);
 
