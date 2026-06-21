@@ -45,7 +45,7 @@ React components must NOT import database clients, repositories, or ORM code.
 - Server Actions for private note persistence
 - Frontend direct database access
 - localStorage/sessionStorage/cookies for plaintext keys or note content
-- Exportable/raw device secrets in IndexedDB (use non-extractable `CryptoKey` only)
+- Persisting raw/exportable key material in IndexedDB (store only AES-GCM ciphertext; never raw keys). Note: the in-memory session UVK and per-note keys are `extractable` by necessity (to wrap/unwrap note keys) — this is an accepted residual risk mitigated by CSP, not a license to persist raw keys
 - Mock encryption, fake passkey flows, fake recovery flows
 - AI APIs processing private note content
 - Admin access to private note content

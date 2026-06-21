@@ -17,7 +17,9 @@ SelahKeep uses **client-side encryption**. Note title, body, categories, and tag
 
 **Core privacy promise:** the operations team does not hold keys required to read private note content from database records alone.
 
-**Residual truth:** any attacker who can execute JavaScript in an unlocked vault session on the user's device can decrypt notes. Client-side encryption protects data at rest on the server; it does not eliminate endpoint compromise.
+**Residual truth:** any attacker who can execute JavaScript in an unlocked vault session on the user's device can decrypt notes. Client-side encryption protects data at rest on the server; it does not eliminate endpoint compromise. Because the app is delivered by the server on each load, a compromised server could also serve key-stealing JS — CSP/HSTS reduce but do not eliminate this web-delivery trust assumption (a native app would not have it).
+
+**Metadata visible to the server (not content):** even with perfect E2EE, the server can observe per-user note counts, client-generated note/version UUIDs, created/updated timestamps, version counts/timestamps, encrypted-payload **sizes**, and safe vault security events (unlock method + time). Title, body, category, tag names, and answered status are encrypted. The privacy promise covers **content**, not the existence/volume/timing of notes.
 
 ### Implemented controls (cross-cutting)
 
@@ -32,7 +34,10 @@ SelahKeep uses **client-side encryption**. Note title, body, categories, and tag
 | Autosave | **Disabled for MVP** — no autosave implementation; plaintext autosave forbidden |
 | Vault unlock methods | Password, recovery phrase, passkey PRF only (`docs/TRUSTED_DEVICES_REMOVAL.md`) |
 | IndexedDB | Legacy trusted-device stores purged on DB v3 upgrade; no vault unlock material persisted |
-| CSP | Production `script-src 'self'`; no third-party scripts on vault pages |
+| CSP | Nonce-based, production `script-src 'self' 'nonce' 'strict-dynamic' 'wasm-unsafe-eval'`; `object-src 'none'`, `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, `worker-src 'self' blob:`; no third-party **scripts**. `connect-src` is `'self'` plus the (self-hostable) on-device voice model host(s) only — see `src/lib/security/content-security-policy.ts` |
+| Transport / headers | `Strict-Transport-Security` (HSTS, 2y, preload), `Permissions-Policy` (`microphone=(self)`, camera/geolocation/payment/usb off), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` — `next.config.ts` |
+| Note version history | Immutable encrypted snapshots in `note_versions`; client-encrypted under the note's Note Key, AAD-bound to a unique `versionId`; retention-pruned server-side on row counts only; cascade-deletes with the note (`docs/TDR_Note_Version_History.md`) |
+| Voice notes | On-device transcription (Whisper/transformers.js in a Web Worker); microphone audio and transcript never leave the device; only model weights are fetched (self-hostable); guard test `voice-no-content-egress.test.ts` (`docs/TDR_Local_Voice_Notes.md`) |
 | Account 2FA (TOTP) | Optional sign-in protection for email/password (and OAuth partial session) only; passkey sign-in bypasses TOTP by design; secrets encrypted at rest (`TWO_FACTOR_SECRET_ENCRYPTION_KEY`); backup codes hashed; separate from vault crypto |
 | Passkey account sign-in | WebAuthn `login` challenges; issues `login-token` session; vault unlock only with PRF envelope client-side; sign-in-only passkeys must not be shown as vault recovery |
 | Email verification & password reset | Hashed opaque tokens in `account_tokens`; single-use atomic consumption; generic forgot-password response; rate limits; no vault key or letter content in emails; password reset/change does not unlock vault |
@@ -62,7 +67,7 @@ Exposure of encrypted letter payloads, vault envelopes, recovery envelopes (KDF 
 
 - Private letter title/body encrypted on client before persistence; server never stores plaintext.
 - Letter Key wrapped by User Vault Key; User Vault Key wrapped in vault envelopes only.
-- Recovery codes never stored — only KDF-derived envelope ciphertext (Argon2id preferred; PBKDF2-SHA-256 fallback).
+- Recovery codes never stored — only KDF-derived envelope ciphertext. New `password` and `recovery_phrase` envelopes are **Argon2id-only** (no PBKDF2 downgrade, per ADR-005); PBKDF2-SHA-256 appears only in legacy `recovery_code` (vault-v1) envelopes.
 - AAD binds ciphertext to `userId`, `resourceId`, and `field` — limits cross-user/cross-resource misuse.
 - Database access restricted to application service account; no admin UI for letter content.
 - Sentinel phrase tests verify plaintext never reaches storage layers.
@@ -564,7 +569,7 @@ If recovery code is weak or KDF parameters are insufficient, attacker derives wr
 
 - Recovery codes: ≥128 bits entropy (uniform word selection + rejection sampling).
 - Recovery code never stored server-side — only shown at generation/regeneration.
-- KDF: Argon2id preferred; PBKDF2-SHA-256 fallback (600k iterations) with versioned `kdf-v1` metadata.
+- KDF: **Argon2id-only** for new `password`/`recovery_phrase` envelopes (64 MiB / 3 / 1, versioned `kdf-v1`; no PBKDF2 downgrade per ADR-005). PBKDF2-SHA-256 (600k) persists only in legacy `recovery_code` (vault-v1) envelopes.
 - Rate limiting on online unlock attempts (`recovery.attempt`: 5 per 15 minutes) — does not affect offline attacks on stolen blobs.
 - Envelope ciphertext uses AES-GCM with AAD binding.
 

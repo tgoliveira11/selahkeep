@@ -76,6 +76,8 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
 
       <p className="mb-3 text-xs text-[var(--muted)]" data-testid="voice-privacy-note">
         Voice is transcribed on your device. Your audio and words are never uploaded.
+        The first time you use this, the speech model is downloaded once from the
+        model host (no audio is sent).
       </p>
 
       {!supported ? (

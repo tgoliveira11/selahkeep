@@ -35,7 +35,15 @@ async function getTranscriber(modelId: string, modelHost: string | undefined) {
     // Fetch model weights remotely (no local bundling); never user content.
     env.allowLocalModels = false;
     if (modelHost) {
+      // Self-hosted: serve both the model weights and the ONNX-runtime WASM
+      // from the configured first-party host (no third-party CDN contact).
       env.remoteHost = modelHost;
+      const wasmBase = modelHost.endsWith("/") ? modelHost : `${modelHost}/`;
+      const onnxEnv = (env as { backends?: { onnx?: { wasm?: { wasmPaths?: string } } } })
+        .backends?.onnx?.wasm;
+      if (onnxEnv) {
+        onnxEnv.wasmPaths = wasmBase;
+      }
     }
 
     return pipeline("automatic-speech-recognition", modelId, {

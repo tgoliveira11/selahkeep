@@ -24,6 +24,32 @@ describe("content-security-policy", () => {
     expect(policy).toContain("object-src 'none'");
     expect(policy).toContain("frame-ancestors 'none'");
     expect(policy).toContain("upgrade-insecure-requests");
+    expect(policy).toContain("worker-src 'self' blob:");
+  });
+
+  it("allows the on-device voice model origins in connect-src by default", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_VOICE_NOTES_ENABLED", "");
+    vi.stubEnv("NEXT_PUBLIC_VOICE_MODEL_HOST", "");
+    const policy = buildContentSecurityPolicy("n");
+    expect(policy).toContain("connect-src 'self'");
+    expect(policy).toContain("https://huggingface.co");
+    expect(policy).toContain("https://cdn.jsdelivr.net");
+  });
+
+  it("restricts connect-src to the self-hosted model host when configured", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_VOICE_MODEL_HOST", "https://models.example.com");
+    const policy = buildContentSecurityPolicy("n");
+    expect(policy).toContain("connect-src 'self' https://models.example.com");
+    expect(policy).not.toContain("huggingface.co");
+  });
+
+  it("omits voice origins from connect-src when voice is disabled", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_VOICE_NOTES_ENABLED", "false");
+    const policy = buildContentSecurityPolicy("n");
+    expect(policy).not.toContain("huggingface.co");
   });
 
   it("allows dev eval and inline scripts", () => {

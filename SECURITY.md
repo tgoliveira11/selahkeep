@@ -123,6 +123,18 @@ Letters domain removed in Phase 3 (`letters` table dropped via `0010_drop_letter
 - Audio is held in memory and released immediately after transcription; it is never written to IndexedDB, localStorage, or disk. The only persisted voice value is the chosen language code (`selahkeep:voice:lang`).
 - The transcript is reviewed/edited by the user and inserted into the normal editor, after which it follows the standard client-side encrypted-note path. No new API routes, DB columns, or server code. Guard: `voice-no-content-egress.test.ts`. See `docs/TDR_Local_Voice_Notes.md`.
 
+## HTTP security headers
+
+- **Content-Security-Policy** (nonce-based, `src/lib/security/content-security-policy.ts`, applied in `src/proxy.ts`): production `script-src 'self' 'nonce-…' 'strict-dynamic' 'wasm-unsafe-eval'`, `object-src 'none'`, `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, `worker-src 'self' blob:`, `upgrade-insecure-requests`. This is the critical second layer against XSS in an E2EE app (keys live in JS memory).
+- **`connect-src`** is `'self'` plus only the on-device voice model host(s): the self-hosted `NEXT_PUBLIC_VOICE_MODEL_HOST` when set, otherwise the default model CDNs (`huggingface.co`, `*.hf.co`, `cdn.jsdelivr.net`) used to download **weights only**. Set `NEXT_PUBLIC_VOICE_MODEL_HOST` to keep `connect-src` fully first-party. Disabling voice (`NEXT_PUBLIC_VOICE_NOTES_ENABLED=false`) removes those origins.
+- **Strict-Transport-Security** (HSTS, 2 years, `includeSubDomains; preload`), **Permissions-Policy** (`microphone=(self)`; camera/geolocation/payment/usb off), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` — `next.config.ts`.
+
+**Residual web-delivery trust:** the app's JS is served on each load, so a compromised server could serve key-stealing code; CSP/HSTS reduce but do not eliminate this (inherent to web E2EE vs a native app). Session keys are `extractable` CryptoKeys in memory (required to wrap per-note keys), so an XSS in an unlocked session can read them — CSP is the primary mitigation. No raw key material is persisted (IndexedDB stores only ciphertext).
+
+## Metadata visible to the server
+
+E2EE protects **content**, not the existence/volume/timing of data. With ciphertext-only storage the server can still observe: per-user note counts, client-generated note/version UUIDs, created/updated timestamps, version counts/timestamps, encrypted-payload **sizes**, and safe vault security events (unlock method + time). Title, body, category, tag names, answered status, and all bodies/versions are encrypted.
+
 ## Observability
 
 Never log: plaintext title/body, User Vault Key, Letter Key, Note Key, recovery code, decrypted payloads.

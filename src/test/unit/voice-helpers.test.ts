@@ -18,6 +18,7 @@ import {
   isVoiceNotesEnabled,
   getVoiceModelId,
   getVoiceModelHost,
+  getVoiceModelConnectSources,
   DEFAULT_VOICE_MODEL,
 } from "@/lib/voice/voice-config";
 
@@ -106,5 +107,15 @@ describe("voice config", () => {
     expect(getVoiceModelHost(undefined)).toBeUndefined();
     expect(getVoiceModelHost("https://cdn.example.com")).toBe("https://cdn.example.com");
     expect(getVoiceModelHost("  ")).toBeUndefined();
+  });
+
+  it("resolves CSP connect-src origins for the model", () => {
+    expect(getVoiceModelConnectSources({ NEXT_PUBLIC_VOICE_NOTES_ENABLED: "false" })).toEqual([]);
+    expect(
+      getVoiceModelConnectSources({ NEXT_PUBLIC_VOICE_MODEL_HOST: "https://m.example.com" })
+    ).toEqual(["https://m.example.com"]);
+    const defaults = getVoiceModelConnectSources({});
+    expect(defaults).toContain("https://huggingface.co");
+    expect(defaults).toContain("https://cdn.jsdelivr.net");
   });
 });
