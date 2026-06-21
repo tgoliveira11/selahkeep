@@ -18,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Voice dictation is now **near real-time**. Instead of waiting for the recording to finish, audio is captured continuously and the accumulated buffer is re-transcribed on-device every ~2.5s, showing a live transcript while you speak; a final pass runs on Stop. Everything still runs locally — no audio or transcript leaves the device.
 - Voice capture now runs on a dedicated **AudioWorklet** (`/worklets/audio-capture-worklet.js`) on the audio thread instead of the deprecated main-thread `ScriptProcessor`, for glitch-free capture while transcription runs.
 - The speech model is now **pre-warmed in the background** when an authenticated user enters the app (during browser idle time), so the first dictation no longer waits on the one-time model download/initialization. The Whisper worker is an app-wide singleton reused by the dictation panel. Warm-up is skipped when voice is disabled, the browser lacks support, or the connection is data-saver/2g.
+- The **Dictate** button now shows model status: a subtle **green** indicator (and green border) once the speech model is fully loaded, and a **hover tooltip with the current download percentage** while it is still warming up — so you can see how close it is to instant transcription.
+- Live dictation feedback improved: partial transcripts refresh faster (~1.5s) and the live preview now shows a clear "transcribing…" activity state so there is always visible feedback while speaking.
 
 ### Added
 

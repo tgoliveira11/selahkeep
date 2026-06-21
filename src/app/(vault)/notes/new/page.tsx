@@ -62,6 +62,7 @@ import { useVaultAutoLockedCopy } from "@/features/vault/use-vault-auto-locked-c
 import { touchVaultActivity } from "@/features/vault/use-vault-activity";
 import { appendTranscript } from "@/lib/voice/transcript-format";
 import { isVoiceNotesEnabled } from "@/lib/voice/voice-config";
+import { DictateButton } from "@/features/voice/dictate-button";
 
 const VoiceCapturePanel = dynamic(
   () => import("@/features/voice/voice-capture-panel").then((m) => m.VoiceCapturePanel),
@@ -441,14 +442,11 @@ export default function NewNotePage() {
                   }}
                 />
               ) : (
-                <Button
-                  type="button"
-                  variant="secondary"
+                <DictateButton
                   onClick={() => setVoiceOpen(true)}
-                  data-testid="new-note-dictate"
-                >
-                  🎙 Dictate a note
-                </Button>
+                  testId="new-note-dictate"
+                  label="Dictate a note"
+                />
               )}
             </div>
           )}

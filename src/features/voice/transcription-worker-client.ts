@@ -15,12 +15,58 @@ let worker: Worker | null = null;
 let warmed = false;
 const subscribers = new Set<(message: TranscribeResponse) => void>();
 
+export interface VoiceModelStatus {
+  /** 0..1 model-download/initialization progress. */
+  progress: number;
+  /** True once the pipeline is loaded and ready for instant transcription. */
+  ready: boolean;
+}
+
+let modelProgress = 0;
+let modelReady = false;
+const statusSubscribers = new Set<(status: VoiceModelStatus) => void>();
+
+function notifyStatus(): void {
+  const snapshot: VoiceModelStatus = { progress: modelProgress, ready: modelReady };
+  for (const cb of statusSubscribers) cb(snapshot);
+}
+
+function trackModelStatus(message: TranscribeResponse): void {
+  if (message.type === "progress" && message.stage === "model") {
+    modelProgress = message.value;
+    notifyStatus();
+  } else if (message.type === "ready") {
+    modelReady = true;
+    modelProgress = 1;
+    notifyStatus();
+  } else if (message.type === "result" && !modelReady) {
+    // A successful transcription implies the model is loaded.
+    modelReady = true;
+    modelProgress = 1;
+    notifyStatus();
+  }
+}
+
+export function getModelStatus(): VoiceModelStatus {
+  return { progress: modelProgress, ready: modelReady };
+}
+
+export function subscribeModelStatus(
+  handler: (status: VoiceModelStatus) => void
+): () => void {
+  statusSubscribers.add(handler);
+  return () => {
+    statusSubscribers.delete(handler);
+  };
+}
+
 export function getTranscriptionWorker(): Worker {
   if (!worker) {
     worker = new Worker(new URL("./transcription.worker.ts", import.meta.url), {
       type: "module",
     });
     worker.onmessage = (event: MessageEvent<TranscribeResponse>) => {
+      trackModelStatus(event.data);
       for (const subscriber of subscribers) subscriber(event.data);
     };
   }
@@ -77,5 +123,8 @@ export function resetTranscriptionWorkerForTests(): void {
   worker?.terminate();
   worker = null;
   warmed = false;
+  modelProgress = 0;
+  modelReady = false;
   subscribers.clear();
+  statusSubscribers.clear();
 }

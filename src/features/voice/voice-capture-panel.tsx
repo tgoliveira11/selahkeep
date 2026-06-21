@@ -26,8 +26,17 @@ interface VoiceCapturePanelProps {
  * No audio or transcript is ever uploaded. See `docs/TDR_Local_Voice_Notes.md`.
  */
 export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps) {
-  const { supported, status, transcript, error, progress, startRecording, stopRecording, reset } =
-    useVoiceTranscription();
+  const {
+    supported,
+    status,
+    transcript,
+    error,
+    progress,
+    transcribing,
+    startRecording,
+    stopRecording,
+    reset,
+  } = useVoiceTranscription();
   // The panel is client-only (loaded via next/dynamic ssr:false), so reading
   // localStorage in a lazy initializer is safe and avoids setState-in-effect.
   const [language, setLanguage] = useState<VoiceLanguageCode>(() =>
@@ -134,13 +143,22 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
 
           {recording && (
             <div className="mt-3 space-y-1" data-testid="voice-live-preview" aria-live="polite">
-              <span className="block text-xs text-[var(--muted)]">Live transcript</span>
+              <span className="flex items-center gap-2 text-xs text-[var(--muted)]">
+                Live transcript
+                {transcribing && (
+                  <span className="text-[var(--primary)]" data-testid="voice-transcribing">
+                    · transcribing…
+                  </span>
+                )}
+              </span>
               <p className="min-h-[60px] rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm whitespace-pre-wrap">
                 {draft || (
                   <span className="text-[var(--muted)]">
                     {progress > 0 && progress < 1
                       ? `Preparing speech model… ${Math.round(progress * 100)}%`
-                      : "Listening…"}
+                      : transcribing
+                        ? "Transcribing your first words…"
+                        : "Listening…"}
                   </span>
                 )}
               </p>

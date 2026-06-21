@@ -21,6 +21,7 @@ import { NoteVersionHistory } from "@/components/notes/note-version-history";
 import type { DecryptedNoteVersion } from "@/lib/crypto-client/note-versions";
 import { appendTranscript } from "@/lib/voice/transcript-format";
 import { isVoiceNotesEnabled } from "@/lib/voice/voice-config";
+import { DictateButton } from "@/features/voice/dictate-button";
 
 const VoiceCapturePanel = dynamic(
   () => import("@/features/voice/voice-capture-panel").then((m) => m.VoiceCapturePanel),
@@ -682,14 +683,10 @@ export default function NoteDetailPage() {
                   }}
                 />
               ) : (
-                <Button
-                  type="button"
-                  variant="secondary"
+                <DictateButton
                   onClick={() => setVoiceOpen(true)}
-                  data-testid="edit-note-dictate"
-                >
-                  🎙 Dictate
-                </Button>
+                  testId="edit-note-dictate"
+                />
               )}
             </div>
           )}

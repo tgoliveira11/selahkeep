@@ -19,9 +19,9 @@ import {
 export type VoiceStatus = "idle" | "recording" | "processing" | "ready" | "error";
 
 /** How often, while recording, the accumulated audio is re-transcribed. */
-const PARTIAL_INTERVAL_MS = 2500;
+const PARTIAL_INTERVAL_MS = 1500;
 /** Minimum recorded duration before the first partial pass runs. */
-const MIN_PARTIAL_SECONDS = 0.6;
+const MIN_PARTIAL_SECONDS = 0.7;
 /** Same-origin AudioWorklet module that captures raw PCM off the main thread. */
 const CAPTURE_WORKLET_URL = "/worklets/audio-capture-worklet.js";
 const CAPTURE_WORKLET_NAME = "audio-capture";
@@ -34,6 +34,8 @@ interface UseVoiceTranscriptionResult {
   error: string | null;
   /** 0..1 model-download progress (first use only). */
   progress: number;
+  /** True while a transcription pass is running (partial or final). */
+  transcribing: boolean;
   startRecording: (language: VoiceLanguageCode) => Promise<void>;
   stopRecording: () => void;
   reset: () => void;
@@ -66,6 +68,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [transcribing, setTranscribing] = useState(false);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -90,6 +93,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
       }
       if (message.type === "ready") return; // background warm-up acknowledgement
       processingRef.current = false;
+      setTranscribing(false);
       if (message.type === "error") {
         setError(message.message);
         setStatus("error");
@@ -126,6 +130,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
       const pcm = resampleLinear(merged, sampleRateRef.current, WHISPER_SAMPLE_RATE);
       processingRef.current = true;
       inFlightFinalRef.current = final;
+      setTranscribing(true);
       const request: TranscribeRequest = {
         type: "transcribe",
         audio: pcm,
@@ -190,6 +195,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
       setError(null);
       setTranscript("");
       setProgress(0);
+      setTranscribing(false);
       pcmRef.current = [];
       processingRef.current = false;
       inFlightFinalRef.current = false;
@@ -260,6 +266,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
     setTranscript("");
     setError(null);
     setProgress(0);
+    setTranscribing(false);
     setStatus("idle");
   }, [teardownCapture]);
 
@@ -277,6 +284,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
     transcript,
     error,
     progress,
+    transcribing,
     startRecording,
     stopRecording,
     reset,

@@ -1332,6 +1332,41 @@ mark.search-highlight {
   box-shadow: var(--shadow-md);
 }
 
+/* Dictate button model-status indicator */
+.voice-dictate-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.4rem;
+  border-radius: 9999px;
+  background: var(--border);
+  vertical-align: middle;
+}
+
+.voice-dictate-dot--loading {
+  background: #d97706;
+  animation: voice-dictate-pulse 1.2s ease-in-out infinite;
+}
+
+.voice-dictate-dot--ready {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+
+.voice-dictate-btn--ready {
+  border-color: rgba(22, 163, 74, 0.5);
+}
+
+@keyframes voice-dictate-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .note-editor-markdown-mode {
   display: grid;
   gap: 0.75rem;
