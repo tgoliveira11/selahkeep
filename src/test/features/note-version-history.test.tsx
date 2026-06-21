@@ -82,11 +82,14 @@ describe("NoteVersionHistory", () => {
     expect(await screen.findByTestId("version-row-2")).toBeInTheDocument();
     expect(screen.getByTestId("version-row-1")).toBeInTheDocument();
 
-    // Compare version 2 (default A=latest) vs version 1 (select B).
-    fireEvent.change(screen.getByTestId("version-select-b"), { target: { value: V1 } });
-    fireEvent.click(screen.getByTestId("version-compare-button"));
-
+    // Diff is computed automatically (default: previous version vs current note).
     await waitFor(() => expect(screen.getByTestId("note-version-diff")).toBeInTheDocument());
+
+    // Changing a selection recomputes automatically (compare v1 with v2).
+    fireEvent.change(screen.getByTestId("version-select-b"), { target: { value: V2 } });
+    await waitFor(() =>
+      expect(screen.getByTestId("note-version-diff")).toBeInTheDocument()
+    );
 
     // Restore version 1.
     fireEvent.click(screen.getByTestId("version-restore-1"));

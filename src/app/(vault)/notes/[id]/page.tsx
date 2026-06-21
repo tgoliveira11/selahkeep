@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,13 @@ import { CategoryTagFields } from "@/features/notes/category-tag-fields";
 import { NoteReadingView } from "@/components/notes/note-reading-view";
 import { NoteVersionHistory } from "@/components/notes/note-version-history";
 import type { DecryptedNoteVersion } from "@/lib/crypto-client/note-versions";
+import { appendTranscript } from "@/lib/voice/transcript-format";
+import { isVoiceNotesEnabled } from "@/lib/voice/voice-config";
+
+const VoiceCapturePanel = dynamic(
+  () => import("@/features/voice/voice-capture-panel").then((m) => m.VoiceCapturePanel),
+  { ssr: false }
+);
 import { useNoteVaultBeforeAutoLock } from "@/features/notes/use-note-vault-before-auto-lock";
 import { useVaultAutoLockedCopy } from "@/features/vault/use-vault-auto-locked-copy";
 import { touchVaultActivity } from "@/features/vault/use-vault-activity";
@@ -101,6 +109,8 @@ export default function NoteDetailPage() {
   const [savedFlash, setSavedFlash] = useState(false);
   const [versionRefreshKey, setVersionRefreshKey] = useState(0);
   const [restoringVersion, setRestoringVersion] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const voiceEnabled = isVoiceNotesEnabled();
   const checklistSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoLocked = useVaultAutoLockedCopy();
 
@@ -661,6 +671,28 @@ export default function NoteDetailPage() {
               onCreateTag={createTag}
             />
           </div>
+          {voiceEnabled && (
+            <div className={cn(focusMode && "note-focus-hide")}>
+              {voiceOpen ? (
+                <VoiceCapturePanel
+                  onClose={() => setVoiceOpen(false)}
+                  onInsert={(text) => {
+                    touchVaultActivity();
+                    setBody((current) => appendTranscript(current, text));
+                  }}
+                />
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setVoiceOpen(true)}
+                  data-testid="edit-note-dictate"
+                >
+                  🎙 Dictate
+                </Button>
+              )}
+            </div>
+          )}
           <FormField id="edit-body" label="Your note">
             <MarkdownEditor
               value={body}

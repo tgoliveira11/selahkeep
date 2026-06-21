@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -41,22 +41,29 @@ export function NoteVersionHistory({
     noteId,
     enabled && expanded
   );
-  const [bodyCache, setBodyCache] = useState<Record<string, string>>({});
+  const bodyCacheRef = useRef<Record<string, string>>({});
   const [selectedA, setSelectedA] = useState<string>("");
   const [selectedB, setSelectedB] = useState<string>(CURRENT);
   const [compareError, setCompareError] = useState<string | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<NoteVersionSummary | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [diffPair, setDiffPair] = useState<{ before: string; after: string } | null>(
+    null
+  );
 
   useEffect(() => {
-    if (enabled && expanded) void reload();
+    if (enabled && expanded) {
+      bodyCacheRef.current = {};
+      void reload();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
 
-  // Default the "from" selector to the latest stored version.
+  // Default to comparing the previous version against the current note — the
+  // latest stored version equals the current note, so that pair would be empty.
   useEffect(() => {
     if (!selectedA && versions.length > 0) {
-      setSelectedA(versions[0].id);
+      setSelectedA((versions[1] ?? versions[0]).id);
     }
   }, [versions, selectedA]);
 
@@ -72,33 +79,39 @@ export function NoteVersionHistory({
   const ensureBody = useCallback(
     async (key: string): Promise<string> => {
       if (key === CURRENT) return currentBody;
-      if (key in bodyCache) return bodyCache[key];
+      if (key in bodyCacheRef.current) return bodyCacheRef.current[key];
       const summary = versions.find((item) => item.id === key);
       if (!summary) throw new Error("Version not found");
       const content = await loadVersionContent(summary);
-      setBodyCache((cache) => ({ ...cache, [key]: content.body }));
+      bodyCacheRef.current[key] = content.body;
       return content.body;
     },
-    [bodyCache, currentBody, loadVersionContent, versions]
+    [currentBody, loadVersionContent, versions]
   );
 
-  const [diffPair, setDiffPair] = useState<{ before: string; after: string } | null>(
-    null
-  );
-
-  const handleCompare = useCallback(async () => {
+  // Recompute the diff automatically whenever the selection (or data) changes.
+  useEffect(() => {
+    if (!expanded || !selectedA || versions.length === 0) return;
+    let cancelled = false;
     setCompareError(null);
-    setDiffPair(null);
-    try {
-      const [before, after] = await Promise.all([
-        ensureBody(selectedA),
-        ensureBody(selectedB),
-      ]);
-      setDiffPair({ before, after });
-    } catch (e) {
-      setCompareError(e instanceof Error ? e.message : "Failed to compare versions");
-    }
-  }, [ensureBody, selectedA, selectedB]);
+    void (async () => {
+      try {
+        const [before, after] = await Promise.all([
+          ensureBody(selectedA),
+          ensureBody(selectedB),
+        ]);
+        if (!cancelled) setDiffPair({ before, after });
+      } catch (e) {
+        if (!cancelled) {
+          setDiffPair(null);
+          setCompareError(e instanceof Error ? e.message : "Failed to compare versions");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [expanded, selectedA, selectedB, versions, ensureBody]);
 
   const confirmRestore = useCallback(async () => {
     if (!restoreTarget) return;
@@ -192,14 +205,10 @@ export function NoteVersionHistory({
                     ))}
                   </select>
                 </label>
-                <Button
-                  type="button"
-                  onClick={() => void handleCompare()}
-                  data-testid="version-compare-button"
-                >
-                  Compare
-                </Button>
               </div>
+              <p className="-mt-2 text-xs text-[var(--muted)]">
+                The comparison updates automatically when you change either selection.
+              </p>
 
               {compareError && (
                 <Alert variant="danger" role="alert">
