@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Voice dictation is now **near real-time**. Instead of waiting for the recording to finish, audio is captured continuously (Web Audio `AudioContext`/`ScriptProcessor`) and the accumulated buffer is re-transcribed on-device every ~2.5s, showing a live transcript while you speak; a final pass runs on Stop. Everything still runs locally — no audio or transcript leaves the device.
+
 ### Added
 
 - **Encrypted note version history.** Each time a note's content is saved, an immutable, client-encrypted snapshot is appended to a new `note_versions` table. From a note's detail page you can browse previous versions, **compare any two versions in a GitHub-style line diff** (the diff updates automatically as you pick versions, defaulting to the previous version vs the current note), and **restore** a previous version (restore appends a new version, so history is never rewritten). Snapshots reuse the note's existing Note Key and are AAD-bound to a unique version id; nothing is ever sent or stored in plaintext. Retention is configurable via `NOTE_VERSION_HISTORY_LIMIT` (default 50 per note); older versions are pruned server-side on row counts only. New routes: `GET/POST /api/notes/:id/versions`, `GET /api/notes/:id/versions/:versionId`. Migration `0012_note_versions.sql`. See [`docs/TDR_Note_Version_History.md`](docs/TDR_Note_Version_History.md) and ADR-005.

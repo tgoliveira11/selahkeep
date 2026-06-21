@@ -61,10 +61,10 @@ On-device automatic speech recognition using OpenAI **Whisper** models executed 
 Entry point: **`/notes/new`** (and reusable in the editor). A discreet **"Dictate"** (microphone) control opens a voice-capture panel:
 
 1. **Language selector** — English / Português / Español (persisted as a non-sensitive UI preference in `localStorage`, key `selahkeep:voice:lang`; the value is a language code, never content).
-2. **Record / Stop** — uses `navigator.mediaDevices.getUserMedia({ audio: true })`. A live elapsed timer and level indicator give feedback. Audio is held in memory only.
-3. On **Stop**, the audio is decoded to mono PCM (16 kHz Float32) and handed to the worker. A calm **"Transcribing on your device…"** progress state shows model load + inference progress. Nothing is uploaded.
-4. The transcript appears in a **review textarea** the user can edit, then **Insert** appends it into the note body (at the cursor / end), or **Discard**.
-5. The captured audio buffer is released from memory immediately after transcription (and on cancel/unmount). The transcript lives only in React state until inserted, then follows the normal encrypted-note path.
+2. **Record / Stop** — uses `navigator.mediaDevices.getUserMedia({ audio: true })`; audio is captured **continuously** as raw PCM via the Web Audio API (`AudioContext` + `ScriptProcessor`) and held in memory only.
+3. **Near real-time transcription.** While recording, the accumulated audio is re-transcribed on-device on a short interval (~2.5s) and a **live transcript** is shown as it grows. Re-transcribing the whole buffer each pass yields stable cumulative text (no chunk-stitching artifacts); passes are serialized so the cadence self-throttles to the device's speed. On **Stop**, a final pass runs over the full buffer. Nothing is uploaded.
+4. After the final pass the transcript appears in a **review textarea** the user can edit, then **Insert** appends it into the note body (at the cursor / end), or **Discard**.
+5. The captured audio (PCM chunks + `AudioContext`) is released from memory immediately on Stop/cancel/unmount. The transcript lives only in React state until inserted, then follows the normal encrypted-note path.
 
 Accessibility: the control is keyboard reachable, has `aria-pressed`/`aria-live` status, and never auto-submits the note. Permission denial, unsupported-browser, and model-load failures show calm, specific guidance and fall back to typing.
 
@@ -77,7 +77,7 @@ The privacy notice on the page is extended: *"Voice is transcribed on your devic
 ```text
 /notes/new  (and editor)
   └─ VoiceCapturePanel            src/features/voice/voice-capture-panel.tsx   (UI, opt-in, lazy)
-        └─ useVoiceTranscription  src/features/voice/use-voice-transcription.ts (mic capture + worker lifecycle)
+        └─ useVoiceTranscription  src/features/voice/use-voice-transcription.ts (continuous PCM capture + incremental worker passes)
               └─ Web Worker       src/features/voice/transcription.worker.ts
                     └─ dynamic import("@huggingface/transformers") → ASR pipeline (local)
         └─ language config        src/lib/voice/voice-languages.ts             (pure, tested)
@@ -98,7 +98,7 @@ worker → main:  { type: "result", text: string }
 worker → main:  { type: "error", message: string }
 ```
 
-The worker lazy-loads the pipeline once and caches it across calls. `env.allowRemoteModels` stays true only to fetch weights; `env.allowLocalModels`/cache settings documented. Audio transferred to the worker via transferable `ArrayBuffer` to avoid copies and to ensure the main thread no longer holds it.
+The worker lazy-loads the pipeline once and caches it across calls, so the incremental passes reuse the same in-memory model. Each pass re-transcribes the accumulated audio (full buffer), transferred to the worker via a transferable `ArrayBuffer`; the main thread keeps the source PCM chunks to rebuild the next, larger buffer. `env.allowLocalModels=false` fetches weights remotely (self-hostable via `NEXT_PUBLIC_VOICE_MODEL_HOST`, which also serves the ONNX-runtime WASM). Note: continuous capture uses `ScriptProcessor` (broad support; deprecated) — an `AudioWorklet` is a possible future refinement.
 
 ---
 

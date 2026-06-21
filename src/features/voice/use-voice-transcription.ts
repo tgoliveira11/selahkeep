@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  mixToMono,
+  concatFloat32,
   resampleLinear,
   WHISPER_SAMPLE_RATE,
 } from "@/lib/voice/audio-pcm";
@@ -16,45 +16,42 @@ import type {
 
 export type VoiceStatus = "idle" | "recording" | "processing" | "ready" | "error";
 
+/** How often, while recording, the accumulated audio is re-transcribed. */
+const PARTIAL_INTERVAL_MS = 2500;
+/** Minimum recorded duration before the first partial pass runs. */
+const MIN_PARTIAL_SECONDS = 0.6;
+
 interface UseVoiceTranscriptionResult {
   supported: boolean;
   status: VoiceStatus;
+  /** Live (partial) transcript while recording; final after stop. */
   transcript: string;
   error: string | null;
-  /** 0..1 model/inference progress while processing. */
+  /** 0..1 model-download progress (first use only). */
   progress: number;
   startRecording: (language: VoiceLanguageCode) => Promise<void>;
   stopRecording: () => void;
   reset: () => void;
 }
 
+function getAudioContextCtor(): typeof AudioContext | null {
+  if (typeof window === "undefined") return null;
+  return (
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext ||
+    null
+  );
+}
+
 function isSupported(): boolean {
   return (
     typeof window !== "undefined" &&
     typeof Worker !== "undefined" &&
-    typeof MediaRecorder !== "undefined" &&
     typeof navigator !== "undefined" &&
-    !!navigator.mediaDevices?.getUserMedia
+    !!navigator.mediaDevices?.getUserMedia &&
+    getAudioContextCtor() !== null
   );
-}
-
-async function decodeToWhisperPcm(blob: Blob): Promise<Float32Array> {
-  const arrayBuffer = await blob.arrayBuffer();
-  const AudioCtx =
-    window.AudioContext ||
-    (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-  const audioCtx = new AudioCtx();
-  try {
-    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-    const channels: Float32Array[] = [];
-    for (let c = 0; c < audioBuffer.numberOfChannels; c++) {
-      channels.push(audioBuffer.getChannelData(c));
-    }
-    const mono = mixToMono(channels);
-    return resampleLinear(mono, audioBuffer.sampleRate, WHISPER_SAMPLE_RATE);
-  } finally {
-    void audioCtx.close();
-  }
 }
 
 export function useVoiceTranscription(): UseVoiceTranscriptionResult {
@@ -65,10 +62,19 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
   const [progress, setProgress] = useState(0);
 
   const workerRef = useRef<Worker | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
+  const ctxRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const silentRef = useRef<GainNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
+  const pcmRef = useRef<Float32Array[]>([]);
+  const sampleRateRef = useRef<number>(WHISPER_SAMPLE_RATE);
   const languageRef = useRef<VoiceLanguageCode>("en");
+  const processingRef = useRef(false);
+  const inFlightFinalRef = useRef(false);
+  const pendingFinalRef = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const transcribeRef = useRef<(final: boolean) => void>(() => {});
 
   const ensureWorker = useCallback((): Worker => {
     if (!workerRef.current) {
@@ -79,12 +85,21 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
         const message = event.data;
         if (message.type === "progress") {
           setProgress(message.value);
-        } else if (message.type === "result") {
-          setTranscript(formatTranscript(message.text));
-          setStatus("ready");
-        } else if (message.type === "error") {
+          return;
+        }
+        processingRef.current = false;
+        if (message.type === "error") {
           setError(message.message);
           setStatus("error");
+          return;
+        }
+        // result
+        setTranscript(formatTranscript(message.text));
+        if (inFlightFinalRef.current) {
+          setStatus("ready");
+        } else if (pendingFinalRef.current) {
+          pendingFinalRef.current = false;
+          transcribeRef.current(true);
         }
       };
       workerRef.current = worker;
@@ -92,19 +107,28 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
     return workerRef.current;
   }, []);
 
-  const releaseStream = useCallback(() => {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-  }, []);
+  const transcribe = useCallback(
+    (final: boolean) => {
+      if (processingRef.current) {
+        // A pass is already running; remember to finalize once it returns.
+        if (final) pendingFinalRef.current = true;
+        return;
+      }
+      const chunks = pcmRef.current;
+      let totalSamples = 0;
+      for (const chunk of chunks) totalSamples += chunk.length;
+      if (totalSamples === 0) {
+        if (final) setStatus("ready");
+        return;
+      }
+      const seconds = totalSamples / sampleRateRef.current;
+      if (!final && seconds < MIN_PARTIAL_SECONDS) return;
 
-  const handleStop = useCallback(async () => {
-    setStatus("processing");
-    setProgress(0);
-    try {
-      const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-      chunksRef.current = [];
-      const pcm = await decodeToWhisperPcm(blob);
+      const merged = concatFloat32(chunks);
+      const pcm = resampleLinear(merged, sampleRateRef.current, WHISPER_SAMPLE_RATE);
       const worker = ensureWorker();
+      processingRef.current = true;
+      inFlightFinalRef.current = final;
       const request: TranscribeRequest = {
         type: "transcribe",
         audio: pcm,
@@ -113,11 +137,46 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
         modelHost: getVoiceModelHost(),
       };
       worker.postMessage(request, [pcm.buffer]);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not process audio");
-      setStatus("error");
+    },
+    [ensureWorker]
+  );
+
+  useEffect(() => {
+    transcribeRef.current = transcribe;
+  }, [transcribe]);
+
+  const teardownCapture = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
-  }, [ensureWorker]);
+    if (processorRef.current) {
+      processorRef.current.onaudioprocess = null;
+      try {
+        processorRef.current.disconnect();
+      } catch {
+        /* already disconnected */
+      }
+    }
+    try {
+      sourceRef.current?.disconnect();
+    } catch {
+      /* already disconnected */
+    }
+    try {
+      silentRef.current?.disconnect();
+    } catch {
+      /* already disconnected */
+    }
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    const ctx = ctxRef.current;
+    processorRef.current = null;
+    sourceRef.current = null;
+    silentRef.current = null;
+    streamRef.current = null;
+    ctxRef.current = null;
+    if (ctx && ctx.state !== "closed") void ctx.close();
+  }, []);
 
   const startRecording = useCallback(
     async (language: VoiceLanguageCode) => {
@@ -128,54 +187,79 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
       }
       setError(null);
       setTranscript("");
+      setProgress(0);
+      pcmRef.current = [];
+      processingRef.current = false;
+      inFlightFinalRef.current = false;
+      pendingFinalRef.current = false;
       languageRef.current = language;
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
-        chunksRef.current = [];
-        const recorder = new MediaRecorder(stream);
-        recorder.ondataavailable = (event: BlobEvent) => {
-          if (event.data.size > 0) chunksRef.current.push(event.data);
+
+        const Ctor = getAudioContextCtor();
+        if (!Ctor) throw new Error("AudioContext unavailable");
+        const ctx = new Ctor();
+        ctxRef.current = ctx;
+        sampleRateRef.current = ctx.sampleRate || WHISPER_SAMPLE_RATE;
+
+        const source = ctx.createMediaStreamSource(stream);
+        sourceRef.current = source;
+        const processor = ctx.createScriptProcessor(4096, 1, 1);
+        processorRef.current = processor;
+        processor.onaudioprocess = (event: AudioProcessingEvent) => {
+          const channel = event.inputBuffer.getChannelData(0);
+          pcmRef.current.push(new Float32Array(channel));
         };
-        recorder.onstop = () => {
-          releaseStream();
-          void handleStop();
-        };
-        recorderRef.current = recorder;
-        recorder.start();
+        // Route through a muted gain node so capture runs without audible echo.
+        const silent = ctx.createGain();
+        silent.gain.value = 0;
+        silentRef.current = silent;
+        source.connect(processor);
+        processor.connect(silent);
+        silent.connect(ctx.destination);
+
+        ensureWorker();
+        intervalRef.current = setInterval(
+          () => transcribeRef.current(false),
+          PARTIAL_INTERVAL_MS
+        );
         setStatus("recording");
       } catch {
-        releaseStream();
+        teardownCapture();
         setError("Microphone access was denied or unavailable.");
         setStatus("error");
       }
     },
-    [supported, handleStop, releaseStream]
+    [supported, ensureWorker, teardownCapture]
   );
 
   const stopRecording = useCallback(() => {
-    if (recorderRef.current && recorderRef.current.state !== "inactive") {
-      recorderRef.current.stop();
-    } else {
-      releaseStream();
-    }
-  }, [releaseStream]);
+    teardownCapture(); // stops capture; pcmRef keeps the full audio for the final pass
+    setStatus("processing");
+    transcribeRef.current(true);
+  }, [teardownCapture]);
 
   const reset = useCallback(() => {
+    teardownCapture();
+    pcmRef.current = [];
+    processingRef.current = false;
+    inFlightFinalRef.current = false;
+    pendingFinalRef.current = false;
     setTranscript("");
     setError(null);
     setProgress(0);
     setStatus("idle");
-    chunksRef.current = [];
-  }, []);
+  }, [teardownCapture]);
 
   useEffect(() => {
     return () => {
-      releaseStream();
+      teardownCapture();
       workerRef.current?.terminate();
       workerRef.current = null;
     };
-  }, [releaseStream]);
+  }, [teardownCapture]);
 
   return {
     supported,

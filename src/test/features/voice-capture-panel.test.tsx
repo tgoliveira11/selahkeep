@@ -3,29 +3,31 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { VoiceCapturePanel } from "@/features/voice/voice-capture-panel";
 
-class FakeMediaRecorder {
-  state: "inactive" | "recording" = "inactive";
-  ondataavailable: ((e: { data: { size: number } }) => void) | null = null;
-  onstop: (() => void) | null = null;
-  start() {
-    this.state = "recording";
-    this.ondataavailable?.({ data: { size: 12 } });
-  }
-  stop() {
-    this.state = "inactive";
-    this.onstop?.();
-  }
+interface FakeProcessor {
+  onaudioprocess: ((e: { inputBuffer: { getChannelData: () => Float32Array } }) => void) | null;
+  connect: () => void;
+  disconnect: () => void;
 }
 
+let lastProcessor: FakeProcessor | null = null;
+
 class FakeAudioContext {
-  async decodeAudioData() {
-    return {
-      numberOfChannels: 1,
-      sampleRate: 16_000,
-      getChannelData: () => new Float32Array([0.1, 0.2, 0.3]),
-    };
+  sampleRate = 16_000;
+  state: "running" | "closed" = "running";
+  destination = {};
+  createMediaStreamSource() {
+    return { connect: () => {}, disconnect: () => {} };
+  }
+  createScriptProcessor(): FakeProcessor {
+    const node: FakeProcessor = { onaudioprocess: null, connect: () => {}, disconnect: () => {} };
+    lastProcessor = node;
+    return node;
+  }
+  createGain() {
+    return { gain: { value: 1 }, connect: () => {}, disconnect: () => {} };
   }
   close() {
+    this.state = "closed";
     return Promise.resolve();
   }
 }
@@ -45,7 +47,6 @@ class FakeWorker {
 }
 
 function installSupportedEnv() {
-  vi.stubGlobal("MediaRecorder", FakeMediaRecorder);
   vi.stubGlobal("AudioContext", FakeAudioContext);
   vi.stubGlobal("Worker", FakeWorker);
   Object.defineProperty(navigator, "mediaDevices", {
@@ -56,8 +57,17 @@ function installSupportedEnv() {
   });
 }
 
-describe("VoiceCapturePanel", () => {
+function pushAudio(seconds = 1) {
+  act(() => {
+    lastProcessor?.onaudioprocess?.({
+      inputBuffer: { getChannelData: () => new Float32Array(16_000 * seconds) },
+    });
+  });
+}
+
+describe("VoiceCapturePanel (streaming)", () => {
   beforeEach(() => {
+    lastProcessor = null;
     lastWorker = null;
     const store = new Map<string, string>();
     Object.defineProperty(window, "localStorage", {
@@ -69,12 +79,14 @@ describe("VoiceCapturePanel", () => {
         clear: () => store.clear(),
       },
     });
+    Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: undefined });
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
-  it("shows the privacy note and records → transcribes → inserts", async () => {
+  it("records, transcribes live, then finalizes and inserts", async () => {
     installSupportedEnv();
     const onInsert = vi.fn();
     const onClose = vi.fn();
@@ -82,35 +94,56 @@ describe("VoiceCapturePanel", () => {
 
     expect(screen.getByTestId("voice-privacy-note")).toHaveTextContent(/never uploaded/i);
 
-    // Choose Portuguese; persisted to localStorage.
-    fireEvent.change(screen.getByTestId("voice-language-select"), { target: { value: "pt" } });
-    expect(window.localStorage.getItem("selahkeep:voice:lang")).toBe("pt");
-
     await act(async () => {
       fireEvent.click(screen.getByTestId("voice-record"));
     });
     expect(await screen.findByTestId("voice-stop")).toBeInTheDocument();
+    expect(screen.getByTestId("voice-live-preview")).toBeInTheDocument();
+
+    pushAudio(1);
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("voice-stop"));
+      await Promise.resolve();
+      await Promise.resolve();
     });
 
-    // Worker received the audio with the chosen language.
-    await waitFor(() => expect(lastWorker?.posted.length).toBe(1));
-    expect((lastWorker?.posted[0] as { language: string }).language).toBe("pt");
-
-    const review = await screen.findByTestId("voice-review");
-    expect(review).toBeInTheDocument();
-    const textarea = screen.getByLabelText("Review before inserting") as HTMLTextAreaElement;
+    // Final pass produced an editable review with the transcript.
+    const textarea = (await screen.findByLabelText(
+      "Review before inserting"
+    )) as HTMLTextAreaElement;
     expect(textarea.value).toBe("Hello world");
+    // Worker received 16 kHz mono audio.
+    expect((lastWorker?.posted[0] as { audio: Float32Array }).audio.length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByTestId("voice-insert"));
     expect(onInsert).toHaveBeenCalledWith("Hello world");
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("shows a partial transcript while still recording", async () => {
+    vi.useFakeTimers();
+    installSupportedEnv();
+    render(<VoiceCapturePanel onInsert={vi.fn()} onClose={vi.fn()} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("voice-record"));
+      await Promise.resolve();
+    });
+    pushAudio(1);
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500); // partial interval fires
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Still recording (Stop visible) but the live preview already has text.
+    expect(screen.getByTestId("voice-stop")).toBeInTheDocument();
+    expect(screen.getByTestId("voice-live-preview")).toHaveTextContent("Hello world");
+  });
+
   it("shows an unsupported message when the browser lacks support", () => {
-    // No MediaRecorder/Worker stubs installed.
     render(<VoiceCapturePanel onInsert={vi.fn()} onClose={vi.fn()} />);
     expect(screen.getByText(/not supported in this browser/i)).toBeInTheDocument();
   });

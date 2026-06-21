@@ -127,15 +127,30 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
             )}
             {recording && (
               <span className="text-sm text-[var(--danger)]" role="status" data-testid="voice-recording-indicator">
-                ● Recording…
+                ● Recording… transcribing live
               </span>
             )}
           </div>
 
+          {recording && (
+            <div className="mt-3 space-y-1" data-testid="voice-live-preview" aria-live="polite">
+              <span className="block text-xs text-[var(--muted)]">Live transcript</span>
+              <p className="min-h-[60px] rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm whitespace-pre-wrap">
+                {draft || (
+                  <span className="text-[var(--muted)]">
+                    {progress > 0 && progress < 1
+                      ? `Preparing speech model… ${Math.round(progress * 100)}%`
+                      : "Listening…"}
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
+
           {processing && (
             <p className="mt-3 text-sm text-[var(--muted)]" role="status" aria-live="polite">
-              Transcribing on your device…{" "}
-              {progress > 0 ? `${Math.round(progress * 100)}%` : "preparing model"}
+              Finishing transcription on your device…{" "}
+              {progress > 0 ? `${Math.round(progress * 100)}%` : ""}
             </p>
           )}
 
@@ -145,7 +160,7 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
             </Alert>
           )}
 
-          {(status === "ready" || draft) && (
+          {status === "ready" && (
             <div className="mt-3 space-y-2" data-testid="voice-review">
               <label className="block text-sm text-[var(--muted)]" htmlFor="voice-transcript">
                 Review before inserting

@@ -11,6 +11,7 @@ import {
   resampleLinear,
   resampledLength,
   clampPcm,
+  concatFloat32,
   WHISPER_SAMPLE_RATE,
 } from "@/lib/voice/audio-pcm";
 import { formatTranscript, appendTranscript } from "@/lib/voice/transcript-format";
@@ -74,6 +75,16 @@ describe("audio pcm", () => {
 
   it("clamps out-of-range samples", () => {
     expect(Array.from(clampPcm(new Float32Array([2, -2, 0.5])))).toEqual([1, -1, 0.5]);
+  });
+
+  it("concatenates Float32 chunks in order", () => {
+    const merged = concatFloat32([
+      new Float32Array([1, 2]),
+      new Float32Array([3]),
+      new Float32Array([4, 5]),
+    ]);
+    expect(Array.from(merged)).toEqual([1, 2, 3, 4, 5]);
+    expect(concatFloat32([]).length).toBe(0);
   });
 });
 

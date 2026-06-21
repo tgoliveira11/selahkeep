@@ -8,6 +8,19 @@
 
 export const WHISPER_SAMPLE_RATE = 16_000;
 
+/** Concatenate captured Float32 PCM chunks into one contiguous buffer. */
+export function concatFloat32(chunks: Float32Array[]): Float32Array {
+  let total = 0;
+  for (const chunk of chunks) total += chunk.length;
+  const out = new Float32Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return out;
+}
+
 /** Average interleaved/mono channel buffers down to a single mono channel. */
 export function mixToMono(channels: Float32Array[]): Float32Array {
   if (channels.length === 0) return new Float32Array(0);
