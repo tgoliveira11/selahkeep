@@ -4,6 +4,7 @@ import {
   text,
   timestamp,
   boolean,
+  integer,
   jsonb,
   index,
 } from "drizzle-orm/pg-core";
@@ -75,5 +76,35 @@ export const notes = pgTable(
   (table) => [index("idx_notes_vault_id_created_at").on(table.vaultId, table.createdAt)]
 );
 
+/**
+ * Immutable, append-only encrypted snapshots of a note's editable content.
+ * Stores only encrypted payloads (no plaintext) — see
+ * `docs/TDR_Note_Version_History.md`. Content payloads are AAD-bound to the
+ * version `id`; the wrapped note key is bound to the parent `note_id`.
+ */
+export const noteVersions = pgTable(
+  "note_versions",
+  {
+    id: uuid("id").primaryKey(),
+    noteId: uuid("note_id")
+      .notNull()
+      .references(() => notes.id, { onDelete: "cascade" }),
+    vaultId: uuid("vault_id")
+      .notNull()
+      .references(() => userVaults.id, { onDelete: "cascade" }),
+    versionNumber: integer("version_number").notNull(),
+    encryptedMetadata: jsonb("encrypted_metadata").notNull(),
+    encryptedWrappedNoteKey: jsonb("encrypted_wrapped_note_key").notNull(),
+    encryptedBody: jsonb("encrypted_body").notNull(),
+    bodyEncryptionVersion: text("body_encryption_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_note_versions_note_id_version").on(table.noteId, table.versionNumber),
+    index("idx_note_versions_note_id_created_at").on(table.noteId, table.createdAt),
+  ]
+);
+
 export type Note = typeof notes.$inferSelect;
+export type NoteVersion = typeof noteVersions.$inferSelect;
 export type VaultEnvelope = typeof vaultEnvelopes.$inferSelect;

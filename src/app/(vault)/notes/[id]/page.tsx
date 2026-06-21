@@ -16,6 +16,8 @@ import type { EditorStatus } from "@/components/notes/editor-status-bar";
 import { NoteFocusModeToggle } from "@/features/notes/note-focus-mode-toggle";
 import { CategoryTagFields } from "@/features/notes/category-tag-fields";
 import { NoteReadingView } from "@/components/notes/note-reading-view";
+import { NoteVersionHistory } from "@/components/notes/note-version-history";
+import type { DecryptedNoteVersion } from "@/lib/crypto-client/note-versions";
 import { useNoteVaultBeforeAutoLock } from "@/features/notes/use-note-vault-before-auto-lock";
 import { useVaultAutoLockedCopy } from "@/features/vault/use-vault-auto-locked-copy";
 import { touchVaultActivity } from "@/features/vault/use-vault-activity";
@@ -97,6 +99,8 @@ export default function NoteDetailPage() {
   const [focusMode, setFocusMode] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [versionRefreshKey, setVersionRefreshKey] = useState(0);
+  const [restoringVersion, setRestoringVersion] = useState(false);
   const checklistSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoLocked = useVaultAutoLockedCopy();
 
@@ -244,6 +248,7 @@ export default function NoteDetailPage() {
             await updateNote(id, metadata, nextBody, wrappedKey);
             const nextMeta = { ...metadata, updatedAt: new Date().toISOString() };
             setMetadata(nextMeta);
+            setVersionRefreshKey((k) => k + 1);
             setChecklistSaveState("saved");
             window.setTimeout(() => setChecklistSaveState("idle"), 2000);
           } catch (e) {
@@ -329,9 +334,38 @@ export default function NoteDetailPage() {
       setDraftPrompt(null);
       setEditing(false);
       setSavedFlash(true);
+      setVersionRefreshKey((k) => k + 1);
       window.setTimeout(() => setSavedFlash(false), 2000);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save");
+    }
+  }
+
+  async function handleRestoreVersion(content: DecryptedNoteVersion) {
+    if (!metadata || !wrappedKey) return;
+    setError(null);
+    setRestoringVersion(true);
+    try {
+      const restoredMetadata: NoteMetadataPlaintext = {
+        ...metadata,
+        title: content.metadata.title,
+        categoryId: content.metadata.categoryId,
+        tagIds: content.metadata.tagIds,
+        answered: content.metadata.answered,
+      };
+      await updateNote(id, restoredMetadata, content.body, wrappedKey);
+      const nextMeta = { ...restoredMetadata, updatedAt: new Date().toISOString() };
+      setMetadata(nextMeta);
+      setBody(content.body);
+      setBaseline(editSnapshot(nextMeta, content.body));
+      setVersionRefreshKey((k) => k + 1);
+      setSavedFlash(true);
+      window.setTimeout(() => setSavedFlash(false), 2000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to restore version");
+      throw e;
+    } finally {
+      setRestoringVersion(false);
     }
   }
 
@@ -671,6 +705,18 @@ export default function NoteDetailPage() {
           onPermanentDelete={() => setPermanentDeleteOpen(true)}
           onChecklistChange={persistChecklistToggle}
           searchQuery={searchQuery}
+        />
+      )}
+
+      {!editing && metadata && (
+        <NoteVersionHistory
+          noteId={id}
+          enabled={canRead}
+          currentTitle={metadata.title}
+          currentBody={body}
+          onRestore={handleRestoreVersion}
+          restoring={restoringVersion || busy}
+          refreshKey={versionRefreshKey}
         />
       )}
 

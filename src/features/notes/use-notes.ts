@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { notesApi } from "@/lib/api-client/notes";
+import { noteVersionsApi } from "@/lib/api-client/note-versions";
 import { vaultApi } from "@/lib/api-client/vault";
 import {
   decryptNote,
@@ -10,6 +11,8 @@ import {
   type EncryptNoteInput,
   type NoteMetadataPlaintext,
 } from "@/lib/crypto-client/notes";
+import { encryptNoteVersion } from "@/lib/crypto-client/note-versions";
+import { normalizeNoteMetadata } from "@/lib/notes/note-metadata";
 import {
   addVaultIndexEntry,
   createEmptyVaultIndex,
@@ -48,6 +51,39 @@ async function syncVaultIndex(
   const next = mutate(current);
   const encrypted = await encryptVaultIndex(next, userId, vaultKey);
   await vaultApi.updateIndex(encrypted);
+}
+
+/**
+ * Append an immutable encrypted version snapshot of a note's content.
+ *
+ * History is additive and best-effort: a failure here must never fail the
+ * primary note save, so the caller swallows errors. The snapshot is encrypted
+ * client-side under the note's existing Note Key (see
+ * `docs/TDR_Note_Version_History.md`). Returns true when the version persisted.
+ */
+async function appendNoteVersionSnapshot(
+  userId: string,
+  noteId: string,
+  metadata: NoteMetadataPlaintext,
+  body: string,
+  wrappedKey: import("@/lib/validation/encrypted-payload").EncryptedPayload
+): Promise<boolean> {
+  try {
+    const versionId = crypto.randomUUID();
+    const payload = await encryptNoteVersion(
+      userId,
+      noteId,
+      versionId,
+      normalizeNoteMetadata(metadata),
+      body,
+      wrappedKey
+    );
+    await noteVersionsApi.create(noteId, payload);
+    return true;
+  } catch {
+    // History is additive; never block or surface the primary save.
+    return false;
+  }
 }
 
 async function loadNoteForUpdate(noteId: string) {
@@ -111,6 +147,26 @@ export function useNotes(userId: string | null) {
         const payload = await encryptNote(userId, noteId, { ...input, title });
         const note = await notesApi.create({ id: noteId, ...payload });
 
+        await appendNoteVersionSnapshot(
+          userId,
+          noteId,
+          normalizeNoteMetadata({
+            title,
+            categoryId: input.categoryId ?? null,
+            tagIds: input.tagIds ?? [],
+            answered: input.answered ?? false,
+            pinned: input.pinned ?? false,
+            favorite: input.favorite ?? false,
+            archived: input.archived ?? false,
+            trashed: input.trashed ?? false,
+            trashedAt: input.trashedAt ?? null,
+            createdAt: note.createdAt,
+            updatedAt: note.updatedAt,
+          }),
+          input.body,
+          payload.encryptedWrappedNoteKey
+        );
+
         await syncVaultIndex(userId, (index) =>
           addVaultIndexEntry(
             index,
@@ -156,6 +212,13 @@ export function useNotes(userId: string | null) {
         const result = await persistMetadataUpdate(userId, noteId, metadata, body, existingWrappedKey, {
           appendUpdatedEvent: true,
         });
+        await appendNoteVersionSnapshot(
+          userId,
+          noteId,
+          result.metadata,
+          body,
+          existingWrappedKey
+        );
         return result.note;
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to update note";

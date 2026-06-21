@@ -13,6 +13,8 @@ const aadSchema = z.object({
     "note_metadata",
     "note_body",
     "note_key",
+    "note_version_metadata",
+    "note_version_body",
     "vault_key",
     "vault_settings",
     "vault_index",

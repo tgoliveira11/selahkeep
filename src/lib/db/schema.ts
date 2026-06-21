@@ -17,7 +17,9 @@ export {
   userVaults,
   vaultEnvelopes,
   notes,
+  noteVersions,
   type Note,
+  type NoteVersion,
   type VaultEnvelope,
 } from "./app-schema";
 

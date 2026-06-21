@@ -1,8 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { notesApi } from "@/lib/api-client/notes";
+import { noteVersionsApi } from "@/lib/api-client/note-versions";
 import { vaultApi } from "@/lib/api-client/vault";
 import { passkeysApi } from "@/lib/api-client/passkeys";
-import { createNoteInput, encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
+import {
+  createNoteInput,
+  createNoteVersionInput,
+  encryptedPayload,
+  NOTE_ID,
+  USER_ID,
+  VERSION_ID,
+} from "@/test/helpers/fixtures";
 
 describe("typed API client modules", () => {
   beforeEach(() => {
@@ -58,6 +66,15 @@ describe("typed API client modules", () => {
         }
         if (url === "/api/passkeys" && init?.method === "DELETE") {
           return new Response(JSON.stringify({ success: true }), { status: 200 });
+        }
+        if (url === `/api/notes/${NOTE_ID}/versions` && init?.method === "POST") {
+          return new Response(JSON.stringify({ id: VERSION_ID, versionNumber: 1 }), { status: 201 });
+        }
+        if (url === `/api/notes/${NOTE_ID}/versions`) {
+          return new Response(JSON.stringify([{ id: VERSION_ID, versionNumber: 1 }]), { status: 200 });
+        }
+        if (url === `/api/notes/${NOTE_ID}/versions/${VERSION_ID}`) {
+          return new Response(JSON.stringify({ id: VERSION_ID }), { status: 200 });
         }
         return new Response("{}", { status: 404 });
       })
@@ -123,5 +140,16 @@ describe("typed API client modules", () => {
 
   it("passkeysApi covers removeAll", async () => {
     await expect(passkeysApi.removeAll()).resolves.toEqual({ success: true });
+  });
+
+  it("noteVersionsApi covers list/get/create", async () => {
+    await expect(noteVersionsApi.list(NOTE_ID)).resolves.toEqual([
+      { id: VERSION_ID, versionNumber: 1 },
+    ]);
+    await expect(noteVersionsApi.get(NOTE_ID, VERSION_ID)).resolves.toEqual({ id: VERSION_ID });
+    const { id: _id, ...version } = createNoteVersionInput();
+    await expect(
+      noteVersionsApi.create(NOTE_ID, { id: VERSION_ID, ...version })
+    ).resolves.toEqual({ id: VERSION_ID, versionNumber: 1 });
   });
 });

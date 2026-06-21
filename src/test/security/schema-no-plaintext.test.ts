@@ -32,4 +32,21 @@ describe("database schema has no plaintext note columns", () => {
     expect(notesSection).not.toMatch(/\bbody:\s/);
     expect(notesSection).not.toMatch(/\banswered:\s/);
   });
+
+  it("note_versions table stores only encrypted fields", () => {
+    const schema = readFileSync(join(process.cwd(), "src/lib/db/app-schema.ts"), "utf-8");
+    const start = schema.indexOf("export const noteVersions");
+    expect(start).toBeGreaterThan(-1);
+    const section = schema.slice(start);
+
+    for (const col of FORBIDDEN_COLUMNS) {
+      expect(section).not.toContain(col);
+    }
+
+    expect(section).toContain("encryptedMetadata");
+    expect(section).toContain("encryptedWrappedNoteKey");
+    expect(section).toContain("encryptedBody");
+    expect(section).not.toMatch(/\btitle:\s/);
+    expect(section).not.toMatch(/\bbody:\s/);
+  });
 });

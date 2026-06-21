@@ -107,6 +107,22 @@ Encrypted persistent search index is deferred. Current search uses in-memory dec
 
 Letters domain removed in Phase 3 (`letters` table dropped via `0010_drop_letters.sql`).
 
+## Note version history
+
+- Each saved content state is captured as an immutable snapshot in `note_versions` (migration `0012`). Snapshots store only encrypted payloads — no plaintext columns (guarded by `schema-no-plaintext.test.ts`).
+- A version **reuses the note's existing Note Key**; the snapshot metadata/body are encrypted client-side and **AAD-bound to a unique `versionId`** (`note_version_metadata` / `note_version_body`), while the copied wrapped key stays bound to `noteId` (`note_key`). This prevents the server from swapping ciphertext between versions or notes. Server validation: `assertNoteVersionAad()`.
+- Version content is decryptable only with the UVK in the active vault session; locking the vault removes the ability to read history.
+- Version creation is best-effort and additive: a failed snapshot never blocks or corrupts the primary note save, and **restore appends a new version** rather than rewriting history.
+- Retention is bounded by `NOTE_VERSION_HISTORY_LIMIT` (default 50/note); pruning is server-side on row counts/version numbers only — never inspecting plaintext. Versions cascade-delete with the note and on account deletion.
+- Diffing (GitHub-style line comparison) runs entirely client-side on already-decrypted bodies (`src/lib/notes/text-diff.ts`). No version data enters logs, the vault index, audit events, or admin endpoints. See `docs/TDR_Note_Version_History.md`.
+
+## Voice notes (on-device transcription)
+
+- Microphone audio and the resulting transcript are treated as **private note content**: they are transcribed **on the device** (Whisper via transformers.js in a Web Worker) and **never** transmitted to any server, API, or third party in plaintext.
+- Only model **weights** are fetched over the network (once, then cached) — content-free files, optionally self-hosted via `NEXT_PUBLIC_VOICE_MODEL_HOST`. The browser cloud **Web Speech API is not used** for note content (it would stream audio to a third party).
+- Audio is held in memory and released immediately after transcription; it is never written to IndexedDB, localStorage, or disk. The only persisted voice value is the chosen language code (`selahkeep:voice:lang`).
+- The transcript is reviewed/edited by the user and inserted into the normal editor, after which it follows the standard client-side encrypted-note path. No new API routes, DB columns, or server code. Guard: `voice-no-content-egress.test.ts`. See `docs/TDR_Local_Voice_Notes.md`.
+
 ## Observability
 
 Never log: plaintext title/body, User Vault Key, Letter Key, Note Key, recovery code, decrypted payloads.

@@ -47,9 +47,11 @@ src/
     layout/            # SiteShell, Nav, SiteFooter, PageLayout
     notes/           # NoteCard
     notes/             # NoteCard
-  features/            # Client feature flows (passkey, vault)
+  features/            # Client feature flows (passkey, vault, notes, voice)
+    voice/             # On-device dictation: panel, hook, transcription Web Worker
   lib/
-    crypto-client/     # Note encryption + legacy shims re-exporting src/modules/vault
+    crypto-client/     # Note + version encryption + legacy shims re-exporting src/modules/vault
+    voice/             # Pure voice helpers: languages, audio PCM, transcript format, config
     modules/vault/     # Vault envelopes, session, passkey PRF (@tgoliveira/vault-core@0.2.0)
     api-client/        # HTTP client for API
     validation/        # Shared Zod schemas
@@ -74,6 +76,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 - WebAuthn challenge indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
 
 - `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted notes (Markdown body, metadata blob)
+- `GET/POST /api/notes/:id/versions`, `GET /api/notes/:id/versions/:versionId` — immutable encrypted note version snapshots (history + GitHub-style compare/restore). Client-encrypted under the note's Note Key, AAD-bound to a per-version id; retention via `NOTE_VERSION_HISTORY_LIMIT`. Table `note_versions` (migration `0012`). See `docs/TDR_Note_Version_History.md`
 - `GET/PATCH /api/vault/index` — encrypted vault index blob (v3: note lifecycle metadata, categories, tags, saved views, recently viewed)
 - `GET/PATCH /api/vault/settings` — encrypted vault settings (unlock behavior, setup metadata)
 - `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted note payloads only
@@ -120,6 +123,7 @@ Changing or resetting the account password does **not** unlock, recover, or rota
 ```text
 Note metadata/body -> Note Key -> User Vault Key -> vault envelopes
 Note metadata/body -> Note Key -> User Vault Key
+Note version snapshot -> (same) Note Key -> User Vault Key   # note_versions, AAD bound to versionId
 Vault index (titles for list) -> User Vault Key
 ```
 
@@ -140,13 +144,27 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + **purple** primary)
 - **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview; visual note editor (Tiptap) with Markdown canonical storage — see [`docs/EDITOR_IMPLEMENTATION_DECISION.md`](./docs/EDITOR_IMPLEMENTATION_DECISION.md); encrypted IndexedDB drafts; quick insert, focus mode, daily note; tag normalization before encrypted index write
 
+## Voice notes (on-device transcription)
+
+Dictation is a **client-only** feature with **no server surface**. The resulting note is saved through the existing encrypted `POST /api/notes` flow.
+
+```text
+/notes/new
+  -> VoiceCapturePanel (src/features/voice/, lazy via next/dynamic, ssr:false)
+       -> useVoiceTranscription (mic capture + worker lifecycle)
+            -> transcription.worker.ts -> dynamic import("@huggingface/transformers") (Whisper, WASM/WebGPU)
+       -> pure helpers in src/lib/voice/ (languages, audio PCM mixdown/resample, transcript format, config)
+```
+
+Only **model weights** are fetched (once, cached); microphone audio and the transcript never leave the browser. Languages: English, Portuguese, Spanish. Config: `NEXT_PUBLIC_VOICE_NOTES_ENABLED`, `NEXT_PUBLIC_VOICE_MODEL`, `NEXT_PUBLIC_VOICE_MODEL_HOST`. The cloud Web Speech API is **not** used for note content. See `docs/TDR_Local_Voice_Notes.md`.
+
 ## AAD binding (ADR-005)
 
 Client generates note UUIDs and binds encrypted payloads with AAD:
 
 - `aad.userId` — authenticated user ID
 - `aad.resourceId` — note or vault resource ID
-- `aad.field` — encrypted field name (`note_metadata`, `note_body`, `note_key`, `vault_key`, etc.)
+- `aad.field` — encrypted field name (`note_metadata`, `note_body`, `note_key`, `note_version_metadata`, `note_version_body`, `vault_key`, etc.)
 
 Server validates AAD in `src/server/policies/aad-validation.ts` before storage. Client verifies AAD in `src/lib/crypto-client/aad-verify.ts` before decryption.
 

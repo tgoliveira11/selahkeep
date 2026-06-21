@@ -1,5 +1,6 @@
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import type { CreateNoteInput, UpdateNoteInput } from "@/lib/validation/notes";
+import type { CreateNoteVersionInput } from "@/lib/validation/note-versions";
 
 export class AadValidationError extends Error {
   constructor(message: string) {
@@ -41,6 +42,29 @@ export function assertNoteCreateAad(userId: string, noteId: string, input: Creat
   assertPayloadAad(input.encryptedMetadata, { userId, resourceId: noteId, field: "note_metadata" });
   assertPayloadAad(input.encryptedBody, { userId, resourceId: noteId, field: "note_body" });
   assertPayloadAad(input.encryptedWrappedNoteKey, { userId, resourceId: noteId, field: "note_key" });
+}
+
+export function assertNoteVersionAad(
+  userId: string,
+  noteId: string,
+  versionId: string,
+  input: CreateNoteVersionInput
+): void {
+  assertPayloadAad(input.encryptedMetadata, {
+    userId,
+    resourceId: versionId,
+    field: "note_version_metadata",
+  });
+  assertPayloadAad(input.encryptedBody, {
+    userId,
+    resourceId: versionId,
+    field: "note_version_body",
+  });
+  assertPayloadAad(input.encryptedWrappedNoteKey, {
+    userId,
+    resourceId: noteId,
+    field: "note_key",
+  });
 }
 
 export function assertNoteUpdateAad(userId: string, noteId: string, input: UpdateNoteInput): void {

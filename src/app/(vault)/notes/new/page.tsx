@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { PageLayout } from "@/components/layout/page-layout";
@@ -59,6 +60,13 @@ import { VaultLockedState } from "@/features/vault/vault-locked-state";
 import { useNoteVaultBeforeAutoLock } from "@/features/notes/use-note-vault-before-auto-lock";
 import { useVaultAutoLockedCopy } from "@/features/vault/use-vault-auto-locked-copy";
 import { touchVaultActivity } from "@/features/vault/use-vault-activity";
+import { appendTranscript } from "@/lib/voice/transcript-format";
+import { isVoiceNotesEnabled } from "@/lib/voice/voice-config";
+
+const VoiceCapturePanel = dynamic(
+  () => import("@/features/voice/voice-capture-panel").then((m) => m.VoiceCapturePanel),
+  { ssr: false }
+);
 
 const TITLE_REQUIRED_MESSAGE = "Add a title before saving your note.";
 
@@ -69,6 +77,8 @@ export default function NewNotePage() {
   const isDailyNote = searchParams.get("daily") === "1";
   const templateFromQuery = parseNoteTemplateId(searchParams.get("template"));
   const [focusMode, setFocusMode] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const voiceEnabled = isVoiceNotesEnabled();
   const [title, setTitle] = useState(() => {
     if (isDailyNote) return formatDailyNoteTitle();
     if (templateFromQuery && templateFromQuery !== "blank") {
@@ -418,6 +428,30 @@ export default function NewNotePage() {
               setBody((current) => current + markdown);
             }}
           />
+
+          {voiceEnabled && (
+            <div className={cn(focusMode && "note-focus-hide")} data-testid="new-note-voice-section">
+              {voiceOpen ? (
+                <VoiceCapturePanel
+                  onClose={() => setVoiceOpen(false)}
+                  onInsert={(text) => {
+                    touchVaultActivity();
+                    activateDraft("content");
+                    setBody((current) => appendTranscript(current, text));
+                  }}
+                />
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setVoiceOpen(true)}
+                  data-testid="new-note-dictate"
+                >
+                  🎙 Dictate a note
+                </Button>
+              )}
+            </div>
+          )}
 
           <div data-testid="new-note-editor-field">
             <FormField id="note-body" label="Your note">

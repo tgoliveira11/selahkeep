@@ -102,6 +102,10 @@ Existing `marked` + `isomorphic-dompurify` remain for read-only preview and sani
 - Toolbar buttons have `aria-label` and `min-h-11` touch targets (via `globals.css`).
 - Focus ring on editor content area.
 
+## Voice input into the editor
+
+`/notes/new` can populate the editor body by **dictation**. The transcript is produced **on-device** (Whisper via transformers.js) and inserted as plain Markdown text through the normal editor `onChange`; the editor and canonical Markdown storage are unchanged. No audio or transcript leaves the browser. See [`TDR_Local_Voice_Notes.md`](./TDR_Local_Voice_Notes.md).
+
 ## Testing
 
 - Unit: roundtrip warnings, paste sanitization, markdown actions (incl. code shortcut)

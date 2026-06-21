@@ -85,6 +85,13 @@
       "when": 1781250000000,
       "tag": "0011_drop_trusted_devices",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1781260000000,
+      "tag": "0012_note_versions",
+      "breakpoints": true
     }
   ]
 }

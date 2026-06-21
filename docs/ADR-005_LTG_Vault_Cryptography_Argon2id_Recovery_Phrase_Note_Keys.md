@@ -139,7 +139,7 @@ Unchanged core from ADR-001:
   "aad": {
     "userId": "<uuid>",
     "resourceId": "<uuid>",
-    "field": "vault_key | vault_settings | vault_index | title | body | letter_key | note_metadata | note_body | note_key"
+    "field": "vault_key | vault_settings | vault_index | title | body | letter_key | note_metadata | note_body | note_key | note_version_metadata | note_version_body | note_draft"
   }
 }
 ```
@@ -196,6 +196,17 @@ Markdown plaintext encrypted under Note Key. Stored in `notes.encrypted_body`. V
 Implementation: `src/lib/crypto-client/notes.ts`.
 
 ---
+
+### Encrypted note versions (note history)
+
+Each saved content state is also captured as an immutable **version** snapshot in the `note_versions` table. A version **reuses the note's existing Note Key** (no new key material) and is encrypted client-side:
+
+- `note_version_metadata` and `note_version_body` payloads are AAD-bound to a unique, client-generated **`versionId`** (`resourceId: versionId`).
+- The version stores a copy of the note's wrapped Note Key (`field: note_key`, `resourceId: noteId`).
+
+Binding content to `versionId` prevents the server from swapping ciphertext between versions; the wrapped key stays bound to `noteId`. Versions are readable only with the UVK, cascade-delete with the note, and are retention-pruned server-side on row counts only (`NOTE_VERSION_HISTORY_LIMIT`). Server AAD validation: `assertNoteVersionAad()`. Full design: `docs/TDR_Note_Version_History.md`.
+
+Implementation: `src/lib/crypto-client/note-versions.ts`, `notes.encrypted_*` snapshot rows in `note_versions`, `GET/POST /api/notes/:id/versions`.
 
 ## 8. Vault index (Phase 2)
 

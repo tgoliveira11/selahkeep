@@ -564,6 +564,66 @@ paths:
           description: Deleted
         '404':
           description: Not found
+  /api/notes/{id}/versions:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Notes]
+      summary: List encrypted version snapshots for a note (newest first)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Encrypted note versions
+        '404':
+          description: Note not found
+    post:
+      tags: [Notes]
+      summary: Append an encrypted version snapshot (client-encrypted, AAD-bound to versionId)
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNoteRequest'
+      responses:
+        '201':
+          description: Version created
+        '400':
+          description: Plaintext rejected or invalid payload
+        '404':
+          description: Note not found
+  /api/notes/{id}/versions/{versionId}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Notes]
+      summary: Get one encrypted note version
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Encrypted note version
+        '404':
+          description: Not found
   /api/vault/index:
     get:
       tags: [Vault]
