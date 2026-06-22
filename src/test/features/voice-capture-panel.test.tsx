@@ -98,7 +98,7 @@ describe("VoiceCapturePanel (streaming)", () => {
     const onClose = vi.fn();
     render(<VoiceCapturePanel onInsert={onInsert} onClose={onClose} />);
 
-    expect(screen.getByTestId("voice-privacy-note")).toHaveTextContent(/never uploaded/i);
+    expect(screen.getByTestId("voice-privacy-note")).toHaveTextContent(/no audio leaves it/i);
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("voice-record"));
