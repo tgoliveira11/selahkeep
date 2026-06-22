@@ -48,10 +48,10 @@ describe("home page marketing content", () => {
 
   it("explains writing and keeping notes in a vault", () => {
     render(<HomePage />);
-    expect(screen.getByRole("heading", { name: /write privately/i })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /pause and reflect/i })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /keep everything in one vault/i })).toBeTruthy();
-    expect(screen.getByText(/compose prayers, reflections/i)).toBeTruthy();
-    expect(screen.getByText(/save your writing securely/i)).toBeTruthy();
+    expect(screen.getByText(/write prayers, reflections/i)).toBeTruthy();
+    expect(screen.getByText(/return whenever you need comfort/i)).toBeTruthy();
   });
 
   it("explains marking notes as resolved", () => {
@@ -69,14 +69,14 @@ describe("home page marketing content", () => {
     render(<HomePage />);
     expect(screen.getByText(/coming later/i)).toBeTruthy();
     expect(screen.getByText(/import\/export/i)).toBeTruthy();
-    expect(screen.getByText(/not available today/i)).toBeTruthy();
+    expect(screen.getByText(/not in this mvp/i)).toBeTruthy();
   });
 
   it("explains account vs vault separation", () => {
     render(<HomePage />);
     const privacySection = screen.getByRole("region", { name: homeCopy.privacy.heading });
     expect(privacySection.textContent).toMatch(/account password signs you in only/i);
-    expect(privacySection.textContent).toMatch(/import and export are not available/i);
+    expect(privacySection.textContent).toMatch(/does not unlock your vault/i);
   });
 
   it("has create account and sign in CTAs", () => {

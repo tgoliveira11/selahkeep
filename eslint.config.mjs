@@ -2,7 +2,7 @@ import nextConfig from "eslint-config-next";
 
 const eslintConfig = [
   {
-    ignores: ["coverage/**", "public/swagger-ui/**", "public/worklets/**", ".claude/**"],
+    ignores: ["coverage/**", "public/swagger-ui/**", "public/worklets/**", ".claude/**", "docs/design/**"],
   },
   ...nextConfig,
   {
