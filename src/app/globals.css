@@ -306,14 +306,13 @@ body {
 
 .vault-status-dock-handle {
   position: absolute;
-  left: 50%;
+  right: 1.5rem;
   bottom: -0.875rem;
   z-index: 50;
   display: inline-flex;
   height: 2rem;
   min-width: 4.25rem;
   max-width: 10rem;
-  transform: translateX(-50%);
   align-items: center;
   justify-content: center;
   gap: 0.3125rem;
@@ -402,12 +401,11 @@ body {
 
 .vault-status-dock-panel {
   position: absolute;
-  left: 50%;
+  right: 1.5rem;
   top: calc(100% - 0.25rem);
   z-index: 50;
   width: min(26.25rem, calc(100vw - 2rem));
   max-width: 26.25rem;
-  transform: translateX(-50%);
   border: 1px solid color-mix(in srgb, var(--primary) 14%, var(--border));
   border-radius: 1rem;
   background: linear-gradient(
