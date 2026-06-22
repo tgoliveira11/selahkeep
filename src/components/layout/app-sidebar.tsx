@@ -10,6 +10,7 @@ import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { lockVaultSession } from "@/lib/crypto-client/vault-session";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/ui/cn";
 
 /** Library destinations (filtered views of the notes list), matching the mockup. */
@@ -145,6 +146,10 @@ export function AppSidebar() {
       </nav>
 
       <div className="mt-auto border-t border-[var(--border)] pt-3">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-[11px] font-medium text-[var(--muted)]">Theme</span>
+          <ThemeToggle />
+        </div>
         <div className="flex items-center gap-2.5">
           <span className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-[linear-gradient(150deg,var(--accent),var(--primary-solid))] text-xs font-semibold text-white">
             {initial}

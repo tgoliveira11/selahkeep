@@ -4,6 +4,7 @@ import "./globals.css";
 import { SecureAuthProviders } from "@/components/secure-auth-providers";
 import { secureAuthUiPublicConfig } from "@/lib/secure-auth-ui-public-config";
 import { SkipLink } from "@/components/layout/skip-link";
+import { ThemeInit } from "@/components/layout/theme-toggle";
 import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/marketing/brand";
 
 /**
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={fontSans.variable}>
       <body className="relative min-h-screen antialiased">
+        <ThemeInit />
         <SkipLink />
         <SecureAuthProviders uiConfig={secureAuthUiPublicConfig}>{children}</SecureAuthProviders>
       </body>

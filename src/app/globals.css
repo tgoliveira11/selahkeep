@@ -63,9 +63,13 @@
   --z-toolbar-popover: 40;
 }
 
-/* Dark theme (auto). A future toggle can set [data-theme="dark"] to force it. */
+/*
+ * Dark theme. Applied automatically when the OS prefers dark UNLESS the user
+ * has explicitly chosen light (data-theme="light"), and always when the user
+ * explicitly chooses dark (the [data-theme="dark"] block below).
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #161219;
     --bg: #161219;
     --bg-2: #1b1622;
@@ -114,6 +118,57 @@
     --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.45);
     --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.55);
   }
+}
+
+/* Explicit dark choice (overrides OS preference). */
+[data-theme="dark"] {
+  --background: #161219;
+  --bg: #161219;
+  --bg-2: #1b1622;
+  --foreground: #f3eef8;
+  --fg: #f3eef8;
+  --fg-2: #c7bdd2;
+  --muted: #968aa5;
+  --card: #1e1922;
+  --card-muted: #241d2e;
+  --card-2: #241d2e;
+  --primary: #b79be0;
+  --primary-solid: #7e5cb8;
+  --primary-hover: #8d68c6;
+  --on-primary: #ffffff;
+  --accent: #b79be0;
+  --accent-muted: #2c2436;
+  --lilac: #2c2436;
+  --lilac-soft: #221b2c;
+  --border: #2e2738;
+  --border-2: #3a3147;
+  --danger: #f1a3a3;
+  --danger-muted: rgba(185, 28, 28, 0.2);
+  --danger-bg: rgba(185, 28, 28, 0.2);
+  --danger-bd: #5e3236;
+  --success: #7fd3aa;
+  --success-muted: rgba(45, 106, 79, 0.22);
+  --success-bg: rgba(45, 106, 79, 0.22);
+  --success-bd: #2f5745;
+  --warning: #e2b274;
+  --warning-muted: rgba(146, 64, 14, 0.24);
+  --warning-bg: rgba(146, 64, 14, 0.24);
+  --warning-bd: #5a4326;
+  --info: #a3bdf2;
+  --info-muted: rgba(30, 64, 175, 0.24);
+  --info-bg: rgba(30, 64, 175, 0.24);
+  --info-bd: #2f3f6b;
+  --add-bg: rgba(45, 106, 79, 0.22);
+  --add-fg: #8fe0b5;
+  --add-bd: #2f5745;
+  --del-bg: rgba(185, 28, 28, 0.2);
+  --del-fg: #f1a3a3;
+  --del-bd: #5e3236;
+  --skel: #272031;
+  --ring: rgba(183, 155, 224, 0.45);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.55);
 }
 
 body {
@@ -1638,6 +1693,15 @@ mark.search-highlight {
   gap: 0.5rem;
   max-height: 8.5rem;
   overflow-y: auto;
+}
+
+/* Hide the horizontal scrollbar on the filter-chip strip (still scrollable). */
+.smart-filter-chips {
+  scrollbar-width: none;
+}
+
+.smart-filter-chips::-webkit-scrollbar {
+  display: none;
 }
 
 .note-template-picker__chip {
