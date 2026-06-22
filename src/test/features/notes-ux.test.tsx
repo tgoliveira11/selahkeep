@@ -348,11 +348,12 @@ describe("notes UX", () => {
       await waitFor(() => expect(toggleNoteResolved).toHaveBeenCalledWith("note-1", true));
     });
 
-    it("shows created and updated dates on note cards", async () => {
+    it("shows the updated date on note cards", async () => {
       render(<NotesPage />);
       const title = await screen.findByText("Morning prayer");
       const card = title.closest("a");
-      expect(card?.textContent).toMatch(/Created/);
+      // Per the Stillness hero spec, the card footer shows the updated date;
+      // the created date lives on the note detail page.
       expect(card?.textContent).toMatch(/Updated/);
     });
 

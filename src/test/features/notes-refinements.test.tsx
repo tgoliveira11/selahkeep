@@ -62,7 +62,10 @@ vi.mock("@/features/notes/use-notes", () => ({
   })),
 }));
 
-const useVaultIndexMock = vi.fn(() => ({
+// Stable reference: the notes pages have effects keyed on `index` / `mutateIndex`.
+// Returning a fresh object per render makes those effects re-run every render —
+// an infinite render loop that exhausts the worker heap. Keep it constant.
+const defaultVaultIndexValue = {
   index: {
     categories: [],
     tags: [],
@@ -88,7 +91,8 @@ const useVaultIndexMock = vi.fn(() => ({
   loading: false,
   error: null,
   mutateIndex: vi.fn(),
-}));
+};
+const useVaultIndexMock = vi.fn(() => defaultVaultIndexValue);
 
 vi.mock("@/features/notes/use-vault-index", () => ({
   useVaultIndex: (...args: unknown[]) => useVaultIndexMock(...args),
@@ -126,16 +130,7 @@ vi.mock("@/lib/crypto-client/note-drafts", () => ({
   listEncryptedNoteDraftKeys: vi.fn().mockResolvedValue([]),
 }));
 
-// QUARANTINED — heap OOM (V8 "Ineffective mark-compacts near heap limit") when
-// the full file runs. Pre-existing on `main` (reproduces on a clean origin/main
-// checkout; not caused by the design-system change). Individual tests pass via
-// `-t`, but running them together exhausts the worker heap on Node 25 + happy-dom.
-// Ruled out: fake/real timers, RTL cleanup, forced GC, worker heap up to 8 GB,
-// and skipping individual blocks. Likely a retained reference in the notes
-// pages/attachment components (needs a heap-snapshot profiling pass) and/or a
-// Node-LTS (20/22) vs Node 25 difference.
-// TODO(perf): profile and fix the leak, then re-enable (remove `.skip`).
-describe.skip("notes refinements", () => {
+describe("notes refinements", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers({ shouldAdvanceTime: true });

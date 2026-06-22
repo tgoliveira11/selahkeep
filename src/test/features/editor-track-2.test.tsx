@@ -39,8 +39,9 @@ vi.mock("@/features/vault/use-vault-client-status", () => ({
   })),
 }));
 
-vi.mock("@/features/notes/use-vault-index", () => ({
-  useVaultIndex: vi.fn(() => ({
+vi.mock("@/features/notes/use-vault-index", () => {
+  // Stable reference — a fresh object per render loops the notes page effects.
+  const value = {
     index: {
       categories: [],
       tags: [],
@@ -66,8 +67,9 @@ vi.mock("@/features/notes/use-vault-index", () => ({
     loading: false,
     error: null,
     mutateIndex: vi.fn(),
-  })),
-}));
+  };
+  return { useVaultIndex: vi.fn(() => value) };
+});
 
 vi.mock("@/features/notes/use-notes", () => ({
   useNotes: vi.fn(() => ({
@@ -97,7 +99,7 @@ describe("editor track 2 components", () => {
 
   it("shows save-failed status", () => {
     render(<EditorStatusBar status="save-failed" mode="visual" />);
-    expect(screen.getByTestId("editor-status-message")).toHaveTextContent("Save failed");
+    expect(screen.getByTestId("editor-status-message")).toHaveTextContent("Autosave failed");
   });
 
   it("shows draft-saved status", () => {

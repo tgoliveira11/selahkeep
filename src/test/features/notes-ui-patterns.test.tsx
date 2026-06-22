@@ -77,7 +77,9 @@ const baseEntry = {
   updatedAt: "2026-01-02T00:00:00.000Z",
 };
 
-const useVaultIndexMock = vi.fn(() => ({
+// Stable reference — a fresh object per render makes the notes page effects
+// (keyed on `index`) re-run every render, an infinite loop that OOMs the worker.
+const defaultVaultIndexValue = {
   index: {
     categories: [{ id: "c1", name: "Prayer", createdAt: "", updatedAt: "" }],
     tags: [{ id: "t1", name: "faith", createdAt: "", updatedAt: "" }],
@@ -103,7 +105,8 @@ const useVaultIndexMock = vi.fn(() => ({
   loading: false,
   error: null,
   mutateIndex: vi.fn(),
-}));
+};
+const useVaultIndexMock = vi.fn(() => defaultVaultIndexValue);
 
 vi.mock("@/features/notes/use-vault-index", () => ({
   useVaultIndex: (...args: unknown[]) => useVaultIndexMock(...args),
@@ -197,8 +200,10 @@ describe("SelahKeep notes UI patterns", () => {
     expect(screen.getByText(/Updated/i)).toBeTruthy();
   });
 
-  it("shows polished zero-notes empty state copy", () => {
-    useVaultIndexMock.mockReturnValueOnce({
+  it("shows polished zero-notes empty state copy", async () => {
+    // Persistent (not Once): NotesPage renders multiple times; every render
+    // must see the empty index for the zero-notes empty state to hold.
+    useVaultIndexMock.mockReturnValue({
       index: {
         categories: [],
         tags: [],
@@ -212,7 +217,7 @@ describe("SelahKeep notes UI patterns", () => {
     });
 
     render(<NotesPage />);
-    expect(screen.getByText("Start your first private note")).toBeTruthy();
+    expect(await screen.findByText("Start your first private note")).toBeTruthy();
     expect(screen.queryByTestId("notes-list-controls")).toBeNull();
     expect(screen.getByTestId("empty-state-new-note")).toBeTruthy();
   });

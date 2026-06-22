@@ -104,20 +104,28 @@ const sampleEntry = {
   updatedAt: "2026-01-02T00:00:00.000Z",
 };
 
-vi.mock("@/features/notes/use-vault-index", () => ({
-  useVaultIndex: vi.fn(() => ({
-    index: {
-      categories: [{ id: "c1", name: "Prayer", createdAt: "", updatedAt: "" }],
-      tags: [{ id: "t1", name: "faith", createdAt: "", updatedAt: "" }],
-      entries: [sampleEntry],
-      savedViews: [],
-      version: 3,
-    },
-    loading: false,
-    error: null,
-    mutateIndex: vi.fn(),
-  })),
-}));
+vi.mock("@/features/notes/use-vault-index", () => {
+  // Stable reference, built lazily on first call (so `sampleEntry` is already
+  // initialized): a fresh object per render loops the notes page effects.
+  let value: unknown;
+  return {
+    useVaultIndex: vi.fn(
+      () =>
+        (value ??= {
+          index: {
+            categories: [{ id: "c1", name: "Prayer", createdAt: "", updatedAt: "" }],
+            tags: [{ id: "t1", name: "faith", createdAt: "", updatedAt: "" }],
+            entries: [sampleEntry],
+            savedViews: [],
+            version: 3,
+          },
+          loading: false,
+          error: null,
+          mutateIndex: vi.fn(),
+        })
+    ),
+  };
+});
 
 vi.mock("next-auth/react", () => ({
   useSession: vi.fn(() => ({

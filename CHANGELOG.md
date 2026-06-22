@@ -15,7 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- Stopped `notes-refinements.test.tsx` from aborting the test suite with a worker heap OOM by quarantining it (`describe.skip` + `TODO(perf)`); it is a pre-existing leak (reproduces on a clean `main`, unrelated to the design change) that needs heap-snapshot profiling to fix properly. Added a global Testing Library `cleanup()` in the test setup to reduce per-test DOM retention. See `docs/KNOWN_ISSUES.md` (also documents the Node 25 full-run teardown OOM and the sharded / Node-LTS workarounds).
+- Fixed the test-suite heap OOM (`Ineffective mark-compacts near heap limit`) at its root: several feature tests mocked `useVaultIndex` with `vi.fn(() => ({...}))`, returning a new object every render, which made the notes page's `useEffect(..., [index])` re-run every render — an infinite render loop that exhausted the worker. The mocks now return a stable reference; un-quarantined `notes-refinements.test.tsx`; added a global Testing Library `cleanup()` in the setup. The full suite now runs green in a single `vitest run` (254 files, 1420 tests). See `docs/KNOWN_ISSUES.md`.
+- Note-card date footer now shows the updated date (the created date remains on the note detail page), matching the design spec; updated the corresponding test.
 
 ### Added
 

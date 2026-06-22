@@ -77,7 +77,9 @@ const baseEntry = {
   updatedAt: "2026-01-02T00:00:00.000Z",
 };
 
-const useVaultIndexMock = vi.fn(() => ({
+// Stable reference — a fresh object per render makes the notes page effects
+// (keyed on `index`) re-run every render, an infinite loop that OOMs the worker.
+const defaultVaultIndexValue = {
   index: {
     categories: [{ id: "c1", name: "Prayer", createdAt: "", updatedAt: "" }],
     tags: [{ id: "t1", name: "faith", createdAt: "", updatedAt: "" }],
@@ -88,7 +90,8 @@ const useVaultIndexMock = vi.fn(() => ({
   loading: false,
   error: null,
   mutateIndex: vi.fn(),
-}));
+};
+const useVaultIndexMock = vi.fn(() => defaultVaultIndexValue);
 
 vi.mock("@/features/notes/use-vault-index", () => ({
   useVaultIndex: (...args: unknown[]) => useVaultIndexMock(...args),

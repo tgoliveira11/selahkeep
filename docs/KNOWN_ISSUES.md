@@ -1,41 +1,27 @@
 # Known Issues
 
-## Test suite memory (Node 25 + happy-dom)
+_None currently open._
 
-**Symptom:** `npm run test` can abort with a V8 fatal error — `Ineffective
-mark-compacts near heap limit / JavaScript heap out of memory` — even though
-every test file reports passing (✓). Observed on **Node 25.x** with the
-happy-dom + Testing Library + Tiptap feature tests.
+## Resolved
 
-There are two distinct facets:
+### Test suite heap OOM (was: `Ineffective mark-compacts near heap limit`)
 
-1. **`src/test/features/notes-refinements.test.tsx` — quarantined.**
-   Running this file's tests together exhausts the worker heap mid-run (a hard
-   OOM that aborts the suite). It is **pre-existing** (reproduces on a clean
-   `origin/main` checkout) and individual tests pass via `vitest -t`. Ruled out:
-   fake/real timers, `shouldAdvanceTime`, RTL `cleanup`, forced GC, worker heap
-   up to 8 GB, and skipping individual blocks. The file is currently
-   `describe.skip`'d with a `TODO(perf)` so the suite can run. **To re-enable:**
-   profile with a heap snapshot (`node --inspect` / `writeHeapSnapshot`) to find
-   the retained reference in the notes pages / attachment components, fix it, and
-   remove `.skip`.
+**Resolved.** Running the suite (notably `notes-refinements`, `notes-toolbar-refinement`,
+`notes-ui-patterns`, `editor-track-2`, `authenticated-ui-refinement`) aborted with a
+V8 out-of-memory error.
 
-2. **Full single run teardown OOM.** Even with the file above quarantined, one
-   `vitest run` of the entire suite can OOM at the very end (all ~249 files pass
-   first). This is worker-memory accumulation across files on Node 25.
+**Root cause:** several feature tests mocked `useVaultIndex` (and similar hooks) with
+`vi.fn(() => ({ ... }))`, returning a **new object every render**. The notes list page
+has `useEffect(..., [index])`; a fresh `index` reference each render made that effect
+re-run → `setState` → re-render → … an infinite render loop that exhausted the worker
+heap. Production was never affected (the real `useVaultIndex` returns a stable, memoized
+value). It was not a Node version issue (reproduced on Node 22 and 25).
 
-### Workarounds (all tests pass under these)
+**Fix:** the mocks now return a **stable reference** (built once, reused across renders;
+lazily cached where they capture other test constants). A global Testing Library
+`cleanup()` in `src/test/setup.ts` also unmounts trees between tests. The full suite now
+runs green in one `vitest run`.
 
-- **Run sharded:** `npx vitest run --shard=1/3` … `--shard=3/3` (each shard
-  completes green). Recommended for CI.
-- **Use a Node LTS:** Node 20 or 22 (what Next 16 targets) is far less likely to
-  hit the teardown OOM. Pin via `.nvmrc` / `engines` once confirmed.
-
-### Mitigation already applied
-
-- Global RTL `cleanup()` in `src/test/setup.ts` (unmounts trees between tests to
-  reduce per-file retention).
-
-This is an environment/runner memory characteristic, not a product defect: the
-encrypted-notes, version-history, voice, attachments, and design-system code all
-pass their tests.
+**Guard when writing tests:** any hook mock whose result is used in an effect dependency
+must return a stable reference across renders (define the object once; do not build it
+inside `vi.fn(() => ({...}))`).

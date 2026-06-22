@@ -63,7 +63,10 @@ export function NoteCard({
       <div className="mb-2.5 flex items-center gap-2">
         {categoryName && <NoteCategoryLabel name={categoryName} />}
         {resolved && (
-          <span className="inline-flex items-center gap-1 rounded-md border border-[var(--success-bd)] bg-[var(--success-bg)] px-2 py-[3px] text-[11px] font-semibold text-[var(--success)]">
+          <span
+            aria-label="Resolved"
+            className="inline-flex items-center gap-1 rounded-md border border-[var(--success-bd)] bg-[var(--success-bg)] px-2 py-[3px] text-[11px] font-semibold text-[var(--success)]"
+          >
             <svg
               width="11"
               height="11"
