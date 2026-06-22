@@ -13,6 +13,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- **Notes-list screen aligned to the high-fidelity mockups.**
+  - **Sidebar Library** now mirrors the mockup — **All notes / Pinned / Resolved / Archive** are deep-linked filtered views (`/notes?view=pinned|resolved|archived`); the notes page reads the `view` param and applies the matching smart filter. Account footer keeps Account + Vault + sign out. The sidebar hides while the vault is locked so the unlock screen is full-bleed.
+  - **Empty state** matches the mockup: a sparkle tile, "A quiet, empty page", and "Write your first note" (full-bleed, card-less). `EmptyState` gained optional `icon` / `plain` props.
+  - **Loading state** is now a shimmering **skeleton card grid** (`NotesSkeletonGrid`) instead of a spinner.
+  - **Error state** is the mockup's centered card — "We couldn't reach your vault" with a reassuring note and Try again — shown in place of the list.
+  - The notes-list counter now appends the pinned count ("N notes · M pinned") to match the mockup header.
+- **Global chrome and detail screens aligned to the Stillness mockup.**
+  - **Desktop left sidebar** — on `md+`, authenticated users get a full-height sidebar (`AppSidebar`): brand, a New note CTA, the primary destinations (All notes / Vault / Account) and an account footer with sign out. The horizontal header nav, brand and desktop sign-out moved into it; the header is now the top bar that hosts the vault dock. `SiteShell` lays out sidebar + content column.
+  - **Mobile bottom navigation** — a fixed tab bar (Notes / Vault / Account) on small screens, authenticated-only, hidden on `md+`. New `MobileBottomNav` mounted in `SiteShell`.
+  - **Vault locked screen** restyled to the mockup's centered hero — large rounded lock tile, calm copy, full-width unlock CTA — and rendered card-less for the notes-list variant.
+  - **Expanded vault dock (unlocked)** redesigned with a live **circular countdown ring**, "Vault open / Auto-locks in mm:ss", a **Stay unlocked 15 min** action (resets the inactivity timer) and **Lock now**. New `useVaultAutoLockFraction` hook drives the ring.
+  - **Note detail (reading view)** gained a metadata header — category chip + a resolved/unresolved status badge above the title — matching the mockup; tags remain in the metadata row below.
+  - **Zen reading mode** — a distraction-free reading surface (large type, title + body only, "Exit zen") reachable from a new Zen action on the note detail page.
+  - **Desktop right rail on note detail** (`lg+`) — a Details card (Created / Updated), the version-history panel, and **Duplicate / Archive / Delete** actions move into a right column beside the reading body (delete still routes through the confirm dialog); stacked on smaller screens.
+  - **Version history** rows restyled to numbered tiles with status subtitles (Comparing / Created / Edited) and a compact Restore control.
+- **Editor refined to the mockup.** The top bar reads "Back to notes" and now offers **Discard** alongside Save; the right-rail template picker is presented as a titled **"Start from a template"** card. (Dictate states — ready/loading/recording/review — already match.)
+- **Editor desktop right rail.** On `lg+`, `/notes/new` becomes a two-column layout: the main column holds the title, category, body, attachments and tags, while a right rail holds the template picker, prompt cards, the Dictate panel and an encryption reassurance. Implemented with CSS `grid-template-areas`, so the single-column DOM order (title → category → template → body → attachments → tags) — and the field-order contract — is unchanged; the rail simply spans the right column on wide screens and sits inline above the body on mobile.
+- **Note editor redesigned to the Stillness mockup.** The create (`/notes/new`) and edit (`/notes/[id]`) editors now use a **top action bar** — a back affordance, an inline autosave status indicator (“Draft saved” / “Unsaved changes” / “Saving…” / “Offline — saved on device” / “Save failed”), the focus-mode toggle, and the primary **Save** button — replacing the bottom button row. The title is now a large **borderless** input at the top of the form, and the create-note field order follows the mockup: **title → category → template → editor → attachments → tags**. Submission is also available via ⌘/Ctrl+Enter in the editor. Docs: `NOTE_CREATE_EDIT_UX.md`; tests updated (`notes-new-field-order`).
+
 ### Fixed
 
 - Fixed the test-suite heap OOM (`Ineffective mark-compacts near heap limit`) at its root: several feature tests mocked `useVaultIndex` with `vi.fn(() => ({...}))`, returning a new object every render, which made the notes page's `useEffect(..., [index])` re-run every render — an infinite render loop that exhausted the worker. The mocks now return a stable reference; un-quarantined `notes-refinements.test.tsx`; added a global Testing Library `cleanup()` in the setup. The full suite now runs green in a single `vitest run` (254 files, 1420 tests). See `docs/KNOWN_ISSUES.md`.

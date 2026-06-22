@@ -56,6 +56,10 @@ vi.mock("@/features/vault/use-vault-dock-passkey-available", () => ({
   })),
 }));
 
+vi.mock("@/features/vault/use-vault-activity", () => ({
+  touchVaultActivity: vi.fn(),
+}));
+
 vi.mock("@/features/vault/use-vault-client-status", () => ({
   useVaultClientStatus: vi.fn(() => ({
     status: "ready",
@@ -300,7 +304,7 @@ describe("VaultStatusDock", () => {
     expect(screen.queryByLabelText(/vault password/i)).toBeNull();
   });
 
-  it("expanded open dock is compact with lock now on one row", async () => {
+  it("expanded open dock shows the countdown ring, stay-unlocked and lock now", async () => {
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
 
@@ -308,12 +312,27 @@ describe("VaultStatusDock", () => {
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
 
     const dock = screen.getByTestId("vault-status-dock");
-    expect(dock.className).toContain("vault-status-dock-panel--compact");
-    expect(screen.getByText(/Vault open · Auto-locks in 14:32/i)).toBeTruthy();
+    expect(dock.className).toContain("vault-status-dock-panel--unlocked");
+    expect(screen.getByText(/Vault open/i)).toBeTruthy();
+    expect(screen.getByText(/Auto-locks in/i)).toBeTruthy();
+    expect(screen.getByText("14:32")).toBeTruthy();
     expect(
       screen.queryByText(/SelahKeep will lock your vault after inactivity/i)
     ).toBeNull();
+    expect(screen.getByRole("button", { name: /stay unlocked 15 min/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /lock now/i })).toBeTruthy();
+  });
+
+  it("stay-unlocked resets the inactivity timer", async () => {
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
+    const { touchVaultActivity } = await import("@/features/vault/use-vault-activity");
+
+    render(<VaultStatusDock />);
+    fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
+    fireEvent.click(screen.getByRole("button", { name: /stay unlocked 15 min/i }));
+
+    expect(vi.mocked(touchVaultActivity)).toHaveBeenCalled();
   });
 
   it("collapses on outside click when expanded locked", async () => {
@@ -402,8 +421,7 @@ describe("VaultStatusDock", () => {
     );
     const header = screen.getByRole("banner");
     expect(within(header).getByTestId("vault-status-dock-handle")).toBeTruthy();
-    const mainNav = within(header).getByRole("navigation", { name: /main navigation/i });
-    expect(within(mainNav).queryByRole("link", { name: /unlock vault/i })).toBeNull();
+    expect(within(header).queryByRole("link", { name: /unlock vault/i })).toBeNull();
   });
 
   it("stores only UI collapse preference", () => {

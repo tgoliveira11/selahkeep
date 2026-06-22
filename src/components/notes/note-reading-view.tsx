@@ -39,6 +39,10 @@ interface NoteReadingViewProps {
   noteId?: string;
   vaultUserId?: string | null;
   wrappedKey?: EncryptedPayload | null;
+  /** Distraction-free reading. When true, only title + body are shown. */
+  zen?: boolean;
+  onEnterZen?: () => void;
+  onExitZen?: () => void;
 }
 
 export function NoteReadingView({
@@ -65,10 +69,41 @@ export function NoteReadingView({
   noteId,
   vaultUserId,
   wrappedKey,
+  zen = false,
+  onEnterZen,
+  onExitZen,
 }: NoteReadingViewProps) {
   const categoryName = metadata.categoryId
     ? categories.find((category) => category.id === metadata.categoryId)?.name ?? null
     : null;
+
+  // Zen mode (mockup): a calm, centered reading surface — title + body only.
+  if (zen) {
+    return (
+      <article className="mx-auto max-w-[640px] px-2 py-2" data-testid="note-reading-zen">
+        <button
+          type="button"
+          onClick={onExitZen}
+          data-testid="note-zen-exit"
+          className="mb-9 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 9V5a1 1 0 0 0-1-1H4M15 9V5a1 1 0 0 1 1-1h4M9 15v4a1 1 0 0 1-1 1H4M15 15v4a1 1 0 0 0 1 1h4" />
+          </svg>
+          Exit zen
+        </button>
+        <h1 className="mb-6 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-[var(--foreground)]">
+          {metadata.title}
+        </h1>
+        <MarkdownPreview
+          markdown={body}
+          onMarkdownChange={onChecklistChange}
+          checklistsDisabled={checklistSaveState === "saving" || busy}
+          className="text-[1.125rem] leading-[1.85] text-[var(--foreground)]"
+        />
+      </article>
+    );
+  }
 
   return (
     <article className="note-reading-view" data-testid="note-reading-view">
@@ -92,6 +127,32 @@ export function NoteReadingView({
 
       <header className="note-reading-view__header space-y-3">
         {searchQuery.trim() && <SearchMatchBanner query={searchQuery} />}
+
+        {/* Metadata header (mockup): category chip + resolved/unresolved status. */}
+        <div className="flex flex-wrap items-center gap-2">
+          {categoryName && <NoteCategoryLabel name={categoryName} />}
+          <span
+            data-testid="note-detail-status"
+            className={
+              metadata.answered
+                ? "inline-flex items-center gap-1 rounded-md border border-[var(--success-bd)] bg-[var(--success-bg)] px-2 py-1 text-[11px] font-semibold text-[var(--success)]"
+                : "inline-flex items-center gap-1 rounded-md border border-[var(--border)] px-2 py-1 text-[11px] font-semibold text-[var(--muted)]"
+            }
+          >
+            {metadata.answered ? (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            ) : (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+              </svg>
+            )}
+            {metadata.answered ? "Resolved" : "Unresolved"}
+          </span>
+        </div>
+
         <div className="note-reading-view__title-row flex flex-wrap items-start justify-between gap-3">
           <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-balance">
             {searchQuery.trim() ? (
@@ -103,6 +164,19 @@ export function NoteReadingView({
           <div className="flex shrink-0 items-center gap-2">
             {!metadata.trashed && (
               <>
+                {onEnterZen && (
+                  <Button
+                    variant="secondary"
+                    onClick={onEnterZen}
+                    data-testid="note-zen-button"
+                    aria-label="Zen reading mode"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M9 9V5a1 1 0 0 0-1-1H4M15 9V5a1 1 0 0 1 1-1h4M9 15v4a1 1 0 0 1-1 1H4M15 15v4a1 1 0 0 0 1 1h4" />
+                    </svg>
+                    <span className="ml-1.5 hidden sm:inline">Zen</span>
+                  </Button>
+                )}
                 <Button onClick={onEdit} data-testid="note-edit-button">
                   Edit
                 </Button>
@@ -147,7 +221,6 @@ export function NoteReadingView({
         />
 
         <div className="note-reading-view__metadata flex flex-wrap items-center gap-2" data-testid="note-detail-metadata">
-          {categoryName && <NoteCategoryLabel name={categoryName} />}
           {metadata.tagIds.map((tagId) => {
             const tag = tags.find((item) => item.id === tagId);
             return tag ? <NoteTagChip key={tagId} name={tag.name} /> : null;

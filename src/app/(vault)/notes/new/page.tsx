@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
 import { FormField } from "@/components/ui/form-field";
 import { PrivacyNotice } from "@/components/ui/privacy-notice";
@@ -340,19 +339,71 @@ export default function NewNotePage() {
             ? "draft-saved"
             : "idle";
 
+  const statusLabel =
+    editorStatus === "saving"
+      ? "Saving…"
+      : editorStatus === "offline"
+        ? "Offline — saved on device"
+        : editorStatus === "save-failed"
+          ? "Autosave failed"
+          : editorStatus === "unsaved"
+            ? "Unsaved changes"
+            : editorStatus === "draft-saved"
+              ? "Draft saved"
+              : null;
+
   return (
     <AuthenticatedPage width="editor" className={cn(focusMode && "note-page--focus")}>
-      <PageHeader
-        title="New note"
-        description={
-          focusMode
-            ? undefined
-            : "Write your note. It is encrypted before it leaves this device."
-        }
-        action={
+      <div
+        className="mb-6 flex items-center justify-between gap-3"
+        data-testid="note-editor-topbar"
+      >
+        <button
+          type="button"
+          onClick={() => requestLeave(() => router.back())}
+          className="-ml-1 flex items-center gap-1.5 rounded-[var(--radius)] px-2 py-1.5 text-sm font-semibold text-[var(--fg-2)] transition-colors hover:text-[var(--foreground)]"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+          Back to notes
+        </button>
+        <div className="flex items-center gap-3">
+          {statusLabel && (
+            <span
+              className={cn(
+                "hidden text-[13px] font-medium tabular-nums sm:inline",
+                editorStatus === "save-failed"
+                  ? "text-[var(--danger)]"
+                  : editorStatus === "draft-saved"
+                    ? "text-[var(--success)]"
+                    : "text-[var(--muted)]"
+              )}
+              role="status"
+              data-testid="note-editor-topbar-status"
+            >
+              {statusLabel}
+            </span>
+          )}
           <NoteFocusModeToggle active={focusMode} onToggle={() => setFocusMode((v) => !v)} />
-        }
-      />
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => requestLeave(() => router.back())}
+            data-testid="note-editor-discard"
+          >
+            Discard
+          </Button>
+          <Button
+            type="button"
+            onClick={() => void handleSubmit()}
+            disabled={busy || !canSave}
+            title={!trimmedTitle ? TITLE_REQUIRED_MESSAGE : undefined}
+          >
+            {busy ? "Saving securely…" : "Save note"}
+          </Button>
+        </div>
+      </div>
 
       <div className="note-editor-surface space-y-6" data-testid="note-editor-surface">
         <div className={cn(focusMode && "note-focus-hide")}>
@@ -380,20 +431,36 @@ export default function NewNotePage() {
           </p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div
-            className={cn(focusMode && "note-focus-hide")}
-            data-testid="new-note-template-section"
-          >
-            <NoteTemplatePicker
-              value={templateId}
-              onChange={(id) => applyTemplate(id)}
-              disabled={busy}
+        <form onSubmit={handleSubmit} className="note-editor-grid space-y-5 lg:space-y-0">
+          <div data-area="title" data-testid="new-note-title-field">
+            <input
+              id="note-title"
+              aria-label="Title"
+              value={title}
+              onChange={(e) => {
+                touchVaultActivity();
+                activateDraft("title");
+                setTitle(e.target.value);
+                if (titleError) setTitleError(null);
+              }}
+              onPaste={() => activateDraft("title")}
+              placeholder={getNoteTemplate(templateId).titlePlaceholder}
+              maxLength={200}
+              required
+              aria-invalid={Boolean(titleError)}
+              aria-describedby={titleError ? "note-title-error" : undefined}
+              className="w-full border-0 bg-transparent px-0 py-1 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none"
             />
+            {titleError && (
+              <p id="note-title-error" className="mt-1 text-sm text-[var(--danger)]" role="alert">
+                {titleError}
+              </p>
+            )}
           </div>
 
           {(showManualCategory || showTemplateCategory) && (
             <div
+              data-area="category"
               className={cn(focusMode && "note-focus-hide")}
               data-testid="new-note-category-section"
             >
@@ -420,78 +487,77 @@ export default function NewNotePage() {
             </div>
           )}
 
-          <div data-testid="new-note-title-field">
-            <FormField id="note-title" label="Title" hint="Required">
-              <Input
-              id="note-title"
-              value={title}
-              onChange={(e) => {
+          {/* Desktop right rail (mockup): template, prompts, dictate, and the
+              encryption reassurance. On mobile it sits inline before the body. */}
+          <aside
+            data-area="rail"
+            className={cn("space-y-4", focusMode && "note-focus-hide")}
+            data-testid="new-note-rail"
+          >
+            <div
+              data-testid="new-note-template-section"
+              className="rounded-[12px] border border-[var(--border)] bg-[var(--card-2)] p-[15px]"
+            >
+              <NoteTemplatePicker
+                value={templateId}
+                onChange={(id) => applyTemplate(id)}
+                disabled={busy}
+              />
+            </div>
+
+            <PromptCards
+              context="new-note"
+              onInsert={(markdown) => {
                 touchVaultActivity();
-                activateDraft("title");
-                setTitle(e.target.value);
-                if (titleError) setTitleError(null);
-              }}
-              onPaste={() => activateDraft("title")}
-              placeholder={getNoteTemplate(templateId).titlePlaceholder}
-              maxLength={200}
-              required
-              aria-invalid={Boolean(titleError)}
-              aria-describedby={titleError ? "note-title-error" : undefined}
-            />
-            {titleError && (
-              <p id="note-title-error" className="mt-2 text-sm text-[var(--danger)]" role="alert">
-                {titleError}
-              </p>
-            )}
-            </FormField>
-          </div>
-
-          <PromptCards
-            context="new-note"
-            className={cn(focusMode && "note-focus-hide")}
-            onInsert={(markdown) => {
-              touchVaultActivity();
-              activateDraft("content");
-              setBody((current) => current + markdown);
-            }}
-          />
-
-          <div data-testid="new-note-editor-field">
-            <FormField id="note-body" label="Your note">
-              {voiceEnabled && (
-                <div className={cn("mb-3", focusMode && "note-focus-hide")}>
-                  {voiceOpen ? (
-                    <VoiceCapturePanel
-                      onClose={() => setVoiceOpen(false)}
-                      onInsert={(text) => {
-                        touchVaultActivity();
-                        activateDraft("content");
-                        setBody((current) => appendTranscript(current, text));
-                      }}
-                    />
-                  ) : (
-                    <DictateButton
-                      onClick={() => setVoiceOpen(true)}
-                      testId="new-note-dictate"
-                      label="Dictate a note"
-                    />
-                  )}
-                </div>
-              )}
-              <MarkdownEditor
-              value={body}
-              onChange={(value) => {
-                setBody(value);
-                if (applyingTemplateRef.current) return;
                 activateDraft("content");
+                setBody((current) => current + markdown);
               }}
-              onSave={() => void handleSubmit()}
-              status={editorStatus}
             />
+
+            {voiceEnabled &&
+              (voiceOpen ? (
+                <VoiceCapturePanel
+                  onClose={() => setVoiceOpen(false)}
+                  onInsert={(text) => {
+                    touchVaultActivity();
+                    activateDraft("content");
+                    setBody((current) => appendTranscript(current, text));
+                  }}
+                />
+              ) : (
+                <DictateButton
+                  onClick={() => setVoiceOpen(true)}
+                  testId="new-note-dictate"
+                  label="Dictate a note"
+                />
+              ))}
+
+            <div className="flex items-start gap-2 rounded-[12px] border border-[var(--border)] bg-[var(--lilac-soft)] p-3.5 text-[12.5px] leading-relaxed text-[var(--fg-2)]">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mt-px flex-none">
+                <rect x="5" y="11" width="14" height="9" rx="2.2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+              </svg>
+              Encrypted on this device before it&apos;s saved. Only you can read it.
+            </div>
+          </aside>
+
+          <div data-area="editor" data-testid="new-note-editor-field">
+            <FormField id="note-body" label="Your note">
+              <MarkdownEditor
+                value={body}
+                onChange={(value) => {
+                  setBody(value);
+                  if (applyingTemplateRef.current) return;
+                  activateDraft("content");
+                }}
+                onSave={() => void handleSubmit()}
+                status={editorStatus}
+              />
             </FormField>
           </div>
 
           <div
+            data-area="attachments"
             className={cn(focusMode && "note-focus-hide")}
             data-testid="new-note-attachments-field"
           >
@@ -567,6 +633,7 @@ export default function NewNotePage() {
           </div>
 
           <div
+            data-area="tags"
             className={cn(focusMode && "note-focus-hide")}
             data-testid="new-note-tags-field"
           >
@@ -585,28 +652,11 @@ export default function NewNotePage() {
           </div>
 
           {displayError && (
-            <p className="text-sm text-[var(--danger)]" role="alert">
+            <p data-area="error" className="text-sm text-[var(--danger)]" role="alert">
               {displayError}
             </p>
           )}
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              type="submit"
-              disabled={busy || !canSave}
-              className="w-full sm:w-auto"
-              title={!trimmedTitle ? TITLE_REQUIRED_MESSAGE : undefined}
-            >
-              {busy ? "Saving securely…" : "Save note"}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full sm:w-auto"
-              onClick={() => requestLeave(() => router.back())}
-            >
-              Cancel
-            </Button>
-          </div>
+          {/* Submit is driven by the top-bar Save button and ⌘/Ctrl+Enter in the editor. */}
         </form>
       </div>
       {confirmDialog}

@@ -5,8 +5,8 @@ import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { formatNoteDate } from "@/lib/notes/note-dates";
 import { Alert } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormField } from "@/components/ui/form-field";
@@ -114,6 +114,7 @@ export default function NoteDetailPage() {
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [zenMode, setZenMode] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [versionRefreshKey, setVersionRefreshKey] = useState(0);
@@ -611,6 +612,33 @@ export default function NoteDetailPage() {
     );
   }
 
+  // Zen mode: a distraction-free reading surface (no chrome, no history).
+  if (!editing && zenMode && metadata) {
+    return (
+      <NoteDetailPageShell className="note-page--focus">
+        <NoteReadingView
+          metadata={metadata}
+          body={body}
+          categories={categories}
+          tags={tags}
+          checklistSaveState={checklistSaveState}
+          onEdit={startEditing}
+          onToggleResolved={() => void handleToggleResolved()}
+          onTogglePinned={() => {}}
+          onToggleFavorite={() => {}}
+          onToggleArchived={() => {}}
+          onDuplicate={() => {}}
+          onMoveToTrash={() => {}}
+          onRestoreFromTrash={() => {}}
+          onPermanentDelete={() => {}}
+          onChecklistChange={persistChecklistToggle}
+          zen
+          onExitZen={() => setZenMode(false)}
+        />
+      </NoteDetailPageShell>
+    );
+  }
+
   const displayError = error ?? notesError;
 
   const editorStatus: EditorStatus = busy
@@ -626,6 +654,21 @@ export default function NoteDetailPage() {
             : draftSaved
               ? "draft-saved"
               : "idle";
+
+  const editStatusLabel =
+    editorStatus === "saving"
+      ? "Saving…"
+      : editorStatus === "offline"
+        ? "Offline — saved on device"
+        : editorStatus === "save-failed"
+          ? "Save failed"
+          : editorStatus === "saved"
+            ? "Saved"
+            : editorStatus === "unsaved"
+              ? "Unsaved changes"
+              : editorStatus === "draft-saved"
+                ? "Draft saved"
+                : null;
 
   return (
     <NoteDetailPageShell className={cn(editing && focusMode && "note-page--focus")}>
@@ -648,27 +691,49 @@ export default function NoteDetailPage() {
 
       {editing ? (
         <Card className="space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            {dirty ? (
-              <p className="text-sm text-[var(--muted)]" role="status">
-                You have unsaved changes.
-              </p>
-            ) : (
-              <span />
-            )}
-            <NoteFocusModeToggle active={focusMode} onToggle={() => setFocusMode((v) => !v)} />
+          <div
+            className="flex flex-wrap items-center justify-between gap-3"
+            data-testid="note-editor-topbar"
+          >
+            <Button variant="secondary" onClick={() => requestLeave(cancelEditing)}>
+              Cancel
+            </Button>
+            <div className="flex items-center gap-3">
+              {editStatusLabel && (
+                <span
+                  className={cn(
+                    "text-[13px] font-medium tabular-nums",
+                    editorStatus === "save-failed"
+                      ? "text-[var(--danger)]"
+                      : editorStatus === "saved" || editorStatus === "draft-saved"
+                        ? "text-[var(--success)]"
+                        : "text-[var(--muted)]"
+                  )}
+                  role="status"
+                  data-testid="note-editor-topbar-status"
+                >
+                  {editStatusLabel}
+                </span>
+              )}
+              <NoteFocusModeToggle active={focusMode} onToggle={() => setFocusMode((v) => !v)} />
+              <Button onClick={() => void handleSave()} disabled={busy}>
+                {busy ? "Saving…" : "Save changes"}
+              </Button>
+            </div>
           </div>
-          <FormField id="edit-title" label="Title">
-            <Input
+          <div>
+            <input
               id="edit-title"
+              aria-label="Title"
               value={metadata.title}
               onChange={(e) => {
                 touchVaultActivity();
                 setMetadata({ ...metadata, title: e.target.value });
               }}
               maxLength={200}
+              className="w-full border-0 bg-transparent px-0 py-1 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none"
             />
-          </FormField>
+          </div>
 
           <div
             className={cn(focusMode && "note-focus-hide")}
@@ -749,56 +814,109 @@ export default function NoteDetailPage() {
               />
             </FormField>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button onClick={() => void handleSave()} disabled={busy}>
-              {busy ? "Saving…" : "Save changes"}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => requestLeave(cancelEditing)}
-            >
-              Cancel
-            </Button>
-          </div>
         </Card>
       ) : (
-        <NoteReadingView
-          metadata={metadata}
-          body={body}
-          categories={categories}
-          tags={tags}
-          busy={busy}
-          resolving={resolving}
-          checklistSaveState={checklistSaveState}
-          onEdit={startEditing}
-          onToggleResolved={() => void handleToggleResolved()}
-          onMarkResolved={() => void handleMarkResolved()}
-          onReopen={() => void handleReopen()}
-          onTogglePinned={() => void toggleNotePinned(id, !metadata.pinned).then(setMetadata)}
-          onToggleFavorite={() => void toggleNoteFavorite(id, !metadata.favorite).then(setMetadata)}
-          onToggleArchived={() => void toggleNoteArchived(id, !metadata.archived).then(setMetadata)}
-          onDuplicate={() => void handleDuplicate()}
-          onMoveToTrash={() => setDeleteOpen(true)}
-          onRestoreFromTrash={() => void handleRestoreFromTrash()}
-          onPermanentDelete={() => setPermanentDeleteOpen(true)}
-          onChecklistChange={persistChecklistToggle}
-          searchQuery={searchQuery}
-          noteId={id}
-          vaultUserId={vaultUserId}
-          wrappedKey={wrappedKey}
-        />
-      )}
+        <div className="lg:flex lg:items-start lg:gap-8">
+          <div className="min-w-0 lg:flex-1">
+            <NoteReadingView
+              metadata={metadata}
+              body={body}
+              categories={categories}
+              tags={tags}
+              busy={busy}
+              resolving={resolving}
+              checklistSaveState={checklistSaveState}
+              onEdit={startEditing}
+              onToggleResolved={() => void handleToggleResolved()}
+              onMarkResolved={() => void handleMarkResolved()}
+              onReopen={() => void handleReopen()}
+              onTogglePinned={() => void toggleNotePinned(id, !metadata.pinned).then(setMetadata)}
+              onToggleFavorite={() => void toggleNoteFavorite(id, !metadata.favorite).then(setMetadata)}
+              onToggleArchived={() => void toggleNoteArchived(id, !metadata.archived).then(setMetadata)}
+              onDuplicate={() => void handleDuplicate()}
+              onMoveToTrash={() => setDeleteOpen(true)}
+              onRestoreFromTrash={() => void handleRestoreFromTrash()}
+              onPermanentDelete={() => setPermanentDeleteOpen(true)}
+              onChecklistChange={persistChecklistToggle}
+              searchQuery={searchQuery}
+              noteId={id}
+              vaultUserId={vaultUserId}
+              wrappedKey={wrappedKey}
+              onEnterZen={() => setZenMode(true)}
+            />
+          </div>
 
-      {!editing && metadata && (
-        <NoteVersionHistory
-          noteId={id}
-          enabled={canRead}
-          currentTitle={metadata.title}
-          currentBody={body}
-          onRestore={handleRestoreVersion}
-          restoring={restoringVersion || busy}
-          refreshKey={versionRefreshKey}
-        />
+          {/* Desktop right rail: details + version history (mockup). */}
+          <aside className="mt-6 space-y-4 lg:mt-0 lg:w-[300px] lg:flex-none" data-testid="note-detail-rail">
+            <div className="rounded-[12px] border border-[var(--border)] bg-[var(--card-2)] p-4">
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+                Details
+              </p>
+              <dl className="space-y-1.5 text-[13px]">
+                <div className="flex justify-between gap-2">
+                  <dt className="text-[var(--muted)]">Created</dt>
+                  <dd className="font-medium text-[var(--foreground)]">
+                    {formatNoteDate(metadata.createdAt)}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <dt className="text-[var(--muted)]">Updated</dt>
+                  <dd className="font-medium text-[var(--foreground)]">
+                    {formatNoteDate(metadata.updatedAt)}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+            <NoteVersionHistory
+              noteId={id}
+              enabled={canRead}
+              currentTitle={metadata.title}
+              currentBody={body}
+              onRestore={handleRestoreVersion}
+              restoring={restoringVersion || busy}
+              refreshKey={versionRefreshKey}
+            />
+
+            {!metadata.trashed && (
+              <div className="flex gap-2" data-testid="note-detail-rail-actions">
+                <button
+                  type="button"
+                  onClick={() => void handleDuplicate()}
+                  disabled={busy}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-[9px] border border-[var(--border)] bg-[var(--card)] py-2.5 text-[12.5px] font-semibold text-[var(--fg-2)] transition-colors hover:bg-[var(--card-2)] disabled:opacity-60"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="11" height="11" rx="2" />
+                    <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                  </svg>
+                  Duplicate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void toggleNoteArchived(id, !metadata.archived).then(setMetadata)}
+                  disabled={busy}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-[9px] border border-[var(--border)] bg-[var(--card)] py-2.5 text-[12.5px] font-semibold text-[var(--fg-2)] transition-colors hover:bg-[var(--card-2)] disabled:opacity-60"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+                  </svg>
+                  {metadata.archived ? "Unarchive" : "Archive"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteOpen(true)}
+                  disabled={busy}
+                  aria-label="Move to trash"
+                  className="flex flex-none items-center justify-center rounded-[9px] border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-[var(--danger)] transition-colors hover:bg-[var(--card-2)] disabled:opacity-60"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </aside>
+        </div>
       )}
 
       {displayError && (

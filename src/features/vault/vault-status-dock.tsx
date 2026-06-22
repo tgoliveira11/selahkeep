@@ -8,7 +8,11 @@ import { lockVaultSessionManually } from "@/lib/crypto-client/vault-session";
 import { recordVaultSecurityEvent } from "@/features/vault/record-vault-security-event";
 import { buildVaultUnlockHref } from "@/lib/notes/safe-return-to";
 import type { VaultClientStatus } from "@/lib/vault/vault-status";
-import { useVaultAutoLockCountdown } from "@/features/vault/use-vault-auto-lock-countdown";
+import {
+  useVaultAutoLockCountdown,
+  useVaultAutoLockFraction,
+} from "@/features/vault/use-vault-auto-lock-countdown";
+import { touchVaultActivity } from "@/features/vault/use-vault-activity";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { useVault } from "@/features/vault/use-vault";
 import { VaultDockQuickUnlock } from "@/features/vault/vault-dock-quick-unlock";
@@ -93,6 +97,7 @@ export function VaultStatusDock() {
   const passkeyAvailability = useVaultDockPasskeyAvailable(serverStatus);
   const isOpen = clientStatus === "unlocked";
   const countdown = useVaultAutoLockCountdown(isOpen);
+  const lockFraction = useVaultAutoLockFraction(isOpen);
   const panelRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLButtonElement>(null);
   const [expansion, setExpansion] = useState<{
@@ -181,6 +186,11 @@ export function VaultStatusDock() {
     collapse();
   }
 
+  /** Resets the inactivity timer so the vault stays open for another window. */
+  function stayUnlocked() {
+    touchVaultActivity();
+  }
+
   function openFullUnlockPage() {
     collapse();
   }
@@ -207,33 +217,74 @@ export function VaultStatusDock() {
   }
 
   if (status === "unlocked") {
-    const openLine = expandedCopy.countdownInline
-      ? `${expandedCopy.title} · ${expandedCopy.countdownInline}`
-      : expandedCopy.title;
+    // Circular countdown ring (r=16 → circumference ≈ 100.53). The remaining
+    // arc length tracks the live auto-lock fraction; falls back to full ring.
+    const ringCircumference = 2 * Math.PI * 16;
+    const ringOffset =
+      lockFraction === null ? 0 : ringCircumference * (1 - lockFraction);
 
     return (
       <div
         ref={panelRef}
-        className="vault-status-dock-panel vault-status-dock-panel--open vault-status-dock-panel--compact"
+        className="vault-status-dock-panel vault-status-dock-panel--open vault-status-dock-panel--unlocked"
         data-testid="vault-status-dock"
         data-vault-state="open"
         data-expanded="true"
         role="status"
         aria-live="polite"
       >
-        <div className="vault-status-dock-open-row">
-          <span className={cn("vault-status-dock__icon vault-status-dock__icon--compact", iconToneClass(status))}>
-            <VaultStatusIcon status={status} />
-          </span>
-          <p className="vault-status-dock-open-row__text">{openLine}</p>
-          <button
-            type="button"
-            className="vault-status-dock__action vault-status-dock__action--subtle"
-            onClick={lockNow}
-          >
-            Lock now
-          </button>
+        <div className="mb-3 flex items-center gap-2.5">
+          <div className="relative h-[38px] w-[38px] flex-none" aria-hidden="true">
+            <svg width="38" height="38" viewBox="0 0 38 38">
+              <circle cx="19" cy="19" r="16" fill="none" stroke="var(--border)" strokeWidth="3" />
+              <circle
+                cx="19"
+                cy="19"
+                r="16"
+                fill="none"
+                stroke="var(--primary)"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeDasharray={ringCircumference}
+                strokeDashoffset={ringOffset}
+                transform="rotate(-90 19 19)"
+                style={{ transition: "stroke-dashoffset 0.6s linear" }}
+              />
+            </svg>
+            <span className="absolute left-[11px] top-[11px] text-[var(--primary)]">
+              <VaultStatusIcon status={status} />
+            </span>
+          </div>
+          <div className="min-w-0">
+            <div className="text-[13.5px] font-semibold text-[var(--foreground)]">
+              {expandedCopy.title}
+            </div>
+            {countdown && (
+              <div className="text-xs text-[var(--muted)]">
+                Auto-locks in{" "}
+                <span className="font-semibold tabular-nums text-[var(--fg-2)]">{countdown}</span>
+              </div>
+            )}
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={stayUnlocked}
+          className="mb-2 w-full rounded-[9px] border border-[var(--border)] bg-[var(--card-2)] px-3 py-2.5 text-[13px] font-semibold text-[var(--foreground)]"
+        >
+          Stay unlocked 15 min
+        </button>
+        <button
+          type="button"
+          onClick={lockNow}
+          className="flex w-full items-center justify-center gap-1.5 rounded-[9px] py-2 text-[13px] font-semibold text-[var(--primary)]"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="9" rx="2.2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+          Lock now
+        </button>
       </div>
     );
   }

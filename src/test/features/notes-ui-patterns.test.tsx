@@ -217,7 +217,7 @@ describe("SelahKeep notes UI patterns", () => {
     });
 
     render(<NotesPage />);
-    expect(await screen.findByText("Start your first private note")).toBeTruthy();
+    expect(await screen.findByText("A quiet, empty page")).toBeTruthy();
     expect(screen.queryByTestId("notes-list-controls")).toBeNull();
     expect(screen.getByTestId("empty-state-new-note")).toBeTruthy();
   });

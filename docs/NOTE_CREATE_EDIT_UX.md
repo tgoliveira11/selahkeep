@@ -1,12 +1,24 @@
 # Note create/edit UX — SelahKeep
 
+## Layout (Stillness design system)
+
+The editor follows the design-system mockup (`docs/design/`). A **top action bar**
+holds, left-to-right: a back affordance ("← Notes", which confirms-then-leaves when the
+draft is dirty), an autosave **status indicator** ("Draft saved" / "Unsaved changes" /
+"Saving…" / "Offline — saved on device" / "Autosave failed"), the focus-mode toggle, and
+the primary **Save note** button. There is no duplicate Save at the bottom of the form;
+the editor's ⌘/Ctrl+Enter shortcut also submits.
+
+The title is a large **borderless** input at the top of the form (labelled "Title" for
+assistive tech via `aria-label`).
+
 ## Field order (create and edit)
 
-Both `/notes/new` and note edit mode use the same order:
+Both `/notes/new` and note edit mode use the same order, matching the mockup:
 
-1. **Template** (create only) — `/notes/new` template picker; edit infers template category from reserved category names
+1. **Title** — large borderless input
 2. **Category** — Blank notes: user-created categories only. Template notes: read-only locked category
-3. **Title**
+3. **Template** (create only) — `/notes/new` template picker; edit infers template category from reserved category names
 4. **Editor** — Markdown/visual editor with autosave status in the editor header
 5. **Attachments** — Encrypted upload/list (create: pending until save; edit: immediate upload)
 6. **Tags** — Always last among organizers

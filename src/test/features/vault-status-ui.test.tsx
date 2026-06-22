@@ -365,8 +365,7 @@ describe("nav vault status dock", () => {
     );
 
     const header = screen.getByRole("banner");
-    const mainNav = within(header).getByRole("navigation", { name: /main navigation/i });
-    expect(within(mainNav).queryByRole("link", { name: /set up vault/i })).toBeNull();
+    expect(within(header).queryByRole("link", { name: /set up vault/i })).toBeNull();
     expect(screen.queryByTestId("vault-status-dock")).toBeNull();
     expect(screen.queryByTestId("vault-status-dock-handle")).toBeNull();
   });
@@ -404,10 +403,9 @@ describe("nav vault status dock", () => {
     expect(within(dock).getByText(/Vault closed/)).toBeTruthy();
     expect(within(dock).getByLabelText(/vault password/i)).toBeTruthy();
     expect(within(dock).queryByRole("tab", { name: /recovery phrase/i })).toBeNull();
-    const mainNav = within(screen.getByRole("banner")).getByRole("navigation", {
-      name: /main navigation/i,
-    });
-    expect(within(mainNav).queryByRole("link", { name: /unlock vault/i })).toBeNull();
+    expect(
+      within(screen.getByRole("banner")).queryByRole("link", { name: /unlock vault/i })
+    ).toBeNull();
   });
 
   it("shows lock now in status bar when vault is unlocked", async () => {
@@ -425,7 +423,9 @@ describe("nav vault status dock", () => {
     expect(screen.queryByRole("button", { name: /lock now/i })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
     const dock = screen.getByTestId("vault-status-dock");
-    expect(within(dock).getByText(/Vault open · Auto-locks in 14:32/i)).toBeTruthy();
+    expect(within(dock).getByText(/Vault open/i)).toBeTruthy();
+    expect(within(dock).getByText(/Auto-locks in/i)).toBeTruthy();
+    expect(within(dock).getByText("14:32")).toBeTruthy();
     expect(within(dock).getByRole("button", { name: /lock now/i })).toBeTruthy();
     expect(within(screen.getByRole("banner")).queryByRole("button", { name: /lock vault/i })).toBeNull();
   });

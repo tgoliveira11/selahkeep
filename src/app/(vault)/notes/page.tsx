@@ -1,16 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { PageLayout } from "@/components/layout/page-layout";
 import { NotesListGrid } from "@/components/notes/notes-list-grid";
+import { NotesSkeletonGrid } from "@/components/notes/notes-skeleton-grid";
 import { Button } from "@/components/ui/button";
 import { NewNoteAction } from "@/features/notes/new-note-action";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { LoadingState } from "@/components/ui/loading-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { NoteCard } from "@/components/notes/note-card";
 import { NoteListRow } from "@/components/notes/note-list-row";
@@ -35,6 +35,7 @@ import {
 } from "@/lib/notes/note-sort";
 import {
   DEFAULT_SMART_FILTER,
+  SMART_FILTER_OPTIONS,
   type SmartLocalFilter,
 } from "@/lib/notes/smart-filters";
 import {
@@ -60,6 +61,8 @@ import { getRecentlyViewedNoteIds } from "@/lib/notes/recently-viewed";
 export default function NotesPage() {
   const vault = useRequireVault();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const viewParam = searchParams.get("view");
   const vaultClient = useVaultClientStatus();
   const vaultUserId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
@@ -80,6 +83,15 @@ export default function NotesPage() {
   useEffect(() => {
     setSearchHighlightQuery(filters.search);
   }, [filters.search, setSearchHighlightQuery]);
+
+  // Deep-linkable Library views from the sidebar (e.g. /notes?view=pinned).
+  useEffect(() => {
+    if (!viewParam) return;
+    if (SMART_FILTER_OPTIONS.some((option) => option.value === viewParam)) {
+      setSmartFilter(viewParam as SmartLocalFilter);
+      setActiveSavedViewId(null);
+    }
+  }, [viewParam]);
 
   const { bodies: searchBodies, loading: searchBodiesLoading } = useNoteSearchBodies(
     index,
@@ -249,9 +261,13 @@ export default function NotesPage() {
 
   if (vault.status === "loading" || vault.status === "redirecting" || vaultClient.status === "loading" || loading) {
     return (
-      <PageLayout>
-        <LoadingState label="Loading your notes" />
-      </PageLayout>
+      <AuthenticatedPage width="notes">
+        <PageHeader
+          title="Notes"
+          description="Your encrypted space for prayers, reflections, and private notes."
+        />
+        <NotesSkeletonGrid />
+      </AuthenticatedPage>
     );
   }
 
@@ -298,8 +314,27 @@ export default function NotesPage() {
       />
 
       {error && (
-        <div className="mb-6">
-          <ErrorState message={error} onRetry={() => window.location.reload()} />
+        <div
+          className="mx-auto my-12 max-w-[420px] rounded-[14px] border border-[var(--danger-bd)] bg-[var(--danger-bg)] p-7 text-center"
+          role="alert"
+          data-testid="notes-error-card"
+        >
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-[var(--danger-bd)] bg-[var(--card)] text-[var(--danger)]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 8v5M12 16.5v.01" />
+            </svg>
+          </div>
+          <div className="text-[17px] font-semibold text-[var(--foreground)]">
+            We couldn&apos;t reach your vault
+          </div>
+          <p className="mx-auto mt-1.5 max-w-[20rem] text-sm leading-relaxed text-[var(--fg-2)]">
+            Your notes are safe and still encrypted. This looks like a connection issue, not a
+            problem with your data.
+          </p>
+          <div className="mt-5">
+            <Button onClick={() => window.location.reload()}>Try again</Button>
+          </div>
         </div>
       )}
 
@@ -313,6 +348,7 @@ export default function NotesPage() {
         <NotesListControls
           filteredCount={filteredNotes.length}
           totalCount={allNotes.length}
+          pinnedCount={allNotes.filter((note) => note.pinned && !note.trashed).length}
           sort={sort}
           onSortChange={setSort}
           viewMode={viewMode}
@@ -343,13 +379,21 @@ export default function NotesPage() {
         </p>
       )}
 
-      {filteredNotes.length === 0 ? (
+      {error ? null : filteredNotes.length === 0 ? (
         <EmptyState
+          plain={allNotes.length === 0}
+          icon={
+            allNotes.length === 0 ? (
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3c0 6-3 9-6 10 3 1 6 4 6 8 0-4 3-7 6-8-3-1-6-4-6-10Z" />
+              </svg>
+            ) : undefined
+          }
           title={
             smartFilter === "recently-viewed"
               ? "No recently viewed notes yet"
               : allNotes.length === 0
-                ? "Start your first private note"
+                ? "A quiet, empty page"
                 : searchBodiesLoading && filters.search.trim()
                   ? "Searching your notes…"
                   : "No matching notes"
@@ -358,13 +402,13 @@ export default function NotesPage() {
             smartFilter === "recently-viewed"
               ? "Open a note to see it here after you unlock your vault."
               : allNotes.length === 0
-                ? "Write a prayer, reflection, decision, or journal entry inside your encrypted vault."
+                ? "Your vault is open. Write the first thing on your mind — it's encrypted before it ever leaves this device."
                 : "Try adjusting your search or filters to find what you're looking for."
           }
           action={
             allNotes.length === 0 ? (
               <Link href="/notes/new">
-                <Button data-testid="empty-state-new-note">New note</Button>
+                <Button data-testid="empty-state-new-note">Write your first note</Button>
               </Link>
             ) : undefined
           }

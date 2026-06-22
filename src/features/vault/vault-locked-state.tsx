@@ -157,7 +157,9 @@ export function VaultLockedState({
     </section>
   );
 
-  if (embedded) {
+  // The notes-list locked hero is a full-bleed centered screen (no card chrome),
+  // matching the design mockup; other variants stay inside a card.
+  if (embedded || variant === "notes-list") {
     return content;
   }
 

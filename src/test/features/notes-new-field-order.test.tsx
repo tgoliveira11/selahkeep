@@ -91,30 +91,24 @@ vi.mock("@/lib/crypto-client/note-drafts", () => ({
 }));
 
 function sectionOrder() {
-  const template = screen.getByTestId("new-note-template-section");
-  const category = screen.queryByTestId("new-note-category-section");
   const title = screen.getByTestId("new-note-title-field");
+  const category = screen.queryByTestId("new-note-category-section");
+  const template = screen.getByTestId("new-note-template-section");
   const editor = screen.getByTestId("new-note-editor-field");
   const attachments = screen.getByTestId("new-note-attachments-field");
   const tags = screen.getByTestId("new-note-tags-field");
 
-  const positions = [
-    template.compareDocumentPosition(title),
-    title.compareDocumentPosition(editor),
-    editor.compareDocumentPosition(attachments),
-    attachments.compareDocumentPosition(tags),
-  ];
+  const before = (a: Element, b: Element) =>
+    Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
+  // Mockup order: title → category → template → editor → attachments → tags.
   return {
-    templateBeforeTitle: Boolean(positions[0] & Node.DOCUMENT_POSITION_FOLLOWING),
-    titleBeforeEditor: Boolean(positions[1] & Node.DOCUMENT_POSITION_FOLLOWING),
-    editorBeforeAttachments: Boolean(positions[2] & Node.DOCUMENT_POSITION_FOLLOWING),
-    attachmentsBeforeTags: Boolean(positions[3] & Node.DOCUMENT_POSITION_FOLLOWING),
-    categoryBeforeTitle: category
-      ? Boolean(
-          category.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING
-        )
-      : null,
+    titleBeforeTemplate: before(title, template),
+    templateBeforeEditor: before(template, editor),
+    editorBeforeAttachments: before(editor, attachments),
+    attachmentsBeforeTags: before(attachments, tags),
+    titleBeforeCategory: category ? before(title, category) : null,
+    categoryBeforeTemplate: category ? before(category, template) : null,
   };
 }
 
@@ -136,19 +130,29 @@ describe("SelahKeep /notes/new field order and template categories", () => {
   });
 
   describe("field order", () => {
-    it("orders template before title, editor, attachments, and tags", () => {
+    it("orders title first, then template, editor, attachments, and tags", () => {
       render(<NewNotePage />);
       const order = sectionOrder();
-      expect(order.templateBeforeTitle).toBe(true);
-      expect(order.titleBeforeEditor).toBe(true);
+      expect(order.titleBeforeTemplate).toBe(true);
+      expect(order.templateBeforeEditor).toBe(true);
       expect(order.editorBeforeAttachments).toBe(true);
       expect(order.attachmentsBeforeTags).toBe(true);
     });
 
-    it("orders category after template and before title for blank note", () => {
+    it("orders category after title and before template for blank note", () => {
       render(<NewNotePage />);
       const order = sectionOrder();
-      expect(order.categoryBeforeTitle).toBe(true);
+      expect(order.titleBeforeCategory).toBe(true);
+      expect(order.categoryBeforeTemplate).toBe(true);
+    });
+
+    it("groups template and dictate inside the editor rail (desktop right column)", () => {
+      render(<NewNotePage />);
+      const rail = screen.getByTestId("new-note-rail");
+      // Template + dictate live in the rail; the editor body stays in the main column.
+      expect(within(rail).getByTestId("new-note-template-section")).toBeInTheDocument();
+      expect(within(rail).getByTestId("new-note-dictate")).toBeInTheDocument();
+      expect(within(rail).queryByTestId("new-note-editor-field")).toBeNull();
     });
   });
 

@@ -390,6 +390,13 @@ body {
   max-width: 26.25rem;
 }
 
+/* Expanded unlocked dock (Stillness mockup): ring + stay-unlocked + lock now. */
+.vault-status-dock-panel--unlocked {
+  width: min(15rem, calc(100vw - 2rem));
+  max-width: 15rem;
+  padding: 1rem;
+}
+
 .vault-status-dock-panel__body--compact {
   margin-top: 0.375rem;
   font-size: 0.75rem;
@@ -618,78 +625,131 @@ body {
   width: 1.125rem;
 }
 
+/* Locked hero (Stillness mockup): centered lock tile + calm copy + unlock CTA. */
 .notes-vault-locked-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   margin-top: 1.5rem;
-  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
-  border-radius: 1rem;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent-muted) 88%, var(--card)) 0%,
-    color-mix(in srgb, var(--card) 96%, var(--card-muted)) 100%
-  );
-  padding: 1.25rem 1.125rem;
-  box-shadow: 0 4px 14px rgb(91 58 140 / 0.08);
+  padding: 2.75rem 1.5rem 3rem;
 }
 
 .notes-vault-locked-state__icon {
   display: inline-flex;
-  height: 2.5rem;
-  width: 2.5rem;
+  height: 6rem;
+  width: 6rem;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
-  background: color-mix(in srgb, var(--accent-muted) 90%, var(--card));
+  border-radius: 1.875rem;
+  border: 1px solid var(--border);
+  background: var(--card);
   color: var(--primary);
+  box-shadow: 0 14px 44px rgb(30 16 52 / 0.12);
+}
+
+.notes-vault-locked-state__icon svg {
+  height: 2.625rem;
+  width: 2.625rem;
 }
 
 .notes-vault-locked-state__title {
-  margin: 0.875rem 0 0;
-  font-size: 1.125rem;
+  margin: 1.5rem 0 0;
+  font-size: 1.375rem;
   font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--foreground);
 }
 
 .notes-vault-locked-state__lead,
 .notes-vault-locked-state__body {
-  margin: 0.625rem 0 0;
+  margin: 0.5rem 0 0;
+  max-width: 22rem;
   font-size: 0.875rem;
-  line-height: 1.55;
-  color: var(--muted);
+  line-height: 1.6;
+  color: var(--fg-2, var(--muted));
 }
 
 .notes-vault-locked-state__actions {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1.125rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.75rem;
+  width: 100%;
+  max-width: 18.75rem;
 }
 
-@media (min-width: 640px) {
-  .notes-vault-locked-state__actions {
-    flex-direction: row;
-    align-items: center;
-  }
+.notes-vault-locked-state__actions > :first-child {
+  width: 100%;
 }
 
 .notes-vault-locked-state__secondary-link {
-  font-size: 0.875rem;
+  font-size: 0.84375rem;
   font-weight: 600;
   color: var(--primary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  padding: 0.5rem;
 }
 
 .notes-vault-locked-state__bullets {
-  margin: 1rem 0 0;
-  padding-left: 1.125rem;
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
   font-size: 0.75rem;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--muted) 92%, var(--foreground));
+  color: var(--muted);
+  max-width: 22rem;
 }
 
 .notes-vault-locked-state__bullets li + li {
   margin-top: 0.25rem;
+}
+
+/*
+ * Note editor layout. On small screens the form is a single column (DOM order:
+ * title → category → rail[template, prompts, dictate] → editor → attachments →
+ * tags). On lg+ it becomes a two-column grid: the main column holds the title,
+ * category, body, attachments and tags, while the rail spans the right column.
+ * Placement is by grid-area, so the DOM order (and the field-order contract)
+ * is unchanged.
+ */
+@media (min-width: 1024px) {
+  .note-editor-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    column-gap: 1.75rem;
+    row-gap: 1.25rem;
+    align-items: start;
+    grid-template-areas:
+      "title       rail"
+      "category    rail"
+      "editor      rail"
+      "attachments rail"
+      "tags        rail"
+      "error       rail";
+  }
+
+  .note-editor-grid > [data-area="title"] {
+    grid-area: title;
+  }
+  .note-editor-grid > [data-area="category"] {
+    grid-area: category;
+  }
+  .note-editor-grid > [data-area="rail"] {
+    grid-area: rail;
+  }
+  .note-editor-grid > [data-area="editor"] {
+    grid-area: editor;
+  }
+  .note-editor-grid > [data-area="attachments"] {
+    grid-area: attachments;
+  }
+  .note-editor-grid > [data-area="tags"] {
+    grid-area: tags;
+  }
+  .note-editor-grid > [data-area="error"] {
+    grid-area: error;
+  }
 }
 
 
@@ -1560,9 +1620,11 @@ mark.search-highlight {
 }
 
 .note-template-picker__label {
-  font-size: 0.875rem;
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--foreground);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .note-template-picker__hint {

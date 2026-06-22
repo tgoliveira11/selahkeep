@@ -54,7 +54,11 @@ export function Nav() {
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
         <Link
           href={authenticated ? "/notes" : "/"}
-          className="flex items-center gap-2 text-lg font-semibold text-[var(--primary)]"
+          className={cn(
+            "flex items-center gap-2 text-lg font-semibold text-[var(--primary)]",
+            // On desktop the sidebar carries the brand for authenticated users.
+            authenticated && "md:hidden"
+          )}
         >
           <AppMark size={28} />
           <span>{PRODUCT_NAME}</span>
@@ -62,32 +66,8 @@ export function Nav() {
 
         {authenticated ? (
           <>
-            <nav
-              aria-label="Main navigation"
-              className="hidden items-center gap-1 md:flex"
-            >
-              {LOGGED_IN_NAV_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "rounded-[var(--radius)] px-3 py-2 text-sm transition-colors hover:bg-[var(--card-muted)]",
-                    isLoggedInNavLinkActive(pathname, link.href)
-                      ? "font-medium text-[var(--primary)]"
-                      : "text-[var(--foreground)]"
-                  )}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-
-            <div className="hidden items-center gap-2 md:flex">
-              <Button variant="secondary" onClick={handleSignOut}>
-                Sign out
-              </Button>
-            </div>
-
+            {/* Primary nav + sign out live in the desktop sidebar (md+); on
+                mobile they are in the menu below. */}
             <button
               type="button"
               className="inline-flex min-h-11 items-center rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium md:hidden"

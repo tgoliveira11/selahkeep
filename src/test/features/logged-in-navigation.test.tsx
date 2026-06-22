@@ -96,13 +96,30 @@ describe("logged-in navigation", () => {
     expect(isLoggedInNavLinkActive("/vault/setup", "/vault/settings")).toBe(true);
   });
 
-  it("shows Notes and Account when signed in on desktop", async () => {
+  it("shows primary destinations in the desktop sidebar when signed in", async () => {
     const { useSession } = await import("next-auth/react");
     vi.mocked(useSession).mockReturnValue({
       data: { user: { id: "user-1", email: "user@example.com" } },
       status: "authenticated",
       update: vi.fn(),
     });
+    // The sidebar shows only when the vault is unlocked.
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    vi.mocked(useVaultClientStatus).mockReturnValue({
+      status: "ready",
+      clientStatus: "unlocked",
+      setupPhase: "complete",
+      serverStatus: {
+        initialized: true,
+        setupPhase: "complete",
+        setupComplete: true,
+        vaultVersion: "vault-v2",
+        ltgSetupComplete: true,
+        hasVaultPassword: true,
+        availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: false },
+      },
+      recheck: vi.fn(),
+    } as ReturnType<typeof useVaultClientStatus>);
 
     render(
       <SiteShell>
@@ -110,12 +127,13 @@ describe("logged-in navigation", () => {
       </SiteShell>
     );
 
-    const header = screen.getByRole("banner");
-    expect(within(header).getByRole("link", { name: "Notes" })).toBeTruthy();
-    expect(within(header).getByRole("link", { name: "Vault" })).toBeTruthy();
-    expect(within(header).getByRole("link", { name: "Account" })).toBeTruthy();
-    expect(within(header).queryByRole("link", { name: /letters/i })).toBeNull();
-    expect(within(header).queryByRole("link", { name: /^write$/i })).toBeNull();
+    // Primary nav lives in the desktop sidebar (md+); the header keeps the dock.
+    const sidebar = screen.getByTestId("app-sidebar");
+    expect(within(sidebar).getByRole("link", { name: "All notes" })).toBeTruthy();
+    expect(within(sidebar).getByRole("link", { name: "Vault" })).toBeTruthy();
+    expect(within(sidebar).getByRole("link", { name: "Account" })).toBeTruthy();
+    expect(within(sidebar).getByRole("link", { name: /new note/i })).toBeTruthy();
+    expect(within(sidebar).queryByRole("link", { name: /letters/i })).toBeNull();
   });
 
   it("shows vault status bar below header when signed in and locked", async () => {

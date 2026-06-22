@@ -17,6 +17,8 @@ import type { SavedView, VaultCategory, VaultTag } from "@/lib/crypto-client/vau
 interface NotesListControlsProps {
   filteredCount: number;
   totalCount: number;
+  /** Pinned note count, appended to the counter ("· N pinned") when > 0. */
+  pinnedCount?: number;
   sort: NoteSortOption;
   onSortChange: (sort: NoteSortOption) => void;
   viewMode: NoteViewMode;
@@ -41,6 +43,7 @@ interface NotesListControlsProps {
 export function NotesListControls({
   filteredCount,
   totalCount,
+  pinnedCount = 0,
   sort,
   onSortChange,
   viewMode,
@@ -60,7 +63,10 @@ export function NotesListControls({
   onRecentlyViewed,
   trashNotice,
 }: NotesListControlsProps) {
-  const noteCountLabel = formatNoteCount(filteredCount, totalCount);
+  const noteCountLabel =
+    pinnedCount > 0
+      ? `${formatNoteCount(filteredCount, totalCount)} · ${pinnedCount} pinned`
+      : formatNoteCount(filteredCount, totalCount);
 
   return (
     <section

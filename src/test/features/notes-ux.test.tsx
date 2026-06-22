@@ -569,7 +569,8 @@ describe("notes UX", () => {
       expect(screen.getByTestId("note-reading-view")).toBeTruthy();
       expect(screen.getByRole("button", { name: /^edit$/i })).toBeTruthy();
       expect(screen.queryAllByRole("button", { name: /mark as resolved/i })).toHaveLength(1);
-      expect(screen.queryByRole("button", { name: /move to trash/i })).toBeNull();
+      // Destructive actions live in the right rail (guarded by a confirm dialog), per the mockup.
+      expect(screen.getByTestId("note-detail-rail-actions")).toBeTruthy();
     });
 
     it("opens reflection dialog from detail resolve icon", async () => {

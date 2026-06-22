@@ -226,35 +226,57 @@ export function NoteVersionHistory({
               )}
 
               <ol className="space-y-2" data-testid="version-list">
-                {versions.map((v) => (
-                  <li
-                    key={v.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    data-testid={`version-row-${v.versionNumber}`}
-                  >
-                    <span>
-                      <span className="font-medium">Version {v.versionNumber}</span>
-                      <span className="ml-2 text-xs text-[var(--muted)]">
-                        {formatNoteDateTime(v.createdAt)}
-                      </span>
-                      {v.title && (
-                        <span className="ml-2 text-xs text-[var(--muted)]">
-                          “{v.title}”
-                        </span>
-                      )}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="min-h-8"
-                      disabled={restoring}
-                      onClick={() => setRestoreTarget(v)}
-                      data-testid={`version-restore-${v.versionNumber}`}
+                {versions.map((v) => {
+                  const comparing = v.id === selectedA || v.id === selectedB;
+                  const created = v.versionNumber === 1;
+                  const subtitle = comparing
+                    ? "Comparing"
+                    : created
+                      ? "Created"
+                      : v.title
+                        ? `“${v.title}”`
+                        : "Edited";
+                  return (
+                    <li
+                      key={v.id}
+                      className={
+                        comparing
+                          ? "flex items-center gap-3 rounded-[10px] border border-[var(--border-2)] bg-[var(--lilac-soft)] px-3.5 py-3"
+                          : "flex items-center gap-3 rounded-[10px] border border-[var(--border)] bg-[var(--card)] px-3.5 py-3"
+                      }
+                      data-testid={`version-row-${v.versionNumber}`}
                     >
-                      Restore
-                    </Button>
-                  </li>
-                ))}
+                      <span
+                        className={
+                          comparing
+                            ? "flex h-7 w-7 flex-none items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-xs font-bold text-[var(--fg-2)]"
+                            : "flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-[var(--lilac)] text-xs font-bold text-[var(--primary)]"
+                        }
+                        aria-hidden="true"
+                      >
+                        {v.versionNumber}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[13.5px] font-semibold text-[var(--foreground)]">
+                          Version {v.versionNumber}
+                          <span className="ml-2 text-xs font-normal text-[var(--muted)]">
+                            {formatNoteDateTime(v.createdAt)}
+                          </span>
+                        </span>
+                        <span className="block text-xs text-[var(--muted)]">{subtitle}</span>
+                      </span>
+                      <button
+                        type="button"
+                        disabled={restoring}
+                        onClick={() => setRestoreTarget(v)}
+                        data-testid={`version-restore-${v.versionNumber}`}
+                        className="flex-none rounded-[7px] border border-[var(--border-2)] px-2.5 py-1.5 text-xs font-semibold text-[var(--primary)] disabled:opacity-60"
+                      >
+                        Restore
+                      </button>
+                    </li>
+                  );
+                })}
               </ol>
             </>
           )}

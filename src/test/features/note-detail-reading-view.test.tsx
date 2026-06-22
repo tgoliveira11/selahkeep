@@ -213,6 +213,18 @@ describe("note detail reading view", () => {
       expect(screen.queryByTestId("move-to-trash")).toBeNull();
     });
 
+    it("enters and exits zen reading mode", async () => {
+      render(<NoteDetailPage />);
+      fireEvent.click(await screen.findByTestId("note-zen-button"));
+
+      // Zen surface shows the title; chrome (more-actions menu) is gone.
+      expect(await screen.findByTestId("note-reading-zen")).toBeInTheDocument();
+      expect(screen.queryByTestId("note-more-actions-menu")).toBeNull();
+
+      fireEvent.click(screen.getByTestId("note-zen-exit"));
+      expect(await screen.findByTestId("note-reading-view")).toBeInTheDocument();
+    });
+
     it("exposes secondary actions inside More actions menu", async () => {
       render(<NoteDetailPage />);
       await screen.findByText("Prayed that today");
