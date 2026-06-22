@@ -126,7 +126,7 @@ Letters domain removed in Phase 3 (`letters` table dropped via `0010_drop_letter
 
 ## HTTP security headers
 
-- **Content-Security-Policy** (nonce-based, `src/lib/security/content-security-policy.ts`, applied in `src/proxy.ts`): production `script-src 'self' 'nonce-…' 'strict-dynamic' 'wasm-unsafe-eval'`, `object-src 'none'`, `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, `worker-src 'self' blob:`, `upgrade-insecure-requests`. This is the critical second layer against XSS in an E2EE app (keys live in JS memory).
+- **Content-Security-Policy** (nonce-based, `src/lib/security/content-security-policy.ts`, applied in `src/proxy.ts`): production `script-src 'self' 'nonce-…' 'strict-dynamic' 'wasm-unsafe-eval'`, `img-src` / `frame-src` / `media-src` include `blob:` for client-decrypted attachment previews, `object-src 'none'`, `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, `worker-src 'self' blob:`, `upgrade-insecure-requests`. This is the critical second layer against XSS in an E2EE app (keys live in JS memory).
 - **`connect-src`** is `'self'` plus only the on-device voice model host(s): the self-hosted `NEXT_PUBLIC_VOICE_MODEL_HOST` when set, otherwise the default model CDNs (`huggingface.co`, `*.hf.co`, `cdn.jsdelivr.net`) used to download **weights only**. Set `NEXT_PUBLIC_VOICE_MODEL_HOST` to keep `connect-src` fully first-party. Disabling voice (`NEXT_PUBLIC_VOICE_NOTES_ENABLED=false`) removes those origins.
 - **Strict-Transport-Security** (HSTS, 2 years, `includeSubDomains; preload`), **Permissions-Policy** (`microphone=(self)`; camera/geolocation/payment/usb off), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` — `next.config.ts`.
 

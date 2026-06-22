@@ -139,9 +139,11 @@ export function useNoteAttachments({
     [noteId, onAttachmentsChange, reload]
   );
 
-  const downloadAttachment = useCallback(
+  const getDecryptedAttachment = useCallback(
     async (attachmentId: string) => {
-      if (!noteId || !wrappedKey) return;
+      if (!noteId || !wrappedKey) {
+        throw new Error("Vault must be unlocked to preview attachments");
+      }
       const record = await noteAttachmentsApi.get(noteId, attachmentId);
       const payload: EncryptedAttachmentPayload = {
         id: record.id,
@@ -150,7 +152,14 @@ export function useNoteAttachments({
         blobEncryptionVersion: record.blobEncryptionVersion as EncryptedAttachmentPayload["blobEncryptionVersion"],
         ciphertextBytes: record.ciphertextBytes,
       };
-      const { metadata, bytes } = await decryptAttachment(payload, wrappedKey);
+      return decryptAttachment(payload, wrappedKey);
+    },
+    [noteId, wrappedKey]
+  );
+
+  const downloadAttachment = useCallback(
+    async (attachmentId: string) => {
+      const { metadata, bytes } = await getDecryptedAttachment(attachmentId);
       const blob = new Blob([new Uint8Array(bytes)], { type: metadata.mimeType });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
@@ -159,8 +168,12 @@ export function useNoteAttachments({
       anchor.click();
       URL.revokeObjectURL(url);
     },
-    [noteId, wrappedKey]
+    [getDecryptedAttachment]
   );
+
+  const getPendingFile = useCallback((attachmentId: string) => {
+    return pendingRef.current.get(attachmentId) ?? null;
+  }, []);
 
   return {
     items,
@@ -169,6 +182,8 @@ export function useNoteAttachments({
     uploadFile,
     removeAttachment,
     downloadAttachment,
+    getDecryptedAttachment,
+    getPendingFile,
     reload,
     canUpload: Boolean(noteId && userId && wrappedKey),
   };

@@ -38,7 +38,10 @@ Plaintext rejection: filename, mimeType, blob, content fields on API bodies.
 ## UI
 
 - Create/edit: upload, list, remove, progress
-- Detail (unlocked): download; hidden when vault locked
+- Detail (unlocked): download; inline preview when the browser can render the type (images, PDF, text, audio, video); hidden when vault locked
+- Previews decrypt in the browser only; blob URLs are revoked on hide/unmount (nothing persisted)
+- CSP allows `blob:` for `img-src`, `frame-src` (PDF), and `media-src` so previews can render decrypted bytes
+- Office archives (`.docx`, `.xlsx`, etc.) remain download-only
 - New note: pending files encrypted and uploaded after first save
 
 Migration: `drizzle/0013_note_attachments.sql`

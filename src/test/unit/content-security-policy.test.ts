@@ -25,6 +25,9 @@ describe("content-security-policy", () => {
     expect(policy).toContain("frame-ancestors 'none'");
     expect(policy).toContain("upgrade-insecure-requests");
     expect(policy).toContain("worker-src 'self' blob:");
+    expect(policy).toContain("img-src 'self' data: blob:");
+    expect(policy).toContain("frame-src 'self' blob:");
+    expect(policy).toContain("media-src 'self' blob:");
   });
 
   it("allows the on-device voice model origins in connect-src by default", () => {

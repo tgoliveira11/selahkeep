@@ -1,15 +1,18 @@
 "use client";
 
-import { useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Alert } from "@/components/ui/alert";
+import { AttachmentPreview } from "@/components/notes/attachment-preview";
 import { useNoteAttachments, type AttachmentListItem } from "@/features/notes/use-note-attachments";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import {
   getMaxAttachmentSizeMb,
   getMaxAttachmentsPerNote,
 } from "@/lib/config/attachment-policy";
+import { canPreviewAttachment } from "@/lib/notes/attachment-preview";
+import type { DecryptedAttachment } from "@/lib/crypto-client/note-attachments";
 
 interface NoteAttachmentsFieldProps {
   noteId: string | null;
@@ -19,6 +22,8 @@ interface NoteAttachmentsFieldProps {
   onAttachmentsChange?: () => void;
   testId?: string;
   readOnly?: boolean;
+  /** When true (default), previewable attachments show an inline preview on the note detail page. */
+  showPreviews?: boolean;
 }
 
 function formatFileSize(bytes: number): string {
@@ -33,51 +38,85 @@ function AttachmentRow({
   onDownload,
   removing,
   readOnly,
+  showPreviews,
+  getDecryptedAttachment,
+  getPendingFile,
 }: {
   item: AttachmentListItem;
   onRemove: () => void;
   onDownload: () => void;
   removing: boolean;
   readOnly?: boolean;
+  showPreviews: boolean;
+  getDecryptedAttachment: (attachmentId: string) => Promise<DecryptedAttachment>;
+  getPendingFile: (attachmentId: string) => File | null;
 }) {
+  const previewable = canPreviewAttachment(item.metadata.mimeType, item.metadata.filename);
+  const [previewOpen, setPreviewOpen] = useState(showPreviews && previewable);
+
+  const loadDecrypted = useCallback(
+    () => getDecryptedAttachment(item.id),
+    [getDecryptedAttachment, item.id]
+  );
+
   return (
     <li
-      className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius)] border border-[var(--border)] px-3 py-2"
+      className="rounded-[var(--radius)] border border-[var(--border)] px-3 py-2"
       data-testid="note-attachment-item"
     >
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium">{item.metadata.filename}</p>
-        <p className="text-xs text-[var(--muted)]">{formatFileSize(item.metadata.sizeBytes)}</p>
-        {item.uploading && (
-          <p className="text-xs text-[var(--primary)]" role="status">
-            Uploading… {item.uploadProgress ? `${item.uploadProgress}%` : ""}
-          </p>
-        )}
-        {item.error && (
-          <p className="text-xs text-[var(--danger)]" role="alert">
-            {item.error}
-          </p>
-        )}
-      </div>
-      <div className="flex shrink-0 gap-2">
-        {!item.uploading && (
-          <>
-            <Button type="button" variant="secondary" onClick={onDownload}>
-              Download
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{item.metadata.filename}</p>
+          <p className="text-xs text-[var(--muted)]">{formatFileSize(item.metadata.sizeBytes)}</p>
+          {item.uploading && (
+            <p className="text-xs text-[var(--primary)]" role="status">
+              Uploading… {item.uploadProgress ? `${item.uploadProgress}%` : ""}
+            </p>
+          )}
+          {item.error && (
+            <p className="text-xs text-[var(--danger)]" role="alert">
+              {item.error}
+            </p>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {previewable && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setPreviewOpen((open) => !open)}
+              data-testid="note-attachment-preview-toggle"
+            >
+              {previewOpen ? "Hide preview" : "Preview"}
             </Button>
-            {!readOnly && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={onRemove}
-                disabled={removing}
-              >
-                Remove
+          )}
+          {!item.uploading && (
+            <>
+              <Button type="button" variant="secondary" onClick={onDownload}>
+                Download
               </Button>
-            )}
-          </>
-        )}
+              {!readOnly && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onRemove}
+                  disabled={removing}
+                >
+                  Remove
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
+      {showPreviews && previewable && (
+        <AttachmentPreview
+          metadata={item.metadata}
+          localFile={item.uploading ? getPendingFile(item.id) : null}
+          loadDecrypted={item.uploading ? undefined : loadDecrypted}
+          collapsed={!previewOpen}
+        />
+      )}
     </li>
   );
 }
@@ -90,6 +129,7 @@ export function NoteAttachmentsField({
   onAttachmentsChange,
   testId = "note-attachments-field",
   readOnly = false,
+  showPreviews = true,
 }: NoteAttachmentsFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const {
@@ -99,6 +139,8 @@ export function NoteAttachmentsField({
     uploadFile,
     removeAttachment,
     downloadAttachment,
+    getDecryptedAttachment,
+    getPendingFile,
     canUpload,
   } = useNoteAttachments({
     noteId,
@@ -180,6 +222,9 @@ export function NoteAttachmentsField({
                 onDownload={() => void downloadAttachment(item.id)}
                 removing={false}
                 readOnly={readOnly}
+                showPreviews={showPreviews}
+                getDecryptedAttachment={getDecryptedAttachment}
+                getPendingFile={getPendingFile}
               />
             ))}
           </ul>

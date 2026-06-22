@@ -22,7 +22,10 @@ export function buildContentSecurityPolicy(nonce: string): string {
       : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'`,
     isDev ? "style-src 'self' 'unsafe-inline'" : `style-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
     `connect-src ${connectSrc}`,
-    "img-src 'self' data:",
+    // Encrypted attachment previews decrypt client-side and render via blob: URLs.
+    "img-src 'self' data: blob:",
+    "media-src 'self' blob:",
+    "frame-src 'self' blob:",
     // Voice transcription runs Whisper in a Web Worker; ONNX-runtime may spawn
     // helper workers from blob: URLs for WASM threading.
     "worker-src 'self' blob:",
