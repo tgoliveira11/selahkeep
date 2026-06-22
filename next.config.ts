@@ -19,6 +19,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@tgoliveira/vault-core"],
+  // Dev-only badge: move it to the bottom-right so it never overlaps the
+  // bottom-left sidebar (account row). It is not shown in production.
+  devIndicators: {
+    position: "bottom-right",
+  },
   headers: async () => [
     {
       source: "/((?!_next/static|_next/image|favicon.ico).*)",

@@ -98,10 +98,14 @@ export function AppSidebar() {
   const initial = (session?.user?.email ?? "?").charAt(0).toUpperCase();
 
   return (
+    // The <aside> stretches to the full content height (its card background
+    // fills the whole column, so there is no gap); the inner wrapper is the
+    // sticky, viewport-tall rail that actually holds the nav.
     <aside
       data-testid="app-sidebar"
-      className="sticky top-0 hidden h-screen w-[248px] flex-none flex-col border-r border-[var(--border)] bg-[var(--card)] px-4 py-5 md:flex"
+      className="hidden w-[248px] flex-none border-r border-[var(--border)] bg-[var(--card)] md:block"
     >
+      <div className="sticky top-0 flex h-screen flex-col px-4 py-5">
       <Link
         href="/notes"
         className="mb-[18px] flex items-center gap-2 px-2 text-[17px] font-semibold tracking-[0.01em] text-[var(--primary)]"
@@ -179,6 +183,7 @@ export function AppSidebar() {
             </svg>
           </button>
         </div>
+      </div>
       </div>
     </aside>
   );
