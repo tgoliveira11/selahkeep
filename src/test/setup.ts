@@ -1,5 +1,6 @@
-import { vi, beforeEach, expect } from "vitest";
+import { vi, beforeEach, afterEach, expect } from "vitest";
 import "@testing-library/jest-dom/vitest";
+import { cleanup } from "@testing-library/react";
 import { toHaveNoViolations } from "jest-axe";
 import {
   InMemoryRateLimitAdapter,
@@ -8,6 +9,13 @@ import {
 import { setRateLimitAdapterForTests } from "@/server/policies/rate-limit";
 
 expect.extend(toHaveNoViolations);
+
+// Unmount React Testing Library trees after every test so DOM-heavy renders
+// (Tiptap editor, notes pages) are released and memory does not accumulate
+// across a worker's files. See vitest.config.ts for the worker heap size.
+afterEach(() => {
+  cleanup();
+});
 
 vi.mock("server-only", () => ({}));
 
