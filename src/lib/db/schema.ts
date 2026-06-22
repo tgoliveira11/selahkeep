@@ -18,8 +18,10 @@ export {
   vaultEnvelopes,
   notes,
   noteVersions,
+  noteAttachments,
   type Note,
   type NoteVersion,
+  type NoteAttachment,
   type VaultEnvelope,
 } from "./app-schema";
 

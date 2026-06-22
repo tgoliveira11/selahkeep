@@ -105,6 +105,31 @@ export const noteVersions = pgTable(
   ]
 );
 
+/** Encrypted file attachments — blob + metadata ciphertext only (see docs/ENCRYPTED_ATTACHMENTS.md). */
+export const noteAttachments = pgTable(
+  "note_attachments",
+  {
+    id: uuid("id").primaryKey(),
+    noteId: uuid("note_id")
+      .notNull()
+      .references(() => notes.id, { onDelete: "cascade" }),
+    vaultId: uuid("vault_id")
+      .notNull()
+      .references(() => userVaults.id, { onDelete: "cascade" }),
+    encryptedMetadata: jsonb("encrypted_metadata").notNull(),
+    encryptedBlob: jsonb("encrypted_blob").notNull(),
+    blobEncryptionVersion: text("blob_encryption_version").notNull(),
+    /** Combined ciphertext byte size for storage usage (not plaintext). */
+    ciphertextBytes: integer("ciphertext_bytes").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_note_attachments_note_id").on(table.noteId),
+    index("idx_note_attachments_vault_id").on(table.vaultId),
+  ]
+);
+
 export type Note = typeof notes.$inferSelect;
 export type NoteVersion = typeof noteVersions.$inferSelect;
+export type NoteAttachment = typeof noteAttachments.$inferSelect;
 export type VaultEnvelope = typeof vaultEnvelopes.$inferSelect;

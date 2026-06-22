@@ -13,7 +13,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Product-quality refinement pass.** Normalized note create/edit field order (template → category → title → editor → attachments → tags); encrypted attachments with client-side encryption, allowlist, env limits, and storage usage on vault settings; note list excerpts after unlock; autosave UI states including offline; dictation status labels and vault-lock transcript clear; SelahKeep “pause and keep” home copy. Docs: `NOTE_CREATE_EDIT_UX.md`, `AUTOSAVE_BEHAVIOR.md`, `ENCRYPTED_ATTACHMENTS.md`, `DICTATION_UX.md`, `STORAGE_USAGE.md`. Migration `0013_note_attachments.sql`.
+
 ### Changed
+
+- Note create/edit UX: attachments between editor and tags; dictation control moved into editor section; edit mode separates category (template-locked when applicable) from tags; autosave status shows offline/draft states without premature “Saved”.
+- Logged-out home page copy updated for SelahKeep positioning (reflection, prayer, journaling, remembrance).
+- Markdown preview uses `breaks: true` (single newlines render as line breaks) with sanitization preserved.
+
+### Security
+
+- Encrypted attachments: client-only encryption under Note Key; server stores ciphertext + byte counts only; executable types blocked client-side; plaintext attachment fields rejected on API.
 
 - Voice dictation is now **near real-time**. Instead of waiting for the recording to finish, audio is captured continuously and the accumulated buffer is re-transcribed on-device every ~2.5s, showing a live transcript while you speak; a final pass runs on Stop. Everything still runs locally — no audio or transcript leaves the device.
 - Voice capture now runs on a dedicated **AudioWorklet** (`/worklets/audio-capture-worklet.js`) on the audio thread instead of the deprecated main-thread `ScriptProcessor`, for glitch-free capture while transcription runs.

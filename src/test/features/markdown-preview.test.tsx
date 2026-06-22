@@ -44,6 +44,21 @@ describe("MarkdownPreview", () => {
     expect(onMarkdownChange).toHaveBeenCalledWith("- [x] task");
   });
 
+  it("renders single line breaks as br elements", () => {
+    render(<MarkdownPreview markdown={"Line one\nLine two"} />);
+    const preview = screen.getByTestId("markdown-preview");
+    expect(preview.innerHTML).toContain("<br");
+    expect(preview.textContent).toMatch(/Line one/);
+    expect(preview.textContent).toMatch(/Line two/);
+  });
+
+  it("preserves checklist and code blocks with line breaks nearby", () => {
+    render(<MarkdownPreview markdown={"- [ ] task\n\n```js\nconst x = 1;\n```"} />);
+    const preview = screen.getByTestId("markdown-preview");
+    expect(preview.querySelector('input[type="checkbox"]')).toBeTruthy();
+    expect(preview.querySelector("pre code")).toBeTruthy();
+  });
+
   it("does not render disabled checkboxes when interactive", () => {
     render(<MarkdownPreview markdown="- [ ] task" onMarkdownChange={vi.fn()} />);
     const checkbox = screen.getByTestId("markdown-preview").querySelector("input");

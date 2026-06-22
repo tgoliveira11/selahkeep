@@ -19,6 +19,8 @@ const aadSchema = z.object({
     "vault_settings",
     "vault_index",
     "note_draft",
+    "note_attachment_metadata",
+    "note_attachment_blob",
   ]),
 });
 

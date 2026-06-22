@@ -4,6 +4,7 @@ export type DraftUserActivation = {
   content: boolean;
   tags: boolean;
   manualCategory: boolean;
+  attachments: boolean;
 };
 
 export const EMPTY_DRAFT_USER_ACTIVATION: DraftUserActivation = {
@@ -11,6 +12,7 @@ export const EMPTY_DRAFT_USER_ACTIVATION: DraftUserActivation = {
   content: false,
   tags: false,
   manualCategory: false,
+  attachments: false,
 };
 
 export function isDraftActivatedByUser(activation: DraftUserActivation): boolean {
@@ -18,7 +20,8 @@ export function isDraftActivatedByUser(activation: DraftUserActivation): boolean
     activation.title ||
     activation.content ||
     activation.tags ||
-    activation.manualCategory
+    activation.manualCategory ||
+    activation.attachments
   );
 }
 

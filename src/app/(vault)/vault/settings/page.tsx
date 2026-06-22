@@ -18,9 +18,9 @@ import { useVaultSettings } from "@/features/notes/use-vault-settings";
 import type { VaultUnlockBehavior } from "@/lib/crypto-client/vault-settings";
 import { applyUnlockBehavior } from "@/features/notes/eager-decrypt-notes";
 import { PasskeyVaultUnlockSetup } from "@/features/passkey/passkey-vault-unlock-setup";
-import {
-  VAULT_PASSKEY_SECTION_INTRO,
-} from "@/lib/passkey/vault-passkey-availability-messages";
+import { VAULT_PASSKEY_SECTION_INTRO } from "@/lib/passkey/vault-passkey-availability-messages";
+import { StorageUsageDisplay } from "@/components/notes/storage-usage-display";
+import { useStorageUsage } from "@/features/notes/use-storage-usage";
 
 const OPTIONS: Array<{
   value: VaultUnlockBehavior;
@@ -49,6 +49,9 @@ export default function VaultSettingsPage() {
   const clientStatus =
     vaultClient.status === "ready" ? vaultClient.clientStatus : null;
   const { settings, loading, error, updateUnlockBehavior } = useVaultSettings(userId, vaultUnlocked);
+  const { usage: storageUsage, loading: storageLoading } = useStorageUsage(
+    Boolean(vaultUnlocked && clientStatus === "unlocked")
+  );
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -126,6 +129,11 @@ export default function VaultSettingsPage() {
         <LoadingState label="Loading settings" />
       ) : (
         <div className="space-y-4">
+          <Card className="space-y-3 border-dashed p-5" data-testid="vault-storage-usage-card">
+            <h2 className="font-medium">Encrypted storage</h2>
+            <StorageUsageDisplay usage={storageUsage} loading={storageLoading} />
+          </Card>
+
           <Card className="space-y-3 border-dashed p-5">
             <h2 className="font-medium">Vault security review</h2>
             <p className="text-sm text-[var(--muted)]">
@@ -179,7 +187,7 @@ export default function VaultSettingsPage() {
             <p className="text-sm text-[var(--muted)]">
               Bulk import and export of decrypted notes are not available in this MVP. Your notes
               stay encrypted on our servers and can only be read after you unlock your vault in the
-              browser. Encrypted attachments and version history are also not available yet.
+              browser.
             </p>
           </Card>
 

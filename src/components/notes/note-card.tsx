@@ -22,6 +22,7 @@ interface NoteCardProps {
   tagNames?: string[];
   searchQuery?: string;
   bodySnippet?: string | null;
+  bodyExcerpt?: string | null;
   locked?: boolean;
   resolving?: boolean;
   onToggleResolved?: () => void;
@@ -41,6 +42,7 @@ export function NoteCard({
   tagNames = [],
   searchQuery = "",
   bodySnippet,
+  bodyExcerpt,
   locked,
   resolving = false,
   onToggleResolved,
@@ -78,6 +80,11 @@ export function NoteCard({
               query={searchQuery}
               className="mt-2 line-clamp-2"
             />
+          )}
+          {!searchQuery.trim() && bodyExcerpt && !locked && (
+            <p className="mt-2 line-clamp-2 text-sm text-[var(--muted)]" data-testid="note-card-excerpt">
+              {bodyExcerpt}
+            </p>
           )}
           <p className="mt-2 text-xs text-[var(--muted)]">
             {formatNoteListDates(createdAt, updatedAt)}

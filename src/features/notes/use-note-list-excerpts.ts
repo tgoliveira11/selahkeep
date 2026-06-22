@@ -1,0 +1,83 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { notesApi } from "@/lib/api-client/notes";
+import { decryptNote } from "@/lib/crypto-client/notes";
+import { getCachedNoteBody, setCachedNoteBody } from "@/features/notes/eager-decrypt-notes";
+import { getSessionVaultKey } from "@/lib/crypto-client/vault";
+import { extractNoteExcerpt } from "@/lib/notes/note-excerpt";
+import type { VaultIndexPlaintext } from "@/lib/crypto-client/vault-index-types";
+
+/**
+ * Decrypt note bodies in memory for list excerpts after vault unlock.
+ * Cleared when vault locks; never sent to server.
+ */
+export function useNoteListExcerpts(
+  index: VaultIndexPlaintext | null,
+  vaultUnlocked: boolean,
+  enabled: boolean
+): { excerpts: Map<string, string>; loading: boolean } {
+  const [excerpts, setExcerpts] = useState<Map<string, string>>(new Map());
+  const [loading, setLoading] = useState(false);
+
+  const entryKey = index?.entries.map((entry) => entry.id).join(",") ?? "";
+
+  useEffect(() => {
+    if (!enabled || !vaultUnlocked || !index) {
+      setExcerpts(new Map());
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const vaultKey = getSessionVaultKey();
+    if (!vaultKey) {
+      setExcerpts(new Map());
+      return;
+    }
+    const sessionKey = vaultKey;
+    const activeIndex = index;
+
+    async function load() {
+      setLoading(true);
+      const next = new Map<string, string>();
+      try {
+        const activeEntries = activeIndex.entries.filter((entry) => !entry.trashed);
+        await Promise.all(
+          activeEntries.slice(0, 50).map(async (entry) => {
+            let body = getCachedNoteBody(entry.id);
+            if (body === undefined) {
+              const note = await notesApi.get(entry.id);
+              const decrypted = await decryptNote(
+                note.encryptedMetadata,
+                note.encryptedBody,
+                note.encryptedWrappedNoteKey,
+                sessionKey
+              );
+              body = decrypted.body;
+              setCachedNoteBody(entry.id, body);
+            }
+            const excerpt = extractNoteExcerpt(body);
+            if (excerpt) next.set(entry.id, excerpt);
+          })
+        );
+        if (!cancelled) setExcerpts(next);
+      } catch {
+        if (!cancelled) setExcerpts(new Map());
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, vaultUnlocked, entryKey, index]);
+
+  useEffect(() => {
+    if (!vaultUnlocked) setExcerpts(new Map());
+  }, [vaultUnlocked]);
+
+  return { excerpts, loading };
+}

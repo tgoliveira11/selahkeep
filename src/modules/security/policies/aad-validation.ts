@@ -1,6 +1,7 @@
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import type { CreateNoteInput, UpdateNoteInput } from "@/lib/validation/notes";
 import type { CreateNoteVersionInput } from "@/lib/validation/note-versions";
+import type { CreateAttachmentInput } from "@/lib/validation/note-attachments";
 
 export class AadValidationError extends Error {
   constructor(message: string) {
@@ -77,4 +78,21 @@ export function assertNoteUpdateAad(userId: string, noteId: string, input: Updat
   if (input.encryptedWrappedNoteKey) {
     assertPayloadAad(input.encryptedWrappedNoteKey, { userId, resourceId: noteId, field: "note_key" });
   }
+}
+
+export function assertAttachmentCreateAad(
+  userId: string,
+  attachmentId: string,
+  input: CreateAttachmentInput
+): void {
+  assertPayloadAad(input.encryptedMetadata, {
+    userId,
+    resourceId: attachmentId,
+    field: "note_attachment_metadata",
+  });
+  assertPayloadAad(input.encryptedBlob, {
+    userId,
+    resourceId: attachmentId,
+    field: "note_attachment_blob",
+  });
 }

@@ -19,6 +19,7 @@ interface NoteListRowProps {
   categoryName?: string | null;
   tagNames?: string[];
   searchQuery?: string;
+  bodyExcerpt?: string | null;
   locked?: boolean;
   resolving?: boolean;
   onToggleResolved?: () => void;
@@ -35,6 +36,7 @@ export function NoteListRow({
   trashed = false,
   categoryName,
   searchQuery = "",
+  bodyExcerpt,
   locked,
   resolving = false,
   onToggleResolved,
@@ -55,6 +57,12 @@ export function NoteListRow({
       </Link>
 
       <span className="note-list-row__category">{categoryName ?? ""}</span>
+
+      {!locked && bodyExcerpt && (
+        <span className="note-list-row__excerpt text-sm text-[var(--muted)] line-clamp-1" data-testid="note-list-excerpt">
+          {bodyExcerpt}
+        </span>
+      )}
 
       <time className="note-list-row__date" dateTime={updatedAt}>
         {formatNoteUpdatedShort(updatedAt)}

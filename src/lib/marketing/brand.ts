@@ -3,4 +3,4 @@ export const PRODUCT_NAME = "SelahKeep";
 
 /** Primary subtitle shown on marketing and metadata. */
 export const PRODUCT_TAGLINE =
-  "A private encrypted space for prayers, reflections, and notes.";
+  "Pause and keep — an encrypted private vault for reflection, prayer, journaling, and remembrance.";

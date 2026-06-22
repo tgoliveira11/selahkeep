@@ -15,13 +15,21 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
 import type { EditorStatus } from "@/components/notes/editor-status-bar";
 import { NoteFocusModeToggle } from "@/features/notes/note-focus-mode-toggle";
-import { CategoryTagFields } from "@/features/notes/category-tag-fields";
 import { NoteReadingView } from "@/components/notes/note-reading-view";
+import { NoteCategoryField } from "@/features/notes/category-tag-fields";
+import { TagChipInput } from "@/features/notes/tag-chip-input";
+import { NoteAttachmentsField } from "@/features/notes/note-attachments-field";
+import {
+  getLockedCategoryDisplayName,
+  isTemplateLockedCategory,
+} from "@/lib/notes/edit-template-category";
+import { filterUserCreatedCategories } from "@/lib/notes/template-category";
 import { NoteVersionHistory } from "@/components/notes/note-version-history";
 import type { DecryptedNoteVersion } from "@/lib/crypto-client/note-versions";
 import { appendTranscript } from "@/lib/voice/transcript-format";
 import { isVoiceNotesEnabled } from "@/lib/voice/voice-config";
 import { DictateButton } from "@/features/voice/dictate-button";
+import { useOnlineStatus } from "@/features/notes/use-online-status";
 
 const VoiceCapturePanel = dynamic(
   () => import("@/features/voice/voice-capture-panel").then((m) => m.VoiceCapturePanel),
@@ -112,6 +120,7 @@ export default function NoteDetailPage() {
   const [restoringVersion, setRestoringVersion] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const voiceEnabled = isVoiceNotesEnabled();
+  const online = useOnlineStatus();
   const checklistSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoLocked = useVaultAutoLockedCopy();
 
@@ -125,6 +134,16 @@ export default function NoteDetailPage() {
   const { mutateIndex } = useVaultIndex(vaultUserId, vaultUnlocked);
   const { query: searchQuery } = useNoteSearchContext();
   const { categories, tags, createCategory, createTag } = useCategoriesTags(vaultUserId, vaultUnlocked);
+  const userCategories = useMemo(
+    () => filterUserCreatedCategories(categories),
+    [categories]
+  );
+  const categoryLocked = metadata
+    ? isTemplateLockedCategory(metadata.categoryId, categories)
+    : false;
+  const lockedCategoryName = metadata
+    ? getLockedCategoryDisplayName(metadata.categoryId, categories)
+    : null;
   const recordedViewRef = useRef<string | null>(null);
 
   const editSnapshotValue = useMemo(
@@ -596,15 +615,17 @@ export default function NoteDetailPage() {
 
   const editorStatus: EditorStatus = busy
     ? "saving"
-    : displayError && dirty
-      ? "save-failed"
-      : savedFlash
-        ? "saved"
-        : dirty
-          ? "unsaved"
-          : draftSaved
-            ? "draft-saved"
-            : "idle";
+    : !online && dirty
+      ? "offline"
+      : displayError && dirty
+        ? "save-failed"
+        : savedFlash
+          ? "saved"
+          : dirty
+            ? "unsaved"
+            : draftSaved
+              ? "draft-saved"
+              : "idle";
 
   return (
     <NoteDetailPageShell className={cn(editing && focusMode && "note-page--focus")}>
@@ -648,49 +669,53 @@ export default function NoteDetailPage() {
               maxLength={200}
             />
           </FormField>
-          <div className={cn(focusMode && "note-focus-hide")}>
-            <CategoryTagFields
-              mode="edit"
-              categories={categories}
-              tags={tags}
+
+          <div
+            className={cn(focusMode && "note-focus-hide")}
+            data-testid="edit-note-category-section"
+          >
+            <NoteCategoryField
+              categories={categoryLocked ? [] : userCategories}
               categoryId={metadata.categoryId}
-              tagIds={metadata.tagIds}
-              answered={metadata.answered}
+              categoryLocked={categoryLocked}
+              lockedCategoryName={lockedCategoryName}
               onCategoryChange={(categoryId) => {
                 touchVaultActivity();
                 setMetadata({ ...metadata, categoryId });
               }}
-              onTagIdsChange={(tagIds) => {
-                touchVaultActivity();
-                setMetadata({ ...metadata, tagIds });
-              }}
-              onAnsweredChange={(answered) => {
-                touchVaultActivity();
-                setMetadata({ ...metadata, answered });
-              }}
-              onCreateCategory={createCategory}
-              onCreateTag={createTag}
+              onCreateCategory={categoryLocked ? undefined : createCategory}
             />
+            <label className="mt-4 flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={metadata.answered}
+                onChange={(e) => {
+                  touchVaultActivity();
+                  setMetadata({ ...metadata, answered: e.target.checked });
+                }}
+                aria-label="Mark as resolved"
+                className="h-4 w-4 rounded border-[var(--border)]"
+              />
+              Mark as resolved
+            </label>
           </div>
-          {voiceEnabled && (
-            <div className={cn(focusMode && "note-focus-hide")}>
-              {voiceOpen ? (
-                <VoiceCapturePanel
-                  onClose={() => setVoiceOpen(false)}
-                  onInsert={(text) => {
-                    touchVaultActivity();
-                    setBody((current) => appendTranscript(current, text));
-                  }}
-                />
-              ) : (
-                <DictateButton
-                  onClick={() => setVoiceOpen(true)}
-                  testId="edit-note-dictate"
-                />
-              )}
-            </div>
-          )}
+
           <FormField id="edit-body" label="Your note">
+            {voiceEnabled && (
+              <div className={cn("mb-3", focusMode && "note-focus-hide")}>
+                {voiceOpen ? (
+                  <VoiceCapturePanel
+                    onClose={() => setVoiceOpen(false)}
+                    onInsert={(text) => {
+                      touchVaultActivity();
+                      setBody((current) => appendTranscript(current, text));
+                    }}
+                  />
+                ) : (
+                  <DictateButton onClick={() => setVoiceOpen(true)} testId="edit-note-dictate" />
+                )}
+              </div>
+            )}
             <MarkdownEditor
               value={body}
               onChange={setBody}
@@ -700,6 +725,30 @@ export default function NoteDetailPage() {
               status={editorStatus}
             />
           </FormField>
+
+          <div className={cn(focusMode && "note-focus-hide")} data-testid="edit-note-attachments-field">
+            <NoteAttachmentsField
+              noteId={id}
+              userId={vaultUserId}
+              wrappedKey={wrappedKey}
+              enabled={canRead}
+              onAttachmentsChange={() => touchVaultActivity()}
+            />
+          </div>
+
+          <div data-testid="edit-note-tags-field">
+            <FormField id="edit-tags" label="Tags">
+              <TagChipInput
+                tags={tags}
+                tagIds={metadata.tagIds}
+                onTagIdsChange={(tagIds) => {
+                  touchVaultActivity();
+                  setMetadata({ ...metadata, tagIds });
+                }}
+                onCreateTag={createTag}
+              />
+            </FormField>
+          </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button onClick={() => void handleSave()} disabled={busy}>
               {busy ? "Saving…" : "Save changes"}
@@ -734,6 +783,9 @@ export default function NoteDetailPage() {
           onPermanentDelete={() => setPermanentDeleteOpen(true)}
           onChecklistChange={persistChecklistToggle}
           searchQuery={searchQuery}
+          noteId={id}
+          vaultUserId={vaultUserId}
+          wrappedKey={wrappedKey}
         />
       )}
 

@@ -142,7 +142,7 @@ Vault envelope methods (LTG): `password`, `recovery_phrase`, `passkey_prf` (+ le
 - **Vault unlock:** `VaultDockQuickUnlock` in `VaultStatusDock` shows **one primary method** when locked (passkey when configured, otherwise vault password). Recovery phrase is **only** on `/vault/unlock`. Dock is hidden before vault setup and on `/vault/unlock`. See [`docs/VAULT_DOCK_UX.md`](./docs/VAULT_DOCK_UX.md). Collapsed handle shows `Vault` or countdown; expanded open state is compact with **Lock now**; auto-collapse via `useVaultDockDismiss`.
 - **Vault setup:** `/vault/setup` — recovery phrase copy/download + randomized word-position confirmation (3 words for 12-word phrase, 6 for 24-word). See [`docs/VAULT_SETUP_RECOVERY_PHRASE_CONFIRMATION.md`](./docs/VAULT_SETUP_RECOVERY_PHRASE_CONFIRMATION.md).
 - **Tokens:** CSS variables in `src/app/globals.css` (calm neutral + **purple** primary)
-- **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview; visual note editor (Tiptap) with Markdown canonical storage — see [`docs/EDITOR_IMPLEMENTATION_DECISION.md`](./docs/EDITOR_IMPLEMENTATION_DECISION.md); encrypted IndexedDB drafts; quick insert, focus mode, daily note; tag normalization before encrypted index write
+- **Security UX:** no plaintext notes in URLs/API; recovery phrase client-only; sanitized Markdown preview; visual note editor (Tiptap) with Markdown canonical storage — see [`docs/EDITOR_IMPLEMENTATION_DECISION.md`](./docs/EDITOR_IMPLEMENTATION_DECISION.md); encrypted IndexedDB drafts (see [`docs/AUTOSAVE_BEHAVIOR.md`](./docs/AUTOSAVE_BEHAVIOR.md)); encrypted note attachments (see [`docs/ENCRYPTED_ATTACHMENTS.md`](./docs/ENCRYPTED_ATTACHMENTS.md)); client-side list excerpts after unlock; storage usage on `/vault/settings` (see [`docs/STORAGE_USAGE.md`](./docs/STORAGE_USAGE.md)); note create/edit field order (see [`docs/NOTE_CREATE_EDIT_UX.md`](./docs/NOTE_CREATE_EDIT_UX.md)); quick insert, focus mode, daily note; tag normalization before encrypted index write
 
 ## Voice notes (on-device transcription)
 
@@ -156,7 +156,7 @@ Dictation is a **client-only** feature with **no server surface**. The resulting
        -> pure helpers in src/lib/voice/ (languages, audio PCM mixdown/resample, transcript format, config)
 ```
 
-Only **model weights** are fetched (once, cached); microphone audio and the transcript never leave the browser. Languages: English, Portuguese, Spanish. Config: `NEXT_PUBLIC_VOICE_NOTES_ENABLED`, `NEXT_PUBLIC_VOICE_MODEL`, `NEXT_PUBLIC_VOICE_MODEL_HOST`. The cloud Web Speech API is **not** used for note content. See `docs/TDR_Local_Voice_Notes.md`.
+Only **model weights** are fetched (once, cached); microphone audio and the transcript never leave the browser. Languages: English, Portuguese, Spanish. Config: `NEXT_PUBLIC_VOICE_NOTES_ENABLED`, `NEXT_PUBLIC_VOICE_MODEL`, `NEXT_PUBLIC_VOICE_MODEL_HOST`. The cloud Web Speech API is **not** used for note content. See `docs/TDR_Local_Voice_Notes.md` and [`docs/DICTATION_UX.md`](./docs/DICTATION_UX.md).
 
 ## AAD binding (ADR-005)
 

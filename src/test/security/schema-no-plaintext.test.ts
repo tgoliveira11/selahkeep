@@ -37,7 +37,7 @@ describe("database schema has no plaintext note columns", () => {
     const schema = readFileSync(join(process.cwd(), "src/lib/db/app-schema.ts"), "utf-8");
     const start = schema.indexOf("export const noteVersions");
     expect(start).toBeGreaterThan(-1);
-    const section = schema.slice(start);
+    const section = schema.slice(start, schema.indexOf("export const noteAttachments"));
 
     for (const col of FORBIDDEN_COLUMNS) {
       expect(section).not.toContain(col);
@@ -48,5 +48,18 @@ describe("database schema has no plaintext note columns", () => {
     expect(section).toContain("encryptedBody");
     expect(section).not.toMatch(/\btitle:\s/);
     expect(section).not.toMatch(/\bbody:\s/);
+  });
+
+  it("note_attachments table stores only encrypted fields", () => {
+    const schema = readFileSync(join(process.cwd(), "src/lib/db/app-schema.ts"), "utf-8");
+    const start = schema.indexOf("export const noteAttachments");
+    expect(start).toBeGreaterThan(-1);
+    const section = schema.slice(start);
+
+    expect(section).toContain("encryptedMetadata");
+    expect(section).toContain("encryptedBlob");
+    expect(section).toContain("ciphertextBytes");
+    expect(section).not.toMatch(/\bfilename:\s/);
+    expect(section).not.toMatch(/\bmimeType:\s/);
   });
 });

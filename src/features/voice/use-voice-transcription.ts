@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 import {
   concatFloat32,
   resampleLinear,
@@ -277,6 +278,8 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
       teardownCapture();
     };
   }, [teardownCapture]);
+
+  useEffect(() => subscribeVaultSession(() => reset()), [reset]);
 
   return {
     supported,

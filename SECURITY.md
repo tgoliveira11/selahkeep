@@ -97,7 +97,8 @@ Encrypted persistent search index is deferred. Current search uses in-memory dec
 - **Answered** defaults to `false` on create; only editable on note detail/edit.
 - Vault setting `unlockBehavior`: `metadata_only` (default) or `decrypt_all` (eager body decrypt after unlock) — stored in encrypted vault settings.
 - User-facing note status is **resolved**; encrypted metadata/index still use internal field name `answered` (legacy naming).
-- Note drafts autosave locally as **encrypted** payloads (`note_draft` AAD) in IndexedDB; plaintext title/body/tags are never persisted.
+- Note drafts autosave locally as **encrypted** payloads (`note_draft` AAD) in IndexedDB; plaintext title/body/tags are never persisted. See [`docs/AUTOSAVE_BEHAVIOR.md`](./docs/AUTOSAVE_BEHAVIOR.md).
+- **Encrypted attachments** are encrypted client-side under the Note Key before upload; the server stores ciphertext blobs and byte counts only (`note_attachments`, migration `0013_note_attachments.sql`). Plaintext file content and filenames are not accepted on API routes. See [`docs/ENCRYPTED_ATTACHMENTS.md`](./docs/ENCRYPTED_ATTACHMENTS.md).
 - Markdown preview/detail use `marked` + `dompurify` allowlist via `MarkdownPreview` before `dangerouslySetInnerHTML`.
 - Visual note editor (Tiptap) keeps **Markdown as canonical body**; pasted HTML is sanitized client-side (`editor-paste.ts`); only `http(s)` links accepted in-editor. HTML is never sent to APIs.
 - Unsafe HTML/scripts and `javascript:` links are stripped; external links use `rel="noopener noreferrer"`.

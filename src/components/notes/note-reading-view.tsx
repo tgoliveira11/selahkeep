@@ -10,6 +10,8 @@ import { formatNoteListDates } from "@/lib/notes/note-dates";
 import { HighlightedText, SearchMatchBanner } from "@/components/notes/search-highlight";
 import { ResolvedReflectionDisplay } from "@/components/notes/resolved-reflection-display";
 import { NoteTimeline } from "@/components/notes/note-timeline";
+import { NoteAttachmentsReadOnly } from "@/components/notes/note-attachments-readonly";
+import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import type { VaultCategory, VaultTag } from "@/lib/crypto-client/vault-index-types";
 import type { NoteMetadataPlaintext } from "@/lib/crypto-client/notes";
 
@@ -34,6 +36,9 @@ interface NoteReadingViewProps {
   onPermanentDelete: () => void;
   onChecklistChange: (markdown: string) => void;
   searchQuery?: string;
+  noteId?: string;
+  vaultUserId?: string | null;
+  wrappedKey?: EncryptedPayload | null;
 }
 
 export function NoteReadingView({
@@ -57,6 +62,9 @@ export function NoteReadingView({
   onPermanentDelete,
   onChecklistChange,
   searchQuery = "",
+  noteId,
+  vaultUserId,
+  wrappedKey,
 }: NoteReadingViewProps) {
   const categoryName = metadata.categoryId
     ? categories.find((category) => category.id === metadata.categoryId)?.name ?? null
@@ -174,6 +182,13 @@ export function NoteReadingView({
           searchQuery={searchQuery}
           className="note-reading-surface__content text-base leading-relaxed text-[var(--foreground)]"
         />
+        {noteId && vaultUserId && wrappedKey && (
+          <NoteAttachmentsReadOnly
+            noteId={noteId}
+            userId={vaultUserId}
+            wrappedKey={wrappedKey}
+          />
+        )}
       </div>
     </article>
   );

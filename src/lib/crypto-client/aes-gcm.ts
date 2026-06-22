@@ -87,3 +87,62 @@ export async function decryptField(
 
   throw lastError instanceof Error ? lastError : new Error("Decryption failed");
 }
+
+export async function encryptBytes(
+  plaintext: Uint8Array,
+  key: CryptoKey,
+  aad: { userId: string; resourceId: string; field: EncryptedPayload["aad"]["field"] }
+): Promise<EncryptedPayload> {
+  const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+  const aadBytes = stringToBytes(canonicalAadString(aad));
+
+  const ciphertextBuffer = await crypto.subtle.encrypt(
+    {
+      name: ENCRYPTION_ALG,
+      iv: toBufferSource(iv),
+      additionalData: toBufferSource(aadBytes),
+    },
+    key,
+    toBufferSource(plaintext)
+  );
+
+  return {
+    version: ENCRYPTION_VERSION,
+    alg: ENCRYPTION_ALG,
+    iv: bytesToBase64Url(iv),
+    ciphertext: bytesToBase64Url(new Uint8Array(ciphertextBuffer)),
+    aad,
+  };
+}
+
+export async function decryptBytes(
+  payload: EncryptedPayload,
+  key: CryptoKey
+): Promise<Uint8Array> {
+  const iv = base64UrlToBytes(payload.iv);
+  const ciphertext = base64UrlToBytes(payload.ciphertext);
+  let lastError: unknown;
+
+  for (const aadBytes of aadByteCandidates(payload.aad)) {
+    try {
+      const plaintextBuffer = await crypto.subtle.decrypt(
+        {
+          name: ENCRYPTION_ALG,
+          iv: toBufferSource(iv),
+          additionalData: toBufferSource(aadBytes),
+        },
+        key,
+        toBufferSource(ciphertext)
+      );
+      return new Uint8Array(plaintextBuffer);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Decryption failed");
+}
+
+export function encryptedPayloadCiphertextBytes(payload: EncryptedPayload): number {
+  return base64UrlToBytes(payload.ciphertext).byteLength + base64UrlToBytes(payload.iv).byteLength;
+}

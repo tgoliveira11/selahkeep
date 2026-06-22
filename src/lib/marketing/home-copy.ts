@@ -3,24 +3,24 @@ import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/marketing/brand";
 /** Marketing copy for the public home page (`/`). */
 export const homeCopy = {
   hero: {
-    eyebrow: "Your private encrypted vault",
+    eyebrow: "Pause and keep what matters",
     title: PRODUCT_NAME,
     subtitle: PRODUCT_TAGLINE,
     reassurance:
-      "Your notes are private by default and protected on your device before they are saved.",
+      "A calm, encrypted vault for reflection, prayer, journaling, and remembrance — private by default, protected on your device before anything is saved.",
   },
   features: {
     heading: "What you can do",
     cards: [
       {
-        title: "Write privately",
+        title: "Pause and reflect",
         description:
-          "Compose prayers, reflections, and notes in a calm, distraction-free space.",
+          "Write prayers, reflections, journal entries, and remembrance notes in a quiet space built for thoughtful keeping.",
       },
       {
         title: "Keep everything in one vault",
         description:
-          "Save your writing securely and return whenever you want to remember, reflect, or find comfort.",
+          "Return whenever you need comfort, clarity, or a record of what you wanted to remember — all encrypted before it leaves your browser.",
       },
       {
         title: "Mark as resolved",
@@ -37,18 +37,18 @@ export const homeCopy = {
   privacy: {
     heading: "Your privacy, in plain language",
     body: [
-      "Your vault belongs to you. Notes are private by default, and we design the app so our team cannot read them.",
-      "When you save a note, it is protected before it leaves your browser. Only you can unlock and read your private notes after vault unlock.",
+      "Your vault belongs to you. Notes are private by default, and we design SelahKeep so our team cannot read them.",
+      "When you save a note, it is encrypted before it leaves your browser. Only you can unlock and read your private notes after vault unlock.",
       "Your account password signs you in only — it does not unlock your vault. Vault recovery is separate.",
+      "Voice dictation runs on your device when enabled; audio and transcripts are not uploaded for note content.",
       "We do not sell your note content, use it for advertising, or share it with others.",
-      "Import and export are not available in this MVP. There is no way to bulk-download decrypted notes from the server.",
     ],
   },
   deferred: {
     heading: "Not in this MVP",
     badge: "Coming later",
     body:
-      "Encrypted attachments, note version history, import/export, and optional community sharing are planned for future phases. They are not available today.",
+      "Import/export, optional community sharing, and advanced collaboration are planned for future phases.",
   },
   account: {
     heading: "Why create an account?",
@@ -60,6 +60,7 @@ export const homeCopy = {
   },
   finalCta: {
     heading: "Start your private vault",
-    subtitle: "Create a free account, set up your vault, and write your first note in a calm, protected space.",
+    subtitle:
+      "Create a free account, set up your vault, and keep your first note in a calm, protected space.",
   },
 } as const;

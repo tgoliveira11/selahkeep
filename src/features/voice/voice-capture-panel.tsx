@@ -65,6 +65,18 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
   const recording = status === "recording";
   const processing = status === "processing";
 
+  const statusLabel = !supported
+    ? "Unavailable"
+    : recording
+      ? "Recording"
+      : processing
+        ? "Processing"
+        : status === "ready"
+          ? "Review"
+          : status === "error"
+            ? "Unavailable"
+            : "Ready";
+
   return (
     <section
       className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-4"
@@ -72,7 +84,15 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
       aria-label="Dictate a note"
     >
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-medium">Dictate a note</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium">Dictate a note</h3>
+          <span
+            className="rounded-full bg-[var(--card-muted)] px-2 py-0.5 text-xs text-[var(--muted)]"
+            data-testid="voice-status-label"
+          >
+            {statusLabel}
+          </span>
+        </div>
         <button
           type="button"
           className="text-sm text-[var(--muted)] hover:underline"

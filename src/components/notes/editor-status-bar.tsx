@@ -6,7 +6,8 @@ export type EditorStatus =
   | "saving"
   | "saved"
   | "draft-saved"
-  | "save-failed";
+  | "save-failed"
+  | "offline";
 
 interface EditorStatusBarProps {
   status: EditorStatus;
@@ -19,7 +20,8 @@ const STATUS_COPY: Record<EditorStatus, string | null> = {
   saving: "Saving…",
   saved: "Saved",
   "draft-saved": "Draft saved on this device",
-  "save-failed": "Save failed",
+  "save-failed": "Autosave failed",
+  offline: "Offline — draft saved on this device",
 };
 
 export function EditorStatusBar({ status, mode }: EditorStatusBarProps) {

@@ -63,6 +63,11 @@ import { touchVaultActivity } from "@/features/vault/use-vault-activity";
 import { appendTranscript } from "@/lib/voice/transcript-format";
 import { isVoiceNotesEnabled } from "@/lib/voice/voice-config";
 import { DictateButton } from "@/features/voice/dictate-button";
+import { useOnlineStatus } from "@/features/notes/use-online-status";
+import { encryptAttachment } from "@/lib/crypto-client/note-attachments";
+import { noteAttachmentsApi } from "@/lib/api-client/note-attachments";
+import { attachmentRejectionReason } from "@/lib/notes/attachment-file-types";
+import { getMaxAttachmentSizeBytes } from "@/lib/config/attachment-policy";
 
 const VoiceCapturePanel = dynamic(
   () => import("@/features/voice/voice-capture-panel").then((m) => m.VoiceCapturePanel),
@@ -109,7 +114,9 @@ export default function NewNotePage() {
   const [draftActivation, setDraftActivation] = useState<DraftUserActivation>(
     EMPTY_DRAFT_USER_ACTIVATION
   );
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const applyingTemplateRef = useRef(false);
+  const online = useOnlineStatus();
 
   const userId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
@@ -167,6 +174,7 @@ export default function NewNotePage() {
       setDraftPrompt(null);
       setDraftSaved(false);
       setDraftActivation(EMPTY_DRAFT_USER_ACTIVATION);
+      setPendingFiles([]);
     });
   }, []);
 
@@ -258,6 +266,22 @@ export default function NewNotePage() {
         tagIds,
         answered: false,
       });
+
+      if (pendingFiles.length > 0 && userId) {
+        const noteRecord = await import("@/lib/api-client/notes").then((m) => m.notesApi.get(note.id));
+        for (const file of pendingFiles) {
+          const attachmentId = crypto.randomUUID();
+          const encrypted = await encryptAttachment(
+            userId,
+            note.id,
+            attachmentId,
+            file,
+            noteRecord.encryptedWrappedNoteKey
+          );
+          await noteAttachmentsApi.create(note.id, encrypted);
+        }
+      }
+
       if (userId) {
         await deleteEncryptedNoteDraft(userId, NEW_NOTE_DRAFT_KEY);
       }
@@ -306,13 +330,15 @@ export default function NewNotePage() {
 
   const editorStatus: EditorStatus = busy
     ? "saving"
-    : displayError && dirty
-      ? "save-failed"
-      : dirty
-        ? "unsaved"
-        : draftSaved
-          ? "draft-saved"
-          : "idle";
+    : !online && dirty
+      ? "offline"
+      : displayError && dirty
+        ? "save-failed"
+        : dirty
+          ? "unsaved"
+          : draftSaved
+            ? "draft-saved"
+            : "idle";
 
   return (
     <AuthenticatedPage width="editor" className={cn(focusMode && "note-page--focus")}>
@@ -430,29 +456,28 @@ export default function NewNotePage() {
             }}
           />
 
-          {voiceEnabled && (
-            <div className={cn(focusMode && "note-focus-hide")} data-testid="new-note-voice-section">
-              {voiceOpen ? (
-                <VoiceCapturePanel
-                  onClose={() => setVoiceOpen(false)}
-                  onInsert={(text) => {
-                    touchVaultActivity();
-                    activateDraft("content");
-                    setBody((current) => appendTranscript(current, text));
-                  }}
-                />
-              ) : (
-                <DictateButton
-                  onClick={() => setVoiceOpen(true)}
-                  testId="new-note-dictate"
-                  label="Dictate a note"
-                />
-              )}
-            </div>
-          )}
-
           <div data-testid="new-note-editor-field">
             <FormField id="note-body" label="Your note">
+              {voiceEnabled && (
+                <div className={cn("mb-3", focusMode && "note-focus-hide")}>
+                  {voiceOpen ? (
+                    <VoiceCapturePanel
+                      onClose={() => setVoiceOpen(false)}
+                      onInsert={(text) => {
+                        touchVaultActivity();
+                        activateDraft("content");
+                        setBody((current) => appendTranscript(current, text));
+                      }}
+                    />
+                  ) : (
+                    <DictateButton
+                      onClick={() => setVoiceOpen(true)}
+                      testId="new-note-dictate"
+                      label="Dictate a note"
+                    />
+                  )}
+                </div>
+              )}
               <MarkdownEditor
               value={body}
               onChange={(value) => {
@@ -463,6 +488,81 @@ export default function NewNotePage() {
               onSave={() => void handleSubmit()}
               status={editorStatus}
             />
+            </FormField>
+          </div>
+
+          <div
+            className={cn(focusMode && "note-focus-hide")}
+            data-testid="new-note-attachments-field"
+          >
+            <FormField
+              id="new-note-pending-attachments"
+              label="Attachments"
+              hint="Files are encrypted when you save the note."
+            >
+              <input
+                id="new-note-pending-attachments"
+                type="file"
+                multiple
+                className="sr-only"
+                data-testid="new-note-pending-attachments-input"
+                onChange={(e) => {
+                  const files = e.target.files;
+                  if (!files?.length) return;
+                  const maxBytes = getMaxAttachmentSizeBytes();
+                  const accepted: File[] = [];
+                  for (const file of Array.from(files)) {
+                    const rejection = attachmentRejectionReason(file);
+                    if (rejection) {
+                      setError(rejection);
+                      continue;
+                    }
+                    if (file.size > maxBytes) {
+                      setError(`"${file.name}" exceeds the size limit.`);
+                      continue;
+                    }
+                    accepted.push(file);
+                  }
+                  if (accepted.length) {
+                    touchVaultActivity();
+                    activateDraft("attachments");
+                    setPendingFiles((current) => [...current, ...accepted]);
+                  }
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  document.getElementById("new-note-pending-attachments")?.click()
+                }
+                data-testid="new-note-pending-attachments-upload"
+              >
+                Choose files
+              </Button>
+              {pendingFiles.length > 0 && (
+                <ul className="mt-3 space-y-2" data-testid="new-note-pending-attachments-list">
+                  {pendingFiles.map((file, index) => (
+                    <li
+                      key={`${file.name}-${index}`}
+                      className="flex items-center justify-between gap-2 rounded-[var(--radius)] border border-[var(--border)] px-3 py-2 text-sm"
+                    >
+                      <span className="truncate">{file.name}</span>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => {
+                          activateDraft("attachments");
+                          setPendingFiles((current) => current.filter((_, i) => i !== index));
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </FormField>
           </div>
 

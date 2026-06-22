@@ -95,18 +95,21 @@ function sectionOrder() {
   const category = screen.queryByTestId("new-note-category-section");
   const title = screen.getByTestId("new-note-title-field");
   const editor = screen.getByTestId("new-note-editor-field");
+  const attachments = screen.getByTestId("new-note-attachments-field");
   const tags = screen.getByTestId("new-note-tags-field");
 
   const positions = [
     template.compareDocumentPosition(title),
     title.compareDocumentPosition(editor),
-    editor.compareDocumentPosition(tags),
+    editor.compareDocumentPosition(attachments),
+    attachments.compareDocumentPosition(tags),
   ];
 
   return {
     templateBeforeTitle: Boolean(positions[0] & Node.DOCUMENT_POSITION_FOLLOWING),
     titleBeforeEditor: Boolean(positions[1] & Node.DOCUMENT_POSITION_FOLLOWING),
-    editorBeforeTags: Boolean(positions[2] & Node.DOCUMENT_POSITION_FOLLOWING),
+    editorBeforeAttachments: Boolean(positions[2] & Node.DOCUMENT_POSITION_FOLLOWING),
+    attachmentsBeforeTags: Boolean(positions[3] & Node.DOCUMENT_POSITION_FOLLOWING),
     categoryBeforeTitle: category
       ? Boolean(
           category.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING
@@ -133,12 +136,13 @@ describe("SelahKeep /notes/new field order and template categories", () => {
   });
 
   describe("field order", () => {
-    it("orders template before title, editor, and tags", () => {
+    it("orders template before title, editor, attachments, and tags", () => {
       render(<NewNotePage />);
       const order = sectionOrder();
       expect(order.templateBeforeTitle).toBe(true);
       expect(order.titleBeforeEditor).toBe(true);
-      expect(order.editorBeforeTags).toBe(true);
+      expect(order.editorBeforeAttachments).toBe(true);
+      expect(order.attachmentsBeforeTags).toBe(true);
     });
 
     it("orders category after template and before title for blank note", () => {

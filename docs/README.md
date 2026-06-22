@@ -32,7 +32,12 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 | [`PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`](./PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md) | PRF diagnostics, capability vs ceremony |
 | [`PASSKEY_VAULT_SETUP_AVAILABILITY_AUDIT.md`](./PASSKEY_VAULT_SETUP_AVAILABILITY_AUDIT.md) | Vault settings availability vs account passkey |
 | [`VAULT_AUTO_LOCK_NORMALIZATION.md`](./VAULT_AUTO_LOCK_NORMALIZATION.md) | Auto-lock config, activity, draft hooks |
-| [`NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md`](./NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md) | Encrypted drafts, autosave, templates |
+| [`NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md`](./NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md) | Encrypted drafts, autosave, templates (legacy) |
+| [`NOTE_CREATE_EDIT_UX.md`](./NOTE_CREATE_EDIT_UX.md) | Field order, template categories, attachments placement |
+| [`AUTOSAVE_BEHAVIOR.md`](./AUTOSAVE_BEHAVIOR.md) | Autosave triggers, UI states, no draft version history |
+| [`ENCRYPTED_ATTACHMENTS.md`](./ENCRYPTED_ATTACHMENTS.md) | Client-encrypted attachments, limits, API |
+| [`DICTATION_UX.md`](./DICTATION_UX.md) | Review-before-insert dictation flow |
+| [`STORAGE_USAGE.md`](./STORAGE_USAGE.md) | Encrypted ciphertext storage metering |
 | [`EDITOR_IMPLEMENTATION_DECISION.md`](./EDITOR_IMPLEMENTATION_DECISION.md) | Visual note editor (Tiptap) decision |
 | [`TWO_FACTOR_MOBILE_FLOW_AUDIT.md`](./TWO_FACTOR_MOBILE_FLOW_AUDIT.md) | OAuth + TOTP mobile redirect flow |
 | [`TRUSTED_DEVICES_REMOVAL.md`](./TRUSTED_DEVICES_REMOVAL.md) | Trusted devices removal record |

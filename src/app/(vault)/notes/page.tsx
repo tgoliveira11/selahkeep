@@ -54,6 +54,7 @@ import { NotesWelcome } from "@/features/vault/notes-welcome";
 import { findDailyNoteIdForDate } from "@/lib/notes/daily-note";
 import { useNoteSearchContext } from "@/features/notes/note-search-context";
 import { useNoteSearchBodies } from "@/features/notes/use-note-search-bodies";
+import { useNoteListExcerpts } from "@/features/notes/use-note-list-excerpts";
 import { getRecentlyViewedNoteIds } from "@/lib/notes/recently-viewed";
 
 export default function NotesPage() {
@@ -84,6 +85,12 @@ export default function NotesPage() {
     index,
     filters.search,
     vaultUnlocked
+  );
+
+  const { excerpts: noteExcerpts } = useNoteListExcerpts(
+    index,
+    vaultUnlocked,
+    Boolean(vaultUnlocked && index && !filters.search.trim())
   );
 
   useEffect(() => subscribeVaultSession(() => {
@@ -380,6 +387,7 @@ export default function NotesPage() {
                   categoryName={note.categoryName}
                   tagNames={note.tagNames}
                   searchQuery={searchHighlightQuery}
+                  bodyExcerpt={noteExcerpts.get(note.id) ?? null}
                   resolving={resolvingId === note.id}
                   onToggleResolved={
                     note.trashed ? undefined : () => void handleToggleResolved(note.id, note.answered)
@@ -402,6 +410,7 @@ export default function NotesPage() {
                   tagNames={note.tagNames}
                   searchQuery={searchHighlightQuery}
                   bodySnippet={note.bodySnippet}
+                  bodyExcerpt={noteExcerpts.get(note.id) ?? null}
                   resolving={resolvingId === note.id}
                   onToggleResolved={
                     note.trashed ? undefined : () => void handleToggleResolved(note.id, note.answered)
