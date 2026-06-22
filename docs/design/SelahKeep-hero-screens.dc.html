@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:rgba(120,110,135,.35);border-radius:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  [data-theme="light"]{
+    --bg:#f7f6fa; --bg-2:#efedf4; --fg:#1a1a1a; --fg-2:#54515c; --muted:#6b7280;
+    --primary:#5b3a8c; --primary-solid:#5b3a8c; --on-primary:#ffffff; --primary-hover:#4a2f73;
+    --accent:#8b6bb8; --lilac:#ebe4f4; --lilac-soft:#f6f3fa;
+    --border:#e8e2ef; --border-2:#d9cdec; --card:#ffffff; --card-2:#f6f3fa;
+    --success:#2d6a4f; --success-bg:#e6f0ea; --success-bd:#bfdccd;
+    --danger:#b91c1c; --danger-bg:#fbeaea; --danger-bd:#e9c4c4;
+    --warning:#92400e; --warning-bg:#f7eee2; --warning-bd:#e7d3b6;
+    --info:#1e40af; --info-bg:#e6ecf8; --info-bd:#c3d0ee;
+    --ring:rgba(91,58,140,.35);
+    --add-bg:#e9f3ee; --add-fg:#2d6a4f; --add-bd:#bfdccd;
+    --del-bg:#fbeded; --del-fg:#b91c1c; --del-bd:#ecc9c9;
+    --skel:#ece8f2;
+  }
+  [data-theme="dark"]{
+    --bg:#161219; --bg-2:#1b1622; --fg:#f3eef8; --fg-2:#c7bdd2; --muted:#968 aa5; --muted:#968aa5;
+    --primary:#b79be0; --primary-solid:#7e5cb8; --on-primary:#ffffff; --primary-hover:#8d68c6;
+    --accent:#b79be0; --lilac:#2c2436; --lilac-soft:#221b2c;
+    --border:#2e2738; --border-2:#3a3147; --card:#1e1922; --card-2:#241d2e;
+    --success:#7fd3aa; --success-bg:#17312613; --success-bg:rgba(45,106,79,.22); --success-bd:#2f5745;
+    --danger:#f1a3a3; --danger-bg:rgba(185,28,28,.20); --danger-bd:#5e3236;
+    --warning:#e2b274; --warning-bg:rgba(146,64,14,.24); --warning-bd:#5a4326;
+    --info:#a3bdf2; --info-bg:rgba(30,64,175,.24); --info-bd:#2f3f6b;
+    --ring:rgba(183,155,224,.45);
+    --add-bg:rgba(45,106,79,.22); --add-fg:#8fe0b5; --add-bd:#2f5745;
+    --del-bg:rgba(185,28,28,.20); --del-fg:#f1a3a3; --del-bd:#5e3236;
+    --skel:#272031;
+  }
+  @keyframes selahReady{0%,100%{opacity:1}50%{opacity:.4}}
+  @keyframes selahSpin{to{transform:rotate(360deg)}}
+  @keyframes selahPulse{0%{box-shadow:0 0 0 0 rgba(185,28,28,.30)}70%{box-shadow:0 0 0 10px rgba(185,28,28,0)}100%{box-shadow:0 0 0 0 rgba(185,28,28,0)}}
+  @keyframes selahShimmer{0%{background-position:-300px 0}100%{background-position:300px 0}}
+  @keyframes selahWave{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+  @keyframes selahRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="min-height:100vh;background:#d7d4da;font-family:'Schibsted Grotesk',system-ui,sans-serif;display:flex;flex-direction:column">
+
+  <div style="position:sticky;top:0;z-index:50">{{ chrome }}</div>
+
+  <div style="flex:1;overflow:auto;padding:34px 24px 60px;display:flex;justify-content:center;align-items:flex-start">
+
+    <!-- ================= MOBILE ================= -->
+    <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:none;width:414px;padding:13px;background:linear-gradient(160deg,#1a1620,#0d0a12);border-radius:48px;box-shadow:0 30px 80px rgba(30,16,52,.35),inset 0 0 0 1px rgba(255,255,255,.05)">
+        <div style="position:relative;width:388px;height:812px;border-radius:38px;overflow:hidden;background:var(--bg);color:var(--fg)">
+
+          <!-- status bar -->
+          <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:13px;font-weight:600;color:var(--fg);z-index:8;background:var(--bg)">
+            <span style="font-variant-numeric:tabular-nums;letter-spacing:.02em">9:41</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="4.5" y="4" width="3" height="7" rx="1"/><rect x="9" y="2" width="3" height="9" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+              <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 4.5C3 2.5 5.3 1.5 8 1.5s5 1 7 3M3.4 7C4.7 5.8 6.2 5.2 8 5.2s3.3.6 4.6 1.8M6 9.3c.6-.5 1.2-.8 2-.8s1.4.3 2 .8"/></svg>
+              <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="currentColor" stroke-width="1.1" opacity=".5"/><rect x="2.6" y="2.6" width="15" height="6.8" rx="1.3" fill="currentColor"/><rect x="22.4" y="4" width="1.6" height="4" rx="0.8" fill="currentColor" opacity=".5"/></svg>
+            </div>
+          </div>
+
+          <!-- scrollable app area -->
+          <div id="m-scroll" style="position:absolute;top:46px;left:0;right:0;bottom:0;overflow:auto">
+
+            <!-- ---------- NOTES (mobile) ---------- -->
+            <sc-if value="{{ isNotes }}" hint-placeholder-val="{{ true }}">
+              <div style="padding:6px 18px 120px">
+
+                <!-- app header -->
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 14px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="width:26px;height:26px;border-radius:7px;background:var(--primary-solid);display:flex;align-items:center;justify-content:center">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c0 6-3 9-6 10 3 1 6 4 6 8 0-4 3-7 6-8-3-1-6-4-6-10Z"/></svg>
+                    </div>
+                    <span style="font-size:16px;font-weight:600;letter-spacing:.01em">Selah</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <button onClick="{{ toggleDock }}" style="font-family:inherit;display:inline-flex;align-items:center;gap:7px;padding:6px 11px 6px 9px;background:var(--card);border:1px solid var(--border-2);border-radius:9px;cursor:pointer;color:var(--fg)" aria-label="Vault status, unlocked, auto-locks soon">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>
+                      <span style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.04em">{{ countdown }}</span>
+                    </button>
+                    <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(150deg,#8b6bb8,#5b3a8c);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600">R</div>
+                  </div>
+                </div>
+
+                <!-- title + counter -->
+                <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px">
+                  <div>
+                    <h1 style="font-size:30px;line-height:1.05;font-weight:600;letter-spacing:-.025em;margin:0">Notes</h1>
+                    <div style="font-size:13px;color:var(--muted);margin-top:5px">{{ counter }}</div>
+                  </div>
+                  <button onClick="{{ goEditor }}" style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:9px;padding:9px 13px;cursor:pointer">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New
+                  </button>
+                </div>
+
+                <!-- search -->
+                <div style="display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:12px">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+                  <span style="font-size:14px;color:var(--muted)">Search your notes</span>
+                </div>
+
+                <!-- filter chips -->
+                <div style="display:flex;gap:8px;overflow:auto;margin:0 -18px 14px;padding:0 18px 2px">
+                  <span style="flex:none;font-size:13px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);padding:7px 13px;border-radius:8px;white-space:nowrap">All</span>
+                  <span style="flex:none;font-size:13px;font-weight:500;color:var(--fg-2);background:var(--card);border:1px solid var(--border);padding:7px 13px;border-radius:8px;white-space:nowrap">Pinned</span>
+                  <span style="flex:none;font-size:13px;font-weight:500;color:var(--fg-2);background:var(--card);border:1px solid var(--border);padding:7px 13px;border-radius:8px;white-space:nowrap">Resolved</span>
+                  <span style="flex:none;font-size:13px;font-weight:500;color:var(--fg-2);background:var(--card);border:1px solid var(--border);padding:7px 13px;border-radius:8px;white-space:nowrap">Recently viewed</span>
+                  <span style="flex:none;font-size:13px;font-weight:500;color:var(--fg-2);background:var(--card);border:1px solid var(--border);padding:7px 13px;border-radius:8px;white-space:nowrap">Letters</span>
+                </div>
+
+                <!-- toolbar -->
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                  <button style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--fg);background:transparent;border:none;cursor:pointer;padding:0">
+                    Views
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <button style="font-family:inherit;display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);background:transparent;border:none;cursor:pointer">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h12M3 12h9M3 18h5M17 6v12M17 18l3-3M17 18l-3-3"/></svg>
+                      Recent
+                    </button>
+                    <div style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:2px">
+                      <span style="display:flex;align-items:center;justify-content:center;width:28px;height:24px;border-radius:6px;background:var(--lilac);color:var(--primary)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
+                      <span style="display:flex;align-items:center;justify-content:center;width:28px;height:24px;border-radius:6px;color:var(--muted)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- DEFAULT: pinned + list -->
+                <sc-if value="{{ nDefault }}" hint-placeholder-val="{{ true }}">
+                  <div>
+                    <div style="display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:2px 0 10px">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.2"><path d="M9 3h6l-1 6 4 3v2h-5v7l-1 0-1 0v-7H5v-2l4-3z"/></svg>
+                      Pinned
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:11px;margin-bottom:22px">
+                      <sc-for list="{{ pinned }}" as="item" hint-placeholder-count="2">
+                        <div onClick="{{ goDetail }}" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:15px;cursor:pointer">
+                          <div style="display:flex;align-items:center;gap:7px;margin-bottom:9px">
+                            <span style="font-size:11.5px;font-weight:600;color:var(--primary);border:1px solid var(--border-2);padding:3px 9px;border-radius:6px">{{ item.cat }}</span>
+                            <sc-if value="{{ item.resolved }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--success);border:1px solid var(--success-bd);background:var(--success-bg);padding:3px 8px;border-radius:6px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Resolved</span></sc-if>
+                            <span style="margin-left:auto;color:var(--accent)"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><path d="M9 3h6l-1 6 4 3v2h-5v7l-1 0-1 0v-7H5v-2l4-3z"/></svg></span>
+                          </div>
+                          <div style="font-size:16px;font-weight:600;letter-spacing:-.01em;margin-bottom:5px">{{ item.title }}</div>
+                          <p style="font-size:13px;line-height:1.55;color:var(--fg-2);margin:0 0 11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ item.excerpt }}</p>
+                          <div style="display:flex;align-items:center;justify-content:space-between">
+                            <div style="display:flex;gap:6px"><sc-for list="{{ item.tags }}" as="tag" hint-placeholder-count="2"><span style="font-size:11.5px;color:var(--accent);border:1px solid var(--border);padding:2px 8px;border-radius:6px">{{ tag }}</span></sc-for></div>
+                            <span style="font-size:11.5px;color:var(--muted)">{{ item.updated }}</span>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+
+                    <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:2px 0 10px">Earlier</div>
+                    <div style="display:flex;flex-direction:column;gap:11px">
+                      <sc-for list="{{ others }}" as="item" hint-placeholder-count="3">
+                        <div onClick="{{ goDetail }}" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:15px;cursor:pointer">
+                          <div style="display:flex;align-items:center;gap:7px;margin-bottom:9px">
+                            <span style="font-size:11.5px;font-weight:600;color:var(--primary);border:1px solid var(--border-2);padding:3px 9px;border-radius:6px">{{ item.cat }}</span>
+                            <sc-if value="{{ item.resolved }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--success);border:1px solid var(--success-bd);background:var(--success-bg);padding:3px 8px;border-radius:6px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Resolved</span></sc-if>
+                            <span style="margin-left:auto;font-size:11.5px;color:var(--muted)">{{ item.updated }}</span>
+                          </div>
+                          <div style="font-size:16px;font-weight:600;letter-spacing:-.01em;margin-bottom:5px">{{ item.title }}</div>
+                          <p style="font-size:13px;line-height:1.55;color:var(--fg-2);margin:0 0 11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ item.excerpt }}</p>
+                          <div style="display:flex;gap:6px"><sc-for list="{{ item.tags }}" as="tag" hint-placeholder-count="1"><span style="font-size:11.5px;color:var(--accent);border:1px solid var(--border);padding:2px 8px;border-radius:6px">{{ tag }}</span></sc-for></div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <!-- EMPTY -->
+                <sc-if value="{{ nEmpty }}" hint-placeholder-val="{{ false }}">
+                  <div style="text-align:center;padding:54px 20px 40px">
+                    <div style="width:84px;height:84px;border-radius:24px;background:var(--lilac-soft);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+                      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c0 6-3 9-6 10 3 1 6 4 6 8 0-4 3-7 6-8-3-1-6-4-6-10Z"/></svg>
+                    </div>
+                    <div style="font-size:19px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px">A quiet, empty page</div>
+                    <p style="font-size:14px;line-height:1.6;color:var(--fg-2);margin:0 auto 22px;max-width:260px">Your vault is open. Write the first thing on your mind — it's encrypted before it ever leaves this device.</p>
+                    <button onClick="{{ goEditor }}" style="font-family:inherit;font-size:14px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:9px;padding:12px 20px;cursor:pointer">Write your first note</button>
+                  </div>
+                </sc-if>
+
+                <!-- LOADING -->
+                <sc-if value="{{ nLoading }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:11px">
+                    <sc-for list="{{ skeletons }}" as="sk" hint-placeholder-count="4">
+                      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:15px">
+                        <div style="display:flex;gap:8px;margin-bottom:11px"><div style="width:72px;height:18px;border-radius:6px;background:linear-gradient(90deg,var(--skel),var(--bg-2),var(--skel));background-size:300px 100%;animation:selahShimmer 1.4s infinite linear"></div></div>
+                        <div style="width:80%;height:15px;border-radius:5px;background:var(--skel);margin-bottom:9px"></div>
+                        <div style="width:100%;height:11px;border-radius:5px;background:var(--skel);margin-bottom:6px"></div>
+                        <div style="width:60%;height:11px;border-radius:5px;background:var(--skel)"></div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <!-- ERROR -->
+                <sc-if value="{{ nError }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:var(--danger-bg);border:1px solid var(--danger-bd);border-radius:12px;padding:20px;text-align:center;margin-top:8px">
+                    <div style="width:44px;height:44px;border-radius:50%;background:var(--card);border:1px solid var(--danger-bd);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:var(--danger)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg></div>
+                    <div style="font-size:16px;font-weight:600;margin-bottom:6px;color:var(--fg)">We couldn't reach your vault</div>
+                    <p style="font-size:13.5px;line-height:1.55;color:var(--fg-2);margin:0 auto 18px;max-width:260px">Your notes are safe and still encrypted. This looks like a connection issue, not a problem with your data.</p>
+                    <button onClick="{{ showDefault }}" style="font-family:inherit;font-size:13.5px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:9px;padding:11px 18px;cursor:pointer">Try again</button>
+                  </div>
+                </sc-if>
+
+              </div>
+            </sc-if>
+
+            <!-- ---------- EDITOR (mobile) ---------- -->
+            <sc-if value="{{ isEditor }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:6px 18px 130px">
+
+                <!-- top bar -->
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 16px">
+                  <button onClick="{{ goNotes }}" style="font-family:inherit;display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:600;color:var(--fg-2);background:transparent;border:none;cursor:pointer;padding:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg>Notes</button>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted)"><span style="width:6px;height:6px;border-radius:50%;background:var(--success)"></span>Draft saved</span>
+                    <button style="font-family:inherit;font-size:13.5px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:9px;padding:9px 16px;cursor:pointer">Save</button>
+                  </div>
+                </div>
+
+                <!-- title -->
+                <input placeholder="Title" style="font-family:inherit;width:100%;border:none;outline:none;background:transparent;font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--fg);padding:0;margin-bottom:14px" />
+
+                <!-- meta -->
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+                  <button style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--primary);background:var(--lilac);border:none;border-radius:7px;padding:6px 11px;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Reflection<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+                  <span style="font-size:12.5px;color:var(--accent);border:1px solid var(--border);border-radius:7px;padding:6px 10px">#morning</span>
+                  <button style="font-family:inherit;display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);background:transparent;border:1px dashed var(--border-2);border-radius:7px;padding:6px 10px;cursor:pointer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add tag</button>
+                </div>
+
+                <!-- template picker -->
+                <div style="margin:0 -18px 14px;padding:0 18px;overflow:auto">
+                  <div style="display:flex;gap:8px;width:max-content">
+                    <span style="font-size:12.5px;font-weight:600;color:var(--primary);background:var(--lilac);border-radius:8px;padding:7px 12px">Reflection</span>
+                    <span style="font-size:12.5px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 12px">Prayer</span>
+                    <span style="font-size:12.5px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 12px">Gratitude</span>
+                    <span style="font-size:12.5px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 12px">Decision journal</span>
+                    <span style="font-size:12.5px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 12px">Meeting notes</span>
+                    <span style="font-size:12.5px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 12px">Goal</span>
+                    <span style="font-size:12.5px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 12px">Daily note</span>
+                  </div>
+                </div>
+
+                <!-- markdown toolbar -->
+                <div style="display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:5px;margin-bottom:14px;overflow:auto">
+                  <div style="display:flex;gap:1px;padding-right:5px;border-right:1px solid var(--border)">
+                    <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-weight:700;font-size:14px;color:var(--fg-2)">B</span>
+                    <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-style:italic;font-size:14px;color:var(--fg-2)">I</span>
+                  </div>
+                  <div style="display:flex;gap:1px;padding-right:5px;border-right:1px solid var(--border)">
+                    <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-weight:700;font-size:12.5px;color:var(--fg-2)">H1</span>
+                    <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-weight:700;font-size:11.5px;color:var(--fg-2)">H2</span>
+                  </div>
+                  <div style="display:flex;gap:1px;padding-right:5px;border-right:1px solid var(--border);color:var(--fg-2)">
+                    <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span>
+                    <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8c-2 0-3 1.5-3 3.5S5.5 15 7 15c0 2-1 3-3 3M17 8c-2 0-3 1.5-3 3.5S15.5 15 17 15c0 2-1 3-3 3"/></svg></span>
+                  </div>
+                  <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;color:var(--fg-2)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg></span>
+                  <div style="margin-left:auto;display:flex;gap:1px">
+                    <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;color:var(--muted)" title="Markdown source"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 8-4 4 4 4M15 8l4 4-4 4"/></svg></span>
+                    <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;color:var(--muted)" title="Focus mode"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg></span>
+                  </div>
+                </div>
+
+                <!-- body -->
+                <div contenteditable="true" style="outline:none;font-size:15.5px;line-height:1.7;color:var(--fg);min-height:120px;margin-bottom:18px">Three small things today — the early light, a long walk, and a call that went better than I feared.</div>
+
+                <!-- prompt card -->
+                <div style="background:var(--lilac-soft);border:1px solid var(--border);border-radius:12px;padding:15px;margin-bottom:18px">
+                  <div style="display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:9px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1h6c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2Z"/></svg>A gentle prompt</div>
+                  <div style="font-size:14.5px;line-height:1.5;color:var(--fg);font-weight:500">What is one thing you're holding onto that you could set down today?</div>
+                </div>
+
+                <!-- ===== DICTATE PANEL ===== -->
+                <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--border)">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+                      <span style="font-size:14px;font-weight:600;color:var(--fg)">Dictate</span>
+                    </div>
+                    <button onClick="{{ cycleLang }}" style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--fg-2);background:var(--card-2);border:1px solid var(--border);border-radius:7px;padding:5px 9px;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>{{ langName }}</button>
+                  </div>
+
+                  <div style="padding:15px">
+                    <!-- READY -->
+                    <sc-if value="{{ dictReady }}" hint-placeholder-val="{{ true }}">
+                      <div style="display:flex;align-items:center;gap:13px">
+                        <button onClick="{{ startRec }}" style="font-family:inherit;flex:none;width:52px;height:52px;border-radius:50%;background:var(--primary-solid);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+                        <div style="flex:1">
+                          <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><span style="width:8px;height:8px;border-radius:50%;background:var(--success);animation:selahReady 2.4s ease-in-out infinite"></span><span style="font-size:13.5px;font-weight:600;color:var(--success)">Voice model ready</span></div>
+                          <div style="font-size:12.5px;color:var(--muted)">Runs entirely on this device — no audio leaves it. Tap to start.</div>
+                        </div>
+                      </div>
+                    </sc-if>
+
+                    <!-- LOADING -->
+                    <sc-if value="{{ dictLoading }}" hint-placeholder-val="{{ false }}">
+                      <div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px"><span style="font-size:13.5px;font-weight:600;color:var(--fg)">Preparing voice model</span><span style="font-size:13px;font-weight:600;color:var(--primary);font-variant-numeric:tabular-nums">{{ dictPct }}%</span></div>
+                        <div style="height:7px;border-radius:4px;background:var(--bg-2);overflow:hidden;margin-bottom:9px"><div style="height:100%;background:var(--primary-solid);border-radius:4px;width:{{ pctWidth }};transition:width .25s linear"></div></div>
+                        <div style="font-size:12px;color:var(--muted)">Downloading once so it works offline. This stays on your device.</div>
+                      </div>
+                    </sc-if>
+
+                    <!-- RECORDING -->
+                    <sc-if value="{{ dictRecording }}" hint-placeholder-val="{{ false }}">
+                      <div>
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                          <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--danger)"><span style="width:9px;height:9px;border-radius:50%;background:var(--danger);animation:selahPulse 1.6s infinite"></span>Recording</span>
+                          <div style="flex:1;display:flex;align-items:center;gap:2px;height:26px">
+                            <span style="flex:1;background:var(--accent);border-radius:2px;height:100%;transform-origin:center;animation:selahWave .9s ease-in-out infinite;animation-delay:0s"></span>
+                            <span style="flex:1;background:var(--accent);border-radius:2px;height:100%;transform-origin:center;animation:selahWave .9s ease-in-out infinite;animation-delay:.12s"></span>
+                            <span style="flex:1;background:var(--accent);border-radius:2px;height:100%;transform-origin:center;animation:selahWave .9s ease-in-out infinite;animation-delay:.24s"></span>
+                            <span style="flex:1;background:var(--accent);border-radius:2px;height:100%;transform-origin:center;animation:selahWave .9s ease-in-out infinite;animation-delay:.36s"></span>
+                            <span style="flex:1;background:var(--accent);border-radius:2px;height:100%;transform-origin:center;animation:selahWave .9s ease-in-out infinite;animation-delay:.48s"></span>
+                            <span style="flex:1;background:var(--accent);border-radius:2px;height:100%;transform-origin:center;animation:selahWave .9s ease-in-out infinite;animation-delay:.6s"></span>
+                            <span style="flex:1;background:var(--accent);border-radius:2px;height:100%;transform-origin:center;animation:selahWave .9s ease-in-out infinite;animation-delay:.72s"></span>
+                            <span style="flex:1;background:var(--accent);border-radius:2px;height:100%;transform-origin:center;animation:selahWave .9s ease-in-out infinite;animation-delay:.4s"></span>
+                            <span style="flex:1;background:var(--accent);border-radius:2px;height:100%;transform-origin:center;animation:selahWave .9s ease-in-out infinite;animation-delay:.2s"></span>
+                            <span style="flex:1;background:var(--accent);border-radius:2px;height:100%;transform-origin:center;animation:selahWave .9s ease-in-out infinite;animation-delay:.55s"></span>
+                          </div>
+                        </div>
+                        <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px">Live transcript</div>
+                        <div style="font-size:14.5px;line-height:1.6;color:var(--fg);min-height:54px;background:var(--bg-2);border-radius:9px;padding:11px 13px;margin-bottom:13px">{{ transcript }}<span style="display:inline-block;width:2px;height:16px;background:var(--primary);margin-left:2px;vertical-align:-3px;animation:selahReady 1s steps(1) infinite"></span></div>
+                        <button onClick="{{ stopRec }}" style="font-family:inherit;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:600;color:var(--danger);background:var(--danger-bg);border:1px solid var(--danger-bd);border-radius:10px;padding:12px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>
+                      </div>
+                    </sc-if>
+
+                    <!-- TRANSCRIBING -->
+                    <sc-if value="{{ dictTranscribing }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;align-items:center;gap:12px;padding:6px 0">
+                        <span style="flex:none;width:22px;height:22px;border-radius:50%;border:2.5px solid var(--lilac);border-top-color:var(--primary);animation:selahSpin .8s linear infinite"></span>
+                        <div><div style="font-size:14px;font-weight:600;color:var(--fg)">Transcribing on device…</div><div style="font-size:12.5px;color:var(--muted)">Tidying up punctuation and spacing</div></div>
+                      </div>
+                    </sc-if>
+
+                    <!-- REVIEW -->
+                    <sc-if value="{{ dictReview }}" hint-placeholder-val="{{ false }}">
+                      <div>
+                        <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:7px">Review before inserting</div>
+                        <div contenteditable="true" style="outline:none;font-size:14.5px;line-height:1.6;color:var(--fg);background:var(--bg-2);border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:8px">{{ transcript }}</div>
+                        <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);margin-bottom:13px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Nothing was sent off your device</div>
+                        <div style="display:flex;gap:9px">
+                          <button onClick="{{ insertTr }}" style="font-family:inherit;flex:1;font-size:14px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:10px;padding:12px;cursor:pointer">Insert</button>
+                          <button onClick="{{ reRec }}" style="font-family:inherit;font-size:14px;font-weight:600;color:var(--fg-2);background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;cursor:pointer">Re-record</button>
+                          <button onClick="{{ discardTr }}" style="font-family:inherit;font-size:14px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer">Discard</button>
+                        </div>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+
+                <!-- encryption reassurance -->
+                <div style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:18px;font-size:12px;color:var(--muted)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                  Encrypted on this device before it's saved
+                </div>
+
+              </div>
+            </sc-if>
+
+            <!-- ---------- DETAIL (mobile) ---------- -->
+            <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+
+              <!-- ZEN MODE -->
+              <sc-if value="{{ dZen }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:30px 24px 120px;max-width:520px;margin:0 auto">
+                  <button onClick="{{ goRead }}" style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--muted);background:transparent;border:none;cursor:pointer;padding:0;margin-bottom:36px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9V5a1 1 0 0 0-1-1H4M15 9V5a1 1 0 0 1 1-1h4M9 15v4a1 1 0 0 1-1 1H4M15 15v4a1 1 0 0 0 1 1h4"/></svg>Exit zen</button>
+                  <div style="font-size:24px;line-height:1.25;font-weight:600;letter-spacing:-.02em;color:var(--fg);margin-bottom:24px">Should I take the role?</div>
+                  <p style="font-size:18px;line-height:1.85;color:var(--fg);margin:0 0 22px;font-weight:400">I keep coming back to the same question, turning it over while the coffee goes cold.</p>
+                  <p style="font-size:18px;line-height:1.85;color:var(--fg);margin:0 0 22px">I think I already know the answer — I'm just afraid to say it out loud. The title is bigger. The work is smaller. And the people I'd be leaving are the reason I stayed this long.</p>
+                  <p style="font-size:18px;line-height:1.85;color:var(--fg-2);margin:0">Talked it over with Sam tonight. She asked what I'd regret more in five years. That landed.</p>
+                </div>
+              </sc-if>
+
+              <!-- READING + HISTORY share the header -->
+              <sc-if value="{{ dReadOrHistory }}" hint-placeholder-val="{{ true }}">
+                <div style="padding:6px 18px 130px">
+                  <!-- top bar -->
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 16px">
+                    <button onClick="{{ goNotes }}" style="font-family:inherit;display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:600;color:var(--fg-2);background:transparent;border:none;cursor:pointer;padding:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg>Notes</button>
+                    <div style="display:flex;align-items:center;gap:14px;color:var(--fg-2)">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" stroke-width="1"><path d="M9 3h6l-1 6 4 3v2h-5v7l-1 0-1 0v-7H5v-2l4-3z"/></svg>
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg>
+                    </div>
+                  </div>
+
+                  <!-- metadata header -->
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px">
+                    <span style="font-size:12px;font-weight:600;color:var(--primary);border:1px solid var(--border-2);padding:4px 10px;border-radius:6px">Decision journal</span>
+                    <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted);border:1px solid var(--border);padding:4px 8px;border-radius:6px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Unresolved</span>
+                  </div>
+                  <h1 style="font-size:25px;line-height:1.2;font-weight:600;letter-spacing:-.02em;margin:0 0 10px">Should I take the role?</h1>
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+                    <span style="font-size:12px;color:var(--muted)">Created Apr 24 · Updated Apr 28</span>
+                    <span style="font-size:11.5px;color:var(--accent);border:1px solid var(--border);padding:2px 8px;border-radius:6px">#work</span>
+                  </div>
+
+                  <!-- lifecycle actions -->
+                  <div style="display:flex;gap:8px;margin:0 -18px 20px;padding:0 18px 2px;overflow:auto">
+                    <button style="font-family:inherit;flex:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:9px;padding:9px 14px;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Mark resolved</button>
+                    <button style="font-family:inherit;flex:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px 13px;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
+                    <button onClick="{{ goHistory }}" style="font-family:inherit;flex:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px 13px;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 4v4h4"/></svg>History</button>
+                    <button onClick="{{ goZen }}" style="font-family:inherit;flex:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px 13px;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9V5a1 1 0 0 0-1-1H4M15 9V5a1 1 0 0 1 1-1h4M9 15v4a1 1 0 0 1-1 1H4M15 15v4a1 1 0 0 0 1 1h4"/></svg>Zen</button>
+                  </div>
+
+                  <!-- READING body -->
+                  <sc-if value="{{ dRead }}" hint-placeholder-val="{{ true }}">
+                    <div>
+                      <p style="font-size:16px;line-height:1.75;color:var(--fg);margin:0 0 18px">I keep coming back to the same question, turning it over while the coffee goes cold.</p>
+                      <p style="font-size:16px;line-height:1.75;color:var(--fg);margin:0 0 18px">I think I already know the answer — I'm just afraid to say it out loud. The title is bigger. The work is smaller. And the people I'd be leaving are the reason I stayed this long.</p>
+                      <div style="border-left:3px solid var(--border-2);padding:2px 0 2px 16px;margin:0 0 18px"><p style="font-size:16px;line-height:1.7;color:var(--fg-2);font-style:italic;margin:0">"What would you regret more in five years?"</p></div>
+                      <p style="font-size:16px;line-height:1.75;color:var(--fg);margin:0 0 8px;font-weight:600">What I'd be trading</p>
+                      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:22px">
+                        <div style="display:flex;gap:9px;font-size:15.5px;line-height:1.6;color:var(--fg)"><span style="color:var(--accent)">•</span>The team that taught me everything</div>
+                        <div style="display:flex;gap:9px;font-size:15.5px;line-height:1.6;color:var(--fg)"><span style="color:var(--accent)">•</span>Work I can do with my eyes closed</div>
+                        <div style="display:flex;gap:9px;font-size:15.5px;line-height:1.6;color:var(--fg)"><span style="color:var(--accent)">•</span>A quiet kind of certainty</div>
+                      </div>
+
+                      <!-- timeline (collapsible) -->
+                      <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden">
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;background:var(--card)">
+                          <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--fg)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Timeline</div>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </div>
+                        <div style="padding:4px 16px 14px;border-top:1px solid var(--border)">
+                          <div style="display:flex;gap:11px;padding:10px 0"><div style="display:flex;flex-direction:column;align-items:center"><span style="width:9px;height:9px;border-radius:50%;background:var(--primary)"></span><span style="flex:1;width:1.5px;background:var(--border)"></span></div><div><div style="font-size:13.5px;font-weight:600;color:var(--fg)">Edited · added Sam's question</div><div style="font-size:12px;color:var(--muted)">Apr 28 · version 5</div></div></div>
+                          <div style="display:flex;gap:11px;padding:10px 0"><div style="display:flex;flex-direction:column;align-items:center"><span style="width:9px;height:9px;border-radius:50%;background:var(--accent)"></span><span style="flex:1;width:1.5px;background:var(--border)"></span></div><div><div style="font-size:13.5px;font-weight:600;color:var(--fg)">Edited · expanded the trade-offs</div><div style="font-size:12px;color:var(--muted)">Apr 26 · version 3</div></div></div>
+                          <div style="display:flex;gap:11px;padding:10px 0"><div style="display:flex;flex-direction:column;align-items:center"><span style="width:9px;height:9px;border-radius:50%;background:var(--border-2)"></span></div><div><div style="font-size:13.5px;font-weight:600;color:var(--fg)">Created</div><div style="font-size:12px;color:var(--muted)">Apr 24 · version 1</div></div></div>
+                        </div>
+                      </div>
+                    </div>
+                  </sc-if>
+
+                  <!-- VERSION HISTORY -->
+                  <sc-if value="{{ dHistory }}" hint-placeholder-val="{{ false }}">
+                    <div>
+                      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                        <div style="font-size:15px;font-weight:600;color:var(--fg)">Version history</div>
+                        <button onClick="{{ goRead }}" style="font-family:inherit;font-size:13px;font-weight:600;color:var(--primary);background:transparent;border:none;cursor:pointer">Done</button>
+                      </div>
+
+                      <!-- compare selectors -->
+                      <div style="display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px 14px;margin-bottom:14px">
+                        <div style="flex:1"><div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px">From</div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13.5px;font-weight:600;color:var(--fg)">Version 3<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div></div>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10l-3-3M17 17H7l3 3"/></svg>
+                        <div style="flex:1"><div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px">To</div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13.5px;font-weight:600;color:var(--fg)">Version 5<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div></div>
+                      </div>
+
+                      <!-- diff -->
+                      <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden;margin-bottom:14px">
+                        <div style="display:flex;align-items:center;gap:14px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--border);font-size:12px"><span style="display:inline-flex;align-items:center;gap:5px;color:var(--add-fg);font-weight:600"><span style="width:9px;height:9px;border-radius:2px;background:var(--add-fg)"></span>2 added</span><span style="display:inline-flex;align-items:center;gap:5px;color:var(--del-fg);font-weight:600"><span style="width:9px;height:9px;border-radius:2px;background:var(--del-fg)"></span>1 removed</span></div>
+                        <div style="font-size:14px;line-height:1.6">
+                          <div style="display:flex;gap:10px;padding:9px 14px;color:var(--fg-2)"><span style="flex:none;color:var(--muted);width:10px"> </span><span>I keep coming back to the same question, turning it over while the coffee goes cold.</span></div>
+                          <div style="display:flex;gap:10px;padding:9px 14px;background:var(--del-bg);border-left:3px solid var(--del-fg)"><span style="flex:none;color:var(--del-fg);width:10px;font-weight:700">−</span><span style="color:var(--fg)">I think I already know the answer.</span></div>
+                          <div style="display:flex;gap:10px;padding:9px 14px;background:var(--add-bg);border-left:3px solid var(--add-fg)"><span style="flex:none;color:var(--add-fg);width:10px;font-weight:700">+</span><span style="color:var(--fg)">I think I already know the answer — I'm just afraid to say it out loud.</span></div>
+                          <div style="display:flex;gap:10px;padding:9px 14px;background:var(--add-bg);border-left:3px solid var(--add-fg)"><span style="flex:none;color:var(--add-fg);width:10px;font-weight:700">+</span><span style="color:var(--fg)">Talked it over with Sam tonight. She asked what I'd regret more in five years.</span></div>
+                        </div>
+                      </div>
+
+                      <!-- version list -->
+                      <div style="display:flex;flex-direction:column;gap:8px">
+                        <div style="display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+                          <span style="flex:none;width:28px;height:28px;border-radius:8px;background:var(--lilac);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">6</span>
+                          <div style="flex:1"><div style="font-size:13.5px;font-weight:600;color:var(--fg)">Today, 9:12 AM</div><div style="font-size:12px;color:var(--muted)">Current version</div></div>
+                          <span style="font-size:11px;font-weight:600;color:var(--success);border:1px solid var(--success-bd);background:var(--success-bg);padding:3px 8px;border-radius:6px">Current</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:11px;background:var(--lilac-soft);border:1px solid var(--border-2);border-radius:10px;padding:12px 14px">
+                          <span style="flex:none;width:28px;height:28px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--fg-2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">5</span>
+                          <div style="flex:1"><div style="font-size:13.5px;font-weight:600;color:var(--fg)">Apr 28, 8:40 PM</div><div style="font-size:12px;color:var(--muted)">Comparing</div></div>
+                          <button style="font-family:inherit;font-size:12px;font-weight:600;color:var(--primary);background:transparent;border:1px solid var(--border-2);border-radius:7px;padding:6px 10px;cursor:pointer">Restore</button>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:11px;background:var(--lilac-soft);border:1px solid var(--border-2);border-radius:10px;padding:12px 14px">
+                          <span style="flex:none;width:28px;height:28px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--fg-2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">3</span>
+                          <div style="flex:1"><div style="font-size:13.5px;font-weight:600;color:var(--fg)">Apr 26, 7:05 AM</div><div style="font-size:12px;color:var(--muted)">Comparing</div></div>
+                          <button style="font-family:inherit;font-size:12px;font-weight:600;color:var(--primary);background:transparent;border:1px solid var(--border-2);border-radius:7px;padding:6px 10px;cursor:pointer">Restore</button>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+                          <span style="flex:none;width:28px;height:28px;border-radius:8px;background:var(--card-2);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">1</span>
+                          <div style="flex:1"><div style="font-size:13.5px;font-weight:600;color:var(--fg)">Apr 24, 6:30 AM</div><div style="font-size:12px;color:var(--muted)">Created</div></div>
+                        </div>
+                      </div>
+                    </div>
+                  </sc-if>
+
+                </div>
+              </sc-if>
+            </sc-if>
+
+          </div>
+
+          <!-- dock expanded panel -->
+          <sc-if value="{{ dockOpenB }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;top:52px;right:14px;width:236px;background:var(--card);border:1px solid var(--border-2);border-radius:14px;box-shadow:0 18px 50px rgba(30,16,52,.22);padding:16px;z-index:20;animation:selahRise .22s cubic-bezier(.2,0,0,1)">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:13px">
+                <div style="position:relative;width:38px;height:38px;flex:none">
+                  <svg width="38" height="38" viewBox="0 0 38 38"><circle cx="19" cy="19" r="16" fill="none" stroke="var(--border)" stroke-width="3"/><circle cx="19" cy="19" r="16" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="38" transform="rotate(-90 19 19)"/></svg>
+                  <svg style="position:absolute;top:11px;left:11px" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:var(--fg)">Vault is open</div>
+                  <div style="font-size:12px;color:var(--muted)">Auto-locks in <span style="font-variant-numeric:tabular-nums;color:var(--fg-2);font-weight:600">{{ countdown }}</span></div>
+                </div>
+              </div>
+              <button onClick="{{ extend }}" style="font-family:inherit;width:100%;font-size:13px;font-weight:600;color:var(--fg);background:var(--card-2);border:1px solid var(--border);border-radius:9px;padding:10px;cursor:pointer;margin-bottom:8px">Stay unlocked 15 min</button>
+              <button onClick="{{ lockNow }}" style="font-family:inherit;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:600;color:var(--primary);background:transparent;border:none;border-radius:9px;padding:8px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Lock now</button>
+            </div>
+          </sc-if>
+
+          <!-- LOCKED overlay -->
+          <sc-if value="{{ lockedB }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:34px;text-align:center;animation:selahRise .3s cubic-bezier(.2,0,0,1)">
+              <div style="position:absolute;top:46px;left:0;right:0;text-align:center;font-size:13px;font-weight:600;color:var(--muted)">Selah</div>
+              <div style="width:96px;height:96px;border-radius:30px;background:var(--card);border:1px solid var(--border);box-shadow:0 14px 44px rgba(30,16,52,.12);display:flex;align-items:center;justify-content:center;margin-bottom:24px">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10.5" rx="2.6"/><path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5"/><circle cx="12" cy="15.5" r="1.4" fill="var(--primary)"/></svg>
+              </div>
+              <h2 style="font-size:22px;font-weight:600;letter-spacing:-.02em;margin:0 0 8px;color:var(--fg)">Your vault is locked</h2>
+              <p style="font-size:14px;line-height:1.6;color:var(--fg-2);margin:0 0 28px;max-width:280px">Your notes are encrypted and waiting. Unlock to continue where you left off.</p>
+              <button onClick="{{ unlock }}" style="font-family:inherit;width:100%;max-width:300px;display:inline-flex;align-items:center;justify-content:center;gap:9px;font-size:15px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:11px;padding:15px;cursor:pointer;margin-bottom:12px">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4v2H8V6a4 4 0 0 1 4-4Z" opacity=".4"/><rect x="4.5" y="8" width="15" height="13" rx="3"/><circle cx="12" cy="14" r="2"/><path d="M12 16v2"/></svg>
+                Unlock with Face ID
+              </button>
+              <button onClick="{{ unlock }}" style="font-family:inherit;font-size:13.5px;font-weight:600;color:var(--primary);background:transparent;border:none;cursor:pointer;padding:8px">Use vault password instead</button>
+            </div>
+          </sc-if>
+
+          <!-- bottom nav -->
+          <sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute;bottom:0;left:0;right:0;height:72px;background:var(--card);border-top:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-around;padding:11px 24px 0;z-index:10">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--primary)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M8 9h7M8 13h7M8 17h4"/></svg>
+                <span style="font-size:11px;font-weight:600">Notes</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.4"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                <span style="font-size:11px;font-weight:500">Vault</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                <span style="font-size:11px;font-weight:500">Account</span>
+              </div>
+            </div>
+          </sc-if>
+
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ================= DESKTOP ================= -->
+    <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none;width:1200px;height:780px;border-radius:14px;overflow:hidden;background:var(--bg);color:var(--fg);border:1px solid rgba(30,16,52,.12);box-shadow:0 30px 80px rgba(30,16,52,.28);display:flex">
+
+        <!-- sidebar -->
+        <div style="width:248px;flex:none;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 16px">
+          <div style="display:flex;align-items:center;gap:9px;padding:4px 8px 18px">
+            <div style="width:28px;height:28px;border-radius:8px;background:var(--primary-solid);display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c0 6-3 9-6 10 3 1 6 4 6 8 0-4 3-7 6-8-3-1-6-4-6-10Z"/></svg></div>
+            <span style="font-size:17px;font-weight:600;letter-spacing:.01em">Selah</span>
+          </div>
+          <button onClick="{{ goEditor }}" style="font-family:inherit;display:flex;align-items:center;gap:8px;width:100%;font-size:14px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:9px;padding:11px 13px;cursor:pointer;margin-bottom:18px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New note</button>
+          <div style="font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:0 8px 8px">Library</div>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;background:var(--lilac);color:var(--primary);font-size:13.5px;font-weight:600"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M8 9h7M8 13h7"/></svg>All notes <span style="margin-left:auto;font-size:12px;color:var(--primary);opacity:.7">12</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--fg-2);font-size:13.5px"><svg width="17" height="17" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" stroke-width="1"><path d="M9 3h6l-1 6 4 3v2h-5v7l-1 0-1 0v-7H5v-2l4-3z"/></svg>Pinned</div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--fg-2);font-size:13.5px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Resolved</div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--fg-2);font-size:13.5px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>Archive</div>
+          </div>
+          <div style="font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:18px 8px 8px">Saved views</div>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div style="padding:9px 10px;border-radius:8px;color:var(--fg-2);font-size:13.5px">Remembrance</div>
+            <div style="padding:9px 10px;border-radius:8px;color:var(--fg-2);font-size:13.5px">Weekly reflection</div>
+          </div>
+          <div style="margin-top:auto;display:flex;align-items:center;gap:9px;padding:10px;border-top:1px solid var(--border)">
+            <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(150deg,#8b6bb8,#5b3a8c);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600">R</div>
+            <div style="font-size:12.5px"><div style="font-weight:600;color:var(--fg)">Rena</div><div style="color:var(--muted);font-size:11px">Account</div></div>
+          </div>
+        </div>
+
+        <!-- main -->
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+          <!-- top bar -->
+          <div style="display:flex;align-items:center;gap:16px;padding:16px 28px;border-bottom:1px solid var(--border)">
+            <div style="flex:1;max-width:420px;display:flex;align-items:center;gap:9px;background:var(--bg-2);border:1px solid var(--border);border-radius:9px;padding:9px 13px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+              <span style="font-size:13.5px;color:var(--muted)">Search your notes</span>
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+              <button onClick="{{ toggleDock }}" style="font-family:inherit;display:inline-flex;align-items:center;gap:8px;padding:8px 13px 8px 11px;background:var(--card);border:1px solid var(--border-2);border-radius:9px;cursor:pointer;color:var(--fg)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>
+                <span style="font-size:13px;font-weight:600">Vault open</span>
+                <span style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--muted);letter-spacing:.04em">{{ countdown }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- content -->
+          <div style="flex:1;overflow:auto;padding:24px 28px 40px">
+            <sc-if value="{{ isNotes }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px">
+                <div>
+                  <h1 style="font-size:28px;font-weight:600;letter-spacing:-.025em;margin:0">Notes</h1>
+                  <div style="font-size:13.5px;color:var(--muted);margin-top:5px">{{ counter }}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="display:flex;gap:8px">
+                    <span style="font-size:13px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);padding:7px 13px;border-radius:8px">All</span>
+                    <span style="font-size:13px;font-weight:500;color:var(--fg-2);background:var(--card);border:1px solid var(--border);padding:7px 13px;border-radius:8px">Pinned</span>
+                    <span style="font-size:13px;font-weight:500;color:var(--fg-2);background:var(--card);border:1px solid var(--border);padding:7px 13px;border-radius:8px">Recently viewed</span>
+                  </div>
+                </div>
+              </div>
+
+              <sc-if value="{{ nDefault }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 12px"><svg width="12" height="12" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.2"><path d="M9 3h6l-1 6 4 3v2h-5v7l-1 0-1 0v-7H5v-2l4-3z"/></svg>Pinned</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:26px">
+                  <sc-for list="{{ pinned }}" as="item" hint-placeholder-count="2">
+                    <div onClick="{{ goDetail }}" style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:18px;cursor:pointer">
+                      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
+                        <span style="font-size:11.5px;font-weight:600;color:var(--primary);border:1px solid var(--border-2);padding:3px 9px;border-radius:6px">{{ item.cat }}</span>
+                        <sc-if value="{{ item.resolved }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--success);border:1px solid var(--success-bd);background:var(--success-bg);padding:3px 8px;border-radius:6px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Resolved</span></sc-if>
+                        <span style="margin-left:auto;color:var(--accent)"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><path d="M9 3h6l-1 6 4 3v2h-5v7l-1 0-1 0v-7H5v-2l4-3z"/></svg></span>
+                      </div>
+                      <div style="font-size:16.5px;font-weight:600;letter-spacing:-.01em;margin-bottom:6px">{{ item.title }}</div>
+                      <p style="font-size:13.5px;line-height:1.55;color:var(--fg-2);margin:0 0 13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ item.excerpt }}</p>
+                      <div style="display:flex;align-items:center;justify-content:space-between">
+                        <div style="display:flex;gap:6px"><sc-for list="{{ item.tags }}" as="tag" hint-placeholder-count="2"><span style="font-size:11.5px;color:var(--accent);border:1px solid var(--border);padding:2px 8px;border-radius:6px">{{ tag }}</span></sc-for></div>
+                        <span style="font-size:11.5px;color:var(--muted)">{{ item.updated }}</span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 12px">Earlier</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+                  <sc-for list="{{ others }}" as="item" hint-placeholder-count="3">
+                    <div onClick="{{ goDetail }}" style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:18px;cursor:pointer">
+                      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
+                        <span style="font-size:11.5px;font-weight:600;color:var(--primary);border:1px solid var(--border-2);padding:3px 9px;border-radius:6px">{{ item.cat }}</span>
+                        <span style="margin-left:auto;font-size:11.5px;color:var(--muted)">{{ item.updated }}</span>
+                      </div>
+                      <div style="font-size:15.5px;font-weight:600;letter-spacing:-.01em;margin-bottom:6px">{{ item.title }}</div>
+                      <p style="font-size:13px;line-height:1.55;color:var(--fg-2);margin:0 0 13px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">{{ item.excerpt }}</p>
+                      <div style="display:flex;gap:6px"><sc-for list="{{ item.tags }}" as="tag" hint-placeholder-count="1"><span style="font-size:11.5px;color:var(--accent);border:1px solid var(--border);padding:2px 8px;border-radius:6px">{{ tag }}</span></sc-for></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ nEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="text-align:center;padding:90px 20px">
+                  <div style="width:92px;height:92px;border-radius:26px;background:var(--lilac-soft);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 22px"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c0 6-3 9-6 10 3 1 6 4 6 8 0-4 3-7 6-8-3-1-6-4-6-10Z"/></svg></div>
+                  <div style="font-size:21px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px">A quiet, empty page</div>
+                  <p style="font-size:14.5px;line-height:1.6;color:var(--fg-2);margin:0 auto 24px;max-width:340px">Your vault is open. Write the first thing on your mind — it's encrypted before it ever leaves this device.</p>
+                  <button onClick="{{ goEditor }}" style="font-family:inherit;font-size:14px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:9px;padding:13px 22px;cursor:pointer">Write your first note</button>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ nLoading }}" hint-placeholder-val="{{ false }}">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+                  <sc-for list="{{ skeletons }}" as="sk" hint-placeholder-count="6">
+                    <div style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:18px">
+                      <div style="width:72px;height:18px;border-radius:6px;background:linear-gradient(90deg,var(--skel),var(--bg-2),var(--skel));background-size:300px 100%;animation:selahShimmer 1.4s infinite linear;margin-bottom:13px"></div>
+                      <div style="width:85%;height:15px;border-radius:5px;background:var(--skel);margin-bottom:10px"></div>
+                      <div style="width:100%;height:11px;border-radius:5px;background:var(--skel);margin-bottom:6px"></div>
+                      <div style="width:55%;height:11px;border-radius:5px;background:var(--skel)"></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ nError }}" hint-placeholder-val="{{ false }}">
+                <div style="max-width:420px;margin:60px auto;background:var(--danger-bg);border:1px solid var(--danger-bd);border-radius:14px;padding:28px;text-align:center">
+                  <div style="width:48px;height:48px;border-radius:50%;background:var(--card);border:1px solid var(--danger-bd);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--danger)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg></div>
+                  <div style="font-size:17px;font-weight:600;margin-bottom:7px">We couldn't reach your vault</div>
+                  <p style="font-size:14px;line-height:1.55;color:var(--fg-2);margin:0 0 20px">Your notes are safe and still encrypted. This looks like a connection issue, not a problem with your data.</p>
+                  <button onClick="{{ showDefault }}" style="font-family:inherit;font-size:14px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:9px;padding:12px 20px;cursor:pointer">Try again</button>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ isEditor }}" hint-placeholder-val="{{ false }}">
+              <div style="max-width:1000px;margin:0 auto">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+                  <button onClick="{{ goNotes }}" style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--fg-2);background:transparent;border:none;cursor:pointer;padding:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg>Back to notes</button>
+                  <div style="display:flex;align-items:center;gap:14px">
+                    <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)"><span style="width:6px;height:6px;border-radius:50%;background:var(--success)"></span>Draft saved · just now</span>
+                    <button style="font-family:inherit;font-size:14px;font-weight:600;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:9px;padding:10px 16px;cursor:pointer">Discard</button>
+                    <button style="font-family:inherit;font-size:14px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:9px;padding:10px 20px;cursor:pointer">Save note</button>
+                  </div>
+                </div>
+
+                <div style="display:flex;gap:28px;align-items:flex-start">
+                  <!-- main -->
+                  <div style="flex:1;min-width:0">
+                    <input placeholder="Title" style="font-family:inherit;width:100%;border:none;outline:none;background:transparent;font-size:32px;font-weight:600;letter-spacing:-.025em;color:var(--fg);padding:0;margin-bottom:16px" />
+                    <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:20px">
+                      <button style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--primary);background:var(--lilac);border:none;border-radius:7px;padding:7px 12px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Reflection<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+                      <span style="font-size:13px;color:var(--accent);border:1px solid var(--border);border-radius:7px;padding:7px 11px">#morning</span>
+                      <button style="font-family:inherit;display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--muted);background:transparent;border:1px dashed var(--border-2);border-radius:7px;padding:7px 11px;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add tag</button>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:6px;margin-bottom:18px">
+                      <div style="display:flex;gap:1px;padding-right:6px;border-right:1px solid var(--border)"><span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:6px;font-weight:700;font-size:15px;color:var(--fg-2)">B</span><span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:6px;font-style:italic;font-size:15px;color:var(--fg-2)">I</span></div>
+                      <div style="display:flex;gap:1px;padding-right:6px;border-right:1px solid var(--border)"><span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:6px;font-weight:700;font-size:13px;color:var(--fg-2)">H1</span><span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:6px;font-weight:700;font-size:12px;color:var(--fg-2)">H2</span></div>
+                      <div style="display:flex;gap:1px;padding-right:6px;border-right:1px solid var(--border);color:var(--fg-2)"><span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:6px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span><span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:6px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8c-2 0-3 1.5-3 3.5S5.5 15 7 15c0 2-1 3-3 3M17 8c-2 0-3 1.5-3 3.5S15.5 15 17 15c0 2-1 3-3 3"/></svg></span><span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg></span></div>
+                      <div style="margin-left:auto;display:flex;gap:1px"><span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:6px;color:var(--muted)" title="Markdown source"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 8-4 4 4 4M15 8l4 4-4 4"/></svg></span><span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:6px;color:var(--muted)" title="Focus mode"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg></span></div>
+                    </div>
+                    <div contenteditable="true" style="outline:none;font-size:16.5px;line-height:1.75;color:var(--fg);min-height:280px">Three small things today — the early light, a long walk, and a call that went better than I feared.</div>
+                  </div>
+
+                  <!-- right rail -->
+                  <div style="width:312px;flex:none;display:flex;flex-direction:column;gap:16px">
+                    <div style="background:var(--card-2);border:1px solid var(--border);border-radius:12px;padding:15px">
+                      <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:11px">Start from a template</div>
+                      <div style="display:flex;flex-wrap:wrap;gap:7px">
+                        <span style="font-size:12.5px;font-weight:600;color:var(--primary);background:var(--lilac);border-radius:8px;padding:6px 11px">Reflection</span>
+                        <span style="font-size:12.5px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 11px">Prayer</span>
+                        <span style="font-size:12.5px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 11px">Gratitude</span>
+                        <span style="font-size:12.5px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 11px">Decision journal</span>
+                        <span style="font-size:12.5px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 11px">Meeting notes</span>
+                        <span style="font-size:12.5px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 11px">Goal</span>
+                        <span style="font-size:12.5px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 11px">Daily note</span>
+                      </div>
+                    </div>
+
+                    <!-- DICTATE -->
+                    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+                      <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--border)">
+                        <div style="display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span style="font-size:14px;font-weight:600;color:var(--fg)">Dictate</span></div>
+                        <button onClick="{{ cycleLang }}" style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--fg-2);background:var(--card-2);border:1px solid var(--border);border-radius:7px;padding:5px 9px;cursor:pointer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>{{ langName }}</button>
+                      </div>
+                      <div style="padding:15px">
+                        <sc-if value="{{ dictReady }}" hint-placeholder-val="{{ true }}">
+                          <div style="text-align:center;padding:6px 0">
+                            <button onClick="{{ startRec }}" style="font-family:inherit;width:58px;height:58px;border-radius:50%;background:var(--primary-solid);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;margin:0 auto 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+                            <div style="display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--success);animation:selahReady 2.4s ease-in-out infinite"></span><span style="font-size:13px;font-weight:600;color:var(--success)">Voice model ready</span></div>
+                            <div style="font-size:12px;color:var(--muted);line-height:1.5">Runs on this device — no audio leaves it</div>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ dictLoading }}" hint-placeholder-val="{{ false }}">
+                          <div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:600;color:var(--fg)">Preparing voice model</span><span style="font-size:12.5px;font-weight:600;color:var(--primary);font-variant-numeric:tabular-nums">{{ dictPct }}%</span></div><div style="height:7px;border-radius:4px;background:var(--bg-2);overflow:hidden;margin-bottom:8px"><div style="height:100%;background:var(--primary-solid);border-radius:4px;width:{{ pctWidth }};transition:width .25s linear"></div></div><div style="font-size:11.5px;color:var(--muted)">Downloading once so it works offline</div></div>
+                        </sc-if>
+                        <sc-if value="{{ dictRecording }}" hint-placeholder-val="{{ false }}">
+                          <div>
+                            <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--danger)"><span style="width:9px;height:9px;border-radius:50%;background:var(--danger);animation:selahPulse 1.6s infinite"></span>Recording</span><div style="flex:1;display:flex;align-items:center;gap:2px;height:24px">
+                              <span style="flex:1;background:var(--accent);border-radius:2px;height:100%;animation:selahWave .9s ease-in-out infinite;animation-delay:0s"></span><span style="flex:1;background:var(--accent);border-radius:2px;height:100%;animation:selahWave .9s ease-in-out infinite;animation-delay:.12s"></span><span style="flex:1;background:var(--accent);border-radius:2px;height:100%;animation:selahWave .9s ease-in-out infinite;animation-delay:.24s"></span><span style="flex:1;background:var(--accent);border-radius:2px;height:100%;animation:selahWave .9s ease-in-out infinite;animation-delay:.36s"></span><span style="flex:1;background:var(--accent);border-radius:2px;height:100%;animation:selahWave .9s ease-in-out infinite;animation-delay:.5s"></span><span style="flex:1;background:var(--accent);border-radius:2px;height:100%;animation:selahWave .9s ease-in-out infinite;animation-delay:.3s"></span><span style="flex:1;background:var(--accent);border-radius:2px;height:100%;animation:selahWave .9s ease-in-out infinite;animation-delay:.6s"></span>
+                            </div></div>
+                            <div style="font-size:14px;line-height:1.6;color:var(--fg);min-height:60px;background:var(--bg-2);border-radius:9px;padding:11px 12px;margin-bottom:11px">{{ transcript }}<span style="display:inline-block;width:2px;height:15px;background:var(--primary);margin-left:2px;vertical-align:-3px;animation:selahReady 1s steps(1) infinite"></span></div>
+                            <button onClick="{{ stopRec }}" style="font-family:inherit;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--danger);background:var(--danger-bg);border:1px solid var(--danger-bd);border-radius:10px;padding:11px;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ dictTranscribing }}" hint-placeholder-val="{{ false }}">
+                          <div style="display:flex;align-items:center;gap:11px;padding:8px 0"><span style="flex:none;width:22px;height:22px;border-radius:50%;border:2.5px solid var(--lilac);border-top-color:var(--primary);animation:selahSpin .8s linear infinite"></span><div><div style="font-size:13.5px;font-weight:600;color:var(--fg)">Transcribing on device…</div><div style="font-size:12px;color:var(--muted)">Tidying punctuation</div></div></div>
+                        </sc-if>
+                        <sc-if value="{{ dictReview }}" hint-placeholder-val="{{ false }}">
+                          <div>
+                            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:7px">Review</div>
+                            <div contenteditable="true" style="outline:none;font-size:14px;line-height:1.6;color:var(--fg);background:var(--bg-2);border:1px solid var(--border);border-radius:9px;padding:11px;margin-bottom:8px">{{ transcript }}</div>
+                            <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);margin-bottom:11px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Nothing left your device</div>
+                            <div style="display:flex;gap:8px"><button onClick="{{ insertTr }}" style="font-family:inherit;flex:1;font-size:13.5px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:9px;padding:11px;cursor:pointer">Insert</button><button onClick="{{ discardTr }}" style="font-family:inherit;font-size:13.5px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:9px;padding:11px 13px;cursor:pointer">Discard</button></div>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </div>
+
+                    <div style="display:flex;align-items:flex-start;gap:9px;background:var(--lilac-soft);border:1px solid var(--border);border-radius:12px;padding:14px">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><rect x="5" y="11" width="14" height="9" rx="2.2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                      <div style="font-size:12.5px;line-height:1.5;color:var(--fg-2)">Encrypted on this device before it's saved. Only you can read it.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+
+              <!-- ZEN -->
+              <sc-if value="{{ dZen }}" hint-placeholder-val="{{ false }}">
+                <div style="max-width:640px;margin:0 auto;padding:20px 0 60px">
+                  <button onClick="{{ goRead }}" style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:none;cursor:pointer;padding:0;margin-bottom:44px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9V5a1 1 0 0 0-1-1H4M15 9V5a1 1 0 0 1 1-1h4M9 15v4a1 1 0 0 1-1 1H4M15 15v4a1 1 0 0 0 1 1h4"/></svg>Exit zen mode</button>
+                  <div style="font-size:32px;line-height:1.2;font-weight:600;letter-spacing:-.025em;color:var(--fg);margin-bottom:32px">Should I take the role?</div>
+                  <p style="font-size:20px;line-height:1.9;color:var(--fg);margin:0 0 26px">I keep coming back to the same question, turning it over while the coffee goes cold.</p>
+                  <p style="font-size:20px;line-height:1.9;color:var(--fg);margin:0 0 26px">I think I already know the answer — I'm just afraid to say it out loud. The title is bigger. The work is smaller. And the people I'd be leaving are the reason I stayed this long.</p>
+                  <p style="font-size:20px;line-height:1.9;color:var(--fg-2);margin:0">Talked it over with Sam tonight. She asked what I'd regret more in five years. That landed.</p>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ dReadOrHistory }}" hint-placeholder-val="{{ true }}">
+                <div style="max-width:1000px;margin:0 auto">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+                    <button onClick="{{ goNotes }}" style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--fg-2);background:transparent;border:none;cursor:pointer;padding:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg>Back to notes</button>
+                    <div style="display:flex;align-items:center;gap:9px">
+                      <button style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:9px;padding:9px 15px;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Mark resolved</button>
+                      <button style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px 14px;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
+                      <button onClick="{{ goZen }}" style="font-family:inherit;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px 13px;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9V5a1 1 0 0 0-1-1H4M15 9V5a1 1 0 0 1 1-1h4M9 15v4a1 1 0 0 1-1 1H4M15 15v4a1 1 0 0 0 1 1h4"/></svg>Zen</button>
+                      <button style="font-family:inherit;display:flex;align-items:center;justify-content:center;width:38px;height:38px;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:9px;cursor:pointer"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+                    </div>
+                  </div>
+
+                  <div style="display:flex;gap:32px;align-items:flex-start">
+                    <!-- main -->
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:center;gap:8px;margin-bottom:13px">
+                        <span style="font-size:12px;font-weight:600;color:var(--primary);border:1px solid var(--border-2);padding:4px 10px;border-radius:6px">Decision journal</span>
+                        <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted);border:1px solid var(--border);padding:4px 8px;border-radius:6px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Unresolved</span>
+                        <span style="font-size:11.5px;color:var(--accent);border:1px solid var(--border);padding:3px 9px;border-radius:6px">#work</span>
+                      </div>
+                      <h1 style="font-size:30px;line-height:1.18;font-weight:600;letter-spacing:-.025em;margin:0 0 22px">Should I take the role?</h1>
+
+                      <sc-if value="{{ dRead }}" hint-placeholder-val="{{ true }}">
+                        <div style="max-width:660px">
+                          <p style="font-size:17px;line-height:1.8;color:var(--fg);margin:0 0 20px">I keep coming back to the same question, turning it over while the coffee goes cold.</p>
+                          <p style="font-size:17px;line-height:1.8;color:var(--fg);margin:0 0 20px">I think I already know the answer — I'm just afraid to say it out loud. The title is bigger. The work is smaller. And the people I'd be leaving are the reason I stayed this long.</p>
+                          <div style="border-left:3px solid var(--border-2);padding:4px 0 4px 18px;margin:0 0 20px"><p style="font-size:18px;line-height:1.7;color:var(--fg-2);font-style:italic;margin:0">"What would you regret more in five years?"</p></div>
+                          <p style="font-size:17px;line-height:1.8;color:var(--fg);margin:0 0 10px;font-weight:600">What I'd be trading</p>
+                          <div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;font-size:16.5px;line-height:1.6;color:var(--fg)"><span style="color:var(--accent)">•</span>The team that taught me everything</div><div style="display:flex;gap:10px;font-size:16.5px;line-height:1.6;color:var(--fg)"><span style="color:var(--accent)">•</span>Work I can do with my eyes closed</div><div style="display:flex;gap:10px;font-size:16.5px;line-height:1.6;color:var(--fg)"><span style="color:var(--accent)">•</span>A quiet kind of certainty</div></div>
+                        </div>
+                      </sc-if>
+
+                      <sc-if value="{{ dHistory }}" hint-placeholder-val="{{ false }}">
+                        <div>
+                          <div style="display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:13px 16px;margin-bottom:16px">
+                            <div style="flex:1"><div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px">Compare from</div><div style="display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:600;color:var(--fg)">Version 3 · Apr 26<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div></div>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10l-3-3M17 17H7l3 3"/></svg>
+                            <div style="flex:1"><div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px">To</div><div style="display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:600;color:var(--fg)">Version 5 · Apr 28<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div></div>
+                          </div>
+                          <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden">
+                            <div style="display:flex;align-items:center;gap:16px;padding:11px 16px;background:var(--card);border-bottom:1px solid var(--border);font-size:12.5px"><span style="display:inline-flex;align-items:center;gap:5px;color:var(--add-fg);font-weight:600"><span style="width:10px;height:10px;border-radius:2px;background:var(--add-fg)"></span>2 added</span><span style="display:inline-flex;align-items:center;gap:5px;color:var(--del-fg);font-weight:600"><span style="width:10px;height:10px;border-radius:2px;background:var(--del-fg)"></span>1 removed</span></div>
+                            <div style="font-size:15px;line-height:1.65">
+                              <div style="display:flex;gap:12px;padding:10px 16px;color:var(--fg-2)"><span style="flex:none;width:12px"> </span><span>I keep coming back to the same question, turning it over while the coffee goes cold.</span></div>
+                              <div style="display:flex;gap:12px;padding:10px 16px;background:var(--del-bg);border-left:3px solid var(--del-fg)"><span style="flex:none;width:12px;color:var(--del-fg);font-weight:700">−</span><span style="color:var(--fg)">I think I already know the answer.</span></div>
+                              <div style="display:flex;gap:12px;padding:10px 16px;background:var(--add-bg);border-left:3px solid var(--add-fg)"><span style="flex:none;width:12px;color:var(--add-fg);font-weight:700">+</span><span style="color:var(--fg)">I think I already know the answer — I'm just afraid to say it out loud.</span></div>
+                              <div style="display:flex;gap:12px;padding:10px 16px;background:var(--add-bg);border-left:3px solid var(--add-fg)"><span style="flex:none;width:12px;color:var(--add-fg);font-weight:700">+</span><span style="color:var(--fg)">Talked it over with Sam tonight. She asked what I'd regret more in five years.</span></div>
+                            </div>
+                          </div>
+                        </div>
+                      </sc-if>
+                    </div>
+
+                    <!-- right rail -->
+                    <div style="width:300px;flex:none;display:flex;flex-direction:column;gap:16px">
+                      <div style="background:var(--card-2);border:1px solid var(--border);border-radius:12px;padding:15px">
+                        <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:11px">Details</div>
+                        <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0"><span style="color:var(--muted)">Created</span><span style="color:var(--fg);font-weight:500">Apr 24, 2026</span></div>
+                        <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0"><span style="color:var(--muted)">Updated</span><span style="color:var(--fg);font-weight:500">Apr 28, 2026</span></div>
+                        <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0"><span style="color:var(--muted)">Versions</span><span style="color:var(--fg);font-weight:500">6</span></div>
+                      </div>
+
+                      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--fg)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 4v4h4"/></svg>Version history</div><button onClick="{{ goHistory }}" style="font-family:inherit;font-size:12px;font-weight:600;color:var(--primary);background:transparent;border:none;cursor:pointer">Compare</button></div>
+                        <div style="padding:6px 8px">
+                          <div style="display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:8px"><span style="flex:none;width:24px;height:24px;border-radius:7px;background:var(--lilac);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">6</span><div style="flex:1"><div style="font-size:12.5px;font-weight:600;color:var(--fg)">Today, 9:12 AM</div></div><span style="font-size:10.5px;font-weight:600;color:var(--success)">Current</span></div>
+                          <div onClick="{{ goHistory }}" style="display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:8px;cursor:pointer"><span style="flex:none;width:24px;height:24px;border-radius:7px;background:var(--card-2);border:1px solid var(--border);color:var(--fg-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">5</span><div style="flex:1"><div style="font-size:12.5px;font-weight:600;color:var(--fg)">Apr 28, 8:40 PM</div><div style="font-size:11px;color:var(--muted)">added Sam's question</div></div></div>
+                          <div onClick="{{ goHistory }}" style="display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:8px;cursor:pointer"><span style="flex:none;width:24px;height:24px;border-radius:7px;background:var(--card-2);border:1px solid var(--border);color:var(--fg-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">3</span><div style="flex:1"><div style="font-size:12.5px;font-weight:600;color:var(--fg)">Apr 26, 7:05 AM</div><div style="font-size:11px;color:var(--muted)">expanded trade-offs</div></div></div>
+                        </div>
+                      </div>
+
+                      <div style="display:flex;gap:7px;flex-wrap:wrap">
+                        <button style="font-family:inherit;flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Duplicate</button>
+                        <button style="font-family:inherit;flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--fg-2);background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>Archive</button>
+                        <button style="font-family:inherit;flex:none;display:inline-flex;align-items:center;justify-content:center;width:40px;color:var(--danger);background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg></button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+            </sc-if>
+          </div>
+        </div>
+
+        <!-- desktop dock panel -->
+        <sc-if value="{{ dockOpenB }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;top:64px;right:24px;width:250px;background:var(--card);border:1px solid var(--border-2);border-radius:14px;box-shadow:0 18px 50px rgba(30,16,52,.22);padding:18px;z-index:20;animation:selahRise .22s cubic-bezier(.2,0,0,1)">
+            <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px">
+              <div style="position:relative;width:40px;height:40px;flex:none">
+                <svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="none" stroke="var(--border)" stroke-width="3"/><circle cx="20" cy="20" r="17" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-dasharray="107" stroke-dashoffset="40" transform="rotate(-90 20 20)"/></svg>
+                <svg style="position:absolute;top:12px;left:12px" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>
+              </div>
+              <div><div style="font-size:14px;font-weight:600;color:var(--fg)">Vault is open</div><div style="font-size:12px;color:var(--muted)">Auto-locks in <span style="font-variant-numeric:tabular-nums;color:var(--fg-2);font-weight:600">{{ countdown }}</span></div></div>
+            </div>
+            <button onClick="{{ extend }}" style="font-family:inherit;width:100%;font-size:13px;font-weight:600;color:var(--fg);background:var(--card-2);border:1px solid var(--border);border-radius:9px;padding:10px;cursor:pointer;margin-bottom:8px">Stay unlocked 15 min</button>
+            <button onClick="{{ lockNow }}" style="font-family:inherit;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:600;color:var(--primary);background:transparent;border:none;padding:8px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Lock now</button>
+          </div>
+        </sc-if>
+
+        <!-- desktop locked overlay -->
+        <sc-if value="{{ lockedB }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;z-index:30;background:var(--bg);display:flex;align-items:center;justify-content:center;animation:selahRise .3s cubic-bezier(.2,0,0,1)">
+            <div style="text-align:center;max-width:380px;padding:40px">
+              <div style="width:104px;height:104px;border-radius:32px;background:var(--card);border:1px solid var(--border);box-shadow:0 14px 44px rgba(30,16,52,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 26px"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10.5" rx="2.6"/><path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5"/><circle cx="12" cy="15.5" r="1.4" fill="var(--primary)"/></svg></div>
+              <h2 style="font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 9px">Your vault is locked</h2>
+              <p style="font-size:14.5px;line-height:1.6;color:var(--fg-2);margin:0 0 30px">Your notes are encrypted and waiting. Unlock to continue where you left off.</p>
+              <button onClick="{{ unlock }}" style="font-family:inherit;width:320px;max-width:100%;display:inline-flex;align-items:center;justify-content:center;gap:9px;font-size:15px;font-weight:600;color:var(--on-primary);background:var(--primary-solid);border:none;border-radius:11px;padding:15px;cursor:pointer;margin-bottom:12px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="8" width="15" height="13" rx="3"/><circle cx="12" cy="14" r="2"/><path d="M12 16v2"/></svg>Unlock with passkey</button>
+              <div><button onClick="{{ unlock }}" style="font-family:inherit;font-size:13.5px;font-weight:600;color:var(--primary);background:transparent;border:none;cursor:pointer;padding:8px">Use vault password instead</button></div>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:920}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'notes', device: 'mobile', theme: 'light',
+    notesState: 'default', locked: false, dockOpen: false,
+    secondsLeft: 763,
+    dictate: 'ready', dictPct: 64, transcript: '', lang: 'EN',
+    detailMode: 'read', cmpFrom: 3, cmpTo: 5, source: false,
+  };
+
+  componentDidMount() {
+    this._tick = setInterval(() => {
+      this.setState(s => {
+        if (s.locked || s.dictate === 'recording') return null;
+        const n = s.secondsLeft - 1;
+        if (n <= 0) return { secondsLeft: 0, locked: true, dockOpen: false };
+        return { secondsLeft: n };
+      });
+    }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this._tick); if (this._dt) clearInterval(this._dt); if (this._lt) clearInterval(this._lt); }
+
+  fmt(s) { const m = Math.floor(s / 60), ss = s % 60; return m + ':' + String(ss).padStart(2, '0'); }
+
+  // --- dictate machine ---
+  startRec() {
+    const words = "Today I felt grateful for the quiet of the morning and the way the light came in while I made coffee and the house was still".split(' ');
+    let i = 0;
+    this.setState({ dictate: 'recording', transcript: '' });
+    if (this._lt) clearInterval(this._lt);
+    this._lt = setInterval(() => {
+      i++;
+      this.setState(s => ({ transcript: words.slice(0, i).join(' ') }));
+      if (i >= words.length) { clearInterval(this._lt); }
+    }, 280);
+  }
+  stopRec() {
+    if (this._lt) clearInterval(this._lt);
+    this.setState({ dictate: 'transcribing' });
+    setTimeout(() => this.setState(s => (s.dictate === 'transcribing' ? { dictate: 'review' } : null)), 1300);
+  }
+  simLoad() {
+    this.setState({ dictate: 'loading', dictPct: 0 });
+    if (this._dt) clearInterval(this._dt);
+    this._dt = setInterval(() => {
+      this.setState(s => {
+        const p = s.dictPct + 7;
+        if (p >= 100) { clearInterval(this._dt); return { dictPct: 100, dictate: 'ready' }; }
+        return { dictPct: p };
+      });
+    }, 220);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const set = (p) => () => this.setState(p);
+    const C = '#cfc9d6';
+
+    // prototype chrome control bar (tooling, not the product UI)
+    const Seg = (opts, cur, on) => React.createElement('div', {
+      style: { display: 'inline-flex', gap: 2, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.10)', borderRadius: 9, padding: 3 }
+    }, opts.map(o => React.createElement('button', {
+      key: o.v, onClick: () => on(o.v),
+      style: { fontFamily: 'inherit', fontSize: 12, fontWeight: 600, letterSpacing: '.01em', color: cur === o.v ? '#1a1a1a' : C, background: cur === o.v ? '#fff' : 'transparent', border: 'none', borderRadius: 6, padding: '6px 11px', cursor: 'pointer', whiteSpace: 'nowrap' }
+    }, o.label)));
+
+    const Label = (t) => React.createElement('span', { style: { fontSize: 10.5, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8076 8f', color: '#807689', fontWeight: 600, marginRight: 2 } }, t);
+
+    let stateOpts = [{ v: 'default', label: 'Default' }, { v: 'empty', label: 'Empty' }, { v: 'loading', label: 'Loading' }, { v: 'error', label: 'Error' }];
+    let stateCur = s.notesState, stateOn = (v) => this.setState({ notesState: v, locked: false });
+    if (s.screen === 'editor') { stateOpts = [{ v: 'ready', label: 'Ready' }, { v: 'loading', label: 'Loading' }, { v: 'recording', label: 'Recording' }, { v: 'review', label: 'Review' }]; stateCur = s.dictate; stateOn = (v) => { if (v === 'recording') this.startRec(); else if (v === 'loading') this.simLoad(); else this.setState({ dictate: v }); }; }
+    if (s.screen === 'detail') { stateOpts = [{ v: 'read', label: 'Reading' }, { v: 'history', label: 'Version history' }, { v: 'zen', label: 'Zen mode' }]; stateCur = s.detailMode; stateOn = (v) => this.setState({ detailMode: v }); }
+
+    const chrome = React.createElement('div', {
+      style: { background: '#211c29', borderBottom: '1px solid rgba(255,255,255,.08)', padding: '11px 22px', display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', fontFamily: "'Schibsted Grotesk',sans-serif" }
+    },
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 9, marginRight: 4 } },
+        React.createElement('div', { style: { width: 9, height: 9, borderRadius: 3, background: '#8b6bb8' } }),
+        React.createElement('span', { style: { fontSize: 13, fontWeight: 600, color: '#fff', letterSpacing: '.01em' } }, 'SelahKeep'),
+        React.createElement('span', { style: { fontSize: 11.5, color: '#8076 89', color: '#80768a' } }, 'prototype')
+      ),
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7 } }, Label('Screen'), Seg([{ v: 'notes', label: 'Notes list' }, { v: 'editor', label: 'New note' }, { v: 'detail', label: 'Note detail' }], s.screen, (v) => this.setState({ screen: v }))),
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7 } }, Label('Device'), Seg([{ v: 'mobile', label: 'Mobile' }, { v: 'desktop', label: 'Desktop' }], s.device, (v) => this.setState({ device: v }))),
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7 } }, Label('Theme'), Seg([{ v: 'light', label: 'Light' }, { v: 'dark', label: 'Dark' }], s.theme, (v) => this.setState({ theme: v }))),
+      React.createElement('div', { style: { width: 1, height: 22, background: 'rgba(255,255,255,.12)' } }),
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7 } }, Label('State'), Seg(stateOpts, stateCur, stateOn)),
+      React.createElement('button', { onClick: () => this.setState({ locked: true, dockOpen: false }), style: { fontFamily: 'inherit', fontSize: 12, fontWeight: 600, color: '#cfc9d6', background: 'transparent', border: '1px solid rgba(255,255,255,.14)', borderRadius: 7, padding: '6px 11px', cursor: 'pointer' } }, 'Lock vault')
+    );
+
+    return {
+      theme: s.theme,
+      isMobile: s.device !== 'desktop', isDesktop: s.device === 'desktop',
+      isNotes: s.screen === 'notes', isEditor: s.screen === 'editor', isDetail: s.screen === 'detail',
+      nDefault: s.notesState === 'default', nEmpty: s.notesState === 'empty', nLoading: s.notesState === 'loading', nError: s.notesState === 'error',
+      lockedB: s.locked, dockOpenB: s.dockOpen && !s.locked,
+      showNav: !s.locked,
+      countdown: this.fmt(s.secondsLeft),
+      counter: '12 notes · 4 pinned',
+      chrome,
+      goNotes: set({ screen: 'notes' }), goEditor: set({ screen: 'editor' }), goDetail: set({ screen: 'detail' }),
+      toggleDock: () => this.setState(st => ({ dockOpen: !st.dockOpen })),
+      extend: () => this.setState({ secondsLeft: 900, dockOpen: false }),
+      lockNow: () => this.setState({ locked: true, dockOpen: false }),
+      unlock: () => this.setState({ locked: false, secondsLeft: 900 }),
+      showDefault: set({ notesState: 'default' }),
+      // editor / dictate
+      dictReady: s.dictate === 'ready', dictLoading: s.dictate === 'loading', dictRecording: s.dictate === 'recording', dictTranscribing: s.dictate === 'transcribing', dictReview: s.dictate === 'review',
+      dictPct: s.dictPct, pctWidth: s.dictPct + '%', transcript: s.transcript || 'Today I felt grateful for the quiet of the morning and the way the light came in while I made coffee and the house was still', lang: s.lang,
+      startRec: () => this.startRec(), stopRec: () => this.stopRec(), simLoad: () => this.simLoad(),
+      insertTr: set({ dictate: 'ready' }), discardTr: () => this.setState({ dictate: 'ready', transcript: '' }), reRec: () => this.startRec(),
+      cycleLang: () => this.setState(st => ({ lang: st.lang === 'EN' ? 'PT' : st.lang === 'PT' ? 'ES' : 'EN' })),
+      langName: s.lang === 'EN' ? 'English' : s.lang === 'PT' ? 'Português' : 'Español',
+      // detail
+      dRead: s.detailMode === 'read', dHistory: s.detailMode === 'history', dZen: s.detailMode === 'zen', dReadOrHistory: s.detailMode !== 'zen',
+      goRead: set({ detailMode: 'read' }), goHistory: set({ detailMode: 'history' }), goZen: set({ detailMode: 'zen' }),
+      skeletons: [1, 2, 3, 4, 5, 6],
+      pinned: [
+        { title: "A letter I'm not ready to send", cat: 'Letter', tags: ['#forgiveness'], excerpt: "I keep starting this in my head. Maybe writing it down is enough for now, even if you never read it.", updated: 'Yesterday', resolved: false },
+        { title: 'Morning gratitude', cat: 'Gratitude', tags: ['#thankful', '#family'], excerpt: 'Three small things today — the early light, a long walk, and a call that went better than I feared.', updated: '2h ago', resolved: true },
+      ],
+      others: [
+        { title: 'For Mara, before the surgery', cat: 'Prayer', tags: ['#health', '#hope'], excerpt: 'Hold her steady tomorrow. Steady the hands of everyone in that room.', updated: 'Mon' },
+        { title: 'Should I take the role?', cat: 'Decision journal', tags: ['#work'], excerpt: 'Listing what I would gain and what I would quietly lose. The second list is longer than I expected.', updated: 'Apr 28' },
+        { title: 'Things I want to remember about Dad', cat: 'Reflection', tags: ['#memory'], excerpt: 'The way he hummed while fixing things. How he never left a room without saying goodbye.', updated: 'Apr 21' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

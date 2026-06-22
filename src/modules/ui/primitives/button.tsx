@@ -12,17 +12,18 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   ref
 ) {
   const variants = {
-    primary: "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]",
+    primary:
+      "bg-[var(--primary-solid)] text-[var(--on-primary)] hover:bg-[var(--primary-hover)]",
     secondary:
       "border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--card-muted)]",
-    danger: "bg-[var(--danger)] text-white hover:bg-red-800",
+    danger: "bg-[var(--danger-solid)] text-white hover:opacity-90",
   };
 
   return (
     <button
       ref={ref}
       className={cn(
-        "min-h-11 rounded-[var(--radius)] px-4 py-2.5 text-sm font-medium transition-colors",
+        "min-h-11 rounded-[var(--radius)] px-4 py-2.5 text-sm font-semibold transition-colors",
         "disabled:cursor-not-allowed disabled:opacity-50",
         variants[variant],
         className

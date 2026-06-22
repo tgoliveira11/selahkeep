@@ -11,6 +11,12 @@
 
 ---
 
+## 0. Adopted visual direction — "Stillness"
+
+The SelahKeep visual language is now defined by **[`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md)** (direction **"Stillness"**; source proposal in [`design/`](./design/)). It keeps everything below (purple brand, calm/private tone, mobile-first) and makes it concrete: **Schibsted Grotesk** type, a tighter `--radius` (10px), **outlined** chips, a full **light + dark** token system (`prefers-color-scheme`), and calm signature animations. Style UI with **design tokens only** (`src/app/globals.css`); never hardcode hex. This file remains the source for *tone*; `DESIGN_SYSTEM.md` is the source for *tokens, type, and components*.
+
+---
+
 ## 1. Visual tone
 
 SelahKeep should feel:

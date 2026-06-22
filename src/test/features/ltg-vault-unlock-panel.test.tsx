@@ -45,7 +45,7 @@ describe("LtgVaultUnlockPanel", () => {
         onUnlockRecoveryPhrase={() => undefined}
       />
     );
-    const primary = container.querySelector(".bg-\\[var\\(--primary\\)\\]");
+    const primary = container.querySelector(".bg-\\[var\\(--primary-solid\\)\\]");
     expect(primary).toBeTruthy();
   });
 });

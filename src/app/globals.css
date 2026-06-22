@@ -1,36 +1,127 @@
 @import "tailwindcss";
 @import "@tgoliveira/secure-auth/styles.css";
 
+/* Design tokens — "Stillness" direction. See docs/DESIGN_SYSTEM.md. */
 :root {
-  --background: #faf8fc;
+  /* Surfaces & text */
+  --background: #f7f6fa;
+  --bg: #f7f6fa;
+  --bg-2: #efedf4;
   --foreground: #1a1a1a;
-  --primary: #5b3a8c;
-  --primary-hover: #4a2f73;
-  --accent: #8b6bb8;
-  --accent-muted: #ebe4f4;
+  --fg: #1a1a1a;
+  --fg-2: #54515c;
   --muted: #6b7280;
-  --border: #e8e2ef;
   --card: #ffffff;
   --card-muted: #f6f3fa;
+  --card-2: #f6f3fa;
+  /* Brand */
+  --primary: #5b3a8c;
+  --primary-solid: #5b3a8c;
+  --primary-hover: #4a2f73;
+  --on-primary: #ffffff;
+  --accent: #8b6bb8;
+  --accent-muted: #ebe4f4;
+  --lilac: #ebe4f4;
+  --lilac-soft: #f6f3fa;
+  /* Borders */
+  --border: #e8e2ef;
+  --border-2: #d9cdec;
+  /* Semantic + tint + outline-border pairs */
   --danger: #b91c1c;
-  --danger-muted: #fef2f2;
+  --danger-muted: #fbeaea;
+  --danger-bg: #fbeaea;
+  --danger-bd: #e9c4c4;
   --success: #2d6a4f;
-  --success-muted: #ecfdf3;
+  --success-muted: #e6f0ea;
+  --success-bg: #e6f0ea;
+  --success-bd: #bfdccd;
   --warning: #92400e;
-  --warning-muted: #fffbeb;
+  --warning-muted: #f7eee2;
+  --warning-bg: #f7eee2;
+  --warning-bd: #e7d3b6;
   --info: #1e40af;
-  --info-muted: #eff6ff;
-  --radius: 0.75rem;
+  --info-muted: #e6ecf8;
+  --info-bg: #e6ecf8;
+  --info-bd: #c3d0ee;
+  /* Version diff */
+  --add-bg: #e9f3ee;
+  --add-fg: #2d6a4f;
+  --add-bd: #bfdccd;
+  --del-bg: #fbeded;
+  --del-fg: #b91c1c;
+  --del-bd: #ecc9c9;
+  /* Solid destructive button stays a real red in both themes */
+  --danger-solid: #b91c1c;
+  /* Skeleton */
+  --skel: #ece8f2;
+  --radius: 0.625rem;
   --shadow-sm: 0 1px 2px rgb(26 26 26 / 0.06);
+  --shadow-md: 0 6px 24px rgba(40, 20, 70, 0.08);
+  --shadow-lg: 0 18px 50px rgba(30, 16, 52, 0.2);
   --ring: rgb(91 58 140 / 0.35);
   --toolbar-control-height: 2.5rem;
   --z-toolbar-popover: 40;
+}
+
+/* Dark theme (auto). A future toggle can set [data-theme="dark"] to force it. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #161219;
+    --bg: #161219;
+    --bg-2: #1b1622;
+    --foreground: #f3eef8;
+    --fg: #f3eef8;
+    --fg-2: #c7bdd2;
+    --muted: #968aa5;
+    --card: #1e1922;
+    --card-muted: #241d2e;
+    --card-2: #241d2e;
+    --primary: #b79be0;
+    --primary-solid: #7e5cb8;
+    --primary-hover: #8d68c6;
+    --on-primary: #ffffff;
+    --accent: #b79be0;
+    --accent-muted: #2c2436;
+    --lilac: #2c2436;
+    --lilac-soft: #221b2c;
+    --border: #2e2738;
+    --border-2: #3a3147;
+    --danger: #f1a3a3;
+    --danger-muted: rgba(185, 28, 28, 0.2);
+    --danger-bg: rgba(185, 28, 28, 0.2);
+    --danger-bd: #5e3236;
+    --success: #7fd3aa;
+    --success-muted: rgba(45, 106, 79, 0.22);
+    --success-bg: rgba(45, 106, 79, 0.22);
+    --success-bd: #2f5745;
+    --warning: #e2b274;
+    --warning-muted: rgba(146, 64, 14, 0.24);
+    --warning-bg: rgba(146, 64, 14, 0.24);
+    --warning-bd: #5a4326;
+    --info: #a3bdf2;
+    --info-muted: rgba(30, 64, 175, 0.24);
+    --info-bg: rgba(30, 64, 175, 0.24);
+    --info-bd: #2f3f6b;
+    --add-bg: rgba(45, 106, 79, 0.22);
+    --add-fg: #8fe0b5;
+    --add-bd: #2f5745;
+    --del-bg: rgba(185, 28, 28, 0.2);
+    --del-fg: #f1a3a3;
+    --del-bd: #5e3236;
+    --skel: #272031;
+    --ring: rgba(183, 155, 224, 0.45);
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.55);
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family:
+    var(--font-sans),
+    "Schibsted Grotesk",
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
@@ -42,6 +133,60 @@ body {
 *:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
+}
+
+/* Stillness signature animations (docs/DESIGN_SYSTEM.md) */
+@keyframes selahReady {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+@keyframes selahSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes selahPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(185, 28, 28, 0.3);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(185, 28, 28, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(185, 28, 28, 0);
+  }
+}
+@keyframes selahShimmer {
+  0% {
+    background-position: -300px 0;
+  }
+  100% {
+    background-position: 300px 0;
+  }
+}
+@keyframes selahWave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@keyframes selahRise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes pulse-soft {
@@ -1344,17 +1489,17 @@ mark.search-highlight {
 }
 
 .voice-dictate-dot--loading {
-  background: #d97706;
+  background: var(--warning);
   animation: voice-dictate-pulse 1.2s ease-in-out infinite;
 }
 
 .voice-dictate-dot--ready {
-  background: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+  background: var(--success);
+  box-shadow: 0 0 0 3px var(--success-bg);
 }
 
 .voice-dictate-btn--ready {
-  border-color: rgba(22, 163, 74, 0.5);
+  border-color: var(--success-bd);
 }
 
 @keyframes voice-dictate-pulse {

@@ -56,6 +56,7 @@ Open [http://localhost:3001](http://localhost:3001).
 
 Design direction and navigation:
 
+- [`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md) — **visual design system ("Stillness")**: tokens, Schibsted Grotesk type, components, light + dark mode (source specs in [`docs/design/`](./docs/design/))
 - [`docs/UI_UX_DIRECTION.md`](./docs/UI_UX_DIRECTION.md) — tone, purple brand, public page sections
 - [`docs/LOGGED_IN_NAVIGATION_AUDIT.md`](./docs/LOGGED_IN_NAVIGATION_AUDIT.md) — logged-in nav structure
 - [`docs/README.md`](./docs/README.md) — documentation index

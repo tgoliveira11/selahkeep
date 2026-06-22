@@ -45,7 +45,7 @@ describe("VaultSetupWizard UI", () => {
   it("uses purple primary CTA on intro continue", () => {
     const { container } = render(<VaultSetupWizard {...baseProps} step="intro" />);
     const button = container.querySelector("button");
-    expect(button?.className).toContain("var(--primary)");
+    expect(button?.className).toContain("var(--primary-solid)");
   });
 
   it("renders secure-auth password setup fields on password step", () => {

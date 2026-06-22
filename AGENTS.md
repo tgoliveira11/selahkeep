@@ -55,6 +55,16 @@ React components must NOT import database clients, repositories, or ORM code.
 - Confusing account sessions with vault unlock; account session does not decrypt notes
 - Competing local auth/account implementation (see `no-local-auth-implementation.test.ts`)
 
+## Design system (UI work)
+
+The adopted visual language is **"Stillness"** — see [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) (source specs in [`docs/design/`](docs/design/)).
+
+- **Style with design tokens only** (`src/app/globals.css`) — never hardcode hex. Every new surface must work in **light and dark** (`prefers-color-scheme`).
+- Typeface is **Schibsted Grotesk** via `next/font` (`--font-sans`); headings use tight tracking.
+- **Chips are outlined** (category = `--border-2`/`--primary`; tag = `--border`/`--accent`), not filled. Primary buttons use `--primary-solid`/`--on-primary`; links/icons use `--primary`. Semantic colors stay semantic.
+- Reuse the canonical components/patterns (note card, vault dock, locked state, version diff, dictate panel, empty/loading/error). For screens **not** in the hero specs, **infer from the tokens and patterns** — do not invent a new language.
+- Keep account sign-in vs vault unlock visually separate; no crypto jargon in copy.
+
 ## Stop Conditions
 
 If cryptographic primitive, passkey key-wrapping, or recovery envelope design is unclear:
@@ -75,6 +85,7 @@ Keep docs accurate with the code. **Do not merge behavior changes without updati
 | Crypto, vault, passkeys, recovery | `SECURITY.md`, ADR-005/006 |
 | Agent workflow, testing, boundaries | `AGENTS.md`, `.cursor/rules/*.md` |
 | Navigation / branding | `docs/LOGGED_IN_NAVIGATION_AUDIT.md`, `docs/UI_UX_DIRECTION.md` |
+| Visual language / tokens / components / dark mode | `docs/DESIGN_SYSTEM.md`, `docs/design/` |
 | New API routes or contracts | `docs/API_REFERENCE.md`, `ARCHITECTURE.md` |
 
 ## Testing (required on every change)

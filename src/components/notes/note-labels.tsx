@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { formatTagDisplay } from "@/lib/notes/tag-normalization";
 import { cn } from "@/lib/ui/cn";
 
@@ -7,15 +6,18 @@ interface NoteCategoryLabelProps {
   className?: string;
 }
 
+/** Outlined category pill (Stillness — docs/DESIGN_SYSTEM.md). */
 export function NoteCategoryLabel({ name, className }: NoteCategoryLabelProps) {
   return (
-    <Badge
-      variant="info"
-      className={cn("gap-1 rounded-md px-2.5 py-1 text-xs font-medium", className)}
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md border border-[var(--border-2)] px-2.5 py-1 text-xs font-semibold text-[var(--primary)]",
+        className
+      )}
     >
       <span aria-hidden="true">📁</span>
       <span>{name}</span>
-    </Badge>
+    </span>
   );
 }
 
@@ -32,7 +34,7 @@ export function NoteTagChip({ name, className, onRemove }: NoteTagChipProps) {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 rounded-full bg-[var(--accent-muted)] px-2.5 py-0.5 text-xs font-medium text-[var(--primary)]",
+          "inline-flex items-center gap-1 rounded-md border border-[var(--border)] px-2 py-0.5 text-xs font-medium text-[var(--accent)]",
           className
         )}
       >
@@ -52,7 +54,7 @@ export function NoteTagChip({ name, className, onRemove }: NoteTagChipProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full bg-[var(--accent-muted)] px-2.5 py-0.5 text-xs font-medium text-[var(--primary)]",
+        "inline-flex items-center rounded-md border border-[var(--border)] px-2 py-0.5 text-xs font-medium text-[var(--accent)]",
         className
       )}
     >

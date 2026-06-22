@@ -11,6 +11,11 @@ expect.extend(toHaveNoViolations);
 
 vi.mock("server-only", () => ({}));
 
+// next/font is a Next build-time macro; stub it so layout modules import in Vitest.
+vi.mock("next/font/google", () => ({
+  Schibsted_Grotesk: () => ({ variable: "font-sans", className: "font-sans", style: {} }),
+}));
+
 vi.mock("@/lib/db/transaction", () => ({
   runInTransaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => fn({})),
 }));

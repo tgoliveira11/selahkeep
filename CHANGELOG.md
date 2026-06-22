@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - **Product-quality refinement pass.** Normalized note create/edit field order (template → category → title → editor → attachments → tags); encrypted attachments with client-side encryption, allowlist, env limits, and storage usage on vault settings; note list excerpts after unlock; autosave UI states including offline; dictation status labels and vault-lock transcript clear; SelahKeep “pause and keep” home copy. Docs: `NOTE_CREATE_EDIT_UX.md`, `AUTOSAVE_BEHAVIOR.md`, `ENCRYPTED_ATTACHMENTS.md`, `DICTATION_UX.md`, `STORAGE_USAGE.md`. Migration `0013_note_attachments.sql`.
+- Adopted a formal **design system ("Stillness")** from the visual proposal in `docs/design/`, documented in `docs/DESIGN_SYSTEM.md`. The app now uses the **Schibsted Grotesk** typeface (self-hosted via `next/font`, CSP-safe), a tighter radius, outlined category/tag chips, refined primary/danger buttons, a GitHub-style diff using dedicated add/removed tokens, and signature calm animations.
+- Full **light + dark theme** via `prefers-color-scheme`, driven by an expanded CSS design-token set in `src/app/globals.css` (style with tokens only). Agent directives (`AGENTS.md`, `.cursor/rules/ui.md`) and docs (`UI_UX_DIRECTION.md`, `ARCHITECTURE.md`, docs index) now point to the design system as the source of truth for tokens, type, and components.
 
 ### Changed
 

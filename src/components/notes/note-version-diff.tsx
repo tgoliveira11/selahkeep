@@ -35,11 +35,19 @@ export function NoteVersionDiff({
           Comparing <span className="font-medium">{beforeLabel}</span> →{" "}
           <span className="font-medium">{afterLabel}</span>
         </span>
-        <span className="text-[var(--success,#15803d)]" data-testid="diff-added-count">
-          +{stats.added}
+        <span
+          className="inline-flex items-center gap-1.5 font-semibold text-[var(--add-fg)]"
+          data-testid="diff-added-count"
+        >
+          <span className="inline-block h-2 w-2 rounded-sm bg-[var(--add-fg)]" aria-hidden />
+          {stats.added} added
         </span>
-        <span className="text-[var(--danger)]" data-testid="diff-removed-count">
-          −{stats.removed}
+        <span
+          className="inline-flex items-center gap-1.5 font-semibold text-[var(--del-fg)]"
+          data-testid="diff-removed-count"
+        >
+          <span className="inline-block h-2 w-2 rounded-sm bg-[var(--del-fg)]" aria-hidden />
+          {stats.removed} removed
         </span>
       </div>
 
@@ -49,7 +57,7 @@ export function NoteVersionDiff({
         </p>
       ) : (
         <pre
-          className="overflow-x-auto rounded-md border border-[var(--border)] bg-[var(--surface,#fff)] p-0 text-sm leading-relaxed"
+          className="overflow-x-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-0 text-sm leading-relaxed"
           data-testid="diff-body"
         >
           <code className="block">
@@ -59,13 +67,21 @@ export function NoteVersionDiff({
                 data-diff-type={line.type}
                 className={
                   line.type === "added"
-                    ? "block bg-[rgba(34,197,94,0.12)] px-3"
+                    ? "block border-l-[3px] border-[var(--add-fg)] bg-[var(--add-bg)] px-3"
                     : line.type === "removed"
-                      ? "block bg-[rgba(239,68,68,0.12)] px-3"
-                      : "block px-3"
+                      ? "block border-l-[3px] border-[var(--del-fg)] bg-[var(--del-bg)] px-3"
+                      : "block border-l-[3px] border-transparent px-3"
                 }
               >
-                <span className="mr-2 inline-block w-4 select-none text-[var(--muted)]">
+                <span
+                  className={
+                    line.type === "added"
+                      ? "mr-2 inline-block w-4 select-none font-bold text-[var(--add-fg)]"
+                      : line.type === "removed"
+                        ? "mr-2 inline-block w-4 select-none font-bold text-[var(--del-fg)]"
+                        : "mr-2 inline-block w-4 select-none text-[var(--muted)]"
+                  }
+                >
                   {SYMBOL[line.type]}
                 </span>
                 {line.value || " "}
