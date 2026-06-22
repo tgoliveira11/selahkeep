@@ -370,8 +370,8 @@ export default function NotesPage() {
           }
         />
       ) : (
-        <NotesListGrid viewMode={viewMode}>
-          {filteredNotes.map((note) =>
+        (() => {
+          const renderNote = (note: (typeof filteredNotes)[number]) =>
             viewMode === "list" ? (
               <li key={note.id}>
                 <NoteListRow
@@ -417,9 +417,47 @@ export default function NotesPage() {
                   }
                 />
               </li>
-            )
-          )}
-        </NotesListGrid>
+            );
+
+          const pinnedNotes = filteredNotes.filter((n) => n.pinned && !n.trashed);
+          const otherNotes = filteredNotes.filter((n) => !(n.pinned && !n.trashed));
+          const grouped = pinnedNotes.length > 0 && otherNotes.length > 0;
+
+          if (!grouped) {
+            return <NotesListGrid viewMode={viewMode}>{filteredNotes.map(renderNote)}</NotesListGrid>;
+          }
+
+          return (
+            <div className="space-y-6" data-testid="notes-grouped">
+              <section>
+                <div
+                  className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]"
+                  data-testid="notes-group-pinned"
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="var(--accent)"
+                    stroke="var(--accent)"
+                    strokeWidth="1.2"
+                    aria-hidden="true"
+                  >
+                    <path d="M9 3h6l-1 6 4 3v2h-5v7l-1 0-1 0v-7H5v-2l4-3z" />
+                  </svg>
+                  Pinned
+                </div>
+                <NotesListGrid viewMode={viewMode}>{pinnedNotes.map(renderNote)}</NotesListGrid>
+              </section>
+              <section>
+                <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+                  Earlier
+                </div>
+                <NotesListGrid viewMode={viewMode}>{otherNotes.map(renderNote)}</NotesListGrid>
+              </section>
+            </div>
+          );
+        })()
       )}
     </AuthenticatedPage>
   );
