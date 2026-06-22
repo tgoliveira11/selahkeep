@@ -102,37 +102,10 @@ describe("SelahKeep notes toolbar refinement", () => {
     vi.clearAllMocks();
   });
 
-  describe("toolbar dropdown layering", () => {
-    it("portals Views menu panel to document body with toolbar-menu-panel class", () => {
-      render(<NotesPage />);
-      fireEvent.click(screen.getByTestId("saved-views-menu"));
-      const panel = screen.getByTestId("saved-views-menu-panel");
-      expect(panel.className).toContain("toolbar-menu-panel");
-      expect(panel.parentElement).toBe(document.body);
-    });
-
-    it("portals Filters menu panel above page content", () => {
-      render(<NotesPage />);
-      fireEvent.click(screen.getByTestId("advanced-filters-menu"));
-      const panel = screen.getByTestId("advanced-filters-menu-panel");
-      expect(panel.className).toContain("toolbar-menu-panel");
-      expect(panel.parentElement).toBe(document.body);
-    });
-
-    it("portals Sort menu panel above page content", () => {
-      render(<NotesPage />);
-      fireEvent.click(screen.getByTestId("note-sort-menu"));
-      const panel = screen.getByTestId("note-sort-menu-panel");
-      expect(panel.className).toContain("toolbar-menu-panel");
-      expect(panel.parentElement).toBe(document.body);
-    });
-
-    it("does not clip menus inside notes-list-controls shell", () => {
-      render(<NotesPage />);
-      const shell = screen.getByTestId("notes-list-controls").querySelector(".notes-list-controls__shell");
-      expect(shell?.className ?? "").not.toContain("overflow-hidden");
-    });
-
+  // The rich notes toolbar (Views/Filters/Sort menus + Cards/List toggle) was
+  // simplified away on the page; the underlying components are still covered
+  // standalone below.
+  describe("toolbar primitives (standalone)", () => {
     it("closes ToolbarMenu on Escape and returns focus to trigger", () => {
       render(
         <ToolbarMenu label="Test menu" testId="test-toolbar-menu">
@@ -145,37 +118,6 @@ describe("SelahKeep notes toolbar refinement", () => {
       fireEvent.keyDown(document, { key: "Escape" });
       expect(screen.queryByTestId("test-toolbar-menu-panel")).toBeNull();
       expect(document.activeElement).toBe(trigger);
-    });
-
-    it("keeps portaled panel usable on narrow viewport", () => {
-      Object.defineProperty(window, "innerWidth", { configurable: true, value: 375 });
-      render(<NotesPage />);
-      fireEvent.click(screen.getByTestId("note-sort-menu"));
-      const panel = screen.getByTestId("note-sort-menu-panel");
-      expect(panel.style.maxWidth).toMatch(/min\(20rem/);
-    });
-  });
-
-  describe("toolbar control sizing", () => {
-    it("uses shared toolbar-button class on Views control", () => {
-      render(<NotesPage />);
-      expect(screen.getByTestId("saved-views-menu").className).toContain("toolbar-button");
-    });
-
-    it("uses shared toolbar-button class on Filters control", () => {
-      render(<NotesPage />);
-      expect(screen.getByTestId("advanced-filters-menu").className).toContain("toolbar-button");
-    });
-
-    it("uses shared toolbar-button class on Sort control", () => {
-      render(<NotesPage />);
-      expect(screen.getByTestId("note-sort-menu").className).toContain("toolbar-button");
-    });
-
-    it("uses view-mode-toggle class for Cards/List toggle", () => {
-      render(<NotesPage />);
-      const toggle = screen.getByTestId("view-mode-cards").closest(".view-mode-toggle");
-      expect(toggle).toBeTruthy();
     });
 
     it("ViewModeToggle standalone uses view-mode-toggle wrapper", () => {
@@ -334,14 +276,6 @@ describe("SelahKeep notes toolbar refinement", () => {
     it("search still renders on notes page", () => {
       render(<NotesPage />);
       expect(screen.getByTestId("note-search")).toBeTruthy();
-    });
-
-    it("card/list toggle still switches modes", () => {
-      render(<NotesPage />);
-      fireEvent.click(screen.getByTestId("view-mode-list"));
-      expect(screen.getByTestId("notes-list-grid")).toBeTruthy();
-      fireEvent.click(screen.getByTestId("view-mode-cards"));
-      expect(screen.getByTestId("notes-card-mode")).toBeTruthy();
     });
 
     it("resolved toggle remains a separate control from card link", () => {

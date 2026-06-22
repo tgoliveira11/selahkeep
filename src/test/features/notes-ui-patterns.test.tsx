@@ -117,29 +117,31 @@ describe("SelahKeep notes UI patterns", () => {
     vi.clearAllMocks();
   });
 
-  it("uses page header with primary new note action", () => {
+  it("uses the simplified notes header (title + new note action)", () => {
     render(<NotesPage />);
     expect(screen.getByRole("heading", { name: "Notes" })).toBeTruthy();
-    expect(screen.getByText(/encrypted space for prayers/i)).toBeTruthy();
     expect(screen.getByTestId("new-note-action")).toBeTruthy();
     expect(screen.queryByRole("link", { name: /new daily note/i })).toBeNull();
   });
 
-  it("renders cohesive controls toolbar with chips instead of saved views card", () => {
+  it("renders the search bar, primary filter chips, and counter (no rich toolbar)", () => {
     render(<NotesPage />);
-    expect(screen.getByTestId("notes-list-controls")).toBeTruthy();
     expect(screen.getByTestId("note-search")).toBeTruthy();
     expect(screen.getByTestId("smart-filter-chips")).toBeTruthy();
-    expect(screen.getByTestId("saved-views-menu")).toBeTruthy();
-    expect(screen.queryByTestId("saved-view-select")).toBeNull();
     expect(screen.getByTestId("notes-counter")).toBeTruthy();
+    // The rich toolbar (Views/Filters/Sort/saved views) was simplified away.
+    expect(screen.queryByTestId("notes-list-controls")).toBeNull();
+    expect(screen.queryByTestId("saved-views-menu")).toBeNull();
   });
 
-  it("opens views menu and lists encrypted saved views locally", () => {
+  it("filters by the primary chips (All / Pinned / Recently viewed)", () => {
     render(<NotesPage />);
-    fireEvent.click(screen.getByTestId("saved-views-menu"));
-    expect(screen.getByTestId("saved-view-item-sv1")).toBeTruthy();
-    expect(screen.getByTestId("save-current-view")).toBeTruthy();
+    expect(screen.getByTestId("smart-filter-chip-all-active")).toBeTruthy();
+    const pinned = screen.getByTestId("smart-filter-chip-pinned");
+    expect(pinned.getAttribute("aria-selected")).toBe("false");
+    fireEvent.click(pinned);
+    expect(pinned.getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("smart-filter-chip-recently-viewed")).toBeTruthy();
   });
 
   it("selects smart filter chips with accessible state", () => {

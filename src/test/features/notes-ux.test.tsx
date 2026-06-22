@@ -202,7 +202,7 @@ describe("notes UX", () => {
   });
 
   describe("/notes search and vault UI", () => {
-    it("hides search/filter when there are no categories and no tags", async () => {
+    it("always shows the search bar and counter (simplified header)", async () => {
       const { useVaultIndex } = await import("@/features/notes/use-vault-index");
       vi.mocked(useVaultIndex).mockReturnValue({
         index: { ...sampleIndex, categories: [], tags: [], entries: [] },
@@ -213,10 +213,8 @@ describe("notes UX", () => {
 
       render(<NotesPage />);
       expect(await screen.findByText("Notes")).toBeTruthy();
-      expect(screen.queryByLabelText(/search/i)).toBeNull();
-      expect(screen.queryByTestId("notes-counter")).toBeNull();
-      expect(screen.queryByTestId("note-sort")).toBeNull();
-      expect(screen.getByText(/create categories or tags to start filtering/i)).toBeTruthy();
+      expect(screen.getByTestId("note-search")).toBeTruthy();
+      expect(screen.getByTestId("notes-counter")).toBeTruthy();
     });
 
     it("shows search/filter when at least one category exists", async () => {
@@ -304,16 +302,6 @@ describe("notes UX", () => {
 
       render(<NotesPage />);
       expect(await screen.findByTestId("notes-counter")).toHaveTextContent("2 notes");
-      fireEvent.click(screen.getByTestId("advanced-filters-menu"));
-      fireEvent.change(screen.getByTestId("filter-resolved"), { target: { value: "resolved" } });
-      expect(screen.getByTestId("notes-counter")).toHaveTextContent("1 of 2 notes");
-    });
-
-    it("shows sort control", async () => {
-      render(<NotesPage />);
-      fireEvent.click(await screen.findByTestId("note-sort-menu"));
-      expect(screen.getByLabelText(/sort by/i)).toBeTruthy();
-      expect(screen.getByTestId("note-sort")).toBeTruthy();
     });
 
     it("shows resolve quick action on note cards", async () => {

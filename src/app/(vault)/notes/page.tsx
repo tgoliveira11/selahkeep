@@ -24,6 +24,7 @@ import { NotesListControls } from "@/features/notes/notes-list-controls";
 import { NotesVaultProtectedMessage } from "@/features/notes/notes-vault-protected-message";
 import { useVaultIndex } from "@/features/notes/use-vault-index";
 import { useNotes } from "@/features/notes/use-notes";
+import { cn } from "@/lib/ui/cn";
 import { searchVaultIndex, searchVaultIndexWhenLocked } from "@/lib/crypto-client/note-search";
 import { listEncryptedNoteDraftKeys } from "@/lib/crypto-client/note-drafts";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
@@ -155,6 +156,11 @@ export default function NotesPage() {
     }
     return sortNotes(results, sort);
   }, [vaultUnlocked, index, searchFilters, sort, smartFilter, filters.search, searchBodies]);
+
+  const pinnedNotesCount = useMemo(
+    () => allNotes.filter((note) => note.pinned && !note.trashed).length,
+    [allNotes]
+  );
 
   const showListControls = shouldShowNotesListControls({
     hasOrganizers: showOrganizerFilters,
@@ -305,13 +311,78 @@ export default function NotesPage() {
     );
   }
 
+  const counterLabel = `${allNotes.length} ${allNotes.length === 1 ? "note" : "notes"}${
+    pinnedNotesCount > 0 ? ` · ${pinnedNotesCount} pinned` : ""
+  }`;
+
   return (
     <AuthenticatedPage width="notes">
-      <PageHeader
-        title="Notes"
-        description="Your encrypted space for prayers, reflections, and private notes."
-        action={<NewNoteAction onDailyNote={openDailyNote} />}
-      />
+      {/* Search bar (mockup top bar). The vault pill lives in the header dock. */}
+      <div className="mb-6 flex items-center gap-3">
+        <div className="relative flex-1">
+          <svg
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]"
+            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.2-3.2" />
+          </svg>
+          <input
+            type="search"
+            data-testid="note-search"
+            value={filters.search}
+            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            placeholder="Search your notes"
+            aria-label="Search your notes"
+            className="w-full rounded-[9px] border border-[var(--border)] bg-[var(--bg-2)] py-2.5 pl-10 pr-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] focus:border-[var(--border-2)] focus:outline-none"
+          />
+        </div>
+        <div className="md:hidden">
+          <NewNoteAction onDailyNote={openDailyNote} />
+        </div>
+      </div>
+
+      {/* Title + counter (left) and the primary filter chips (right). */}
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-[1.75rem] font-semibold tracking-[-0.02em] text-[var(--foreground)]">
+            Notes
+          </h1>
+          <p className="mt-1 text-sm text-[var(--muted)]" data-testid="notes-counter">
+            {counterLabel}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2" data-testid="smart-filter-chips" role="tablist" aria-label="Filter notes">
+          {[
+            { value: "all-active" as const, label: "All" },
+            { value: "pinned" as const, label: "Pinned" },
+            { value: "recently-viewed" as const, label: "Recently viewed" },
+          ].map((chip) => {
+            const active = smartFilter === chip.value;
+            return (
+              <button
+                key={chip.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                data-testid={`smart-filter-chip-${chip.value}`}
+                onClick={() => {
+                  setSmartFilter(chip.value);
+                  setActiveSavedViewId(null);
+                }}
+                className={cn(
+                  "rounded-[8px] px-3.5 py-2 text-[13px] font-medium transition-colors",
+                  active
+                    ? "bg-[var(--primary-solid)] text-[var(--on-primary)]"
+                    : "border border-[var(--border)] bg-[var(--card)] text-[var(--fg-2)] hover:bg-[var(--card-2)]"
+                )}
+              >
+                {chip.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {error && (
         <div
@@ -344,40 +415,7 @@ export default function NotesPage() {
         </div>
       )}
 
-      {vaultUnlocked && index && showListControls && (
-        <NotesListControls
-          filteredCount={filteredNotes.length}
-          totalCount={allNotes.length}
-          pinnedCount={allNotes.filter((note) => note.pinned && !note.trashed).length}
-          sort={sort}
-          onSortChange={setSort}
-          viewMode={viewMode}
-          onViewModeChange={handleViewModeChange}
-          smartFilter={smartFilter}
-          onSmartFilterChange={setSmartFilter}
-          filters={filters}
-          onFiltersChange={setFilters}
-          categories={activeCategories}
-          tags={activeTags}
-          savedViews={index.savedViews ?? []}
-          activeSavedViewId={activeSavedViewId}
-          currentSavedViewCriteria={currentSavedViewCriteria}
-          onApplySavedView={handleApplySavedView}
-          onSaveView={handleSaveView}
-          onDeleteSavedView={handleDeleteSavedView}
-          onRecentlyViewed={() => {
-            setSmartFilter("recently-viewed");
-            setActiveSavedViewId(null);
-          }}
-          trashNotice={smartFilter === "trash"}
-        />
-      )}
 
-      {vaultUnlocked && index && !showListControls && !showOrganizerFilters && smartFilter === "all-active" && allNotes.length === 0 && (
-        <p className="mb-6 text-sm text-[var(--muted)]">
-          Create categories or tags to start filtering your notes.
-        </p>
-      )}
 
       {error ? null : filteredNotes.length === 0 ? (
         <EmptyState
@@ -491,13 +529,17 @@ export default function NotesPage() {
                   </svg>
                   Pinned
                 </div>
-                <NotesListGrid viewMode={viewMode}>{pinnedNotes.map(renderNote)}</NotesListGrid>
+                <NotesListGrid viewMode={viewMode} columns={2}>
+                  {pinnedNotes.map(renderNote)}
+                </NotesListGrid>
               </section>
               <section>
                 <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
                   Earlier
                 </div>
-                <NotesListGrid viewMode={viewMode}>{otherNotes.map(renderNote)}</NotesListGrid>
+                <NotesListGrid viewMode={viewMode} columns={3}>
+                  {otherNotes.map(renderNote)}
+                </NotesListGrid>
               </section>
             </div>
           );

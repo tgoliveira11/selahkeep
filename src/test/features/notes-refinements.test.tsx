@@ -194,53 +194,15 @@ describe("notes refinements", () => {
     });
   });
 
-  describe("/notes controls region", () => {
-    it("shows compact controls when there is one note without organizers", () => {
+  describe("/notes header region", () => {
+    it("shows the simplified search + chips + counter (no rich toolbar)", () => {
       render(<NotesPage />);
-      expect(screen.getByTestId("notes-list-controls")).toBeTruthy();
-      expect(screen.getByTestId("notes-counter")).toBeTruthy();
-      expect(screen.getByTestId("note-sort-menu")).toBeTruthy();
+      expect(screen.getByTestId("note-search")).toBeTruthy();
       expect(screen.getByTestId("smart-filter-chips")).toBeTruthy();
-      expect(screen.queryByTestId("saved-view-select")).toBeNull();
-      expect(screen.getByTestId("saved-views-menu")).toBeTruthy();
-      expect(screen.queryByTestId("note-filters-embedded")).toBeNull();
-    });
-
-    it("shows unified controls when organizers exist", () => {
-      useVaultIndexMock.mockReturnValueOnce({
-        index: {
-          categories: [{ id: "c1", name: "Prayer", createdAt: "", updatedAt: "" }],
-          tags: [],
-          entries: [
-            {
-              id: "n1",
-              title: "Prayer note",
-              categoryId: "c1",
-              tagIds: [],
-              answered: false,
-              pinned: false,
-              favorite: false,
-              archived: false,
-              trashed: false,
-              trashedAt: null,
-              createdAt: "2026-01-01T00:00:00.000Z",
-              updatedAt: "2026-01-02T00:00:00.000Z",
-            },
-          ],
-          savedViews: [],
-          version: 3,
-        },
-        loading: false,
-        error: null,
-        mutateIndex: vi.fn(),
-      });
-
-      render(<NotesPage />);
-      expect(screen.getByTestId("notes-list-controls")).toBeTruthy();
       expect(screen.getByTestId("notes-counter")).toBeTruthy();
-      expect(screen.getByTestId("note-sort-menu")).toBeTruthy();
-      fireEvent.click(screen.getByTestId("advanced-filters-menu"));
-      expect(screen.getByTestId("advanced-note-filters")).toBeTruthy();
+      expect(screen.queryByTestId("notes-list-controls")).toBeNull();
+      expect(screen.queryByTestId("note-sort-menu")).toBeNull();
+      expect(screen.queryByTestId("saved-views-menu")).toBeNull();
     });
   });
 });

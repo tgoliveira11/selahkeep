@@ -5,13 +5,22 @@ interface NotesListGridProps {
   viewMode: NoteViewMode;
   children: React.ReactNode;
   className?: string;
+  /** Card-mode column count at wide widths (mockup: pinned 2, earlier 3). */
+  columns?: 2 | 3;
 }
 
 /** List-mode container with column header row for scan-friendly note grids. */
-export function NotesListGrid({ viewMode, children, className }: NotesListGridProps) {
+export function NotesListGrid({ viewMode, children, className, columns = 3 }: NotesListGridProps) {
   if (viewMode !== "list") {
     return (
-      <ul className={cn("note-card-grid space-y-3", className)} data-testid="notes-card-mode">
+      <ul
+        className={cn(
+          "note-card-grid grid grid-cols-1 gap-3.5 sm:grid-cols-2",
+          columns === 3 && "lg:grid-cols-3",
+          className
+        )}
+        data-testid="notes-card-mode"
+      >
         {children}
       </ul>
     );

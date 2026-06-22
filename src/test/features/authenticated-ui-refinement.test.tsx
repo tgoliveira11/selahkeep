@@ -180,29 +180,12 @@ describe("authenticated UI refinement pass", () => {
     });
   });
 
-  describe("/notes toolbar copy and layout", () => {
-    it("does not render toolbar labels with trailing periods", () => {
+  describe("/notes header and counter", () => {
+    it("shows the search bar, chips, and note counter (simplified header)", () => {
       render(<NotesPage />);
-      expect(screen.queryByText("Views.")).toBeNull();
-      expect(screen.queryByText("Filters.")).toBeNull();
-      expect(screen.queryByText("Sort.")).toBeNull();
-      expect(screen.queryByText("New note.")).toBeNull();
-      expect(screen.getByLabelText("Views")).toBeTruthy();
-      expect(screen.getByLabelText("Filters")).toBeTruthy();
-      expect(screen.getByLabelText("Sort")).toBeTruthy();
-    });
-
-    it("integrates note count with controls region", () => {
-      render(<NotesPage />);
-      const controls = screen.getByTestId("notes-list-controls");
-      expect(within(controls).getByTestId("notes-counter")).toBeTruthy();
-      expect(controls.querySelector(".notes-list-controls__filters-row")).toBeTruthy();
-    });
-
-    it("opens sort menu from compact toolbar control", () => {
-      render(<NotesPage />);
-      fireEvent.click(screen.getByTestId("note-sort-menu"));
-      expect(screen.getByTestId("note-sort")).toBeTruthy();
+      expect(screen.getByTestId("note-search")).toBeTruthy();
+      expect(screen.getByTestId("smart-filter-chips")).toBeTruthy();
+      expect(screen.getByTestId("notes-counter")).toBeTruthy();
     });
   });
 
@@ -247,11 +230,6 @@ describe("authenticated UI refinement pass", () => {
       );
     });
 
-    it("uses list grid on notes page in list mode", () => {
-      render(<NotesPage />);
-      fireEvent.click(screen.getByTestId("view-mode-list"));
-      expect(screen.getByTestId("notes-list-grid")).toBeTruthy();
-    });
   });
 
   describe("/settings/account layout", () => {
