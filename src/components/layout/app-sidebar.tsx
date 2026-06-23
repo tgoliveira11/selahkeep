@@ -198,7 +198,7 @@ export function AppSidebar() {
           {initial}
         </span>
         <div className="min-w-0 flex-1 text-[12.5px]">
-          <div className="truncate font-semibold text-[var(--foreground)]">
+          <div className="truncate font-medium text-[var(--fg-2)]">
             {session?.user?.email ?? "Account"}
           </div>
           <div className="text-[11px] text-[var(--muted)]">Signed in</div>

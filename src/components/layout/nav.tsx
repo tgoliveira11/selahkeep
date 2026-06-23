@@ -49,16 +49,19 @@ export function Nav() {
     <header
       className={cn(
         // Authenticated: the top bar (search + vault dock) with a divider below,
-        // matching the mockup. Logged-out marketing keeps its card header.
+        // matching the mockup. Solid background so content scrolls cleanly under
+        // the sticky header. Logged-out marketing keeps its card header.
         authenticated
-          ? "authenticated-header border-b border-[var(--border)]"
+          ? "authenticated-header border-b border-[var(--border)] bg-[var(--background)]"
           : "bg-[var(--card)] border-b border-[var(--border)]"
       )}
     >
       <div
         className={cn(
-          "flex items-center justify-between gap-3 px-4 py-3",
-          authenticated ? "md:px-6 lg:px-8" : "mx-auto max-w-4xl"
+          "flex items-center justify-between gap-3 px-4",
+          // Fixed height so the top bar stays consistent whether or not the
+          // search field is shown (the dock is vertically centered in it).
+          authenticated ? "h-16 md:px-6 lg:px-8" : "mx-auto max-w-4xl py-3"
         )}
       >
         <Link
