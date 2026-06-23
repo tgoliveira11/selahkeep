@@ -89,11 +89,13 @@ export default function NotesPage() {
     );
   }, [searchHighlightQuery]);
 
-  // Deep-linkable Library views from the sidebar (e.g. /notes?view=pinned).
+  // Deep-linkable Library views (sidebar) ↔ top chips, both driven by the URL.
+  // No `view` param means "All" (all-active), so sidebar "All notes" and the
+  // "All" chip select together; ?view=pinned selects "Pinned" in both, etc.
   useEffect(() => {
-    if (!viewParam) return;
-    if (SMART_FILTER_OPTIONS.some((option) => option.value === viewParam)) {
-      setSmartFilter(viewParam as SmartLocalFilter);
+    const next = viewParam ?? "all-active";
+    if (SMART_FILTER_OPTIONS.some((option) => option.value === next)) {
+      setSmartFilter(next as SmartLocalFilter);
       setActiveSavedViewId(null);
     }
   }, [viewParam]);
@@ -369,8 +371,13 @@ export default function NotesPage() {
                 aria-selected={active}
                 data-testid={`smart-filter-chip-${chip.value}`}
                 onClick={() => {
+                  // Drive via the URL so the sidebar Library stays in sync.
                   setSmartFilter(chip.value);
                   setActiveSavedViewId(null);
+                  router.replace(
+                    chip.value === "all-active" ? "/notes" : `/notes?view=${chip.value}`,
+                    { scroll: false }
+                  );
                 }}
                 className={cn(
                   "rounded-[8px] px-3.5 py-2 text-[13px] font-medium transition-colors",

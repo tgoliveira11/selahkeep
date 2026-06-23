@@ -12,7 +12,7 @@ import {
   useVaultAutoLockCountdown,
   useVaultAutoLockFraction,
 } from "@/features/vault/use-vault-auto-lock-countdown";
-import { touchVaultActivity } from "@/features/vault/use-vault-activity";
+import { suppressVaultActivity, touchVaultActivity } from "@/features/vault/use-vault-activity";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { useVault } from "@/features/vault/use-vault";
 import { VaultDockQuickUnlock } from "@/features/vault/vault-dock-quick-unlock";
@@ -122,6 +122,7 @@ export function VaultStatusDock() {
 
   const collapse = useCallback(() => {
     if (!clientStatus) return;
+    suppressVaultActivity();
     setExpansion({ status: clientStatus, expanded: false });
     writeVaultStatusDockCollapsedPreference(true);
     handleRef.current?.focus();
@@ -130,6 +131,7 @@ export function VaultStatusDock() {
   const expand = useCallback(() => {
     if (!clientStatus) return;
     if (onFullUnlockPage && clientStatus === "locked") return;
+    suppressVaultActivity();
     setExpansion({ status: clientStatus, expanded: true });
     writeVaultStatusDockCollapsedPreference(false);
   }, [clientStatus, onFullUnlockPage]);
@@ -201,6 +203,7 @@ export function VaultStatusDock() {
         ref={handleRef}
         type="button"
         className={cn("vault-status-dock-handle", handleToneClass(status))}
+        data-vault-dock-ignore-activity
         data-testid="vault-status-dock-handle"
         data-vault-state={isOpen ? "open" : "closed"}
         aria-expanded={false}
@@ -231,6 +234,7 @@ export function VaultStatusDock() {
       <div
         ref={panelRef}
         className="vault-status-dock-panel vault-status-dock-panel--open vault-status-dock-panel--unlocked"
+        data-vault-dock-ignore-activity
         data-testid="vault-status-dock"
         data-vault-state="open"
         data-expanded="true"
@@ -298,6 +302,7 @@ export function VaultStatusDock() {
       <div
         ref={panelRef}
         className="vault-status-dock-panel vault-status-dock-panel--closed vault-status-dock-panel--narrow"
+        data-vault-dock-ignore-activity
         data-testid="vault-status-dock"
         data-vault-state="closed"
         data-expanded="true"

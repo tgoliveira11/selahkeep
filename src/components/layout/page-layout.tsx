@@ -29,7 +29,10 @@ export function PageLayout({ children, width = "wide", className }: PageLayoutPr
       id={MAIN_CONTENT_ID}
       tabIndex={-1}
       className={cn(
-        "mx-auto w-full flex-1 px-4 py-8 sm:px-6 md:py-10 lg:px-8",
+        "w-full flex-1 px-4 py-8 sm:px-6 md:py-10 lg:px-8",
+        // Notes spans full width; settings/vault/account align left like notes;
+        // other pages stay centered.
+        width !== "settings" && width !== "notes" && "mx-auto",
         widthClass[width],
         className
       )}

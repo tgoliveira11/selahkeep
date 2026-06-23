@@ -124,6 +124,8 @@ export function AppSidebar() {
         New note
       </Link>
 
+      {/* Scrollable nav region; the footer below is pinned to the bottom. */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
       <p className="px-2 pb-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
         Library
       </p>
@@ -164,15 +166,33 @@ export function AppSidebar() {
           </svg>
           Vault
         </Link>
+        {/* Account is the last item, below Vault. */}
+        <Link
+          href="/settings/account"
+          aria-current={pathname.startsWith("/settings") ? "page" : undefined}
+          className={cn(
+            "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] transition-colors",
+            pathname.startsWith("/settings")
+              ? "bg-[var(--lilac)] font-semibold text-[var(--primary)]"
+              : "text-[var(--fg-2)] hover:bg-[var(--card-2)]"
+          )}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+          Account
+        </Link>
       </nav>
+      </div>
 
       {/* Theme sits at the end of the rail, above the divider. */}
-      <div className="mt-auto flex items-center justify-between pt-4">
+      <div className="flex items-center justify-between pt-4">
         <span className="text-[11px] font-medium text-[var(--muted)]">Theme</span>
         <ThemeToggle />
       </div>
 
-      {/* User block, below the divider: avatar + email, Account underneath. */}
+      {/* User block, below the divider: avatar + email + sign out. */}
       <div className="mt-3 flex items-center gap-2.5 border-t border-[var(--border)] pt-3">
         <span className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-[linear-gradient(150deg,var(--accent),var(--primary-solid))] text-xs font-semibold text-white">
           {initial}
@@ -181,12 +201,7 @@ export function AppSidebar() {
           <div className="truncate font-semibold text-[var(--foreground)]">
             {session?.user?.email ?? "Account"}
           </div>
-          <Link
-            href="/settings/account"
-            className="text-[11px] text-[var(--muted)] hover:text-[var(--foreground)]"
-          >
-            Account
-          </Link>
+          <div className="text-[11px] text-[var(--muted)]">Signed in</div>
         </div>
         <button
           type="button"

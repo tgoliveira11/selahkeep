@@ -58,6 +58,7 @@ vi.mock("@/features/vault/use-vault-dock-passkey-available", () => ({
 
 vi.mock("@/features/vault/use-vault-activity", () => ({
   touchVaultActivity: vi.fn(),
+  suppressVaultActivity: vi.fn(),
 }));
 
 vi.mock("@/features/vault/use-vault-client-status", () => ({

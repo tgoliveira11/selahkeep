@@ -54,7 +54,8 @@ export function VaultStatusIconUnlocked(props: IconProps) {
   return (
     <VaultStatusIconBase {...props}>
       <rect x="5" y="11" width="14" height="10" rx="2" />
-      <path d="M8 11V8a4 4 0 0 1 7.5-1" />
+      {/* Shackle clearly lifted/open so "unlocked" reads at a glance. */}
+      <path d="M8 11V7a4 4 0 0 1 7.5-2" />
     </VaultStatusIconBase>
   );
 }
