@@ -408,17 +408,14 @@ body {
   padding: 0.75rem 0.875rem;
 }
 
+/* Closed/open panels keep the white card surface (like the rest of the docks);
+   only a subtle border tint differentiates them. */
 .vault-status-dock-panel--closed {
-  border-color: color-mix(in srgb, var(--primary) 32%, var(--border));
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent-muted) 86%, var(--card)) 0%,
-    color-mix(in srgb, var(--primary) 10%, var(--card-muted)) 100%
-  );
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
 }
 
 .vault-status-dock-panel--open {
-  border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+  border-color: color-mix(in srgb, var(--success) 22%, var(--border));
 }
 
 .vault-status-dock-panel--compact {

@@ -300,20 +300,26 @@ export default function NotesPage() {
   }
 
   if (clientStatus && clientStatus !== "unlocked") {
-    return (
-      <PageLayout>
-        {clientStatus === "not_configured" ? (
+    if (clientStatus === "not_configured") {
+      return (
+        <PageLayout>
           <NotesWelcome />
+        </PageLayout>
+      );
+    }
+    // Locked: the unlock hero + reassurance is the whole screen (no search bar,
+    // no "Notes" header — the hero is the heading). The sidebar is hidden too.
+    return (
+      <AuthenticatedPage width="notes">
+        {clientStatus === "locked" ? (
+          <NotesVaultProtectedMessage />
         ) : (
-          <>
-            <PageHeader
-              title="Notes"
-              description="Private encrypted notes — prayers, reflections, and journaling in one vault."
-            />
-            {clientStatus === "locked" && <NotesVaultProtectedMessage />}
-          </>
+          <PageHeader
+            title="Notes"
+            description="Private encrypted notes — prayers, reflections, and journaling in one vault."
+          />
         )}
-      </PageLayout>
+      </AuthenticatedPage>
     );
   }
 

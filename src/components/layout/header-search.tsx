@@ -1,17 +1,22 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useNoteSearchContext } from "@/features/notes/note-search-context";
+import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 
 /**
  * Desktop top-bar search (mockup): lives in the header beside the vault dock
- * and drives the notes list via the shared search context. Typing elsewhere
- * jumps to /notes so the results are visible.
+ * and drives the notes list via the shared search context. Only shown on the
+ * notes list with an unlocked vault — searching only makes sense where notes
+ * are actually listed.
  */
 export function HeaderSearch() {
   const { query, setQuery } = useNoteSearchContext();
   const pathname = usePathname();
-  const router = useRouter();
+  const vaultClient = useVaultClientStatus();
+  const unlocked = vaultClient.status === "ready" && vaultClient.clientStatus === "unlocked";
+
+  if (pathname !== "/notes" || !unlocked) return null;
 
   return (
     <div className="relative w-full">
@@ -26,10 +31,7 @@ export function HeaderSearch() {
         type="search"
         data-testid="header-search"
         value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          if (!pathname.startsWith("/notes")) router.push("/notes");
-        }}
+        onChange={(e) => setQuery(e.target.value)}
         placeholder="Search your notes"
         aria-label="Search your notes"
         className="w-full rounded-[9px] border border-[var(--border)] bg-[var(--bg-2)] py-2.5 pl-10 pr-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] focus:border-[var(--border-2)] focus:outline-none"

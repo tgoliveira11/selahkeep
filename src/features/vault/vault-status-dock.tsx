@@ -140,7 +140,10 @@ export function VaultStatusDock() {
 
   useEffect(() => {
     if (!expanded || !panelRef.current || clientStatus !== "locked" || onFullUnlockPage) return;
-    const input = panelRef.current.querySelector<HTMLElement>("input, button");
+    // Focus the password field (not the collapse chevron, which comes first in DOM).
+    const input =
+      panelRef.current.querySelector<HTMLElement>("input") ??
+      panelRef.current.querySelector<HTMLElement>("button");
     input?.focus();
   }, [expanded, clientStatus, onFullUnlockPage]);
 
