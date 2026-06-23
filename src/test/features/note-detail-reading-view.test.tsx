@@ -45,6 +45,10 @@ vi.mock("@/lib/api-client/notes", () => ({
   notesApi: { get: vi.fn() },
 }));
 
+vi.mock("@/lib/api-client/note-versions", () => ({
+  noteVersionsApi: { list: vi.fn().mockResolvedValue([]), get: vi.fn(), create: vi.fn() },
+}));
+
 vi.mock("@/lib/crypto-client/notes", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/crypto-client/notes")>();
   return { ...actual, decryptNote: vi.fn() };
@@ -192,7 +196,8 @@ describe("note detail reading view", () => {
 
     it("shows back to notes link", async () => {
       render(<NoteDetailPage />);
-      expect(await screen.findByRole("button", { name: /back to notes/i })).toBeTruthy();
+      expect(await screen.findByTestId("note-back-link")).toBeTruthy();
+      expect(screen.getByText(/back to notes/i)).toBeTruthy();
     });
 
     it("shows note title in header area", async () => {
@@ -225,16 +230,16 @@ describe("note detail reading view", () => {
       expect(await screen.findByTestId("note-reading-view")).toBeInTheDocument();
     });
 
-    it("exposes secondary actions inside More actions menu", async () => {
+    it("exposes secondary pin and favorite inside More actions menu", async () => {
       render(<NoteDetailPage />);
       await screen.findByText("Prayed that today");
       fireEvent.click(screen.getByTestId("note-more-actions-menu"));
       const panel = await screen.findByTestId("note-more-actions-menu-panel");
       expect(within(panel).getByTestId("toggle-pinned")).toBeTruthy();
       expect(within(panel).getByTestId("toggle-favorite")).toBeTruthy();
-      expect(within(panel).getByTestId("toggle-archived")).toBeTruthy();
-      expect(within(panel).getByTestId("duplicate-note")).toBeTruthy();
-      expect(within(panel).getByTestId("move-to-trash")).toBeTruthy();
+      expect(within(panel).queryByTestId("toggle-archived")).toBeNull();
+      expect(within(panel).queryByTestId("duplicate-note")).toBeNull();
+      expect(within(panel).queryByTestId("move-to-trash")).toBeNull();
     });
 
     it("closes More actions menu on Escape", async () => {
@@ -247,39 +252,23 @@ describe("note detail reading view", () => {
     });
   });
 
-  describe("state indicators", () => {
+  describe("state and resolve actions", () => {
     beforeEach(async () => {
       await setupDetailMocks();
     });
 
-    it("uses fixed indicator order pinned favorite resolved", async () => {
+    it("shows Mark resolved in the detail action bar", async () => {
       render(<NoteDetailPage />);
-      const core = await screen.findByTestId("note-state-indicators-core");
-      const slots = core.querySelectorAll(".note-state-indicators__slot, button.note-state-indicators__slot--interactive");
-      expect(slots).toHaveLength(3);
-      expect(screen.getByTestId("note-pinned-badge")).toBeTruthy();
-      expect(screen.getByTestId("note-favorite-badge")).toBeTruthy();
-      expect(screen.getByTestId("note-unresolved-indicator")).toBeTruthy();
+      expect(await screen.findByTestId("note-mark-resolved-button")).toBeTruthy();
     });
 
-    it("keeps resolved control inside indicator row not detached", async () => {
-      render(<NoteDetailPage />);
-      await screen.findByTestId("note-state-indicators");
-      expect(screen.getByTestId("note-unresolved-indicator").closest("[data-testid='note-state-indicators-core']")).toBeTruthy();
-    });
-
-    it("provides accessible labels for pin favorite and resolved", async () => {
+    it("exposes pin and favorite in the more actions menu", async () => {
       render(<NoteDetailPage />);
       await screen.findByText("Prayed that today");
-      expect(screen.getByLabelText(/pinned note/i)).toBeTruthy();
-      expect(screen.getByLabelText(/favorite note/i)).toBeTruthy();
-      expect(screen.getByLabelText(/mark as resolved/i)).toBeTruthy();
-    });
-
-    it("does not navigate when clicking indicators", async () => {
-      render(<NoteDetailPage />);
-      fireEvent.click(await screen.findByLabelText(/mark as resolved/i));
-      expect(routerPush).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByTestId("note-more-actions-menu"));
+      const panel = await screen.findByTestId("note-more-actions-menu-panel");
+      expect(within(panel).getByTestId("toggle-pinned")).toBeTruthy();
+      expect(within(panel).getByTestId("toggle-favorite")).toBeTruthy();
     });
   });
 
@@ -288,14 +277,15 @@ describe("note detail reading view", () => {
       await setupDetailMocks();
     });
 
-    it("shows category badge tags dates", async () => {
+    it("shows category badge tags and dates in the detail rail", async () => {
       render(<NoteDetailPage />);
       await screen.findByTestId("note-detail-metadata");
       expect(screen.getByText("Pray")).toBeTruthy();
       expect(screen.getByText("#teste")).toBeTruthy();
-      const dates = screen.getByTestId("note-detail-dates");
-      expect(dates.textContent).toMatch(/Created/);
-      expect(dates.textContent).toMatch(/Updated/);
+      const rail = await screen.findByTestId("note-detail-rail");
+      expect(within(rail).getByText(/Created/)).toBeTruthy();
+      expect(within(rail).getByText(/Updated/)).toBeTruthy();
+      expect(screen.queryByTestId("note-detail-dates")).toBeNull();
     });
 
     it("keeps category visually distinct from tags", () => {
@@ -339,12 +329,11 @@ describe("note detail reading view", () => {
   });
 
   describe("archived and trash states", () => {
-    it("shows archived banner and restore in menu", async () => {
+    it("shows archived banner and unarchive in the rail", async () => {
       await setupDetailMocks(baseMetadata({ archived: true, pinned: false, favorite: false }));
       render(<NoteDetailPage />);
       expect(await screen.findByTestId("note-archived-banner")).toBeTruthy();
-      fireEvent.click(screen.getByTestId("note-more-actions-menu"));
-      expect(within(screen.getByTestId("note-more-actions-menu-panel")).getByText(/restore to active notes/i)).toBeTruthy();
+      expect(screen.getByText(/unarchive/i)).toBeTruthy();
     });
 
     it("shows trash banner restore and permanent delete", async () => {
@@ -408,11 +397,10 @@ describe("note detail reading view", () => {
       await waitFor(() => expect(screen.getByTestId("markdown-expert-textarea")).toBeTruthy());
     });
 
-    it("move to trash opens confirmation from menu", async () => {
+    it("move to trash opens confirmation from rail", async () => {
       render(<NoteDetailPage />);
       await screen.findByText("Prayed that today");
-      fireEvent.click(screen.getByTestId("note-more-actions-menu"));
-      fireEvent.click(within(screen.getByTestId("note-more-actions-menu-panel")).getByTestId("move-to-trash"));
+      fireEvent.click(screen.getByLabelText(/move to trash/i));
       expect(screen.getByText(/move note to trash/i)).toBeTruthy();
       expect(screen.getByText(/you can restore this note from trash later/i)).toBeTruthy();
     });

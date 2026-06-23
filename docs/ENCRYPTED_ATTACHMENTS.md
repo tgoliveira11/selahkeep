@@ -39,6 +39,7 @@ Plaintext rejection: filename, mimeType, blob, content fields on API bodies.
 
 - Create/edit: upload, list, remove, progress
 - Detail (unlocked): download; inline preview when the browser can render the type (images, PDF, text, audio, video); hidden when vault locked
+- Detail rail: **Attachments** card between **Details** and **Version history** — row layout with file badge, name, size, download; hover opens a 50% viewport preview popover when the type supports it (no preview button)
 - Previews decrypt in the browser only; blob URLs are revoked on hide/unmount (nothing persisted)
 - CSP allows `blob:` for `img-src`, `frame-src` (PDF), and `media-src` so previews can render decrypted bytes
 - Office archives (`.docx`, `.xlsx`, etc.) remain download-only

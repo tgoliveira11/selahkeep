@@ -20,6 +20,7 @@ interface ToolbarMenuProps {
   align?: "start" | "end";
   variant?: "primary" | "secondary";
   icon?: React.ReactNode;
+  iconOnly?: boolean;
   children: React.ReactNode;
 }
 
@@ -37,6 +38,7 @@ export function ToolbarMenu({
   align = "end",
   variant = "secondary",
   icon,
+  iconOnly = false,
   children,
 }: ToolbarMenuProps) {
   const [open, setOpen] = useState(false);
@@ -123,6 +125,7 @@ export function ToolbarMenu({
         primary={variant === "primary"}
         hasMenu
         icon={icon}
+        iconOnly={iconOnly}
         ariaExpanded={open}
         ariaControls={panelId}
         onClick={() => setOpen((value) => !value)}

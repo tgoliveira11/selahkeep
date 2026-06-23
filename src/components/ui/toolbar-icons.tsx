@@ -94,3 +94,55 @@ export function IconPlus({ className }: IconProps) {
     </svg>
   );
 }
+
+export function IconCheck({ className }: IconProps) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M3.5 8.5 6.5 11.5 12.5 4.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconPencil({ className }: IconProps) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M10.5 3.5 12.5 5.5 5.5 12.5H3.5v-2l7-7Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconZen({ className }: IconProps) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M5.5 5.5V3.5H3.5M10.5 5.5V3.5h2M5.5 10.5v2H3.5M10.5 10.5v2h2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconMoreVertical({ className }: IconProps) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <circle cx="8" cy="3.5" r="1" fill="currentColor" />
+      <circle cx="8" cy="8" r="1" fill="currentColor" />
+      <circle cx="8" cy="12.5" r="1" fill="currentColor" />
+    </svg>
+  );
+}

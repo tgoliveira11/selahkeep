@@ -1,6 +1,6 @@
 "use client";
 
-import { NoteAttachmentsField } from "@/features/notes/note-attachments-field";
+import { NoteAttachmentsRail } from "@/components/notes/note-attachments-rail";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
 interface NoteAttachmentsReadOnlyProps {
@@ -9,21 +9,18 @@ interface NoteAttachmentsReadOnlyProps {
   wrappedKey: EncryptedPayload;
 }
 
-/** Encrypted attachments on note detail — visible only while vault is unlocked. */
+/** Encrypted attachments on note detail — delegates to the right-rail card. */
 export function NoteAttachmentsReadOnly({
   noteId,
   userId,
   wrappedKey,
 }: NoteAttachmentsReadOnlyProps) {
   return (
-    <div className="mt-6" data-testid="note-attachments-readonly">
-      <NoteAttachmentsField
-        noteId={noteId}
-        userId={userId}
-        wrappedKey={wrappedKey}
-        enabled
-        readOnly
-      />
-    </div>
+    <NoteAttachmentsRail
+      noteId={noteId}
+      userId={userId}
+      wrappedKey={wrappedKey}
+      enabled
+    />
   );
 }

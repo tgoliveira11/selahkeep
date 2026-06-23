@@ -4,10 +4,11 @@ import { cn } from "@/lib/ui/cn";
 interface NoteCategoryLabelProps {
   name: string;
   className?: string;
+  showIcon?: boolean;
 }
 
 /** Outlined category pill (Stillness — docs/DESIGN_SYSTEM.md). */
-export function NoteCategoryLabel({ name, className }: NoteCategoryLabelProps) {
+export function NoteCategoryLabel({ name, className, showIcon = true }: NoteCategoryLabelProps) {
   return (
     <span
       className={cn(
@@ -15,7 +16,7 @@ export function NoteCategoryLabel({ name, className }: NoteCategoryLabelProps) {
         className
       )}
     >
-      <span aria-hidden="true">📁</span>
+      {showIcon ? <span aria-hidden="true">📁</span> : null}
       <span>{name}</span>
     </span>
   );

@@ -1,17 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { MarkdownPreview } from "@/components/notes/markdown-preview";
 import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
-import { NoteMoreActionsMenu } from "@/components/notes/note-more-actions-menu";
-import { NoteStateIndicators } from "@/components/notes/note-state-indicators";
-import { formatNoteListDates } from "@/lib/notes/note-dates";
 import { HighlightedText, SearchMatchBanner } from "@/components/notes/search-highlight";
 import { ResolvedReflectionDisplay } from "@/components/notes/resolved-reflection-display";
-import { NoteTimeline } from "@/components/notes/note-timeline";
-import { NoteAttachmentsReadOnly } from "@/components/notes/note-attachments-readonly";
-import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import type { VaultCategory, VaultTag } from "@/lib/crypto-client/vault-index-types";
 import type { NoteMetadataPlaintext } from "@/lib/crypto-client/notes";
 
@@ -36,13 +31,12 @@ interface NoteReadingViewProps {
   onPermanentDelete: () => void;
   onChecklistChange: (markdown: string) => void;
   searchQuery?: string;
-  noteId?: string;
-  vaultUserId?: string | null;
-  wrappedKey?: EncryptedPayload | null;
   /** Distraction-free reading. When true, only title + body are shown. */
   zen?: boolean;
   onEnterZen?: () => void;
   onExitZen?: () => void;
+  /** Optional compare panel rendered above the reading body (desktop mockup). */
+  compareSlot?: ReactNode;
 }
 
 export function NoteReadingView({
@@ -51,33 +45,20 @@ export function NoteReadingView({
   categories,
   tags,
   busy = false,
-  resolving = false,
   checklistSaveState,
   onEdit,
-  onToggleResolved,
-  onMarkResolved,
-  onReopen,
-  onTogglePinned,
-  onToggleFavorite,
-  onToggleArchived,
-  onDuplicate,
-  onMoveToTrash,
   onRestoreFromTrash,
   onPermanentDelete,
   onChecklistChange,
   searchQuery = "",
-  noteId,
-  vaultUserId,
-  wrappedKey,
   zen = false,
-  onEnterZen,
   onExitZen,
+  compareSlot,
 }: NoteReadingViewProps) {
   const categoryName = metadata.categoryId
     ? categories.find((category) => category.id === metadata.categoryId)?.name ?? null
     : null;
 
-  // Zen mode (mockup): a calm, centered reading surface — title + body only.
   if (zen) {
     return (
       <article className="mx-auto max-w-[640px] px-2 py-2" data-testid="note-reading-zen">
@@ -125,12 +106,25 @@ export function NoteReadingView({
         </Alert>
       )}
 
-      <header className="note-reading-view__header space-y-3">
+      {metadata.trashed && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          <Button variant="secondary" disabled={busy} onClick={onRestoreFromTrash} data-testid="restore-note">
+            Restore note
+          </Button>
+          <Button variant="danger" disabled={busy} onClick={onPermanentDelete} data-testid="permanent-delete">
+            Delete permanently
+          </Button>
+        </div>
+      )}
+
+      <header className="note-reading-view__header">
         {searchQuery.trim() && <SearchMatchBanner query={searchQuery} />}
 
-        {/* Metadata header (mockup): category chip + resolved/unresolved status. */}
-        <div className="flex flex-wrap items-center gap-2">
-          {categoryName && <NoteCategoryLabel name={categoryName} />}
+        <div
+          className="note-reading-view__meta-row flex flex-wrap items-center gap-2"
+          data-testid="note-detail-metadata"
+        >
+          {categoryName && <NoteCategoryLabel name={categoryName} showIcon={false} />}
           <span
             data-testid="note-detail-status"
             className={
@@ -151,96 +145,30 @@ export function NoteReadingView({
             )}
             {metadata.answered ? "Resolved" : "Unresolved"}
           </span>
-        </div>
-
-        <div className="note-reading-view__title-row flex flex-wrap items-start justify-between gap-3">
-          <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-balance">
-            {searchQuery.trim() ? (
-              <HighlightedText text={metadata.title} query={searchQuery} />
-            ) : (
-              metadata.title
-            )}
-          </h1>
-          <div className="flex shrink-0 items-center gap-2">
-            {!metadata.trashed && (
-              <>
-                {onEnterZen && (
-                  <Button
-                    variant="secondary"
-                    onClick={onEnterZen}
-                    data-testid="note-zen-button"
-                    aria-label="Zen reading mode"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M9 9V5a1 1 0 0 0-1-1H4M15 9V5a1 1 0 0 1 1-1h4M9 15v4a1 1 0 0 1-1 1H4M15 15v4a1 1 0 0 0 1 1h4" />
-                    </svg>
-                    <span className="ml-1.5 hidden sm:inline">Zen</span>
-                  </Button>
-                )}
-                <Button onClick={onEdit} data-testid="note-edit-button">
-                  Edit
-                </Button>
-                <NoteMoreActionsMenu
-                  pinned={metadata.pinned}
-                  favorite={metadata.favorite}
-                  archived={metadata.archived}
-                  busy={busy}
-                  onTogglePinned={onTogglePinned}
-                  onToggleFavorite={onToggleFavorite}
-                  onToggleArchived={onToggleArchived}
-                  onDuplicate={onDuplicate}
-                  onMoveToTrash={onMoveToTrash}
-                />
-              </>
-            )}
-            {metadata.trashed && (
-              <div className="flex flex-wrap gap-2">
-                <Button variant="secondary" disabled={busy} onClick={onRestoreFromTrash} data-testid="restore-note">
-                  Restore note
-                </Button>
-                <Button variant="danger" disabled={busy} onClick={onPermanentDelete} data-testid="permanent-delete">
-                  Delete permanently
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <NoteStateIndicators
-          answered={metadata.answered}
-          pinned={metadata.pinned}
-          favorite={metadata.favorite}
-          archived={metadata.archived}
-          trashed={metadata.trashed}
-          interactive
-          resolving={resolving}
-          onTogglePinned={metadata.trashed || metadata.archived ? undefined : onTogglePinned}
-          onToggleFavorite={metadata.trashed || metadata.archived ? undefined : onToggleFavorite}
-          onToggleResolved={metadata.trashed ? undefined : metadata.answered ? onReopen ?? onToggleResolved : onMarkResolved ?? onToggleResolved}
-          className="note-reading-view__states"
-        />
-
-        <div className="note-reading-view__metadata flex flex-wrap items-center gap-2" data-testid="note-detail-metadata">
           {metadata.tagIds.map((tagId) => {
             const tag = tags.find((item) => item.id === tagId);
             return tag ? <NoteTagChip key={tagId} name={tag.name} /> : null;
           })}
         </div>
 
-        <p className="text-xs text-[var(--muted)]" data-testid="note-detail-dates">
-          {formatNoteListDates(metadata.createdAt, metadata.updatedAt)}
-        </p>
+        <h1 className="note-reading-view__title mt-4 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-balance text-[var(--foreground)]">
+          {searchQuery.trim() ? (
+            <HighlightedText text={metadata.title} query={searchQuery} />
+          ) : (
+            metadata.title
+          )}
+        </h1>
       </header>
 
+      {compareSlot}
+
       {metadata.answered && metadata.resolvedReflection && (
-        <div className="mt-4">
+        <div className="mt-6">
           <ResolvedReflectionDisplay reflection={metadata.resolvedReflection} />
         </div>
       )}
 
-      <NoteTimeline metadata={metadata} />
-
-      <div className="note-reading-surface mt-6" data-testid="note-reading-surface">
+      <div className="note-reading-body mt-8" data-testid="note-reading-surface">
         {checklistSaveState !== "idle" && (
           <p className="mb-3 text-sm text-[var(--muted)]" role="status" data-testid="checklist-save-state">
             {checklistSaveState === "saving" && "Saving…"}
@@ -253,15 +181,8 @@ export function NoteReadingView({
           onMarkdownChange={onChecklistChange}
           checklistsDisabled={checklistSaveState === "saving" || busy}
           searchQuery={searchQuery}
-          className="note-reading-surface__content text-base leading-relaxed text-[var(--foreground)]"
+          className="note-reading-body__content text-[1.0625rem] leading-[1.8] text-[var(--foreground)]"
         />
-        {noteId && vaultUserId && wrappedKey && (
-          <NoteAttachmentsReadOnly
-            noteId={noteId}
-            userId={vaultUserId}
-            wrappedKey={wrappedKey}
-          />
-        )}
       </div>
     </article>
   );

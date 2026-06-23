@@ -24,6 +24,10 @@ interface NoteVersionHistoryProps {
   restoring?: boolean;
   /** Bumped by the parent after a save so the list refreshes. */
   refreshKey?: number;
+  /** Start expanded (e.g. compare mode from detail rail). */
+  initialExpanded?: boolean;
+  /** Called when the user collapses compare/history from an inline panel. */
+  onCollapse?: () => void;
 }
 
 /** Browse, compare (GitHub-style), and restore encrypted note versions. */
@@ -35,8 +39,10 @@ export function NoteVersionHistory({
   onRestore,
   restoring = false,
   refreshKey = 0,
+  initialExpanded = false,
+  onCollapse,
 }: NoteVersionHistoryProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initialExpanded);
   const { versions, loading, error, reload, loadVersionContent } = useNoteVersions(
     noteId,
     enabled && expanded
@@ -143,7 +149,13 @@ export function NoteVersionHistory({
         className="min-h-9"
         data-testid="note-version-history-toggle"
         aria-expanded={expanded}
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => {
+          setExpanded((v) => {
+            const next = !v;
+            if (!next) onCollapse?.();
+            return next;
+          });
+        }}
       >
         {expanded ? "Hide version history" : "Version history"}
       </Button>

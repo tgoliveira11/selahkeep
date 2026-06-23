@@ -15,6 +15,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **Note detail (`/notes/[id]`) aligned to the Stillness mockup.**
+  - Reading view uses the **full main column width** (same as `/notes`), not a centered narrow column.
+  - **Top action bar** — uniform toolbar buttons with icons: Mark resolved, Edit, Zen, and a compact more menu (pin/favorite only; duplicate/archive/trash live in the rail).
+  - **Right rail** — **Details** (created/updated/versions), **Attachments**, and **Version history** as white cards with a **header divider** above the list; version rows show numbered badges, relative timestamps, subtitles, **Current** on the latest version, and **Restore** on older ones; attachment rows match the same layout with type badge, download, and a **hover preview popover** (50% viewport) when the file type supports client-side preview.
+  - Reading body is **borderless** (no card wrapper); metadata chips sit above the title; dates appear only in the Details rail.
+  - **Compare** in the version-history rail opens the inline diff panel in the main column.
+- **Encrypted attachment previews** — client-decrypted previews render via `blob:` URLs; CSP now allows `blob:` for `img-src`, `frame-src`, and `media-src`.
+
+### Removed
+
+- **Show timeline** toggle on the note detail reading view (lifecycle timeline UI removed from `/notes/[id]`).
+
+### Changed
+
 - **Dictation is much faster and more responsive (still 100% on-device).** The live transcript used to fall ~30s behind because every ~1.5s pass re-transcribed the whole, ever-growing buffer on CPU (WASM). Now:
   - **WebGPU acceleration** — the worker probes `navigator.gpu` and runs Whisper on the **GPU** (fp32) when available, falling back to **WASM** (q8) automatically. Background warm-up runs one tiny silent inference so GPU kernels/shaders are compiled before first use. The active backend is shown in the panel ("Voice model ready · GPU").
   - **Bounded streaming** — partial passes transcribe only the recent **uncommitted segment** (committed every ~16s, under Whisper's 30s window) instead of the full recording, so per-pass cost is constant regardless of length and the live transcript keeps up. A single accurate full-buffer pass still runs on **Stop** for the text you review. Partial interval tightened to ~1.2s.

@@ -21,6 +21,25 @@ export function formatNoteDateTime(iso: string): string {
   return new Date(iso).toLocaleString(undefined, DATE_TIME_OPTS);
 }
 
+/** Relative timestamp for detail-rail version rows (e.g. "Today, 9:12 AM"). */
+export function formatRelativeNoteDateTime(iso: string, now = new Date()): string {
+  const date = new Date(iso);
+  const time = date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const today = now.toDateString() === date.toDateString();
+  if (today) return `Today, ${time}`;
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (yesterday.toDateString() === date.toDateString()) return `Yesterday, ${time}`;
+
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 /** Compact updated label for scan-friendly list rows. */
 export function formatNoteUpdatedShort(iso: string): string {
   return `Updated ${formatNoteDate(iso)}`;

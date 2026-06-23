@@ -25,6 +25,9 @@ import {
 } from "@/lib/notes/edit-template-category";
 import { filterUserCreatedCategories } from "@/lib/notes/template-category";
 import { NoteVersionHistory } from "@/components/notes/note-version-history";
+import { NoteVersionHistoryRail } from "@/components/notes/note-version-history-rail";
+import { NoteAttachmentsRail } from "@/components/notes/note-attachments-rail";
+import { NoteDetailActionBar } from "@/components/notes/note-detail-action-bar";
 import type { DecryptedNoteVersion } from "@/lib/crypto-client/note-versions";
 import { appendTranscript } from "@/lib/voice/transcript-format";
 import { isVoiceNotesEnabled } from "@/lib/voice/voice-config";
@@ -85,7 +88,7 @@ function NoteDetailPageShell({
   className?: string;
 }) {
   return (
-    <AuthenticatedPage width="editor" className={className}>
+    <AuthenticatedPage width="notes" className={className}>
       {children}
     </AuthenticatedPage>
   );
@@ -118,6 +121,8 @@ export default function NoteDetailPage() {
   const [draftSaved, setDraftSaved] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [versionRefreshKey, setVersionRefreshKey] = useState(0);
+  const [versionCompareOpen, setVersionCompareOpen] = useState(false);
+  const [versionCount, setVersionCount] = useState<number | null>(null);
   const [restoringVersion, setRestoringVersion] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const voiceEnabled = isVoiceNotesEnabled();
@@ -564,21 +569,23 @@ export default function NoteDetailPage() {
   }
 
   const backLink = (
-    <div className="mb-6">
-      <button
-        type="button"
-        className="text-sm font-medium text-[var(--primary)] hover:underline"
-        onClick={() => requestLeave(() => router.push("/notes"))}
-      >
-        ← Back to notes
-      </button>
-    </div>
+    <button
+      type="button"
+      className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
+      onClick={() => requestLeave(() => router.push("/notes"))}
+      data-testid="note-back-link"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="m15 18-6-6 6-6" />
+      </svg>
+      Back to notes
+    </button>
   );
 
   if (clientStatus && clientStatus !== "unlocked") {
     return (
       <NoteDetailPageShell>
-        {backLink}
+        <div className="mb-6">{backLink}</div>
         {clientStatus === "locked" ? (
           <VaultLockedState
             variant={editing ? "write" : "read-note"}
@@ -593,7 +600,7 @@ export default function NoteDetailPage() {
   if (!canRead) {
     return (
       <NoteDetailPageShell>
-        {backLink}
+        <div className="mb-6">{backLink}</div>
         <VaultLockedState variant="read-note" returnTo={`/notes/${id}`} />
       </NoteDetailPageShell>
     );
@@ -606,7 +613,7 @@ export default function NoteDetailPage() {
   if (loading || !metadata) {
     return (
       <NoteDetailPageShell>
-        {backLink}
+        <div className="mb-6">{backLink}</div>
         <LoadingState label="Opening your note" />
       </NoteDetailPageShell>
     );
@@ -672,8 +679,6 @@ export default function NoteDetailPage() {
 
   return (
     <NoteDetailPageShell className={cn(editing && focusMode && "note-page--focus")}>
-      {backLink}
-
       {draftPrompt && !editing && (
         <Alert variant="info" role="status" className="mb-4">
           <p className="font-medium">Unsaved draft found</p>
@@ -690,6 +695,8 @@ export default function NoteDetailPage() {
       )}
 
       {editing ? (
+        <>
+          <div className="mb-6">{backLink}</div>
         <Card className="space-y-5">
           <div
             className="flex flex-wrap items-center justify-between gap-3"
@@ -815,8 +822,30 @@ export default function NoteDetailPage() {
             </FormField>
           </div>
         </Card>
+        </>
       ) : (
-        <div className="lg:flex lg:items-start lg:gap-8">
+        <>
+          <div
+            className="note-detail-topbar mb-6 flex flex-wrap items-center justify-between gap-3"
+            data-testid="note-detail-topbar"
+          >
+            {backLink}
+            <NoteDetailActionBar
+              metadata={metadata}
+              busy={busy}
+              resolving={resolving}
+              onEdit={startEditing}
+              onMarkResolved={() => void handleMarkResolved()}
+              onReopen={() => void handleReopen()}
+              onEnterZen={() => setZenMode(true)}
+              onTogglePinned={() => void toggleNotePinned(id, !metadata.pinned).then(setMetadata)}
+              onToggleFavorite={() => void toggleNoteFavorite(id, !metadata.favorite).then(setMetadata)}
+              onToggleArchived={() => void toggleNoteArchived(id, !metadata.archived).then(setMetadata)}
+              onDuplicate={() => void handleDuplicate()}
+              onMoveToTrash={() => setDeleteOpen(true)}
+            />
+          </div>
+        <div className="lg:flex lg:items-start lg:gap-10">
           <div className="min-w-0 lg:flex-1">
             <NoteReadingView
               metadata={metadata}
@@ -839,14 +868,26 @@ export default function NoteDetailPage() {
               onPermanentDelete={() => setPermanentDeleteOpen(true)}
               onChecklistChange={persistChecklistToggle}
               searchQuery={searchQuery}
-              noteId={id}
-              vaultUserId={vaultUserId}
-              wrappedKey={wrappedKey}
-              onEnterZen={() => setZenMode(true)}
+              compareSlot={
+                versionCompareOpen ? (
+                  <div className="mt-6" data-testid="note-version-compare-panel">
+                    <NoteVersionHistory
+                      noteId={id}
+                      enabled={canRead}
+                      currentTitle={metadata.title}
+                      currentBody={body}
+                      onRestore={handleRestoreVersion}
+                      restoring={restoringVersion || busy}
+                      refreshKey={versionRefreshKey}
+                      initialExpanded
+                      onCollapse={() => setVersionCompareOpen(false)}
+                    />
+                  </div>
+                ) : null
+              }
             />
           </div>
 
-          {/* Desktop right rail: details + version history (mockup). */}
           <aside className="mt-6 space-y-4 lg:mt-0 lg:w-[300px] lg:flex-none" data-testid="note-detail-rail">
             <div className="rounded-[12px] border border-[var(--border)] bg-[var(--card-2)] p-4">
               <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
@@ -865,16 +906,30 @@ export default function NoteDetailPage() {
                     {formatNoteDate(metadata.updatedAt)}
                   </dd>
                 </div>
+                {versionCount !== null && (
+                  <div className="flex justify-between gap-2" data-testid="note-detail-version-count">
+                    <dt className="text-[var(--muted)]">Versions</dt>
+                    <dd className="font-medium text-[var(--foreground)]">{versionCount}</dd>
+                  </div>
+                )}
               </dl>
             </div>
-            <NoteVersionHistory
+            {vaultUserId && wrappedKey && (
+              <NoteAttachmentsRail
+                noteId={id}
+                userId={vaultUserId}
+                wrappedKey={wrappedKey}
+                enabled={canRead}
+              />
+            )}
+            <NoteVersionHistoryRail
               noteId={id}
               enabled={canRead}
-              currentTitle={metadata.title}
-              currentBody={body}
               onRestore={handleRestoreVersion}
+              onCompare={() => setVersionCompareOpen(true)}
               restoring={restoringVersion || busy}
               refreshKey={versionRefreshKey}
+              onVersionCount={setVersionCount}
             />
 
             {!metadata.trashed && (
@@ -917,6 +972,7 @@ export default function NoteDetailPage() {
             )}
           </aside>
         </div>
+        </>
       )}
 
       {displayError && (

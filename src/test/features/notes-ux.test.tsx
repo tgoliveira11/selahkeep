@@ -1,6 +1,6 @@
 /** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import NotesPage from "@/app/(vault)/notes/page";
 import NewNotePage from "@/app/(vault)/notes/new/page";
@@ -45,6 +45,10 @@ vi.mock("@/lib/api-client/notes", () => ({
   notesApi: {
     get: vi.fn(),
   },
+}));
+
+vi.mock("@/lib/api-client/note-versions", () => ({
+  noteVersionsApi: { list: vi.fn().mockResolvedValue([]), get: vi.fn(), create: vi.fn() },
 }));
 
 vi.mock("@/lib/crypto-client/notes", async (importOriginal) => {
@@ -542,20 +546,20 @@ describe("notes UX", () => {
       expect(screen.queryByText("Vault open")).toBeNull();
     });
 
-    it("shows created and updated dates in detail metadata", async () => {
+    it("shows created and updated dates in the detail rail", async () => {
       render(<NoteDetailPage />);
-      const dates = await screen.findByTestId("note-detail-dates");
-      expect(dates.textContent).toMatch(/Created/);
-      expect(dates.textContent).toMatch(/Updated/);
+      const rail = await screen.findByTestId("note-detail-rail");
+      expect(within(rail).getByText("Created")).toBeTruthy();
+      expect(within(rail).getByText("Updated")).toBeTruthy();
     });
 
-    it("shows resolve icon toggle in view mode matching list pattern", async () => {
+    it("shows resolve action in view mode matching list pattern", async () => {
       render(<NoteDetailPage />);
       await screen.findByText("Prayer note");
-      expect(screen.getByLabelText(/mark as resolved/i)).toBeTruthy();
+      expect(screen.getByTestId("note-mark-resolved-button")).toBeTruthy();
       expect(screen.getByTestId("note-reading-view")).toBeTruthy();
       expect(screen.getByRole("button", { name: /^edit$/i })).toBeTruthy();
-      expect(screen.queryAllByRole("button", { name: /mark as resolved/i })).toHaveLength(1);
+      expect(screen.queryAllByRole("button", { name: /mark resolved/i })).toHaveLength(1);
       // Destructive actions live in the right rail (guarded by a confirm dialog), per the mockup.
       expect(screen.getByTestId("note-detail-rail-actions")).toBeTruthy();
     });
@@ -573,7 +577,7 @@ describe("notes UX", () => {
       } as never);
 
       render(<NoteDetailPage />);
-      fireEvent.click(await screen.findByLabelText(/mark as resolved/i));
+      fireEvent.click(await screen.findByTestId("note-mark-resolved-button"));
       await waitFor(() =>
         expect(screen.getByTestId("resolved-reflection-dialog")).toBeInTheDocument()
       );
@@ -628,10 +632,10 @@ describe("notes UX", () => {
       expect(screen.getByText("#faith")).toBeTruthy();
     });
 
-    it("shows resolved toggle only while editing in category fields", async () => {
+    it("shows resolved checkbox only while editing in category fields", async () => {
       render(<NoteDetailPage />);
       await screen.findByText("Prayer note");
-      expect(screen.getByLabelText(/mark as resolved/i)).toBeTruthy();
+      expect(screen.getByTestId("note-mark-resolved-button")).toBeTruthy();
       fireEvent.click(screen.getByRole("button", { name: /edit/i }));
       expect(screen.getAllByLabelText(/mark as resolved/i).length).toBeGreaterThanOrEqual(1);
     });

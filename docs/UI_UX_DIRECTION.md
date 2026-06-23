@@ -126,7 +126,6 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 - **Saved views** — encrypted in vault index; save/apply/delete via **Views ▾** menu on `/notes`.
 - **Reflective views** — **Remembrance** (`/notes/remembrance`), **Weekly reflection** (`/notes/weekly-reflection`), **Recently viewed** (smart filter) in **Views ▾** menu.
 - **Resolved reflection** — optional calm dialog when marking resolved (What changed? / How resolved? / What to remember?); stored in encrypted metadata; displayed on detail when present.
-- **Timeline** — progressive disclosure on `/notes/[id]` from encrypted lifecycle events (newest first).
 - **Prompt cards** — static local prompts on `/notes/new` and weekly reflection; insert into editor only.
 - **View mode** — Cards (rich metadata cards) / List (compact scan rows); preference in `localStorage` (`selahkeep:notes:view-mode`, non-sensitive).
 - **Controls visibility:** entire toolbar hidden when zero notes and no organizers/saved views/active filters; shown for one or more notes.
@@ -134,7 +133,7 @@ See [`LOGGED_IN_NAVIGATION_AUDIT.md`](./LOGGED_IN_NAVIGATION_AUDIT.md).
 - **New note field order:** Template → Category (blank note only) → Title → Editor → Tags → Save. Template is first; tags are last optional organization step.
 - **New note:** title required; **blank note** shows manual category selection/creation (user-created categories only); non-blank templates hide manual category controls and show a read-only template-assigned category indicator; template category is created/reused **on save**, not on template selection. Reserved template names cannot be used for user-created categories. Autosave starts only after user edits, not template prefill.
 - **Tags:** chip input with normalization; display `#tag`, store `tag` (max 32 chars).
-- **Detail:** reading view (`NoteReadingView`) — back link, title row with **Edit** + **More actions** menu; fixed state indicators (pin → favorite → resolved); category pill without `#`; tag chips with `#`; created + updated dates; editorial reading surface (`note-reading-surface`); secondary lifecycle actions in menu; destructive trash inside menu only.
+- **Detail:** reading view (`NoteReadingView`) — top bar with back link + **Mark resolved** / **Edit** / **Zen** / more menu (pin & favorite); metadata chips (category, status, tags) above title; borderless reading body; dates + version count in right **Details** rail; white **Attachments** and **Version history** rail cards (header divider, row layout); attachment hover preview popover (50% viewport); **Compare** opens inline diff; **Duplicate** / **Archive** / trash in rail actions. Full-width layout (`notes` page width). No timeline toggle on detail.
 - **List:** compact rows with resolve marker, title, category/tags, updated date; quick resolve action does not navigate.
 - **Cards:** richer cards with badges, metadata, comfortable spacing; resolved notes subtly distinct without washed-out text.
 - **Empty state:** “Start your first private note” with calm copy and New note action.

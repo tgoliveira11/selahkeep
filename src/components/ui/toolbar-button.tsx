@@ -11,10 +11,12 @@ interface ToolbarButtonProps {
   primary?: boolean;
   hasMenu?: boolean;
   icon?: React.ReactNode;
+  iconOnly?: boolean;
   onClick?: () => void;
   type?: "button" | "submit";
   ariaExpanded?: boolean;
   ariaControls?: string;
+  disabled?: boolean;
 }
 
 /** Compact toolbar control with icon, short label, and optional menu chevron. */
@@ -27,10 +29,12 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       primary = false,
       hasMenu = false,
       icon,
+      iconOnly = false,
       onClick,
       type = "button",
       ariaExpanded,
       ariaControls,
+      disabled = false,
     },
     ref
   ) {
@@ -39,10 +43,12 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
         ref={ref}
         type={type}
         data-testid={testId}
+        disabled={disabled}
         className={cn(
           "toolbar-button",
           primary && "toolbar-button--primary",
-          active && "toolbar-button--active"
+          active && "toolbar-button--active",
+          iconOnly && "toolbar-button--icon-only"
         )}
         aria-label={label}
         aria-expanded={ariaExpanded}
@@ -51,8 +57,8 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
         onClick={onClick}
       >
         {icon && <span className="toolbar-button__icon">{icon}</span>}
-        <span className="toolbar-button__label">{label}</span>
-        {hasMenu && (
+        <span className={cn("toolbar-button__label", iconOnly && "sr-only")}>{label}</span>
+        {hasMenu && !iconOnly && (
           <span className="toolbar-button__chevron" aria-hidden>
             <IconChevronDown />
           </span>

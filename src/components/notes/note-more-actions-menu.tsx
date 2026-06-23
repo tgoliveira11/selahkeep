@@ -1,6 +1,7 @@
 "use client";
 
 import { ToolbarMenu } from "@/components/ui/toolbar-menu";
+import { IconMoreVertical } from "@/components/ui/toolbar-icons";
 import { cn } from "@/lib/ui/cn";
 
 interface NoteMoreActionsMenuProps {
@@ -13,6 +14,8 @@ interface NoteMoreActionsMenuProps {
   onToggleArchived: () => void;
   onDuplicate: () => void;
   onMoveToTrash: () => void;
+  /** Hide duplicate, archive, and trash when those actions live in the detail rail. */
+  hideLifecycleActions?: boolean;
 }
 
 function MenuItem({
@@ -58,9 +61,16 @@ export function NoteMoreActionsMenu({
   onToggleArchived,
   onDuplicate,
   onMoveToTrash,
+  hideLifecycleActions = false,
 }: NoteMoreActionsMenuProps) {
   return (
-    <ToolbarMenu label="More actions" testId="note-more-actions-menu" align="end">
+    <ToolbarMenu
+      label="More actions"
+      testId="note-more-actions-menu"
+      align="end"
+      icon={<IconMoreVertical />}
+      iconOnly
+    >
       <div className="flex min-w-[12rem] flex-col gap-0.5">
         <MenuItem
           testId="toggle-pinned"
@@ -74,6 +84,8 @@ export function NoteMoreActionsMenu({
           disabled={busy}
           onClick={onToggleFavorite}
         />
+        {!hideLifecycleActions && (
+          <>
         <MenuItem
           testId="toggle-archived"
           label={archived ? "Restore to active notes" : "Archive note"}
@@ -93,6 +105,8 @@ export function NoteMoreActionsMenu({
           disabled={busy}
           onClick={onMoveToTrash}
         />
+          </>
+        )}
       </div>
     </ToolbarMenu>
   );
