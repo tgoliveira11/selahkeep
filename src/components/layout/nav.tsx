@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/ui/cn";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
 import { VaultStatusDock } from "@/features/vault/vault-status-dock";
+import { HeaderSearch } from "@/components/layout/header-search";
 
 export function Nav() {
   const { data: session } = useSession();
@@ -47,14 +48,19 @@ export function Nav() {
   return (
     <header
       className={cn(
-        // Authenticated: transparent, borderless — blends into the content
-        // surface so there's no line above the search bar (mockup).
+        // Authenticated: the top bar (search + vault dock) with a divider below,
+        // matching the mockup. Logged-out marketing keeps its card header.
         authenticated
-          ? "authenticated-header"
+          ? "authenticated-header border-b border-[var(--border)]"
           : "bg-[var(--card)] border-b border-[var(--border)]"
       )}
     >
-      <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
+      <div
+        className={cn(
+          "flex items-center justify-between gap-3 px-4 py-3",
+          authenticated ? "md:px-6 lg:px-8" : "mx-auto max-w-4xl"
+        )}
+      >
         <Link
           href={authenticated ? "/notes" : "/"}
           className={cn(
@@ -66,6 +72,13 @@ export function Nav() {
           <AppMark size={28} />
           <span>{PRODUCT_NAME}</span>
         </Link>
+
+        {/* Desktop search lives in the top bar, beside the vault dock. */}
+        {authenticated && (
+          <div className="hidden flex-1 pr-[13.5rem] md:block">
+            <HeaderSearch />
+          </div>
+        )}
 
         {authenticated ? (
           <>

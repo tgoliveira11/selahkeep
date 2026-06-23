@@ -17,12 +17,14 @@ function VaultSessionManager({ children }: { children: React.ReactNode }) {
 }
 
 export default function VaultLayout({ children }: { children: React.ReactNode }) {
+  // NoteSearchProvider wraps the shell so the header search bar and the notes
+  // list share one query (the desktop top bar lives in the header).
   return (
-    <SiteShell hideFooter>
-      <VoiceWarmup />
-      <NoteSearchProvider>
+    <NoteSearchProvider>
+      <SiteShell hideFooter>
+        <VoiceWarmup />
         <VaultSessionManager>{children}</VaultSessionManager>
-      </NoteSearchProvider>
-    </SiteShell>
+      </SiteShell>
+    </NoteSearchProvider>
   );
 }

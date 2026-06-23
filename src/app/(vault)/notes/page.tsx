@@ -81,9 +81,13 @@ export default function NotesPage() {
   const [resolveError, setResolveError] = useState<string | null>(null);
   const { query: searchHighlightQuery, setQuery: setSearchHighlightQuery } = useNoteSearchContext();
 
+  // The header (desktop) and the mobile search both drive the shared search
+  // context; mirror it into the filter state used for searching the index.
   useEffect(() => {
-    setSearchHighlightQuery(filters.search);
-  }, [filters.search, setSearchHighlightQuery]);
+    setFilters((current) =>
+      current.search === searchHighlightQuery ? current : { ...current, search: searchHighlightQuery }
+    );
+  }, [searchHighlightQuery]);
 
   // Deep-linkable Library views from the sidebar (e.g. /notes?view=pinned).
   useEffect(() => {
@@ -317,8 +321,8 @@ export default function NotesPage() {
 
   return (
     <AuthenticatedPage width="notes">
-      {/* Search bar (mockup top bar). The vault pill lives in the header dock. */}
-      <div className="mb-6 flex items-center gap-3">
+      {/* Mobile search row (desktop search lives in the header top bar). */}
+      <div className="mb-6 flex items-center gap-3 md:hidden">
         <div className="relative flex-1">
           <svg
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]"
@@ -330,16 +334,14 @@ export default function NotesPage() {
           <input
             type="search"
             data-testid="note-search"
-            value={filters.search}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            value={searchHighlightQuery}
+            onChange={(e) => setSearchHighlightQuery(e.target.value)}
             placeholder="Search your notes"
             aria-label="Search your notes"
             className="w-full rounded-[9px] border border-[var(--border)] bg-[var(--bg-2)] py-2.5 pl-10 pr-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] focus:border-[var(--border-2)] focus:outline-none"
           />
         </div>
-        <div className="md:hidden">
-          <NewNoteAction onDailyNote={openDailyNote} />
-        </div>
+        <NewNoteAction onDailyNote={openDailyNote} />
       </div>
 
       {/* Title + counter (left) and the primary filter chips (right). */}

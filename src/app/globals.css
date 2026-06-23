@@ -301,13 +301,13 @@ body {
 
 .authenticated-header {
   position: relative;
-  padding-bottom: 0.75rem;
 }
 
 .vault-status-dock-handle {
   position: absolute;
   right: 1.5rem;
-  bottom: -0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 50;
   display: inline-flex;
   height: 2.25rem;
