@@ -251,9 +251,8 @@ describe("notes UX", () => {
 
       render(<NotesPage />);
       expect(await screen.findByTestId("notes-vault-locked-state")).toBeTruthy();
-      expect(screen.getByRole("heading", { name: /your vault is closed/i })).toBeTruthy();
-      expect(screen.getByText(/account session does not unlock your vault/i)).toBeTruthy();
-      expect(screen.getByText(/encrypted before they leave this device/i)).toBeTruthy();
+      expect(screen.getByRole("heading", { name: /your vault is locked/i })).toBeTruthy();
+      expect(screen.getByText(/encrypted and waiting/i)).toBeTruthy();
       expect(screen.getByRole("button", { name: /unlock here/i })).toBeTruthy();
       expect(screen.getByTestId("vault-open-full-unlock-page").getAttribute("href")).toBe(
         "/vault/unlock?returnTo=%2Fnotes"

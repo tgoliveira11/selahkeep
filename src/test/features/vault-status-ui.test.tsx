@@ -396,7 +396,7 @@ describe("nav vault status dock", () => {
     );
 
     const handle = within(screen.getByRole("banner")).getByTestId("vault-status-dock-handle");
-    expect(within(handle).getByText("Vault")).toBeTruthy();
+    expect(within(handle).getByText("Vault closed")).toBeTruthy();
     expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
     const dock = screen.getByTestId("vault-status-dock");

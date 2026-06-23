@@ -32,11 +32,10 @@ function getCopy(variant: VaultLockedStateVariant, autoLocked: boolean) {
   switch (variant) {
     case "notes-list":
       return {
-        title: "Your vault is closed",
-        lead:
-          "SelahKeep keeps your private notes encrypted before they leave this device. Signing in proves who you are, but your vault stays closed until you unlock it with your vault password, recovery phrase, or a compatible passkey.",
-        body: "This protects your notes if someone accesses your account session or this browser while your vault is locked.",
-        showBullets: true,
+        title: "Your vault is locked",
+        lead: "Your notes are encrypted and waiting. Unlock to continue where you left off.",
+        body: null,
+        showBullets: false,
       };
     case "write":
       return {

@@ -47,8 +47,11 @@ export function Nav() {
   return (
     <header
       className={cn(
-        "bg-[var(--card)] border-b border-[var(--border)]",
-        authenticated && "authenticated-header"
+        // Authenticated: transparent, borderless — blends into the content
+        // surface so there's no line above the search bar (mockup).
+        authenticated
+          ? "authenticated-header"
+          : "bg-[var(--card)] border-b border-[var(--border)]"
       )}
     >
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">

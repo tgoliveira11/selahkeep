@@ -205,7 +205,7 @@ describe("VaultStatusDock", () => {
     render(<VaultStatusDock />);
     const handle = screen.getByTestId("vault-status-dock-handle");
     expect(handle.className).toContain("vault-status-dock-handle--closed");
-    expect(within(handle).getByText("Vault")).toBeTruthy();
+    expect(within(handle).getByText("Vault closed")).toBeTruthy();
     expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
     expect(screen.queryByText(/unlock required/i)).toBeNull();
   });

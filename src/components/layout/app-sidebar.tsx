@@ -147,42 +147,57 @@ export function AppSidebar() {
             </Link>
           );
         })}
+        {/* Vault settings is the last library item. */}
+        <Link
+          href="/vault/settings"
+          aria-current={pathname.startsWith("/vault") ? "page" : undefined}
+          className={cn(
+            "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] transition-colors",
+            pathname.startsWith("/vault")
+              ? "bg-[var(--lilac)] font-semibold text-[var(--primary)]"
+              : "text-[var(--fg-2)] hover:bg-[var(--card-2)]"
+          )}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="4" y="10" width="16" height="11" rx="2.4" />
+            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+          </svg>
+          Vault
+        </Link>
       </nav>
 
-      <div className="mt-auto border-t border-[var(--border)] pt-3">
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-[11px] font-medium text-[var(--muted)]">Theme</span>
-          <ThemeToggle />
-        </div>
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-[linear-gradient(150deg,var(--accent),var(--primary-solid))] text-xs font-semibold text-white">
-            {initial}
-          </span>
-          <div className="min-w-0 flex-1 text-[12.5px]">
-            <div className="truncate font-semibold text-[var(--foreground)]">
-              {session?.user?.email ?? "Account"}
-            </div>
-            <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
-              <Link href="/settings/account" className="hover:text-[var(--foreground)]">
-                Account
-              </Link>
-              <span aria-hidden="true">·</span>
-              <Link href="/vault/settings" className="hover:text-[var(--foreground)]">
-                Vault
-              </Link>
-            </div>
+      {/* Theme sits at the end of the rail, above the divider. */}
+      <div className="mt-auto flex items-center justify-between pt-4">
+        <span className="text-[11px] font-medium text-[var(--muted)]">Theme</span>
+        <ThemeToggle />
+      </div>
+
+      {/* User block, below the divider: avatar + email, Account underneath. */}
+      <div className="mt-3 flex items-center gap-2.5 border-t border-[var(--border)] pt-3">
+        <span className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-[linear-gradient(150deg,var(--accent),var(--primary-solid))] text-xs font-semibold text-white">
+          {initial}
+        </span>
+        <div className="min-w-0 flex-1 text-[12.5px]">
+          <div className="truncate font-semibold text-[var(--foreground)]">
+            {session?.user?.email ?? "Account"}
           </div>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            aria-label="Sign out"
-            className="flex-none rounded-lg p-1.5 text-[var(--muted)] transition-colors hover:bg-[var(--card-2)] hover:text-[var(--foreground)]"
+          <Link
+            href="/settings/account"
+            className="text-[11px] text-[var(--muted)] hover:text-[var(--foreground)]"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-            </svg>
-          </button>
+            Account
+          </Link>
         </div>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          aria-label="Sign out"
+          className="flex-none rounded-lg p-1.5 text-[var(--muted)] transition-colors hover:bg-[var(--card-2)] hover:text-[var(--foreground)]"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+          </svg>
+        </button>
       </div>
       </div>
     </aside>

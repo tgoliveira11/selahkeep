@@ -310,24 +310,18 @@ body {
   bottom: -0.875rem;
   z-index: 50;
   display: inline-flex;
-  height: 2rem;
+  height: 2.25rem;
   min-width: 4.25rem;
-  max-width: 10rem;
+  max-width: 13rem;
   align-items: center;
   justify-content: center;
-  gap: 0.3125rem;
-  border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--border));
+  gap: 0.4375rem;
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent-muted) 96%, var(--card)) 0%,
-    color-mix(in srgb, var(--accent-muted) 82%, var(--card-muted)) 100%
-  );
-  box-shadow:
-    0 1px 3px rgb(91 58 140 / 0.1),
-    0 0 0 1px rgb(255 255 255 / 0.4) inset;
-  padding: 0 0.5rem;
-  font-size: 0.6875rem;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1;
   color: var(--foreground);
@@ -397,6 +391,12 @@ body {
 .vault-status-dock-handle__label {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.vault-status-dock-handle__time {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--muted);
 }
 
 .vault-status-dock-panel {

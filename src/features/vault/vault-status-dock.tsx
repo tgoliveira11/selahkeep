@@ -210,8 +210,12 @@ export function VaultStatusDock() {
         <span className={cn("vault-status-dock-handle__icon", iconToneClass(status))}>
           <VaultStatusIcon status={status} />
         </span>
-        <span className="vault-status-dock-handle__label">{handleLabel}</span>
-        <VaultStatusDockChevron expanded={false} />
+        <span className="vault-status-dock-handle__label">
+          {isOpen ? "Vault open" : "Vault closed"}
+        </span>
+        {isOpen && countdown && (
+          <span className="vault-status-dock-handle__time">{countdown}</span>
+        )}
       </button>
     );
   }

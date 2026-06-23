@@ -11,12 +11,9 @@ export function AppHeaderChrome() {
   const signedIn = status === "authenticated" && isFullyAuthenticatedSession(session);
 
   return (
-    <div
-      className={cn(
-        "sticky top-0 z-40",
-        signedIn ? "shadow-[var(--shadow-sm)]" : undefined
-      )}
-    >
+    // Authenticated: no shadow/line — the top bar blends into the content
+    // surface (mockup). Logged-out marketing keeps a subtle shadow.
+    <div className={cn("sticky top-0 z-40", !signedIn && "shadow-[var(--shadow-sm)]")}>
       <Nav />
     </div>
   );

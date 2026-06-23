@@ -169,7 +169,7 @@ describe("logged-in navigation", () => {
     const header = screen.getByRole("banner");
     const handle = within(header).getByTestId("vault-status-dock-handle");
     expect(within(header).queryByRole("link", { name: /unlock vault/i })).toBeNull();
-    expect(within(handle).getByText("Vault")).toBeTruthy();
+    expect(within(handle).getByText("Vault closed")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
     const dock = screen.getByTestId("vault-status-dock");
     expect(within(dock).getByLabelText(/vault password/i)).toBeTruthy();

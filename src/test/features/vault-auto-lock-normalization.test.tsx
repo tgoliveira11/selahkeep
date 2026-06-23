@@ -12,7 +12,7 @@ vi.mock("@/features/vault/vault-status-dock-events", () => ({
 const VARIANTS = [
   {
     variant: "notes-list" as const,
-    title: "Your vault is closed",
+    title: "Your vault is locked",
     testId: "notes-vault-locked-state",
     returnTo: "/notes",
   },
@@ -72,11 +72,11 @@ describe("VaultLockedState normalization", () => {
     expect(screen.queryByText(/vault closed while writing/i)).toBeNull();
   });
 
-  it("notes-list variant shows security bullets", () => {
+  it("notes-list variant shows the calm locked hero (no security bullets)", () => {
     render(<VaultLockedState variant="notes-list" returnTo="/notes" />);
 
-    expect(screen.getByText(/auto-locks after inactivity/i)).toBeTruthy();
-    expect(screen.getByText(/account session does not unlock your vault/i)).toBeTruthy();
+    expect(screen.getByText(/encrypted and waiting/i)).toBeTruthy();
+    expect(screen.queryByText(/account session does not unlock your vault/i)).toBeNull();
   });
 
   it("does not show recovery protection summary", () => {
@@ -90,7 +90,6 @@ describe("VaultLockedState normalization", () => {
     render(<VaultLockedState variant="notes-list" returnTo="/notes" />);
 
     expect(screen.queryByText(/recovery code/i)).toBeNull();
-    expect(screen.getByText(/recovery phrase/i)).toBeTruthy();
   });
 
   it("Unlock here requests dock expand", () => {
