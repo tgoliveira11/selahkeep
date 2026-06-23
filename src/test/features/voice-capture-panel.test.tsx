@@ -98,6 +98,10 @@ describe("VoiceCapturePanel (streaming)", () => {
     const onClose = vi.fn();
     render(<VoiceCapturePanel onInsert={onInsert} onClose={onClose} />);
 
+    // The model warms up (download) on open; once ready the record UI appears.
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(screen.getByTestId("voice-privacy-note")).toHaveTextContent(/no audio leaves it/i);
 
     await act(async () => {
@@ -119,8 +123,11 @@ describe("VoiceCapturePanel (streaming)", () => {
       "Review before inserting"
     )) as HTMLTextAreaElement;
     expect(textarea.value).toBe("Hello world");
-    // Worker received 16 kHz mono audio.
-    expect((lastWorker?.posted[0] as { audio: Float32Array }).audio.length).toBeGreaterThan(0);
+    // Worker received 16 kHz mono audio for the transcription pass.
+    const transcribePosts = (lastWorker?.posted ?? []).filter(
+      (m) => (m as { type?: string }).type === "transcribe"
+    );
+    expect((transcribePosts[0] as { audio: Float32Array }).audio.length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByTestId("voice-insert"));
     expect(onInsert).toHaveBeenCalledWith("Hello world");
@@ -132,6 +139,9 @@ describe("VoiceCapturePanel (streaming)", () => {
     installSupportedEnv();
     render(<VoiceCapturePanel onInsert={vi.fn()} onClose={vi.fn()} />);
 
+    await act(async () => {
+      await Promise.resolve(); // model ready (warm-up acknowledged)
+    });
     await act(async () => {
       fireEvent.click(screen.getByTestId("voice-record"));
       await Promise.resolve();
@@ -153,6 +163,9 @@ describe("VoiceCapturePanel (streaming)", () => {
     vi.useFakeTimers();
     installSupportedEnv();
     render(<VoiceCapturePanel onInsert={vi.fn()} onClose={vi.fn()} />);
+    await act(async () => {
+      await Promise.resolve(); // model ready (warm-up acknowledged)
+    });
     await act(async () => {
       fireEvent.click(screen.getByTestId("voice-record"));
       await Promise.resolve();
@@ -206,6 +219,9 @@ describe("VoiceCapturePanel (streaming)", () => {
       value: { getUserMedia: vi.fn(async () => Promise.reject(new Error("denied"))) },
     });
     render(<VoiceCapturePanel onInsert={vi.fn()} onClose={vi.fn()} />);
+    await act(async () => {
+      await Promise.resolve(); // model ready (warm-up acknowledged)
+    });
     await act(async () => {
       fireEvent.click(screen.getByTestId("voice-record"));
     });

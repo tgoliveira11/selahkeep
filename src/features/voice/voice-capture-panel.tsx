@@ -5,6 +5,7 @@ import { Alert } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { useVoiceTranscription } from "./use-voice-transcription";
 import { useVoiceModelStatus } from "./use-voice-model-status";
+import { ensureModelLoaded } from "./transcription-worker-client";
 import {
   VOICE_LANGUAGES,
   DEFAULT_VOICE_LANGUAGE,
@@ -59,8 +60,16 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
   const reviewing = status === "ready";
   const erroring = status === "error";
   const idle = !recording && !processing && !reviewing && !erroring;
-  const modelLoading = progress > 0 && progress < 1 && !model.ready;
+  // Show the preparing UI whenever the model isn't ready yet (download may have
+  // started in the background at app load, or be just beginning now).
+  const modelPreparing = !model.ready;
   const pct = Math.round(progress * 100);
+
+  // Opening the panel guarantees the model is downloading/initializing even if
+  // the background warm-up was skipped (e.g. metered connection) or hasn't run.
+  useEffect(() => {
+    ensureModelLoaded();
+  }, []);
 
   // Elapsed seconds counter while the final transcription runs, so the wait
   // always feels accountable (no silent spinner).
@@ -129,22 +138,29 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
           <Alert variant="danger" role="alert">
             {error}
           </Alert>
-        ) : idle && modelLoading ? (
-          /* LOADING */
-          <div>
+        ) : idle && modelPreparing ? (
+          /* LOADING — model not ready yet (downloading/initializing) */
+          <div data-testid="voice-model-loading">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-semibold text-[var(--foreground)]">
                 Preparing voice model
               </span>
               <span className="text-[13px] font-semibold tabular-nums text-[var(--primary)]">
-                {pct}%
+                {pct > 0 ? `${pct}%` : "…"}
               </span>
             </div>
             <div className="mb-2 h-[7px] overflow-hidden rounded-full bg-[var(--bg-2)]">
-              <div
-                className="h-full rounded-full bg-[var(--primary-solid)] transition-[width] duration-200"
-                style={{ width: `${pct}%` }}
-              />
+              {pct > 0 ? (
+                <div
+                  className="h-full rounded-full bg-[var(--primary-solid)] transition-[width] duration-200"
+                  style={{ width: `${pct}%` }}
+                />
+              ) : (
+                <div
+                  className="h-full w-2/5 rounded-full bg-[var(--primary-solid)]"
+                  style={{ animation: "selahWave 1.1s ease-in-out infinite" }}
+                />
+              )}
             </div>
             <p className="text-xs text-[var(--muted)]">
               Downloading once so it works offline. This stays on your device.

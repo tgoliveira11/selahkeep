@@ -100,6 +100,12 @@ async function getTranscriber(modelId: string, modelHost: string | undefined) {
     return cpuPipe;
   })();
 
+  // If loading fails (e.g. a dropped download), clear the cached promise so a
+  // later attempt can retry instead of returning the same rejected promise.
+  transcriberPromise.catch(() => {
+    transcriberPromise = null;
+  });
+
   return transcriberPromise;
 }
 

@@ -13,11 +13,14 @@ import { warmUpTranscription } from "./transcription-worker-client";
 export function VoiceWarmup() {
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Prefer idle time, but with a hard timeout so a busy page can't defer the
+    // background download indefinitely — it should start shortly after load.
     const ric =
       window.requestIdleCallback ??
-      ((cb: () => void) => window.setTimeout(cb, 1500) as unknown as number);
+      ((cb: () => void, _opts?: { timeout?: number }) =>
+        window.setTimeout(cb, 1500) as unknown as number);
     const cancel = window.cancelIdleCallback ?? window.clearTimeout;
-    const id = ric(() => warmUpTranscription());
+    const id = ric(() => warmUpTranscription(), { timeout: 2500 });
     return () => cancel(id as number);
   }, []);
 

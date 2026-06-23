@@ -52,6 +52,9 @@ function trackModelStatus(message: TranscribeResponse): void {
     modelReady = true;
     modelProgress = 1;
     notifyStatus();
+  } else if (message.type === "error") {
+    // Allow a later attempt to re-trigger the download/init.
+    warmed = false;
   }
 }
 
@@ -94,12 +97,17 @@ export function postTranscription(message: TranscribeRequest, transfer: Transfer
   getTranscriptionWorker().postMessage(message, transfer);
 }
 
-/** Capability + connection gate for background warm-up. */
-function isWarmupAllowed(): boolean {
+/** Capability gate: the browser can actually run on-device voice at all. */
+function canRunVoice(): boolean {
   if (typeof window === "undefined") return false;
   if (!isVoiceNotesEnabled()) return false;
   if (typeof Worker === "undefined" || typeof AudioWorkletNode === "undefined") return false;
   if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return false;
+  return true;
+}
+
+/** Whether it's polite to download a large model in the background right now. */
+function isPoliteConnection(): boolean {
   const connection = (
     navigator as unknown as {
       connection?: { saveData?: boolean; effectiveType?: string };
@@ -112,18 +120,34 @@ function isWarmupAllowed(): boolean {
   return true;
 }
 
-/**
- * Pre-download model weights and initialize the pipeline in the background.
- * Idempotent and safe to call on every app load; no audio is involved.
- */
-export function warmUpTranscription(): void {
-  if (warmed || !isWarmupAllowed()) return;
+function postWarmup(): void {
+  if (warmed) return;
   warmed = true;
   postTranscription({
     type: "warmup",
     modelId: getVoiceModelId(),
     modelHost: getVoiceModelHost(),
   });
+}
+
+/**
+ * Pre-download model weights and initialize the pipeline in the background at
+ * app load. Idempotent; skipped on metered/save-data connections to stay polite
+ * (the user can still trigger the download explicitly by opening dictation).
+ */
+export function warmUpTranscription(): void {
+  if (!canRunVoice() || !isPoliteConnection()) return;
+  postWarmup();
+}
+
+/**
+ * User-initiated model load (e.g. on opening the dictation panel). Like
+ * `warmUpTranscription` but ignores the polite-connection gate, since the user
+ * has asked to dictate. Idempotent and safe to call repeatedly.
+ */
+export function ensureModelLoaded(): void {
+  if (!canRunVoice()) return;
+  postWarmup();
 }
 
 /** @internal test helper */
