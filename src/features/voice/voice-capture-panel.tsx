@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { useVoiceTranscription } from "./use-voice-transcription";
@@ -61,6 +61,23 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
   const idle = !recording && !processing && !reviewing && !erroring;
   const modelLoading = progress > 0 && progress < 1 && !model.ready;
   const pct = Math.round(progress * 100);
+
+  // Elapsed seconds counter while the final transcription runs, so the wait
+  // always feels accountable (no silent spinner).
+  const [elapsed, setElapsed] = useState(0);
+  const elapsedTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (!processing) {
+      setElapsed(0);
+      if (elapsedTimer.current) clearInterval(elapsedTimer.current);
+      return;
+    }
+    setElapsed(0);
+    elapsedTimer.current = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => {
+      if (elapsedTimer.current) clearInterval(elapsedTimer.current);
+    };
+  }, [processing]);
 
   const micIcon = (size: number) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -153,7 +170,11 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
                   aria-hidden="true"
                 />
                 <span className="text-[13.5px] font-semibold text-[var(--success)]">
-                  {model.ready ? "Voice model ready" : "Ready to record"}
+                  {model.ready
+                    ? model.backend === "webgpu"
+                      ? "Voice model ready · GPU"
+                      : "Voice model ready"
+                    : "Ready to record"}
                 </span>
               </div>
               <p className="text-[12.5px] text-[var(--muted)]" data-testid="voice-privacy-note">
@@ -217,8 +238,11 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
               aria-hidden="true"
             />
             <div>
-              <div className="text-sm font-semibold text-[var(--foreground)]">
+              <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
                 Transcribing on device…
+                <span className="tabular-nums text-[12.5px] font-semibold text-[var(--primary)]">
+                  {elapsed}s
+                </span>
               </div>
               <div className="text-[12.5px] text-[var(--muted)]">
                 Tidying up punctuation and spacing

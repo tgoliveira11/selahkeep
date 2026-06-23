@@ -20,14 +20,21 @@ export interface VoiceModelStatus {
   progress: number;
   /** True once the pipeline is loaded and ready for instant transcription. */
   ready: boolean;
+  /** Which compute backend the loaded pipeline runs on, once known. */
+  backend?: "webgpu" | "wasm";
 }
 
 let modelProgress = 0;
 let modelReady = false;
+let modelBackend: "webgpu" | "wasm" | undefined;
 const statusSubscribers = new Set<(status: VoiceModelStatus) => void>();
 
 function notifyStatus(): void {
-  const snapshot: VoiceModelStatus = { progress: modelProgress, ready: modelReady };
+  const snapshot: VoiceModelStatus = {
+    progress: modelProgress,
+    ready: modelReady,
+    backend: modelBackend,
+  };
   for (const cb of statusSubscribers) cb(snapshot);
 }
 
@@ -38,6 +45,7 @@ function trackModelStatus(message: TranscribeResponse): void {
   } else if (message.type === "ready") {
     modelReady = true;
     modelProgress = 1;
+    if (message.backend) modelBackend = message.backend;
     notifyStatus();
   } else if (message.type === "result" && !modelReady) {
     // A successful transcription implies the model is loaded.
@@ -48,7 +56,7 @@ function trackModelStatus(message: TranscribeResponse): void {
 }
 
 export function getModelStatus(): VoiceModelStatus {
-  return { progress: modelProgress, ready: modelReady };
+  return { progress: modelProgress, ready: modelReady, backend: modelBackend };
 }
 
 export function subscribeModelStatus(
@@ -125,6 +133,7 @@ export function resetTranscriptionWorkerForTests(): void {
   warmed = false;
   modelProgress = 0;
   modelReady = false;
+  modelBackend = undefined;
   subscribers.clear();
   statusSubscribers.clear();
 }

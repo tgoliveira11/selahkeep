@@ -149,6 +149,51 @@ describe("VoiceCapturePanel (streaming)", () => {
     expect(screen.getByTestId("voice-live-preview")).toHaveTextContent("Hello world");
   });
 
+  it("bounds partial passes to a recent window and commits earlier audio", async () => {
+    vi.useFakeTimers();
+    installSupportedEnv();
+    render(<VoiceCapturePanel onInsert={vi.fn()} onClose={vi.fn()} />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("voice-record"));
+      await Promise.resolve();
+    });
+
+    const lastAudioLen = () => {
+      const posts = (lastWorker?.posted ?? []).filter(
+        (m) => (m as { type?: string }).type === "transcribe"
+      );
+      return (posts[posts.length - 1] as { audio: Float32Array }).audio.length;
+    };
+    const tick = async () => {
+      await act(async () => {
+        vi.advanceTimersByTime(1300);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+    };
+
+    // 10s so far → the partial transcribes ~10s (segment not yet committed).
+    pushAudio(10);
+    await tick();
+    expect(lastAudioLen()).toBe(16_000 * 10);
+
+    // 20s total → the segment crosses the commit threshold and is committed.
+    pushAudio(10);
+    await tick();
+    expect(lastAudioLen()).toBe(16_000 * 20);
+
+    // 25s total → the next partial is bounded to the fresh 5s segment, NOT the
+    // whole 25s recording. This is the core latency fix.
+    pushAudio(5);
+    await tick();
+    expect(lastAudioLen()).toBe(16_000 * 5);
+
+    // The live transcript still accumulates the committed segments.
+    expect(screen.getByTestId("voice-live-preview").textContent).toMatch(
+      /hello world hello world/i
+    );
+  });
+
   it("shows an unsupported message when the browser lacks support", () => {
     render(<VoiceCapturePanel onInsert={vi.fn()} onClose={vi.fn()} />);
     expect(screen.getByText(/not supported in this browser/i)).toBeInTheDocument();

@@ -19,10 +19,27 @@ import {
 
 export type VoiceStatus = "idle" | "recording" | "processing" | "ready" | "error";
 
-/** How often, while recording, the accumulated audio is re-transcribed. */
-const PARTIAL_INTERVAL_MS = 1500;
-/** Minimum recorded duration before the first partial pass runs. */
-const MIN_PARTIAL_SECONDS = 0.7;
+/** How often, while recording, a partial pass runs. */
+const PARTIAL_INTERVAL_MS = 1200;
+/** Minimum new audio before the first partial pass of a segment runs. */
+const MIN_PARTIAL_SECONDS = 0.6;
+/**
+ * Once the in-progress segment reaches this length, its transcript is committed
+ * and a fresh segment starts. Keeping each partial pass bounded to a short,
+ * recent window (instead of re-transcribing the whole growing recording) is what
+ * keeps the live transcript responsive — well under Whisper's 30 s attention
+ * window so a partial is always a single, fast inference chunk.
+ */
+const SEGMENT_COMMIT_SECONDS = 16;
+
+/** Join a committed prefix with the latest text, with a single space. */
+function joinText(prefix: string, next: string): string {
+  const a = prefix.trim();
+  const b = next.trim();
+  if (!a) return b;
+  if (!b) return a;
+  return `${a} ${b}`;
+}
 /** Same-origin AudioWorklet module that captures raw PCM off the main thread. */
 const CAPTURE_WORKLET_URL = "/worklets/audio-capture-worklet.js";
 const CAPTURE_WORKLET_NAME = "audio-capture";
@@ -84,6 +101,11 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
   const pendingFinalRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const transcribeRef = useRef<(final: boolean) => void>(() => {});
+  // Streaming segmentation state (ctx-rate sample indices).
+  const committedTextRef = useRef("");
+  const segmentStartRef = useRef(0);
+  const sentEndRef = useRef(0);
+  const sentCommitRef = useRef(false);
 
   // Subscribe to the shared (warm) worker for the lifetime of the hook.
   useEffect(() => {
@@ -100,10 +122,27 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
         setStatus("error");
         return;
       }
-      setTranscript(formatTranscript(message.text));
+
       if (inFlightFinalRef.current) {
+        // Final pass: the authoritative full-recording transcript.
+        setTranscript(formatTranscript(message.text));
         setStatus("ready");
-      } else if (pendingFinalRef.current) {
+        committedTextRef.current = "";
+        segmentStartRef.current = 0;
+        return;
+      }
+
+      // Partial pass for the in-progress segment.
+      if (sentCommitRef.current) {
+        committedTextRef.current = joinText(committedTextRef.current, message.text);
+        segmentStartRef.current = sentEndRef.current;
+        sentCommitRef.current = false;
+        setTranscript(formatTranscript(committedTextRef.current));
+      } else {
+        setTranscript(formatTranscript(joinText(committedTextRef.current, message.text)));
+      }
+
+      if (pendingFinalRef.current) {
         pendingFinalRef.current = false;
         transcribeRef.current(true);
       }
@@ -124,13 +163,31 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
         if (final) setStatus("ready");
         return;
       }
-      const seconds = totalSamples / sampleRateRef.current;
-      if (!final && seconds < MIN_PARTIAL_SECONDS) return;
-
+      const rate = sampleRateRef.current;
       const merged = concatFloat32(chunks);
-      const pcm = resampleLinear(merged, sampleRateRef.current, WHISPER_SAMPLE_RATE);
+
+      // Final pass transcribes the whole recording for best accuracy; partials
+      // transcribe only the short, recent (uncommitted) segment so each pass is
+      // bounded and the live transcript keeps up.
+      let sliceStart = 0;
+      let willCommit = false;
+      if (!final) {
+        sliceStart = segmentStartRef.current;
+        const segmentSeconds = (totalSamples - sliceStart) / rate;
+        if (segmentSeconds < MIN_PARTIAL_SECONDS) return;
+        willCommit = segmentSeconds >= SEGMENT_COMMIT_SECONDS;
+      }
+
+      const slice = sliceStart > 0 ? merged.subarray(sliceStart) : merged;
+      let pcm = resampleLinear(slice, rate, WHISPER_SAMPLE_RATE);
+      // resampleLinear returns the input unchanged when rates match; copy so we
+      // can safely transfer a standalone buffer (not a view into `merged`).
+      if (pcm.buffer === merged.buffer) pcm = new Float32Array(pcm);
+
       processingRef.current = true;
       inFlightFinalRef.current = final;
+      sentEndRef.current = totalSamples;
+      sentCommitRef.current = willCommit;
       setTranscribing(true);
       const request: TranscribeRequest = {
         type: "transcribe",
@@ -201,6 +258,10 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
       processingRef.current = false;
       inFlightFinalRef.current = false;
       pendingFinalRef.current = false;
+      committedTextRef.current = "";
+      segmentStartRef.current = 0;
+      sentEndRef.current = 0;
+      sentCommitRef.current = false;
       languageRef.current = language;
 
       try {
@@ -264,6 +325,10 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
     processingRef.current = false;
     inFlightFinalRef.current = false;
     pendingFinalRef.current = false;
+    committedTextRef.current = "";
+    segmentStartRef.current = 0;
+    sentEndRef.current = 0;
+    sentCommitRef.current = false;
     setTranscript("");
     setError(null);
     setProgress(0);

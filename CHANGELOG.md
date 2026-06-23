@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **Dictation is much faster and more responsive (still 100% on-device).** The live transcript used to fall ~30s behind because every ~1.5s pass re-transcribed the whole, ever-growing buffer on CPU (WASM). Now:
+  - **WebGPU acceleration** — the worker probes `navigator.gpu` and runs Whisper on the **GPU** (fp32) when available, falling back to **WASM** (q8) automatically. Background warm-up runs one tiny silent inference so GPU kernels/shaders are compiled before first use. The active backend is shown in the panel ("Voice model ready · GPU").
+  - **Bounded streaming** — partial passes transcribe only the recent **uncommitted segment** (committed every ~16s, under Whisper's 30s window) instead of the full recording, so per-pass cost is constant regardless of length and the live transcript keeps up. A single accurate full-buffer pass still runs on **Stop** for the text you review. Partial interval tightened to ~1.2s.
+  - The transcribing state shows an **elapsed-seconds counter** so the wait is never a silent spinner. Default model is `Xenova/whisper-base`. Docs: `TDR_Local_Voice_Notes.md`.
 - **Stillness polish pass (layered on the mockup implementation).**
   - **Note-card hover preview.** Hovering a note card on `/notes` opens a popover with the note's content — rendered markdown with line breaks preserved — so you can read it without opening the note. It overlaps the card from the top edge (no gap to cross), stays open while the pointer is over it, scrolls when long, and **clicking anywhere in it opens the note**. The popover only appears when the card is actually truncating content (clamped or char-truncated excerpt); cards that already show the whole note get none.
   - **Uniform note cards.** All cards in a grid share the same height (`auto-rows-fr`), with the tag/date footer pinned to the bottom.
