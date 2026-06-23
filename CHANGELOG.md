@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **Mobile: the vault status dock is fully hidden, and unlock happens on `/vault/unlock`.** The header dock is now a desktop-only affordance (`hidden md:block`) — on mobile it's `display:none`, so it's invisible and non-interactive (no longer overlapping the header menu button). Because the inline dock unlock isn't available on small screens, the locked-state screens show a mobile CTA that links straight to **`/vault/unlock`** (the desktop CTA still expands the dock inline). The unlock page is fully responsive on mobile. So every mobile vault unlock happens on `/vault/unlock`.
 - **Note detail (`/notes/[id]`) aligned to the Stillness mockup.**
   - Reading view uses the **full main column width** (same as `/notes`), not a centered narrow column.
   - **Top action bar** — uniform toolbar buttons with icons: Mark resolved, Edit, Zen, and a compact more menu (pin/favorite only; duplicate/archive/trash live in the rail).

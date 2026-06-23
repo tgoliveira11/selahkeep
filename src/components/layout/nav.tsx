@@ -192,7 +192,14 @@ export function Nav() {
           </div>
         </nav>
       )}
-      {authenticated ? <VaultStatusDock /> : null}
+      {/* The vault status dock is a desktop-only affordance. On mobile it is
+          fully hidden (and non-interactive); mobile unlock happens on the
+          dedicated /vault/unlock page instead. */}
+      {authenticated ? (
+        <div className="hidden md:block">
+          <VaultStatusDock />
+        </div>
+      ) : null}
     </header>
   );
 }

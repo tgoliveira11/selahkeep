@@ -92,11 +92,21 @@ describe("VaultLockedState normalization", () => {
     expect(screen.queryByText(/recovery code/i)).toBeNull();
   });
 
-  it("Unlock here requests dock expand", () => {
+  it("Unlock here requests dock expand (desktop)", () => {
     render(<VaultLockedState variant="read-note" returnTo="/notes/1" />);
 
     fireEvent.click(screen.getByRole("button", { name: /unlock here/i }));
     expect(requestVaultDockExpand).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers a mobile unlock link to the full unlock page", () => {
+    // On mobile the dock is hidden, so the locked state links straight to
+    // /vault/unlock instead of expanding the (absent) dock.
+    render(<VaultLockedState variant="read-note" returnTo="/notes/1" />);
+
+    expect(
+      screen.getByRole("link", { name: /unlock here/i }).getAttribute("href")
+    ).toBe("/vault/unlock?returnTo=%2Fnotes%2F1");
   });
 
   it("NotesVaultProtectedMessage delegates to notes-list variant", () => {

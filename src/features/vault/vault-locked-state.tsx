@@ -126,13 +126,22 @@ export function VaultLockedState({
             : "flex flex-col gap-2 sm:flex-row sm:flex-wrap"
         }
       >
+        {/* Desktop: unlock inline via the header dock. */}
         <Button
           type="button"
-          className="w-full sm:w-auto"
+          className="hidden w-full sm:w-auto md:inline-flex"
           onClick={() => requestVaultDockExpand()}
         >
           Unlock here
         </Button>
+        {/* Mobile: the dock is hidden on small screens, so go straight to the
+            dedicated unlock page — every mobile unlock happens at /vault/unlock. */}
+        <Link
+          href={fullUnlockHref}
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius)] bg-[var(--primary-solid)] px-4 py-2.5 text-sm font-semibold text-[var(--on-primary)] transition-colors hover:bg-[var(--primary-hover)] sm:w-auto md:hidden"
+        >
+          Unlock here
+        </Link>
         <Link
           href={fullUnlockHref}
           className={

@@ -254,7 +254,7 @@ describe("reflective workflows track 5", () => {
 
       render(<NoteDetailPage />);
       await waitFor(() => expect(screen.getByTestId("note-reading-view")).toBeInTheDocument());
-      const resolveButton = screen.getByRole("button", { name: /mark as resolved/i });
+      const resolveButton = screen.getByTestId("note-mark-resolved-button");
       fireEvent.click(resolveButton);
       expect(screen.getByTestId("resolved-reflection-dialog")).toBeInTheDocument();
     });
