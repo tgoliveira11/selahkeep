@@ -56,7 +56,7 @@ export function NoteCard({
 
   return (
     <div
-      className="note-card rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-[15px] transition-shadow hover:shadow-[var(--shadow-md)]"
+      className="note-card group rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-[15px] transition-shadow hover:shadow-[var(--shadow-md)]"
       data-testid="note-card"
     >
       {/* header row: category · resolved · actions */}
@@ -83,21 +83,35 @@ export function NoteCard({
             Resolved
           </span>
         )}
-        <div className="ml-auto flex shrink-0 items-center gap-2">
-          <NoteStateIndicators
-            answered={false}
-            pinned={pinned}
-            favorite={favorite}
-            archived={archived}
-            trashed={trashed}
-          />
-          {onToggleResolved && !trashed && (
-            <NoteResolvedToggle
-              answered={answered}
-              resolving={resolving}
-              onToggle={onToggleResolved}
-            />
+        {/* Clean by default (mockup): a pin glyph for pinned notes; the full
+            action cluster reveals on hover/focus, overlaid on the right. */}
+        <div className="relative ml-auto flex h-6 shrink-0 items-center justify-end">
+          {pinned && !trashed && (
+            <span
+              className="text-[var(--accent)] transition-opacity group-hover:opacity-0"
+              aria-hidden="true"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1">
+                <path d="M9 3h6l-1 6 4 3v2h-5v7l-1 0-1 0v-7H5v-2l4-3z" />
+              </svg>
+            </span>
           )}
+          <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-2 bg-[var(--card)] pl-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+            <NoteStateIndicators
+              answered={false}
+              pinned={pinned}
+              favorite={favorite}
+              archived={archived}
+              trashed={trashed}
+            />
+            {onToggleResolved && !trashed && (
+              <NoteResolvedToggle
+                answered={answered}
+                resolving={resolving}
+                onToggle={onToggleResolved}
+              />
+            )}
+          </div>
         </div>
       </div>
 
