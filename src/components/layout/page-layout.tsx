@@ -28,7 +28,11 @@ export function PageLayout({ children, width = "wide", className }: PageLayoutPr
     <main
       id={MAIN_CONTENT_ID}
       tabIndex={-1}
-      className={cn("mx-auto w-full flex-1 px-4 py-8 md:py-10", widthClass[width], className)}
+      className={cn(
+        "mx-auto w-full flex-1 px-4 py-8 sm:px-6 md:py-10 lg:px-8",
+        widthClass[width],
+        className
+      )}
     >
       {children}
     </main>

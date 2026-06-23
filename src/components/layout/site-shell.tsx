@@ -11,7 +11,14 @@ import { SiteFooter } from "@/components/layout/site-footer";
  * themselves only when signed in). The header stays as the top bar that hosts
  * the vault status dock.
  */
-export function SiteShell({ children }: { children: React.ReactNode }) {
+export function SiteShell({
+  children,
+  hideFooter = false,
+}: {
+  children: React.ReactNode;
+  /** The authenticated app shell hides the marketing footer (mockup has none). */
+  hideFooter?: boolean;
+}) {
   return (
     <div className="md:flex">
       <AppSidebar />
@@ -20,7 +27,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         <RouteScrollToTop />
         <AppHeaderChrome />
         {children}
-        <SiteFooter />
+        {!hideFooter && <SiteFooter />}
         <MobileBottomNav />
       </div>
     </div>

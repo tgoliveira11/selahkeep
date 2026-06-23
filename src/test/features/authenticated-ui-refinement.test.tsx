@@ -156,7 +156,8 @@ describe("authenticated UI refinement pass", () => {
   describe("layout widths", () => {
     it("defines standard authenticated width tokens", () => {
       expect(AUTHENTICATED_WIDTH_CLASS.settings).toContain("800");
-      expect(AUTHENTICATED_WIDTH_CLASS.notes).toContain("920");
+      // Notes list spans the full main column (mockup) — no max-width cap.
+      expect(AUTHENTICATED_WIDTH_CLASS.notes).toBe("max-w-none");
       expect(AUTHENTICATED_WIDTH_CLASS.editor).toContain("880");
     });
 

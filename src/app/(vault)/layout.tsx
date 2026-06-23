@@ -18,7 +18,7 @@ function VaultSessionManager({ children }: { children: React.ReactNode }) {
 
 export default function VaultLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SiteShell>
+    <SiteShell hideFooter>
       <VoiceWarmup />
       <NoteSearchProvider>
         <VaultSessionManager>{children}</VaultSessionManager>
