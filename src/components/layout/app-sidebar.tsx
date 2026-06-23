@@ -73,11 +73,10 @@ export function AppSidebar() {
   const vaultClient = useVaultClientStatus();
 
   if (!isFullyAuthenticatedSession(session)) return null;
-  // Hide the rail while the vault is locked so the unlock screen is full-bleed
-  // (matches the mockup); it returns once the vault is open.
-  if (vaultClient.status === "ready" && vaultClient.clientStatus !== "unlocked") {
-    return null;
-  }
+  // The rail stays present even while the vault is locked (brand, account access,
+  // and the user footer) — only the note-specific destinations that need an open
+  // vault are hidden until it is unlocked.
+  const unlocked = vaultClient.status === "ready" && vaultClient.clientStatus === "unlocked";
 
   async function handleSignOut() {
     const userId = session?.user?.id;
@@ -114,23 +113,27 @@ export function AppSidebar() {
         <span>{PRODUCT_NAME}</span>
       </Link>
 
-      <Link
-        href="/notes/new"
-        className="mb-[18px] flex items-center gap-2 rounded-[9px] bg-[var(--primary-solid)] px-3 py-2.5 text-sm font-semibold text-[var(--on-primary)]"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-        New note
-      </Link>
+      {unlocked && (
+        <Link
+          href="/notes/new"
+          className="mb-[18px] flex items-center gap-2 rounded-[9px] bg-[var(--primary-solid)] px-3 py-2.5 text-sm font-semibold text-[var(--on-primary)]"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          New note
+        </Link>
+      )}
 
       {/* Scrollable nav region; the footer below is pinned to the bottom. */}
       <div className="flex-1 min-h-0 overflow-y-auto">
-      <p className="px-2 pb-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
-        Library
-      </p>
+      {unlocked && (
+        <p className="px-2 pb-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+          Library
+        </p>
+      )}
       <nav aria-label="Library" className="flex flex-col gap-0.5">
-        {LIBRARY.map((item) => {
+        {unlocked && LIBRARY.map((item) => {
           const active = onNotes && (item.view ? view === item.view : !view);
           return (
             <Link
@@ -149,24 +152,26 @@ export function AppSidebar() {
             </Link>
           );
         })}
-        {/* Vault settings is the last library item. */}
-        <Link
-          href="/vault/settings"
-          aria-current={pathname.startsWith("/vault") ? "page" : undefined}
-          className={cn(
-            "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] transition-colors",
-            pathname.startsWith("/vault")
-              ? "bg-[var(--lilac)] font-semibold text-[var(--primary)]"
-              : "text-[var(--fg-2)] hover:bg-[var(--card-2)]"
-          )}
-        >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <rect x="4" y="10" width="16" height="11" rx="2.4" />
-            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-          </svg>
-          Vault
-        </Link>
-        {/* Account is the last item, below Vault. */}
+        {/* Vault settings is the last library item (needs an open vault). */}
+        {unlocked && (
+          <Link
+            href="/vault/settings"
+            aria-current={pathname.startsWith("/vault") ? "page" : undefined}
+            className={cn(
+              "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] transition-colors",
+              pathname.startsWith("/vault")
+                ? "bg-[var(--lilac)] font-semibold text-[var(--primary)]"
+                : "text-[var(--fg-2)] hover:bg-[var(--card-2)]"
+            )}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="4" y="10" width="16" height="11" rx="2.4" />
+              <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+            </svg>
+            Vault
+          </Link>
+        )}
+        {/* Account stays reachable even while the vault is locked. */}
         <Link
           href="/settings/account"
           aria-current={pathname.startsWith("/settings") ? "page" : undefined}

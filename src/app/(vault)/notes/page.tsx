@@ -106,7 +106,7 @@ export default function NotesPage() {
     vaultUnlocked
   );
 
-  const { excerpts: noteExcerpts } = useNoteListExcerpts(
+  const { excerpts: noteExcerpts, previews: notePreviews } = useNoteListExcerpts(
     index,
     vaultUnlocked,
     Boolean(vaultUnlocked && index && !filters.search.trim())
@@ -508,6 +508,7 @@ export default function NotesPage() {
                   searchQuery={searchHighlightQuery}
                   bodySnippet={note.bodySnippet}
                   bodyExcerpt={noteExcerpts.get(note.id) ?? null}
+                  bodyPreview={notePreviews.get(note.id) ?? null}
                   resolving={resolvingId === note.id}
                   onToggleResolved={
                     note.trashed ? undefined : () => void handleToggleResolved(note.id, note.answered)

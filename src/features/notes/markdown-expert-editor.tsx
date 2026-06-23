@@ -28,6 +28,23 @@ export function MarkdownExpertEditor({
   checklistsDisabled = false,
 }: MarkdownExpertEditorProps) {
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Enter inserts a plain line break (the textarea default); Shift+Enter
+    // starts a new paragraph (blank line), mirroring the visual editor.
+    if (event.key === "Enter" && event.shiftKey && !event.metaKey && !event.ctrlKey) {
+      event.preventDefault();
+      const el = event.currentTarget;
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      const next = `${value.slice(0, start)}\n\n${value.slice(end)}`.slice(0, maxLength);
+      onChange(next);
+      const cursor = Math.min(start + 2, maxLength);
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(cursor, cursor);
+      });
+      return;
+    }
+
     const shortcut = resolveMarkdownShortcut(event.nativeEvent);
     if (!shortcut) return;
 

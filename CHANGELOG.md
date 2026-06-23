@@ -15,8 +15,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **Stillness polish pass (layered on the mockup implementation).**
+  - **Note-card hover preview.** Hovering a note card on `/notes` opens a popover with the note's content — rendered markdown with line breaks preserved — so you can read it without opening the note. It overlaps the card from the top edge (no gap to cross), stays open while the pointer is over it, scrolls when long, and **clicking anywhere in it opens the note**. The popover only appears when the card is actually truncating content (clamped or char-truncated excerpt); cards that already show the whole note get none.
+  - **Uniform note cards.** All cards in a grid share the same height (`auto-rows-fr`), with the tag/date footer pinned to the bottom.
+  - **Editor line-break model.** In the visual editor, **Enter inserts a line break** (one line down) and **Shift+Enter starts a new paragraph** (blank-line gap); lists and code blocks keep their native Enter behavior. The raw-markdown editor mirrors this (Shift+Enter inserts a blank line). Breaks render consistently in the note detail view and the card hover preview.
+  - **Authenticated chrome stays present while the vault is locked.** On `/notes` (locked) and the vault-unlock screen, the header keeps the logo and the left rail keeps the brand, the theme selector, the account footer (email + sign out) and an **Account** link; only destinations that need an open vault (New note, Library, Vault) are hidden until unlock. (Supersedes the earlier full-bleed-while-locked behavior.)
+  - **Header top bar** keeps a consistent fixed height with or without the search field, and is opaque so content scrolls cleanly beneath the sticky header. The search field and vault dock are unified into one top bar with a divider; the search only renders on `/notes` with an unlocked vault.
+  - **Vault dock** restyled to a white card with the cards' rounding and a clearer open/closed lock icon; the expanded panel opens **over** the closed handle so nothing appears to vanish; **opening/closing the dock no longer resets the auto-lock timer**. Account moved into the left rail (below Vault); the account footer (email + sign out) stays docked to the bottom of the rail even when the page scrolls.
+  - **`/vault` and `/account`** are left-aligned to match `/notes` (no longer centered). The sidebar account email is lighter (medium weight, secondary color). Note cards are clean by default (pin glyph only; the action cluster reveals on hover/focus).
+- **Theme selector.** Added a **System / Light / Dark** switcher in the sidebar footer (persisted via `data-theme`), on top of the existing `prefers-color-scheme` support.
+- **Logged-out home and locked-vault screens** redesigned to the Stillness concept; the locked `/notes` screen surfaces privacy-reassurance content alongside the unlock CTA, with no search bar (search shows only where notes are listed).
 - **Notes-list screen aligned to the high-fidelity mockups.**
-  - **Sidebar Library** now mirrors the mockup — **All notes / Pinned / Resolved / Archive** are deep-linked filtered views (`/notes?view=pinned|resolved|archived`); the notes page reads the `view` param and applies the matching smart filter. Account footer keeps Account + Vault + sign out. The sidebar hides while the vault is locked so the unlock screen is full-bleed.
+  - **Sidebar Library** now mirrors the mockup — **All notes / Pinned / Resolved / Archive** are deep-linked filtered views (`/notes?view=pinned|resolved|archived`); the notes page reads the `view` param and applies the matching smart filter. Account footer keeps Account + Vault + sign out. (While the vault is locked the rail now stays present with the brand, theme selector, account footer and an Account link — see the polish pass below.)
   - **Empty state** matches the mockup: a sparkle tile, "A quiet, empty page", and "Write your first note" (full-bleed, card-less). `EmptyState` gained optional `icon` / `plain` props.
   - **Loading state** is now a shimmering **skeleton card grid** (`NotesSkeletonGrid`) instead of a spinner.
   - **Error state** is the mockup's centered card — "We couldn't reach your vault" with a reassuring note and Try again — shown in place of the list.
@@ -36,6 +46,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- The authenticated account footer / sidebar now docks to the bottom of the rail on scroll. Root cause: `overflow-x: hidden` on `body` silently broke `position: sticky`; switched to `overflow-x: clip`.
+- Fixed the desktop sidebar's full-height background leaving a gap below the rail, and moved the Next.js dev indicator so it no longer overlapped the signed-in user block.
+- Filter chips on `/notes` no longer show a horizontal scrollbar.
 - Fixed the test-suite heap OOM (`Ineffective mark-compacts near heap limit`) at its root: several feature tests mocked `useVaultIndex` with `vi.fn(() => ({...}))`, returning a new object every render, which made the notes page's `useEffect(..., [index])` re-run every render — an infinite render loop that exhausted the worker. The mocks now return a stable reference; un-quarantined `notes-refinements.test.tsx`; added a global Testing Library `cleanup()` in the setup. The full suite now runs green in a single `vitest run` (254 files, 1420 tests). See `docs/KNOWN_ISSUES.md`.
 - Note-card date footer now shows the updated date (the created date remains on the note detail page), matching the design spec; updated the corresponding test.
 

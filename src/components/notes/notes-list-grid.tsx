@@ -15,7 +15,7 @@ export function NotesListGrid({ viewMode, children, className, columns = 3 }: No
     return (
       <ul
         className={cn(
-          "note-card-grid grid grid-cols-1 gap-3.5 sm:grid-cols-2",
+          "note-card-grid grid auto-rows-fr grid-cols-1 gap-3.5 sm:grid-cols-2",
           columns === 3 && "lg:grid-cols-3",
           className
         )}

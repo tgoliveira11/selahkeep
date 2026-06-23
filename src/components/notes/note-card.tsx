@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { isNoteResolved } from "@/lib/notes/resolved-labels";
 import { formatNoteUpdatedShort } from "@/lib/notes/note-dates";
 import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
@@ -6,6 +10,7 @@ import { NoteStateIndicators } from "@/components/notes/note-state-indicators";
 import { NoteResolvedToggle } from "@/components/notes/note-resolved-toggle";
 import { HighlightedText } from "@/components/notes/search-highlight";
 import { SearchResultSnippet } from "@/components/notes/search-result-snippet";
+import { MarkdownPreview } from "@/components/notes/markdown-preview";
 import { cn } from "@/lib/ui/cn";
 
 interface NoteCardProps {
@@ -23,6 +28,7 @@ interface NoteCardProps {
   searchQuery?: string;
   bodySnippet?: string | null;
   bodyExcerpt?: string | null;
+  bodyPreview?: string | null;
   locked?: boolean;
   resolving?: boolean;
   onToggleResolved?: () => void;
@@ -47,16 +53,62 @@ export function NoteCard({
   searchQuery = "",
   bodySnippet,
   bodyExcerpt,
+  bodyPreview,
   locked,
   resolving = false,
   onToggleResolved,
 }: NoteCardProps) {
+  const router = useRouter();
   const resolved = isNoteResolved(answered);
   const q = searchQuery.trim();
 
+  // Hover preview: a small delay before the popover opens avoids flicker while
+  // the pointer sweeps across the grid. Showing it only when not searching and
+  // not locked keeps it out of the way of the search snippet / locked state.
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Only worth a popover when the card isn't already showing the whole note:
+  // either the excerpt is char-truncated, or its two-line clamp is hiding text,
+  // or there is body content but no inline excerpt at all.
+  const excerptRef = useRef<HTMLParagraphElement | null>(null);
+  const [excerptClamped, setExcerptClamped] = useState(false);
+
+  useEffect(() => {
+    const el = excerptRef.current;
+    if (!el) {
+      setExcerptClamped(false);
+      return;
+    }
+    const measure = () => setExcerptClamped(el.scrollHeight - el.clientHeight > 1);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [bodyExcerpt]);
+
+  const excerptTruncated = Boolean(bodyExcerpt?.endsWith("…"));
+  const hasHiddenContent = bodyExcerpt
+    ? excerptClamped || excerptTruncated
+    : Boolean(bodyPreview);
+  const canPreview = Boolean(bodyPreview) && !locked && !q && hasHiddenContent;
+
+  function openPreview() {
+    if (!canPreview) return;
+    if (openTimer.current) clearTimeout(openTimer.current);
+    openTimer.current = setTimeout(() => setPreviewOpen(true), 280);
+  }
+
+  function closePreview() {
+    if (openTimer.current) clearTimeout(openTimer.current);
+    setPreviewOpen(false);
+  }
+
   return (
+    <div className="relative h-full" onMouseEnter={openPreview} onMouseLeave={closePreview}>
     <div
-      className="note-card group rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-[15px] transition-shadow hover:shadow-[var(--shadow-md)]"
+      className="note-card group flex h-full flex-col rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-[15px] transition-shadow hover:shadow-[var(--shadow-md)]"
       data-testid="note-card"
     >
       {/* header row: category · resolved · actions */}
@@ -117,7 +169,7 @@ export function NoteCard({
 
       <Link
         href={`/notes/${id}`}
-        className="block rounded-[var(--radius)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+        className="flex flex-1 flex-col rounded-[var(--radius)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
       >
         <p
           className={cn(
@@ -139,6 +191,7 @@ export function NoteCard({
           bodyExcerpt &&
           !locked && (
             <p
+              ref={excerptRef}
               className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-[var(--fg-2)]"
               data-testid="note-card-excerpt"
             >
@@ -147,7 +200,7 @@ export function NoteCard({
           )
         )}
 
-        <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
           <div className="flex flex-wrap items-center gap-1.5" data-testid="note-card-metadata">
             {tagNames.map((name) => (
               <NoteTagChip key={name} name={name} />
@@ -158,6 +211,35 @@ export function NoteCard({
           </span>
         </div>
       </Link>
+    </div>
+
+      {canPreview && previewOpen && (
+        <div
+          role="link"
+          tabIndex={0}
+          aria-label={`Open note: ${title}`}
+          data-testid="note-card-preview"
+          onClick={() => router.push(`/notes/${id}`)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              router.push(`/notes/${id}`);
+            }
+          }}
+          // Starts at the card's top edge (overlapping it) so the pointer can
+          // travel from card into the popover with no gap that would drop hover.
+          // Clicking anywhere in it opens the note.
+          className="absolute left-0 right-0 top-0 z-30 max-h-80 cursor-pointer overflow-y-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-md)]"
+        >
+          <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+            Preview
+          </p>
+          <MarkdownPreview
+            markdown={bodyPreview ?? ""}
+            className="text-[13px] leading-relaxed text-[var(--fg-2)]"
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,11 @@
 /** @vitest-environment happy-dom */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() })),
+}));
+
 import { NoteStateIndicators } from "@/components/notes/note-state-indicators";
 import { NoteCard } from "@/components/notes/note-card";
 import { NoteListRow } from "@/components/notes/note-list-row";

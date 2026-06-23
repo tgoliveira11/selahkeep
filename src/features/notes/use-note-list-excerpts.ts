@@ -5,19 +5,21 @@ import { notesApi } from "@/lib/api-client/notes";
 import { decryptNote } from "@/lib/crypto-client/notes";
 import { getCachedNoteBody, setCachedNoteBody } from "@/features/notes/eager-decrypt-notes";
 import { getSessionVaultKey } from "@/lib/crypto-client/vault";
-import { extractNoteExcerpt } from "@/lib/notes/note-excerpt";
+import { buildNotePreview, extractNoteExcerpt } from "@/lib/notes/note-excerpt";
 import type { VaultIndexPlaintext } from "@/lib/crypto-client/vault-index-types";
 
 /**
  * Decrypt note bodies in memory for list excerpts after vault unlock.
- * Cleared when vault locks; never sent to server.
+ * Cleared when vault locks; never sent to server. Returns both the inline
+ * two-line `excerpts` and richer `previews` (markdown kept) for hover popovers.
  */
 export function useNoteListExcerpts(
   index: VaultIndexPlaintext | null,
   vaultUnlocked: boolean,
   enabled: boolean
-): { excerpts: Map<string, string>; loading: boolean } {
+): { excerpts: Map<string, string>; previews: Map<string, string>; loading: boolean } {
   const [excerpts, setExcerpts] = useState<Map<string, string>>(new Map());
+  const [previews, setPreviews] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(false);
 
   const entryKey = index?.entries.map((entry) => entry.id).join(",") ?? "";
@@ -25,6 +27,7 @@ export function useNoteListExcerpts(
   useEffect(() => {
     if (!enabled || !vaultUnlocked || !index) {
       setExcerpts(new Map());
+      setPreviews(new Map());
       setLoading(false);
       return;
     }
@@ -41,6 +44,7 @@ export function useNoteListExcerpts(
     async function load() {
       setLoading(true);
       const next = new Map<string, string>();
+      const nextPreviews = new Map<string, string>();
       try {
         const activeEntries = activeIndex.entries.filter((entry) => !entry.trashed);
         await Promise.all(
@@ -59,11 +63,19 @@ export function useNoteListExcerpts(
             }
             const excerpt = extractNoteExcerpt(body);
             if (excerpt) next.set(entry.id, excerpt);
+            const preview = buildNotePreview(body);
+            if (preview) nextPreviews.set(entry.id, preview);
           })
         );
-        if (!cancelled) setExcerpts(next);
+        if (!cancelled) {
+          setExcerpts(next);
+          setPreviews(nextPreviews);
+        }
       } catch {
-        if (!cancelled) setExcerpts(new Map());
+        if (!cancelled) {
+          setExcerpts(new Map());
+          setPreviews(new Map());
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -76,8 +88,11 @@ export function useNoteListExcerpts(
   }, [enabled, vaultUnlocked, entryKey, index]);
 
   useEffect(() => {
-    if (!vaultUnlocked) setExcerpts(new Map());
+    if (!vaultUnlocked) {
+      setExcerpts(new Map());
+      setPreviews(new Map());
+    }
   }, [vaultUnlocked]);
 
-  return { excerpts, loading };
+  return { excerpts, previews, loading };
 }
