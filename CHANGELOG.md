@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- **iPhone: `/vault/unlock` reloading in a loop (couldn't unlock).** The on-device speech-model **background warm-up** ran on every authenticated page — including the locked unlock screen — and eagerly loading the multi-MB model could exceed the tab's memory budget on phones, causing iOS Safari to reload the tab (which restarted the warm-up → loop). The warm-up is now skipped on memory-constrained/mobile devices (the model loads on demand when dictation/audio upload is opened) and never runs while the vault is locked.
+
 ### Added
 
 - **Upload an audio file to transcribe (on-device), next to "Dictate a note".** On `/notes/new` and when editing a note, an **Upload audio** button transcribes a recording entirely on the device, then drops into the same review-and-insert flow as dictation. Highlights:

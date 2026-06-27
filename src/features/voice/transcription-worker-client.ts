@@ -120,6 +120,24 @@ function isPoliteConnection(): boolean {
   return true;
 }
 
+/**
+ * Phones/tablets have tight per-tab memory budgets — eagerly loading a multi-MB
+ * speech model in the background can crash/reload the tab (iOS Safari). On such
+ * devices we skip the background warm-up and load the model on demand instead
+ * (when the user actually opens dictation / audio upload).
+ */
+function isMemoryConstrainedDevice(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  try {
+    return (
+      window.matchMedia("(pointer: coarse)").matches ||
+      window.matchMedia("(max-width: 768px)").matches
+    );
+  } catch {
+    return false;
+  }
+}
+
 function postWarmup(): void {
   if (warmed) return;
   warmed = true;
@@ -136,7 +154,7 @@ function postWarmup(): void {
  * (the user can still trigger the download explicitly by opening dictation).
  */
 export function warmUpTranscription(): void {
-  if (!canRunVoice() || !isPoliteConnection()) return;
+  if (!canRunVoice() || !isPoliteConnection() || isMemoryConstrainedDevice()) return;
   postWarmup();
 }
 

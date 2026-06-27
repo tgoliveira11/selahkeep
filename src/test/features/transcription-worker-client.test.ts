@@ -79,6 +79,23 @@ describe("transcription worker client", () => {
     Object.defineProperty(navigator, "connection", { configurable: true, value: undefined });
   });
 
+  it("does not warm up on memory-constrained (mobile) devices", () => {
+    installCapableEnv();
+    const original = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({
+        matches: /pointer: coarse|max-width/.test(query),
+        media: query,
+        addEventListener() {},
+        removeEventListener() {},
+      }),
+    });
+    warmUpTranscription();
+    expect(lastWorker).toBeNull();
+    Object.defineProperty(window, "matchMedia", { configurable: true, value: original });
+  });
+
   it("fans worker messages out to subscribers", () => {
     installCapableEnv();
     getTranscriptionWorker();
