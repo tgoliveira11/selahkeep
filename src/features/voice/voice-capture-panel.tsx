@@ -247,22 +247,30 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
           </div>
         ) : processing ? (
           /* TRANSCRIBING */
-          <div className="flex items-center gap-3 py-1.5" data-testid="voice-transcribing">
-            <span
-              className="inline-block h-[22px] w-[22px] shrink-0 rounded-full border-[2.5px] border-[var(--lilac)] border-t-[var(--primary)]"
-              style={{ animation: "selahSpin .8s linear infinite" }}
-              aria-hidden="true"
-            />
-            <div>
-              <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
-                Transcribing on device…
-                <span className="tabular-nums text-[12.5px] font-semibold text-[var(--primary)]">
-                  {elapsed}s
-                </span>
+          <div data-testid="voice-transcribing">
+            <div className="flex items-center gap-3 py-1.5">
+              <span
+                className="inline-block h-[22px] w-[22px] shrink-0 rounded-full border-[2.5px] border-[var(--lilac)] border-t-[var(--primary)]"
+                style={{ animation: "selahSpin .8s linear infinite" }}
+                aria-hidden="true"
+              />
+              <div>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
+                  Transcribing on device…
+                  <span className="tabular-nums text-[12.5px] font-semibold text-[var(--primary)]">
+                    {elapsed}s
+                  </span>
+                </div>
+                <div className="text-[12.5px] text-[var(--muted)]">
+                  Tidying up punctuation and spacing
+                </div>
               </div>
-              <div className="text-[12.5px] text-[var(--muted)]">
-                Tidying up punctuation and spacing
-              </div>
+            </div>
+            <div className="mt-3 h-[7px] overflow-hidden rounded-full bg-[var(--bg-2)]">
+              <div
+                className="h-full w-2/5 rounded-full bg-[var(--primary-solid)]"
+                style={{ animation: "selahWave 1.1s ease-in-out infinite" }}
+              />
             </div>
           </div>
         ) : (

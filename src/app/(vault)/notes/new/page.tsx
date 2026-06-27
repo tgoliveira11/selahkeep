@@ -62,6 +62,7 @@ import { touchVaultActivity } from "@/features/vault/use-vault-activity";
 import { appendTranscript } from "@/lib/voice/transcript-format";
 import { isVoiceNotesEnabled } from "@/lib/voice/voice-config";
 import { DictateButton } from "@/features/voice/dictate-button";
+import { AudioUploadButton } from "@/features/voice/audio-upload-button";
 import { useOnlineStatus } from "@/features/notes/use-online-status";
 import { encryptAttachment } from "@/lib/crypto-client/note-attachments";
 import { noteAttachmentsApi } from "@/lib/api-client/note-attachments";
@@ -70,6 +71,11 @@ import { getMaxAttachmentSizeBytes } from "@/lib/config/attachment-policy";
 
 const VoiceCapturePanel = dynamic(
   () => import("@/features/voice/voice-capture-panel").then((m) => m.VoiceCapturePanel),
+  { ssr: false }
+);
+
+const AudioUploadPanel = dynamic(
+  () => import("@/features/voice/audio-upload-panel").then((m) => m.AudioUploadPanel),
   { ssr: false }
 );
 
@@ -83,6 +89,7 @@ export default function NewNotePage() {
   const templateFromQuery = parseNoteTemplateId(searchParams.get("template"));
   const [focusMode, setFocusMode] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const voiceEnabled = isVoiceNotesEnabled();
   const [title, setTitle] = useState(() => {
     if (isDailyNote) return formatDailyNoteTitle();
@@ -524,12 +531,33 @@ export default function NewNotePage() {
                     setBody((current) => appendTranscript(current, text));
                   }}
                 />
-              ) : (
-                <DictateButton
-                  onClick={() => setVoiceOpen(true)}
-                  testId="new-note-dictate"
-                  label="Dictate a note"
+              ) : uploadOpen ? (
+                <AudioUploadPanel
+                  onClose={() => setUploadOpen(false)}
+                  onInsert={(text) => {
+                    touchVaultActivity();
+                    activateDraft("content");
+                    setBody((current) => appendTranscript(current, text));
+                  }}
                 />
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  <DictateButton
+                    onClick={() => {
+                      setUploadOpen(false);
+                      setVoiceOpen(true);
+                    }}
+                    testId="new-note-dictate"
+                    label="Dictate a note"
+                  />
+                  <AudioUploadButton
+                    onClick={() => {
+                      setVoiceOpen(false);
+                      setUploadOpen(true);
+                    }}
+                    testId="new-note-upload-audio"
+                  />
+                </div>
               ))}
 
             <div className="flex items-start gap-2 rounded-[12px] border border-[var(--border)] bg-[var(--lilac-soft)] p-3.5 text-[12.5px] leading-relaxed text-[var(--fg-2)]">

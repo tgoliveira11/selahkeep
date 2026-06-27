@@ -32,10 +32,16 @@ import type { DecryptedNoteVersion } from "@/lib/crypto-client/note-versions";
 import { appendTranscript } from "@/lib/voice/transcript-format";
 import { isVoiceNotesEnabled } from "@/lib/voice/voice-config";
 import { DictateButton } from "@/features/voice/dictate-button";
+import { AudioUploadButton } from "@/features/voice/audio-upload-button";
 import { useOnlineStatus } from "@/features/notes/use-online-status";
 
 const VoiceCapturePanel = dynamic(
   () => import("@/features/voice/voice-capture-panel").then((m) => m.VoiceCapturePanel),
+  { ssr: false }
+);
+
+const AudioUploadPanel = dynamic(
+  () => import("@/features/voice/audio-upload-panel").then((m) => m.AudioUploadPanel),
   { ssr: false }
 );
 import { useNoteVaultBeforeAutoLock } from "@/features/notes/use-note-vault-before-auto-lock";
@@ -125,6 +131,7 @@ export default function NoteDetailPage() {
   const [versionCount, setVersionCount] = useState<number | null>(null);
   const [restoringVersion, setRestoringVersion] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const voiceEnabled = isVoiceNotesEnabled();
   const online = useOnlineStatus();
   const checklistSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -783,8 +790,31 @@ export default function NoteDetailPage() {
                       setBody((current) => appendTranscript(current, text));
                     }}
                   />
+                ) : uploadOpen ? (
+                  <AudioUploadPanel
+                    onClose={() => setUploadOpen(false)}
+                    onInsert={(text) => {
+                      touchVaultActivity();
+                      setBody((current) => appendTranscript(current, text));
+                    }}
+                  />
                 ) : (
-                  <DictateButton onClick={() => setVoiceOpen(true)} testId="edit-note-dictate" />
+                  <div className="flex flex-wrap gap-2">
+                    <DictateButton
+                      onClick={() => {
+                        setUploadOpen(false);
+                        setVoiceOpen(true);
+                      }}
+                      testId="edit-note-dictate"
+                    />
+                    <AudioUploadButton
+                      onClick={() => {
+                        setVoiceOpen(false);
+                        setUploadOpen(true);
+                      }}
+                      testId="edit-note-upload-audio"
+                    />
+                  </div>
                 )}
               </div>
             )}

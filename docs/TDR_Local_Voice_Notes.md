@@ -67,6 +67,15 @@ Entry point: **`/notes/new`** (and reusable in the editor). A discreet **"Dictat
 4. After the final pass the transcript appears in a **review textarea** the user can edit, then **Insert** appends it into the note body (at the cursor / end), or **Discard**.
 5. The captured audio (PCM chunks + `AudioContext`) is released from memory immediately on Stop/cancel/unmount. The transcript lives only in React state until inserted, then follows the normal encrypted-note path.
 
+### 4.1 Upload an audio file (on-device)
+
+Alongside **Dictate**, an **Upload audio** control transcribes an existing recording, then reuses the same review/insert flow. All on-device:
+
+1. **Decode ladder** (`src/lib/voice/audio-decode.ts`): native `decodeAudioData` for small files → **WebCodecs + `mediabunny`** (`audio-webcodecs.ts`) which streams large files and decodes with native codecs (AAC/MP3/Opus/FLAC/WebM) without exhausting memory → **ffmpeg.wasm** (`audio-ffmpeg.ts` + `ffmpeg-decode.worker.ts`) as a universal last resort for codecs the platform can't decode (e.g. **ALAC** / Apple Lossless `.m4a`). The ffmpeg ESM core is self-hosted under `/public/ffmpeg/` (copied by `scripts/copy-ffmpeg.mjs` on install/build, not committed) and loaded by a dedicated worker via `import(/* turbopackIgnore: true */ …)` — the only configuration that works under Next + Turbopack. Everything decodes to mono 16 kHz Float32 PCM.
+2. **Language**: Auto-detect (default) or a forced language; persisted (`selahkeep:voice:upload-lang`). Forcing avoids auto-detect mislabeling.
+3. **Speaker diarization** (optional, on by default): the `onnx-community/pyannote-segmentation-3.0` model produces speaker segments which are merged with Whisper word timestamps (`src/lib/voice/diarization.ts`) to label turns `[Person one]`, `[Person two]`…; falls back to a plain transcript for a single speaker or on failure.
+4. **Status**: per-phase progress — decoding (% for large files), model download (%), transcribing (animated), and a distinct "Separating speakers…" phase — each with an elapsed counter.
+
 Accessibility: the control is keyboard reachable, has `aria-pressed`/`aria-live` status, and never auto-submits the note. Permission denial, unsupported-browser, and model-load failures show calm, specific guidance and fall back to typing.
 
 The privacy notice on the page is extended: *"Voice is transcribed on your device. Your audio and words are never uploaded."*
