@@ -746,9 +746,9 @@ body {
 
 /*
  * Note editor layout. On small screens the form is a single column (DOM order:
- * title → category → rail[template, prompts, dictate] → editor → attachments →
- * tags). On lg+ it becomes a two-column grid: the main column holds the title,
- * category, body, attachments and tags, while the rail spans the right column.
+ * title → tags → rail[dictate] → editor → category → attachments).
+ * On lg+ it becomes a two-column grid: the main column holds the title,
+ * tags, body, category, and attachments while the rail spans the right column.
  * Placement is by grid-area, so the DOM order (and the field-order contract)
  * is unchanged.
  */
@@ -762,8 +762,8 @@ body {
     grid-template-areas:
       "title       rail"
       "tags        rail"
-      "category    rail"
       "editor      rail"
+      "category    rail"
       "attachments rail"
       "error       rail";
   }
@@ -1338,6 +1338,22 @@ mark.search-highlight {
   .note-editor-surface {
     padding: 1.5rem;
   }
+}
+
+.note-editor-category-secondary {
+  padding-top: 0.25rem;
+}
+
+.note-editor-category-secondary label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.note-editor-category-secondary select,
+.note-editor-category-secondary input[type="text"] {
+  max-width: 16rem;
+  font-size: 13px;
 }
 
 .settings-section--suppress-package-heading h1:first-of-type {

@@ -8,10 +8,11 @@ import {
   WHISPER_SAMPLE_RATE,
 } from "@/lib/voice/audio-pcm";
 import { formatTranscript } from "@/lib/voice/transcript-format";
-import { getVoiceModelId, getVoiceModelHost } from "@/lib/voice/voice-config";
+import { getVoiceModelHost } from "@/lib/voice/voice-config";
 import type { VoiceLanguageCode } from "@/lib/voice/voice-languages";
 import type { TranscribeRequest } from "./transcription.worker";
 import {
+  getActiveVoiceModelId,
   getTranscriptionWorker,
   postTranscription,
   subscribeTranscription,
@@ -193,7 +194,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
         type: "transcribe",
         audio: pcm,
         language: languageRef.current,
-        modelId: getVoiceModelId(),
+        modelId: getActiveVoiceModelId(),
         modelHost: getVoiceModelHost(),
       };
       postTranscription(request, [pcm.buffer]);

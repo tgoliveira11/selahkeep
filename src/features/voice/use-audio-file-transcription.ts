@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 import { decodeAudioFileToPcm } from "@/lib/voice/audio-decode";
-import { getVoiceModelId, getVoiceModelHost } from "@/lib/voice/voice-config";
+import { getVoiceModelHost } from "@/lib/voice/voice-config";
 import type { TranscribeRequest } from "./transcription.worker";
 import {
   ensureModelLoaded,
+  getActiveVoiceModelId,
   getTranscriptionWorker,
   postTranscription,
+  shouldDeferVoiceModelLoad,
   subscribeTranscription,
 } from "./transcription-worker-client";
 
@@ -64,7 +66,9 @@ export function useAudioFileTranscription(): UseAudioFileTranscriptionResult {
   const processingRef = useRef(false);
 
   useEffect(() => {
-    ensureModelLoaded();
+    if (!shouldDeferVoiceModelLoad()) {
+      ensureModelLoaded();
+    }
     return subscribeTranscription((message) => {
       if (message.type === "progress") {
         // Model download drives the model bar; inference/diarization just set
@@ -106,7 +110,7 @@ export function useAudioFileTranscription(): UseAudioFileTranscriptionResult {
     setFileName(file.name);
     setStatus("decoding");
     try {
-      ensureModelLoaded();
+      ensureModelLoaded({ force: true });
       const pcm = await decodeAudioFileToPcm(file, setDecodeProgress);
       if (pcm.length === 0) {
         setError("That file didn't contain any audio we could read.");
@@ -122,7 +126,7 @@ export function useAudioFileTranscription(): UseAudioFileTranscriptionResult {
         audio: pcm,
         diarize,
         language,
-        modelId: getVoiceModelId(),
+        modelId: getActiveVoiceModelId(),
         modelHost: getVoiceModelHost(),
       };
       postTranscription(request, [pcm.buffer]);

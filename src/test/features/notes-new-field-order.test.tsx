@@ -5,10 +5,12 @@ import NewNotePage from "@/app/(vault)/notes/new/page";
 import { saveEncryptedNoteDraft } from "@/lib/crypto-client/note-drafts";
 import { RESERVED_CATEGORY_MESSAGE } from "@/lib/notes/reserved-category-names";
 
+const useSearchParams = vi.fn(() => new URLSearchParams());
+
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() })),
   usePathname: vi.fn(() => "/notes/new"),
-  useSearchParams: vi.fn(() => new URLSearchParams()),
+  useSearchParams: () => useSearchParams(),
 }));
 
 vi.mock("@/features/vault/use-require-vault", () => ({
@@ -93,7 +95,6 @@ vi.mock("@/lib/crypto-client/note-drafts", () => ({
 function sectionOrder() {
   const title = screen.getByTestId("new-note-title-field");
   const category = screen.queryByTestId("new-note-category-section");
-  const template = screen.getByTestId("new-note-template-section");
   const editor = screen.getByTestId("new-note-editor-field");
   const attachments = screen.getByTestId("new-note-attachments-field");
   const tags = screen.getByTestId("new-note-tags-field");
@@ -101,15 +102,13 @@ function sectionOrder() {
   const before = (a: Element, b: Element) =>
     Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
-  // Mockup order: title → tags → category → template → editor → attachments.
   return {
     titleBeforeTags: before(title, tags),
-    tagsBeforeCategory: category ? before(tags, category) : null,
-    titleBeforeTemplate: before(title, template),
-    templateBeforeEditor: before(template, editor),
+    tagsBeforeEditor: before(tags, editor),
+    editorBeforeCategory: category ? before(editor, category) : null,
     editorBeforeAttachments: before(editor, attachments),
-    titleBeforeCategory: category ? before(title, category) : null,
-    categoryBeforeTemplate: category ? before(category, template) : null,
+    categoryBeforeAttachments:
+      category ? before(category, attachments) : null,
   };
 }
 
@@ -121,6 +120,7 @@ function setNoteBody(value: string) {
 describe("SelahKeep /notes/new field order and template categories", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useSearchParams.mockReturnValue(new URLSearchParams());
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.stubGlobal("confirm", vi.fn(() => true));
   });
@@ -131,61 +131,47 @@ describe("SelahKeep /notes/new field order and template categories", () => {
   });
 
   describe("field order", () => {
-    it("orders title first, then tags, template, editor, and attachments", () => {
+    it("orders title, tags, editor, category, and attachments", () => {
       render(<NewNotePage />);
       const order = sectionOrder();
       expect(order.titleBeforeTags).toBe(true);
-      expect(order.titleBeforeTemplate).toBe(true);
-      expect(order.templateBeforeEditor).toBe(true);
+      expect(order.tagsBeforeEditor).toBe(true);
+      expect(order.editorBeforeCategory).toBe(true);
       expect(order.editorBeforeAttachments).toBe(true);
+      expect(order.categoryBeforeAttachments).toBe(true);
     });
 
-    it("orders tags after title and before category for blank note", () => {
+    it("does not show the template picker on the page", () => {
       render(<NewNotePage />);
-      const order = sectionOrder();
-      expect(order.titleBeforeTags).toBe(true);
-      expect(order.tagsBeforeCategory).toBe(true);
+      expect(screen.queryByTestId("new-note-template-section")).toBeNull();
+      expect(screen.queryByTestId("note-template-picker")).toBeNull();
     });
 
-    it("orders category after tags and before template for blank note", () => {
+    it("does not show writing prompts on the page", () => {
       render(<NewNotePage />);
-      const order = sectionOrder();
-      expect(order.tagsBeforeCategory).toBe(true);
-      expect(order.categoryBeforeTemplate).toBe(true);
+      expect(screen.queryByTestId("prompt-cards-new-note")).toBeNull();
     });
 
-    it("groups template and dictate inside the editor rail (desktop right column)", () => {
+    it("groups dictate inside the editor rail without the main editor body", () => {
       render(<NewNotePage />);
       const rail = screen.getByTestId("new-note-rail");
-      // Template + dictate live in the rail; the editor body stays in the main column.
-      expect(within(rail).getByTestId("new-note-template-section")).toBeInTheDocument();
       expect(within(rail).getByTestId("new-note-dictate")).toBeInTheDocument();
       expect(within(rail).queryByTestId("new-note-editor-field")).toBeNull();
     });
   });
 
   describe("template category behavior", () => {
-    it("hides manual category controls for Prayer template", async () => {
+    it("locks category for template query links", async () => {
+      useSearchParams.mockReturnValue(new URLSearchParams("template=prayer"));
       render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
 
       expect(screen.getByTestId("template-locked-category")).toBeTruthy();
       expect(screen.queryByRole("combobox", { name: /^category$/i })).toBeNull();
-      expect(screen.queryByPlaceholderText(/new category name/i)).toBeNull();
-    });
-
-    it("does not create template category on selection", async () => {
-      render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-      await waitFor(() => {
-        expect(screen.getByTestId("template-locked-category")).toBeTruthy();
-      });
-      expect(createCategory).not.toHaveBeenCalled();
     });
 
     it("reuses existing template category on save without creating", async () => {
+      useSearchParams.mockReturnValue(new URLSearchParams("template=prayer"));
       render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
       setNoteBody("My prayer");
       fireEvent.click(screen.getByRole("button", { name: /save note/i }));
 
@@ -206,24 +192,14 @@ describe("SelahKeep /notes/new field order and template categories", () => {
         createTag: vi.fn(),
       });
 
+      useSearchParams.mockReturnValue(new URLSearchParams("template=reflection"));
       render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^reflection$/i }));
       setNoteBody("Reflecting");
       fireEvent.click(screen.getByRole("button", { name: /save note/i }));
 
       await waitFor(() => {
         expect(createCategory).toHaveBeenCalledWith("Reflection");
       });
-    });
-
-    it("restores manual category controls when switching to Blank note", async () => {
-      render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-      await waitFor(() => expect(screen.getByTestId("template-locked-category")).toBeTruthy());
-
-      fireEvent.click(screen.getByRole("radio", { name: /blank note/i }));
-      expect(screen.queryByTestId("template-locked-category")).toBeNull();
-      expect(screen.getByRole("combobox", { name: /^category$/i })).toBeTruthy();
     });
   });
 
@@ -263,13 +239,6 @@ describe("SelahKeep /notes/new field order and template categories", () => {
   });
 
   describe("autosave and dirty state", () => {
-    it("does not autosave after template selection alone", async () => {
-      render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-      vi.advanceTimersByTime(3000);
-      expect(saveEncryptedNoteDraft).not.toHaveBeenCalled();
-    });
-
     it("autosaves after user edits body", async () => {
       render(<NewNotePage />);
       setNoteBody("User typed this");

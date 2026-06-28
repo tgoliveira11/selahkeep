@@ -41,6 +41,10 @@ inline unlock, the vault status dock explicitly rechecks its view to avoid showi
 - Document capture: `keydown`, `input`, `pointerdown`, `compositionstart`, `compositionend`, `paste`
 - `touchVaultActivity()` — explicit export for TipTap/editor paths that may not bubble
 
+Voice panels (`VoiceCapturePanel`, `AudioUploadPanel`) call `suspendVaultAutoLock()` for their lifetime so a long on-device model download or transcription pass does not trip inactivity auto-lock.
+
+On memory-constrained devices the speech model is **not** loaded when the dictation panel opens (that spike could reload the tab on iOS Safari, which clears the in-memory vault key via `pagehide`). The model loads only when the user taps Record, uses `whisper-tiny`, and the worker is torn down when the panel closes.
+
 Wired in `MarkdownEditor` (`onChange`, toolbar, mode toggle) and note page form handlers (title, categories, tags, templates, checklist, resolved toggle).
 
 ## Locked-state UI

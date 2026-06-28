@@ -5,7 +5,14 @@ import { Alert } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { useVoiceTranscription } from "./use-voice-transcription";
 import { useVoiceModelStatus } from "./use-voice-model-status";
-import { ensureModelLoaded } from "./transcription-worker-client";
+import { useSuspendVaultAutoLockWhile } from "@/features/vault/use-suspend-vault-auto-lock";
+import { touchVaultActivity } from "@/features/vault/use-vault-activity";
+import {
+  ensureModelLoaded,
+  releaseTranscriptionWorker,
+  shouldDeferVoiceModelLoad,
+  waitForVoiceModelReady,
+} from "./transcription-worker-client";
 import {
   VOICE_LANGUAGES,
   DEFAULT_VOICE_LANGUAGE,
@@ -30,6 +37,7 @@ const WAVE_DELAYS = ["0s", ".12s", ".24s", ".36s", ".48s", ".6s", ".72s", ".4s",
  * See `docs/TDR_Local_Voice_Notes.md` and `docs/DESIGN_SYSTEM.md`.
  */
 export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps) {
+  useSuspendVaultAutoLockWhile(true);
   const { supported, status, transcript, error, progress, startRecording, stopRecording, reset } =
     useVoiceTranscription();
   const model = useVoiceModelStatus();
@@ -39,7 +47,10 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
       : normalizeVoiceLanguage(window.localStorage.getItem(LANG_STORAGE_KEY))
   );
   const [draftOverride, setDraftOverride] = useState<string | null>(null);
+  const [preparingModel, setPreparingModel] = useState(false);
+  const [modelLoadError, setModelLoadError] = useState<string | null>(null);
   const draft = draftOverride ?? transcript;
+  const deferModelLoad = shouldDeferVoiceModelLoad();
 
   const changeLanguage = useCallback((code: VoiceLanguageCode) => {
     setLanguage(code);
@@ -60,16 +71,45 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
   const reviewing = status === "ready";
   const erroring = status === "error";
   const idle = !recording && !processing && !reviewing && !erroring;
-  // Show the preparing UI whenever the model isn't ready yet (download may have
-  // started in the background at app load, or be just beginning now).
-  const modelPreparing = !model.ready;
+  const modelPreparing =
+    !model.ready && (!deferModelLoad || preparingModel || model.progress > 0);
   const pct = Math.round(progress * 100);
 
-  // Opening the panel guarantees the model is downloading/initializing even if
-  // the background warm-up was skipped (e.g. metered connection) or hasn't run.
+  const handleStartRecording = useCallback(
+    async (lang: VoiceLanguageCode) => {
+      touchVaultActivity();
+      setModelLoadError(null);
+      if (!model.ready) {
+        setPreparingModel(true);
+        ensureModelLoaded({ force: true });
+        try {
+          await waitForVoiceModelReady();
+        } catch {
+          setPreparingModel(false);
+          setModelLoadError(
+            "Could not load the speech model. Try again, or keep typing your note."
+          );
+          return;
+        }
+        setPreparingModel(false);
+      }
+      await startRecording(lang);
+    },
+    [model.ready, startRecording]
+  );
+
+  // Desktop may warm the model as soon as the panel opens; phones defer until Record.
   useEffect(() => {
-    ensureModelLoaded();
-  }, []);
+    touchVaultActivity();
+    if (!deferModelLoad) {
+      ensureModelLoaded();
+    }
+    return () => {
+      if (deferModelLoad) {
+        releaseTranscriptionWorker();
+      }
+    };
+  }, [deferModelLoad]);
 
   // Elapsed seconds counter while the final transcription runs, so the wait
   // always feels accountable (no silent spinner).
@@ -138,6 +178,10 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
           <Alert variant="danger" role="alert">
             {error}
           </Alert>
+        ) : modelLoadError ? (
+          <Alert variant="danger" role="alert">
+            {modelLoadError}
+          </Alert>
         ) : idle && modelPreparing ? (
           /* LOADING — model not ready yet (downloading/initializing) */
           <div data-testid="voice-model-loading">
@@ -171,7 +215,7 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => void startRecording(language)}
+              onClick={() => void handleStartRecording(language)}
               data-testid="voice-record"
               aria-label="Start recording"
               className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-[var(--primary-solid)] text-[var(--on-primary)]"
@@ -190,11 +234,15 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
                     ? model.backend === "webgpu"
                       ? "Voice model ready · GPU"
                       : "Voice model ready"
-                    : "Ready to record"}
+                    : deferModelLoad
+                      ? "Tap to download speech model"
+                      : "Ready to record"}
                 </span>
               </div>
               <p className="text-[12.5px] text-[var(--muted)]" data-testid="voice-privacy-note">
-                Runs entirely on this device — no audio leaves it. Tap to start.
+                {deferModelLoad && !model.ready
+                  ? "One-time download on this device (~40 MB). Then tap to record."
+                  : "Runs entirely on this device — no audio leaves it. Tap to start."}
               </p>
             </div>
           </div>
@@ -303,7 +351,7 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
               </button>
               <button
                 type="button"
-                onClick={() => void startRecording(language)}
+                onClick={() => void handleStartRecording(language)}
                 data-testid="voice-rerecord"
                 className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card-2)] px-4 py-3 text-sm font-semibold text-[var(--fg-2)]"
               >

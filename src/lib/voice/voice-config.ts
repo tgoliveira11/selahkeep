@@ -6,6 +6,9 @@
 
 export const DEFAULT_VOICE_MODEL = "Xenova/whisper-base";
 
+/** Smaller multilingual model for phones/tablets (~40 MB vs ~150 MB for base). */
+export const MOBILE_VOICE_MODEL = "Xenova/whisper-tiny";
+
 function readPublic(value: string | undefined): string | undefined {
   if (value === undefined) return undefined;
   const trimmed = value.trim();

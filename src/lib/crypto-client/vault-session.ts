@@ -28,6 +28,8 @@ type VaultSessionStore = {
   lastActivityAt: number;
   unlockMethod?: VaultUnlockMethod;
   inactivityTimer: ReturnType<typeof setTimeout> | null;
+  /** Ref-counted holds (e.g. voice model load) pause the inactivity timer. */
+  autoLockSuspendCount: number;
   onAutoLock: (() => void) | null;
   listeners: Set<(state: VaultSessionState) => void>;
   activityListeners: Set<() => void>;
@@ -46,6 +48,7 @@ function createVaultSessionStore(): VaultSessionStore {
     lastActivityAt: 0,
     unlockMethod: undefined,
     inactivityTimer: null,
+    autoLockSuspendCount: 0,
     onAutoLock: null,
     listeners: new Set(),
     activityListeners: new Set(),
@@ -219,12 +222,40 @@ function getInactivityTimeoutMs(): number {
   return getVaultAutoLockTimeoutMs();
 }
 
+function isVaultAutoLockSuspended(): boolean {
+  return getVaultSessionStore().autoLockSuspendCount > 0;
+}
+
+/**
+ * Pause the inactivity auto-lock timer while work that must not be interrupted
+ * runs (e.g. on-device voice model download/dictation). Returns a release fn.
+ */
+export function suspendVaultAutoLock(): () => void {
+  const store = getVaultSessionStore();
+  store.autoLockSuspendCount += 1;
+  clearVaultAutoLockTimer();
+  if (hasUnlockedVaultSession()) {
+    store.lastActivityAt = Date.now();
+    notifyActivityChange();
+  }
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    store.autoLockSuspendCount = Math.max(0, store.autoLockSuspendCount - 1);
+    if (store.autoLockSuspendCount === 0 && hasUnlockedVaultSession()) {
+      scheduleVaultAutoLock();
+    }
+  };
+}
+
 export function scheduleVaultAutoLock(): void {
   const store = getVaultSessionStore();
   if (!hasUnlockedVaultSession()) return;
   clearVaultAutoLockTimer();
   store.lastActivityAt = Date.now();
   notifyActivityChange();
+  if (isVaultAutoLockSuspended()) return;
   const timeoutMs = getInactivityTimeoutMs();
   store.inactivityTimer = setTimeout(() => {
     void (async () => {

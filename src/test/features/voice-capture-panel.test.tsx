@@ -53,6 +53,15 @@ class FakeWorker {
 }
 
 function installSupportedEnv() {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: () => ({
+      matches: false,
+      media: "",
+      addEventListener() {},
+      removeEventListener() {},
+    }),
+  });
   vi.stubGlobal("AudioContext", FakeAudioContext);
   vi.stubGlobal("AudioWorkletNode", FakeAudioWorkletNode);
   vi.stubGlobal("Worker", FakeWorker);

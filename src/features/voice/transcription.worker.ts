@@ -28,7 +28,13 @@ export type TranscribeRequest =
       modelId: string;
       modelHost?: string;
     }
-  | { type: "warmup"; modelId: string; modelHost?: string; skipWarmInference?: boolean };
+  | {
+      type: "warmup";
+      modelId: string;
+      modelHost?: string;
+      skipWarmInference?: boolean;
+      forceWasmOnly?: boolean;
+    };
 
 export type VoiceBackend = "webgpu" | "wasm";
 
@@ -57,7 +63,11 @@ async function detectWebGPU(): Promise<boolean> {
   }
 }
 
-async function getTranscriber(modelId: string, modelHost: string | undefined) {
+async function getTranscriber(
+  modelId: string,
+  modelHost: string | undefined,
+  options?: { forceWasmOnly?: boolean }
+) {
   if (transcriberPromise) return transcriberPromise;
 
   transcriberPromise = (async () => {
@@ -86,8 +96,8 @@ async function getTranscriber(modelId: string, modelHost: string | undefined) {
     };
 
     // Prefer the GPU when available (fp32 weights), falling back to quantized
-    // WASM on CPU. Each path downloads only its own weight set (once, cached).
-    if (await detectWebGPU()) {
+    // WASM on CPU. Skipped on phones/tablets — WebGPU fp32 doubles peak RAM.
+    if (!options?.forceWasmOnly && (await detectWebGPU())) {
       try {
         const gpuPipe = await pipeline("automatic-speech-recognition", modelId, {
           device: "webgpu",
@@ -194,7 +204,9 @@ self.onmessage = async (event: MessageEvent<TranscribeRequest>) => {
   // the first dictation so first use is instant. Does not transcribe.
   if (data.type === "warmup") {
     try {
-      const transcriber = (await getTranscriber(data.modelId, data.modelHost)) as (
+      const transcriber = (await getTranscriber(data.modelId, data.modelHost, {
+        forceWasmOnly: data.forceWasmOnly,
+      })) as (
         audio: Float32Array,
         options: Record<string, unknown>
       ) => Promise<{ text: string }>;

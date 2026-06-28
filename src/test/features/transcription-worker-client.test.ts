@@ -123,9 +123,33 @@ describe("transcription worker client", () => {
       }),
     });
     ensureModelLoaded();
+    expect(lastWorker).toBeNull();
+    ensureModelLoaded({ force: true });
     expect(lastWorker?.posted).toEqual([
-      expect.objectContaining({ type: "warmup", skipWarmInference: true }),
+      expect.objectContaining({
+        type: "warmup",
+        modelId: "Xenova/whisper-tiny",
+        skipWarmInference: true,
+        forceWasmOnly: true,
+      }),
     ]);
+    Object.defineProperty(window, "matchMedia", { configurable: true, value: original });
+  });
+
+  it("does not load the model on mobile until force is requested", () => {
+    installCapableEnv();
+    const original = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({
+        matches: /pointer: coarse|max-width/.test(query),
+        media: query,
+        addEventListener() {},
+        removeEventListener() {},
+      }),
+    });
+    ensureModelLoaded();
+    expect(lastWorker).toBeNull();
     Object.defineProperty(window, "matchMedia", { configurable: true, value: original });
   });
 

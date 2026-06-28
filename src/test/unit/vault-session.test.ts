@@ -14,6 +14,7 @@ import {
   getVaultAutoLockRemainingMs,
   subscribeVaultActivityTimer,
   clearVaultAutoLockTimer,
+  suspendVaultAutoLock,
   resetVaultSessionStoreForTests,
 } from "@/lib/crypto-client/vault-session";
 import { generateUserVaultKey, isVaultUnlocked, setSessionVaultKey } from "@/lib/crypto-client/vault";
@@ -173,6 +174,34 @@ describe("vault session auto-lock", () => {
     vi.advanceTimersByTime(2000);
     expect(isVaultUnlocked()).toBe(true);
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS);
+    await vi.runAllTimersAsync();
+    expect(isVaultUnlocked()).toBe(false);
+  });
+
+  it("does not lock while auto-lock is suspended", async () => {
+    const key = await generateUserVaultKey();
+    unlockVaultSession(key);
+    const release = suspendVaultAutoLock();
+    vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
+    await vi.runAllTimersAsync();
+    expect(isVaultUnlocked()).toBe(true);
+    release();
+    vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
+    await vi.runAllTimersAsync();
+    expect(isVaultUnlocked()).toBe(false);
+  });
+
+  it("resumes the inactivity timer after the last suspend is released", async () => {
+    const key = await generateUserVaultKey();
+    unlockVaultSession(key);
+    const releaseA = suspendVaultAutoLock();
+    const releaseB = suspendVaultAutoLock();
+    releaseA();
+    vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
+    await vi.runAllTimersAsync();
+    expect(isVaultUnlocked()).toBe(true);
+    releaseB();
+    vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
     await vi.runAllTimersAsync();
     expect(isVaultUnlocked()).toBe(false);
   });

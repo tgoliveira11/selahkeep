@@ -1,6 +1,6 @@
 "use client";
 
-import { getVoiceModelId, getVoiceModelHost, isVoiceNotesEnabled } from "@/lib/voice/voice-config";
+import { getVoiceModelId, getVoiceModelHost, isVoiceNotesEnabled, MOBILE_VOICE_MODEL } from "@/lib/voice/voice-config";
 import type { TranscribeRequest, TranscribeResponse } from "./transcription.worker";
 
 /**
@@ -144,14 +144,17 @@ export function isMemoryConstrainedDevice(): boolean {
   return false;
 }
 
-function postWarmup(skipWarmInference = false): void {
+function postWarmup(options?: { force?: boolean }): void {
   if (warmed) return;
+  const memoryConstrained = isMemoryConstrainedDevice();
+  if (memoryConstrained && !options?.force) return;
   warmed = true;
   postTranscription({
     type: "warmup",
-    modelId: getVoiceModelId(),
+    modelId: memoryConstrained ? MOBILE_VOICE_MODEL : getVoiceModelId(),
     modelHost: getVoiceModelHost(),
-    skipWarmInference,
+    skipWarmInference: memoryConstrained,
+    forceWasmOnly: memoryConstrained,
   });
 }
 
@@ -166,16 +169,53 @@ export function warmUpTranscription(): void {
 }
 
 /**
- * User-initiated model load (e.g. on opening the dictation panel). Like
- * `warmUpTranscription` but ignores the polite-connection gate, since the user
- * has asked to dictate. Idempotent and safe to call repeatedly.
- *
- * On memory-constrained devices the heavy warm inference is skipped so typing
- * in the note editor stays responsive while the model downloads.
+ * User-initiated model load (e.g. when the user taps Record in dictation). On
+ * memory-constrained devices the load is deferred until this call so opening
+ * the dictation panel alone does not spike RAM and reload the tab (iOS Safari).
  */
-export function ensureModelLoaded(): void {
+export function ensureModelLoaded(options?: { force?: boolean }): void {
   if (!canRunVoice()) return;
-  postWarmup(isMemoryConstrainedDevice());
+  postWarmup(options);
+}
+
+/** True when the speech model should load only after an explicit user action. */
+export function shouldDeferVoiceModelLoad(): boolean {
+  return isMemoryConstrainedDevice();
+}
+
+export function getActiveVoiceModelId(): string {
+  return isMemoryConstrainedDevice() ? MOBILE_VOICE_MODEL : getVoiceModelId();
+}
+
+/** Resolves once the on-device model pipeline is ready (or rejects on timeout). */
+export function waitForVoiceModelReady(timeoutMs = 10 * 60 * 1000): Promise<void> {
+  if (modelReady) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      unsub();
+      reject(new Error("Speech model load timed out"));
+    }, timeoutMs);
+    const unsub = subscribeModelStatus((status) => {
+      if (status.ready) {
+        clearTimeout(timer);
+        unsub();
+        resolve();
+      }
+    });
+  });
+}
+
+/**
+ * Tear down the worker to free memory when leaving dictation on phones/tablets.
+ * Model weights stay in the browser HTTP cache for a faster next load.
+ */
+export function releaseTranscriptionWorker(): void {
+  worker?.terminate();
+  worker = null;
+  warmed = false;
+  modelProgress = 0;
+  modelReady = false;
+  modelBackend = undefined;
 }
 
 /** @internal test helper */

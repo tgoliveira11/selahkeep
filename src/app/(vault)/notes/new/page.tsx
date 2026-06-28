@@ -13,10 +13,8 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
 import type { EditorStatus } from "@/components/notes/editor-status-bar";
-import { NoteFocusModeToggle } from "@/features/notes/note-focus-mode-toggle";
 import { NoteCategoryField } from "@/features/notes/category-tag-fields";
 import { TagChipInput } from "@/features/notes/tag-chip-input";
-import { NoteTemplatePicker } from "@/features/notes/note-template-picker";
 import { useCategoriesTags } from "@/features/notes/use-categories-tags";
 import { useNotes } from "@/features/notes/use-notes";
 import {
@@ -52,7 +50,6 @@ import {
   resolveTemplateCategoryId,
 } from "@/lib/notes/template-category";
 import { cn } from "@/lib/ui/cn";
-import { PromptCards } from "@/components/notes/prompt-cards";
 import { NoteDetailRailCard } from "@/components/notes/note-detail-rail";
 import { NoteEditorDictateRail } from "@/components/notes/note-editor-dictate-rail";
 import { useRequireVault } from "@/features/vault/use-require-vault";
@@ -87,7 +84,6 @@ export default function NewNotePage() {
   const searchParams = useSearchParams();
   const isDailyNote = searchParams.get("daily") === "1";
   const templateFromQuery = parseNoteTemplateId(searchParams.get("template"));
-  const [focusMode, setFocusMode] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const voiceEnabled = isVoiceNotesEnabled();
@@ -200,32 +196,6 @@ export default function NewNotePage() {
       cancelled = true;
     };
   }, [userId, canWrite]);
-
-  function applyTemplate(id: NoteTemplateId) {
-    touchVaultActivity();
-    if (id === templateId) return;
-
-    applyingTemplateRef.current = true;
-    const template = getNoteTemplate(id);
-    setTemplateId(id);
-    setBody(template.body);
-
-    if (id === "blank") {
-      setCategoryLocked(false);
-      setCategoryId(null);
-      requestAnimationFrame(() => {
-        applyingTemplateRef.current = false;
-      });
-      return;
-    }
-
-    setTitle(template.label);
-    setCategoryId(null);
-    setCategoryLocked(true);
-    requestAnimationFrame(() => {
-      applyingTemplateRef.current = false;
-    });
-  }
 
   function restoreDraft() {
     if (!draftPrompt) return;
@@ -360,7 +330,7 @@ export default function NewNotePage() {
               : null;
 
   return (
-    <AuthenticatedPage width="notes" className={cn(focusMode && "note-page--focus")}>
+    <AuthenticatedPage width="notes">
       <div
         className="mb-6 flex items-center justify-between gap-3"
         data-testid="note-editor-topbar"
@@ -403,7 +373,6 @@ export default function NewNotePage() {
               {statusLabel}
             </span>
           )}
-          <NoteFocusModeToggle active={focusMode} onToggle={() => setFocusMode((v) => !v)} />
           <Button
             type="button"
             variant="secondary"
@@ -472,11 +441,7 @@ export default function NewNotePage() {
             )}
           </div>
 
-          <div
-            data-area="tags"
-            className={cn(focusMode && "note-focus-hide")}
-            data-testid="new-note-tags-field"
-          >
+          <div data-area="tags" data-testid="new-note-tags-field">
             <TagChipInput
               tags={tags}
               tagIds={tagIds}
@@ -489,63 +454,8 @@ export default function NewNotePage() {
             />
           </div>
 
-          {(showManualCategory || showTemplateCategory) && (
-            <div
-              data-area="category"
-              className={cn(focusMode && "note-focus-hide")}
-              data-testid="new-note-category-section"
-            >
-              {showTemplateCategory ? (
-                <NoteCategoryField
-                  categories={[]}
-                  categoryId={null}
-                  categoryLocked
-                  lockedCategoryName={lockedCategoryName}
-                  onCategoryChange={() => {}}
-                />
-              ) : (
-                <NoteCategoryField
-                  categories={userCategories}
-                  categoryId={categoryId}
-                  onCategoryChange={(value) => {
-                    touchVaultActivity();
-                    activateDraft("manualCategory");
-                    setCategoryId(value);
-                  }}
-                  onCreateCategory={createCategory}
-                />
-              )}
-            </div>
-          )}
-
-          {/* Desktop right rail (mockup): template, prompts, dictate, and the
-              encryption reassurance. On mobile it sits inline before the body. */}
-          <aside
-            data-area="rail"
-            className={cn("space-y-4", focusMode && "note-focus-hide")}
-            data-testid="new-note-rail"
-          >
-            <NoteDetailRailCard
-              title="Start from a template"
-              testId="new-note-template-section"
-            >
-              <NoteTemplatePicker
-                value={templateId}
-                onChange={(id) => applyTemplate(id)}
-                disabled={busy}
-                hideHeader
-              />
-            </NoteDetailRailCard>
-
-            <PromptCards
-              context="new-note"
-              onInsert={(markdown) => {
-                touchVaultActivity();
-                activateDraft("content");
-                setBody((current) => current + markdown);
-              }}
-            />
-
+          {/* Desktop right rail: dictate + encryption notice. */}
+          <aside data-area="rail" className="space-y-4" data-testid="new-note-rail">
             {voiceEnabled &&
               (voiceOpen ? (
                 <VoiceCapturePanel
@@ -569,6 +479,7 @@ export default function NewNotePage() {
                 <div className="space-y-3">
                   <NoteEditorDictateRail
                     onOpen={() => {
+                      touchVaultActivity();
                       setUploadOpen(false);
                       setVoiceOpen(true);
                     }}
@@ -576,6 +487,7 @@ export default function NewNotePage() {
                   <div className="flex flex-wrap gap-2">
                     <AudioUploadButton
                       onClick={() => {
+                        touchVaultActivity();
                         setVoiceOpen(false);
                         setUploadOpen(true);
                       }}
@@ -614,11 +526,36 @@ export default function NewNotePage() {
             />
           </div>
 
-          <div
-            data-area="attachments"
-            className={cn(focusMode && "note-focus-hide")}
-            data-testid="new-note-attachments-field"
-          >
+          {(showManualCategory || showTemplateCategory) && (
+            <div
+              data-area="category"
+              className="note-editor-category-secondary"
+              data-testid="new-note-category-section"
+            >
+              {showTemplateCategory ? (
+                <NoteCategoryField
+                  categories={[]}
+                  categoryId={null}
+                  categoryLocked
+                  lockedCategoryName={lockedCategoryName}
+                  onCategoryChange={() => {}}
+                />
+              ) : (
+                <NoteCategoryField
+                  categories={userCategories}
+                  categoryId={categoryId}
+                  onCategoryChange={(value) => {
+                    touchVaultActivity();
+                    activateDraft("manualCategory");
+                    setCategoryId(value);
+                  }}
+                  onCreateCategory={createCategory}
+                />
+              )}
+            </div>
+          )}
+
+          <div data-area="attachments" data-testid="new-note-attachments-field">
             <FormField
               id="new-note-pending-attachments"
               label="Attachments"

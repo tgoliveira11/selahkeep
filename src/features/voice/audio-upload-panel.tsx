@@ -5,6 +5,12 @@ import { Alert } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { ACCEPTED_AUDIO_TYPES } from "@/lib/voice/audio-decode";
 import { VOICE_LANGUAGES, isSupportedVoiceLanguage } from "@/lib/voice/voice-languages";
+import {
+  releaseTranscriptionWorker,
+  shouldDeferVoiceModelLoad,
+} from "./transcription-worker-client";
+import { useSuspendVaultAutoLockWhile } from "@/features/vault/use-suspend-vault-auto-lock";
+import { touchVaultActivity } from "@/features/vault/use-vault-activity";
 import { useAudioFileTranscription } from "./use-audio-file-transcription";
 
 interface AudioUploadPanelProps {
@@ -41,6 +47,7 @@ const uploadIcon = (size: number) => (
  * uploaded. See `docs/TDR_Local_Voice_Notes.md`.
  */
 export function AudioUploadPanel({ onInsert, onClose }: AudioUploadPanelProps) {
+  useSuspendVaultAutoLockWhile(true);
   const {
     supported,
     status,
@@ -58,6 +65,15 @@ export function AudioUploadPanel({ onInsert, onClose }: AudioUploadPanelProps) {
   const [draftOverride, setDraftOverride] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const draft = draftOverride ?? transcript;
+
+  useEffect(() => {
+    touchVaultActivity();
+    return () => {
+      if (shouldDeferVoiceModelLoad()) {
+        releaseTranscriptionWorker();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setLanguage(readStoredLanguage());

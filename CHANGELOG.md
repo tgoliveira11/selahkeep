@@ -17,8 +17,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Mobile: passkey unlock on `/vault/unlock`.** WebAuthn options are prefetched when the unlock screen loads so `startAuthentication` runs immediately on tap (iOS Safari loses the user gesture after an async network round-trip).
 - **Mobile: note editor stays responsive with voice notes enabled.** Background model warm-up and dictation-panel auto-load are skipped on memory-constrained devices; the model downloads only when the user opens dictation and taps record, without running the heavy warm inference pass that froze typing.
+- **Dictate no longer auto-locks the vault while the voice model loads or transcribes.** On-device model download can take minutes without keyboard input; dictation and audio-upload panels suspend the inactivity timer until they close.
+- **Mobile dictation no longer reloads the tab while the note editor is open.** iOS Safari was killing the page when the full Whisper base model (~150 MB) loaded alongside the editor; phones now defer the download until Record is tapped, use the smaller `whisper-tiny` model, skip WebGPU fp32 weights, and release the worker when the panel closes so the vault session survives.
 
 ### Changed
+
+- **`/notes/new` simplified for writing.** Template picker, writing prompts, and Focus Mode are hidden for now; category sits below the editor in a lighter secondary row. Dictate and encryption notice remain in the right rail.
 
 - **`/notes/new` aligned with the Stillness note-editor mockup.** Full-width layout (matching notes list and detail), tags under the title, white right-rail cards with header dividers (templates, dictate, encryption notice), and a top bar with draft status dot plus Discard/Save actions.
 
