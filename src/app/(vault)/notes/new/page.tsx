@@ -117,7 +117,12 @@ export default function NewNotePage() {
     EMPTY_DRAFT_USER_ACTIVATION
   );
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const applyingTemplateRef = useRef(false);
+  const applyingTemplateRef = useRef(
+    isDailyNote ||
+      (templateFromQuery != null &&
+        templateFromQuery !== "blank" &&
+        getNoteTemplate(templateFromQuery).body.trim().length > 0)
+  );
   const online = useOnlineStatus();
 
   const userId = vault.status === "ready" ? vault.userId : null;
@@ -518,7 +523,10 @@ export default function NewNotePage() {
               value={body}
               onChange={(value) => {
                 setBody(value);
-                if (applyingTemplateRef.current) return;
+                if (applyingTemplateRef.current) {
+                  applyingTemplateRef.current = false;
+                  return;
+                }
                 activateDraft("content");
               }}
               onSave={() => void handleSubmit()}

@@ -10,11 +10,12 @@ import { encryptField } from "@/lib/crypto-client/aes-gcm";
 import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
 
 const confirmMock = vi.fn(() => true);
+const useSearchParams = vi.fn(() => new URLSearchParams());
 
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() })),
   usePathname: vi.fn(() => "/notes/new"),
-  useSearchParams: vi.fn(() => new URLSearchParams()),
+  useSearchParams: () => useSearchParams(),
 }));
 
 vi.mock("@/features/vault/use-require-vault", () => ({
@@ -109,6 +110,7 @@ function getMarkdownBody(): string {
 describe("SelahKeep notes autosave and template switching", () => {
   beforeEach(() => {
     confirmMock.mockClear();
+    useSearchParams.mockReturnValue(new URLSearchParams());
     vi.mocked(saveEncryptedNoteDraft).mockClear();
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.stubGlobal("confirm", confirmMock);
@@ -126,24 +128,25 @@ describe("SelahKeep notes autosave and template switching", () => {
       expect(saveEncryptedNoteDraft).not.toHaveBeenCalled();
     });
 
-    it("does not autosave after template selection alone", async () => {
+    it("does not autosave after opening a template link alone", async () => {
+      useSearchParams.mockReturnValue(new URLSearchParams("template=prayer"));
       render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
+      await screen.findByTestId("template-locked-category");
       vi.advanceTimersByTime(3000);
       expect(saveEncryptedNoteDraft).not.toHaveBeenCalled();
     });
 
     it("does not autosave from template-prefilled title without user edit", async () => {
+      useSearchParams.mockReturnValue(new URLSearchParams("template=prayer"));
       render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
       expect(screen.getByLabelText("Title")).toHaveValue("Prayer");
       vi.advanceTimersByTime(3000);
       expect(saveEncryptedNoteDraft).not.toHaveBeenCalled();
     });
 
     it("does not autosave from template-prefilled body without user edit", async () => {
+      useSearchParams.mockReturnValue(new URLSearchParams("template=prayer"));
       render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
       await waitFor(() => {
         expect(screen.getByLabelText("Title")).toHaveValue("Prayer");
       });
@@ -238,79 +241,30 @@ describe("SelahKeep notes autosave and template switching", () => {
     });
   });
 
-  describe("template switching without confirmation", () => {
-    it("does not show confirmation when switching Blank note to Prayer", async () => {
+  describe("template query links", () => {
+    it("prefills prayer template content from query param", async () => {
+      useSearchParams.mockReturnValue(new URLSearchParams("template=prayer"));
       render(<NewNotePage />);
-      setNoteBody("Started writing");
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-      expect(confirmMock).not.toHaveBeenCalled();
+      expect(screen.getByLabelText("Title")).toHaveValue("Prayer");
+      fireEvent.click(screen.getByTestId("editor-mode-markdown"));
       await waitFor(() => {
         expect(getMarkdownBody()).toMatch(/## Prayer/);
       });
-    });
-
-    it("does not show confirmation when switching Prayer to Reflection", async () => {
-      render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-      setNoteBody("My prayer");
-      fireEvent.click(screen.getByRole("radio", { name: /^reflection$/i }));
-      expect(confirmMock).not.toHaveBeenCalled();
-      await waitFor(() => {
-        expect(getMarkdownBody()).toMatch(/## Reflection/);
-      });
-    });
-
-    it("does not show confirmation when switching back to Blank note", async () => {
-      render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-      setNoteBody("My prayer");
-      fireEvent.click(screen.getByRole("radio", { name: /blank note/i }));
-      expect(confirmMock).not.toHaveBeenCalled();
-      await waitFor(() => {
-        expect(getMarkdownBody()).toBe("");
-      });
-      expect(screen.getByPlaceholderText(/new category name/i)).toBeTruthy();
-    });
-
-    it("updates read-only template category indicator on switch", async () => {
-      render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
       expect(screen.getByTestId("template-locked-category").textContent).toMatch(/Prayer/);
+    });
 
-      fireEvent.click(screen.getByRole("radio", { name: /^reflection$/i }));
+    it("locks reflection category from query param", async () => {
+      useSearchParams.mockReturnValue(new URLSearchParams("template=reflection"));
+      render(<NewNotePage />);
       expect(screen.getByTestId("template-locked-category").textContent).toMatch(/Reflection/);
-    });
-
-    it("does not autosave on template switch even after user edits", async () => {
-      render(<NewNotePage />);
-      setNoteBody("Content before switch");
-      vi.mocked(saveEncryptedNoteDraft).mockClear();
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-      vi.advanceTimersByTime(500);
-      expect(saveEncryptedNoteDraft).not.toHaveBeenCalled();
-    });
-
-    it("does not autosave when switching Prayer to Reflection", async () => {
-      render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-      fireEvent.click(screen.getByRole("radio", { name: /^reflection$/i }));
-      vi.advanceTimersByTime(3000);
-      expect(saveEncryptedNoteDraft).not.toHaveBeenCalled();
-    });
-
-    it("does not autosave when switching back to Blank note", async () => {
-      render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-      fireEvent.click(screen.getByRole("radio", { name: /blank note/i }));
-      vi.advanceTimersByTime(3000);
-      expect(saveEncryptedNoteDraft).not.toHaveBeenCalled();
+      expect(screen.getByLabelText("Title")).toHaveValue("Reflection");
     });
   });
 
   describe("unsaved warnings", () => {
-    it("does not mark dirty from template selection alone", () => {
+    it("does not mark dirty from template query link alone", () => {
+      useSearchParams.mockReturnValue(new URLSearchParams("template=prayer"));
       render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
       expect(screen.queryByText("You have unsaved changes.")).toBeNull();
     });
 
@@ -318,16 +272,6 @@ describe("SelahKeep notes autosave and template switching", () => {
       render(<NewNotePage />);
       setNoteBody("Edited");
       expect(screen.getByText("You have unsaved changes.")).toBeTruthy();
-    });
-
-    it("does not mark dirty from template switch without prior user edit", async () => {
-      render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-      fireEvent.click(screen.getByRole("radio", { name: /^reflection$/i }));
-      await waitFor(() => {
-        expect(screen.getByLabelText("Title")).toHaveValue("Reflection");
-      });
-      expect(screen.queryByText("You have unsaved changes.")).toBeNull();
     });
   });
 

@@ -465,10 +465,10 @@ describe("notes UX", () => {
       expect(textarea.value).toBe("- [x] item one");
     });
 
-    it("shows template picker on new note page", () => {
+    it("does not show template picker on new note page", () => {
       render(<NewNotePage />);
-      expect(screen.getByTestId("note-template-picker")).toBeTruthy();
-      expect(screen.getByRole("radio", { name: /prayer/i })).toBeTruthy();
+      expect(screen.queryByTestId("note-template-picker")).toBeNull();
+      expect(screen.queryByTestId("new-note-template-section")).toBeNull();
     });
 
     it("sanitizes unsafe markdown preview content", () => {

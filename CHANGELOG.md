@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Production SSR: markdown sanitization no longer pulls jsdom.** Replaced `isomorphic-dompurify` with `sanitize-html` for markdown preview and editor paste sanitization, avoiding the Vercel `encoding-lite` / `html-encoding-sniffer` ESM require failure during server render.
 - **Mobile: passkey unlock on `/vault/unlock`.** WebAuthn options are prefetched when the unlock screen loads so `startAuthentication` runs immediately on tap (iOS Safari loses the user gesture after an async network round-trip).
 - **Mobile: note editor stays responsive with voice notes enabled.** Background model warm-up and dictation-panel auto-load are skipped on memory-constrained devices; the model downloads only when the user opens dictation and taps record, without running the heavy warm inference pass that froze typing.
 - **Dictate no longer auto-locks the vault while the voice model loads or transcribes.** On-device model download can take minutes without keyboard input; dictation and audio-upload panels suspend the inactivity timer until they close.

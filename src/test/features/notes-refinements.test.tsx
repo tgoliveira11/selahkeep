@@ -5,10 +5,12 @@ import NewNotePage from "@/app/(vault)/notes/new/page";
 import NotesPage from "@/app/(vault)/notes/page";
 import { saveEncryptedNoteDraft } from "@/lib/crypto-client/note-drafts";
 
+const useSearchParams = vi.fn(() => new URLSearchParams());
+
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() })),
   usePathname: vi.fn(() => "/notes"),
-  useSearchParams: vi.fn(() => new URLSearchParams()),
+  useSearchParams: () => useSearchParams(),
 }));
 
 vi.mock("next-auth/react", () => ({
@@ -133,6 +135,7 @@ vi.mock("@/lib/crypto-client/note-drafts", () => ({
 describe("notes refinements", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useSearchParams.mockReturnValue(new URLSearchParams());
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.stubGlobal("confirm", vi.fn(() => true));
   });
@@ -143,34 +146,34 @@ describe("notes refinements", () => {
   });
 
   describe("template category", () => {
-    it("shows locked Prayer category when Prayer template is selected", async () => {
+    it("shows locked Prayer category when opened via template query link", async () => {
+      useSearchParams.mockReturnValue(new URLSearchParams("template=prayer"));
       render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
 
       const locked = await screen.findByTestId("template-locked-category");
       expect(locked.textContent).toMatch(/Prayer/);
       expect(locked.textContent).toMatch(/assigned automatically/i);
     });
 
-    it("does not create category when Prayer template is selected", async () => {
+    it("does not create category when opened via Prayer template link", async () => {
+      useSearchParams.mockReturnValue(new URLSearchParams("template=prayer"));
       render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
       await screen.findByTestId("template-locked-category");
       expect(createCategory).not.toHaveBeenCalled();
     });
 
-    it("does not autosave after template selection alone", async () => {
+    it("does not autosave after opening a template link alone", async () => {
+      useSearchParams.mockReturnValue(new URLSearchParams("template=prayer"));
       render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
       await screen.findByTestId("template-locked-category");
 
       vi.advanceTimersByTime(3000);
       expect(saveEncryptedNoteDraft).not.toHaveBeenCalled();
     });
 
-    it("starts autosave after user edits body", async () => {
+    it("starts autosave after user edits body on a template link", async () => {
+      useSearchParams.mockReturnValue(new URLSearchParams("template=prayer"));
       render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
       await screen.findByTestId("template-locked-category");
 
       fireEvent.click(screen.getByTestId("editor-mode-markdown"));
@@ -183,12 +186,8 @@ describe("notes refinements", () => {
       });
     });
 
-    it("restores normal category behavior for Blank note", async () => {
+    it("shows manual category controls for blank note without template query", async () => {
       render(<NewNotePage />);
-      fireEvent.click(screen.getByRole("radio", { name: /^prayer$/i }));
-      await waitFor(() => expect(screen.getByTestId("template-locked-category")).toBeTruthy());
-
-      fireEvent.click(screen.getByRole("radio", { name: /blank note/i }));
       expect(screen.queryByTestId("template-locked-category")).toBeNull();
       expect(screen.getByPlaceholderText(/new category name/i)).toBeTruthy();
     });
