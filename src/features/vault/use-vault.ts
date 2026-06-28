@@ -1,5 +1,6 @@
 "use client";
 
+import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { unwrapVaultKeyFromRecovery } from "@/lib/crypto-client/vault";
@@ -30,12 +31,13 @@ export function useVault() {
     lockVaultSessionManually();
   }, []);
 
-  const unlockFromPasskey = useCallback(async () => {
+  const unlockFromPasskey = useCallback(
+    async (prefetchedOptions?: PublicKeyCredentialRequestOptionsJSON | null) => {
     if (!session?.user?.id) throw new Error("Not authenticated");
     setLoading(true);
     setError(null);
     try {
-      const key = await unlockVaultWithPasskey(session.user.id);
+      const key = await unlockVaultWithPasskey(session.user.id, undefined, prefetchedOptions);
       void recordVaultSecurityEvent("vault_unlocked", { method: "passkey_prf" });
       return key;
     } catch (e) {
@@ -44,7 +46,9 @@ export function useVault() {
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  },
+  [session]
+);
 
   const unlockFromRecoveryCode = useCallback(
     async (recoveryCode: string) => {

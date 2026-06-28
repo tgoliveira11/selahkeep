@@ -3,6 +3,7 @@ import {
   filterAuthenticationOptionsForCredential,
   requestVaultUnlockAuthenticationOptions,
   runVaultUnlockAuthenticationCeremony,
+  runVaultUnlockAuthenticationCeremonyWithOptions,
   verifyVaultUnlockAuthentication,
   VAULT_UNLOCK_AUTHENTICATE_PURPOSE,
 } from "@/lib/passkey/vault-unlock-authenticate";
@@ -85,6 +86,18 @@ describe("vault unlock authenticate client", () => {
 
     expect(realUnlock.allowCredentials).toEqual(serverOptions.allowCredentials);
     expect(settingsTest.allowCredentials).toEqual(serverOptions.allowCredentials);
+  });
+
+  it("runs ceremony with prefetched options without fetching again", async () => {
+    const prefetched = {
+      challenge: "prefetched",
+      allowCredentials: [{ id: "vault-cred", type: "public-key", transports: ["internal"] }],
+    };
+    await import("@/lib/passkey/vault-unlock-authenticate").then((m) =>
+      m.runVaultUnlockAuthenticationCeremonyWithOptions(prefetched, "vault-cred")
+    );
+    expect(mocks.apiPost).not.toHaveBeenCalled();
+    expect(mocks.startAuthentication).toHaveBeenCalled();
   });
 
   it("runs ceremony with vault unlock options only", async () => {

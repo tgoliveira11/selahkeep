@@ -1,11 +1,23 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { LtgVaultUnlockPanel } from "@/features/vault/ltg-vault-unlock-panel";
 
+const requestOptions = vi.fn();
+
+vi.mock("@/lib/passkey/vault-unlock-authenticate", () => ({
+  requestVaultUnlockAuthenticationOptions: (...args: unknown[]) => requestOptions(...args),
+}));
+
 describe("LtgVaultUnlockPanel", () => {
+  beforeEach(() => {
+    requestOptions.mockResolvedValue({
+      challenge: "abc",
+      allowCredentials: [{ id: "cred-1", type: "public-key", transports: ["internal"] }],
+    });
+  });
   it("uses SelahKeep copy", () => {
     render(
       <LtgVaultUnlockPanel
@@ -49,7 +61,7 @@ describe("LtgVaultUnlockPanel", () => {
     expect(primary).toBeTruthy();
   });
 
-  it("exposes every unlock method and keeps each control reachable", () => {
+  it("exposes every unlock method and keeps each control reachable", async () => {
     // A vault that offers all methods: password, recovery phrase, passkey, and a
     // legacy recovery code. Every control must be present and switchable (the
     // mobile risk is a hidden/unreachable control, not layout — RTL ignores CSS).
@@ -80,8 +92,10 @@ describe("LtgVaultUnlockPanel", () => {
     expect(screen.getByRole("tab", { name: /vault password/i })).toBeTruthy();
     expect(screen.getByRole("tab", { name: /recovery phrase/i })).toBeTruthy();
     expect(screen.getByRole("tab", { name: /recovery code/i })).toBeTruthy();
-    // Passkey unlock is offered.
-    expect(screen.getByRole("button", { name: /unlock with passkey/i })).toBeTruthy();
+    // Passkey unlock is offered once options are prefetched.
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /unlock with passkey/i })).not.toBeDisabled();
+    });
 
     // Default (password) controls are reachable.
     expect(screen.getByLabelText(/vault password/i)).toBeTruthy();

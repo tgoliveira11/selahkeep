@@ -124,27 +124,34 @@ function isPoliteConnection(): boolean {
  * Phones/tablets have tight per-tab memory budgets — eagerly loading a multi-MB
  * speech model in the background can crash/reload the tab (iOS Safari). On such
  * devices we skip the background warm-up and load the model on demand instead
- * (when the user actually opens dictation / audio upload).
+ * (when the user actually starts dictation / audio upload).
  */
-function isMemoryConstrainedDevice(): boolean {
+export function isMemoryConstrainedDevice(): boolean {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
   try {
-    return (
-      window.matchMedia("(pointer: coarse)").matches ||
-      window.matchMedia("(max-width: 768px)").matches
-    );
+    if (window.matchMedia("(pointer: coarse)").matches) return true;
+    if (window.matchMedia("(max-width: 1024px)").matches) return true;
+    if (
+      typeof navigator !== "undefined" &&
+      navigator.maxTouchPoints > 0 &&
+      window.matchMedia("(max-width: 1280px)").matches
+    ) {
+      return true;
+    }
   } catch {
     return false;
   }
+  return false;
 }
 
-function postWarmup(): void {
+function postWarmup(skipWarmInference = false): void {
   if (warmed) return;
   warmed = true;
   postTranscription({
     type: "warmup",
     modelId: getVoiceModelId(),
     modelHost: getVoiceModelHost(),
+    skipWarmInference,
   });
 }
 
@@ -162,10 +169,13 @@ export function warmUpTranscription(): void {
  * User-initiated model load (e.g. on opening the dictation panel). Like
  * `warmUpTranscription` but ignores the polite-connection gate, since the user
  * has asked to dictate. Idempotent and safe to call repeatedly.
+ *
+ * On memory-constrained devices the heavy warm inference is skipped so typing
+ * in the note editor stays responsive while the model downloads.
  */
 export function ensureModelLoaded(): void {
   if (!canRunVoice()) return;
-  postWarmup();
+  postWarmup(isMemoryConstrainedDevice());
 }
 
 /** @internal test helper */

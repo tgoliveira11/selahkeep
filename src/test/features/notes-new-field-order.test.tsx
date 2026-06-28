@@ -101,12 +101,13 @@ function sectionOrder() {
   const before = (a: Element, b: Element) =>
     Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
-  // Mockup order: title → category → template → editor → attachments → tags.
+  // Mockup order: title → tags → category → template → editor → attachments.
   return {
+    titleBeforeTags: before(title, tags),
+    tagsBeforeCategory: category ? before(tags, category) : null,
     titleBeforeTemplate: before(title, template),
     templateBeforeEditor: before(template, editor),
     editorBeforeAttachments: before(editor, attachments),
-    attachmentsBeforeTags: before(attachments, tags),
     titleBeforeCategory: category ? before(title, category) : null,
     categoryBeforeTemplate: category ? before(category, template) : null,
   };
@@ -130,19 +131,26 @@ describe("SelahKeep /notes/new field order and template categories", () => {
   });
 
   describe("field order", () => {
-    it("orders title first, then template, editor, attachments, and tags", () => {
+    it("orders title first, then tags, template, editor, and attachments", () => {
       render(<NewNotePage />);
       const order = sectionOrder();
+      expect(order.titleBeforeTags).toBe(true);
       expect(order.titleBeforeTemplate).toBe(true);
       expect(order.templateBeforeEditor).toBe(true);
       expect(order.editorBeforeAttachments).toBe(true);
-      expect(order.attachmentsBeforeTags).toBe(true);
     });
 
-    it("orders category after title and before template for blank note", () => {
+    it("orders tags after title and before category for blank note", () => {
       render(<NewNotePage />);
       const order = sectionOrder();
-      expect(order.titleBeforeCategory).toBe(true);
+      expect(order.titleBeforeTags).toBe(true);
+      expect(order.tagsBeforeCategory).toBe(true);
+    });
+
+    it("orders category after tags and before template for blank note", () => {
+      render(<NewNotePage />);
+      const order = sectionOrder();
+      expect(order.tagsBeforeCategory).toBe(true);
       expect(order.categoryBeforeTemplate).toBe(true);
     });
 

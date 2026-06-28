@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { mapVaultUnlockError } from "@/features/vault/vault-unlock-errors";
+import { useVaultPasskeyUnlockPrefetch } from "@/features/passkey/use-vault-passkey-unlock-prefetch";
 import { useVaultDockPasskeyAvailable } from "@/features/vault/use-vault-dock-passkey-available";
 import type { VaultStatus } from "@/lib/api-client/vault";
 
@@ -15,7 +17,9 @@ interface VaultDockQuickUnlockProps {
   vaultStatus: VaultStatus | null;
   idPrefix?: string;
   onUnlockPassword: (password: string) => void | Promise<void>;
-  onUnlockPasskey?: () => void | Promise<void>;
+  onUnlockPasskey?: (
+    prefetchedOptions?: PublicKeyCredentialRequestOptionsJSON | null
+  ) => void | Promise<void>;
 }
 
 /** Compact dock unlock: one primary method — passkey when configured, otherwise vault password. */
@@ -30,6 +34,8 @@ export function VaultDockQuickUnlock({
   const [vaultPassword, setVaultPassword] = useState("");
   const { hasEnvelope, showPasskey, prfExplicitlyUnsupported } =
     useVaultDockPasskeyAvailable(vaultStatus);
+  const { options: prefetchedPasskeyOptions, refresh: refreshPasskeyOptions } =
+    useVaultPasskeyUnlockPrefetch(Boolean(hasEnvelope && showPasskey && onUnlockPasskey));
   const displayError = mapVaultUnlockError(error);
   const passwordId = `${idPrefix}-vault-password`;
   const usePasskeyPrimary = hasEnvelope;
@@ -46,9 +52,11 @@ export function VaultDockQuickUnlock({
   async function submitPasskey() {
     if (!onUnlockPasskey) return;
     try {
-      await onUnlockPasskey();
+      await onUnlockPasskey(prefetchedPasskeyOptions);
     } catch {
       // Error surfaced via error prop.
+    } finally {
+      void refreshPasskeyOptions();
     }
   }
 
@@ -71,8 +79,9 @@ export function VaultDockQuickUnlock({
     return (
       <div className="vault-dock-unlock space-y-2.5">
         <Button
+          type="button"
           className="w-full text-sm"
-          disabled={loading}
+          disabled={loading || !prefetchedPasskeyOptions}
           onClick={submitPasskey}
         >
           {loading ? "Unlocking…" : "Unlock with passkey"}

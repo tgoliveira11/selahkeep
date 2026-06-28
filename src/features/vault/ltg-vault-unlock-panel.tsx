@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
@@ -9,6 +10,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import type { VaultStatus } from "@/lib/api-client/vault";
 import { mapVaultUnlockError } from "@/features/vault/vault-unlock-errors";
+import { useVaultPasskeyUnlockPrefetch } from "@/features/passkey/use-vault-passkey-unlock-prefetch";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
 import { cn } from "@/lib/ui/cn";
 
@@ -22,9 +24,13 @@ interface LtgVaultUnlockPanelProps {
   idPrefix?: string;
   onUnlockPassword: (password: string) => void | Promise<void>;
   onUnlockRecoveryPhrase: (phrase: string) => void | Promise<void>;
-  onUnlockPasskey?: () => void | Promise<void>;
+  onUnlockPasskey?: (
+    prefetchedOptions?: PublicKeyCredentialRequestOptionsJSON | null
+  ) => void | Promise<void>;
   onUnlockLegacyRecoveryCode?: (code: string) => void | Promise<void>;
-  onUnlockLegacyPasskey?: () => void | Promise<void>;
+  onUnlockLegacyPasskey?: (
+    prefetchedOptions?: PublicKeyCredentialRequestOptionsJSON | null
+  ) => void | Promise<void>;
 }
 
 export function LtgVaultUnlockPanel({
@@ -50,6 +56,24 @@ export function LtgVaultUnlockPanel({
   const showLegacy = vaultStatus?.hasRecoveryCode ?? false;
   const passkeyVaultUnlockAvailable =
     vaultStatus?.availableUnlockMethods?.passkey ?? vaultStatus?.hasPasskey ?? false;
+  const passkeyPrefetchEnabled = Boolean(
+    isLtg && passkeyVaultUnlockAvailable && (onUnlockPasskey || onUnlockLegacyPasskey)
+  );
+  const { options: prefetchedPasskeyOptions, refresh: refreshPasskeyOptions } =
+    useVaultPasskeyUnlockPrefetch(passkeyPrefetchEnabled);
+
+  async function submitPasskey(
+    handler?: (prefetchedOptions?: PublicKeyCredentialRequestOptionsJSON | null) => void | Promise<void>
+  ) {
+    if (!handler) return;
+    try {
+      await handler(prefetchedPasskeyOptions);
+    } catch {
+      // Error surfaced via error prop.
+    } finally {
+      void refreshPasskeyOptions();
+    }
+  }
 
   async function submitPassword() {
     try {
@@ -79,15 +103,6 @@ export function LtgVaultUnlockPanel({
     }
   }
 
-  async function submitPasskey(handler?: () => void | Promise<void>) {
-    if (!handler) return;
-    try {
-      await handler();
-    } catch {
-      // Error surfaced via error prop.
-    }
-  }
-
   const passwordId = `${idPrefix}-vault-password`;
   const phraseId = `${idPrefix}-recovery-phrase`;
   const legacyId = `${idPrefix}-legacy-recovery-code`;
@@ -107,9 +122,10 @@ export function LtgVaultUnlockPanel({
 
       {isLtg && onUnlockPasskey && passkeyVaultUnlockAvailable && (
         <Button
+          type="button"
           className={isDock ? "w-full text-sm" : "w-full"}
           variant="secondary"
-          disabled={loading}
+          disabled={loading || !prefetchedPasskeyOptions}
           onClick={() => submitPasskey(onUnlockPasskey)}
         >
           {loading ? "Unlocking…" : "Unlock with passkey"}

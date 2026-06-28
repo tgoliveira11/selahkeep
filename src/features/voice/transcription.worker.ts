@@ -28,7 +28,7 @@ export type TranscribeRequest =
       modelId: string;
       modelHost?: string;
     }
-  | { type: "warmup"; modelId: string; modelHost?: string };
+  | { type: "warmup"; modelId: string; modelHost?: string; skipWarmInference?: boolean };
 
 export type VoiceBackend = "webgpu" | "wasm";
 
@@ -200,14 +200,17 @@ self.onmessage = async (event: MessageEvent<TranscribeRequest>) => {
       ) => Promise<{ text: string }>;
       // Run one tiny inference on silence so kernels/shaders are compiled now
       // (especially important on WebGPU) — the first real partial is then fast.
-      try {
-        await transcriber(new Float32Array(WHISPER_SAMPLE_RATE), {
-          language: "en",
-          task: "transcribe",
-          chunk_length_s: 30,
-        });
-      } catch {
-        /* warm inference is best-effort */
+      // Skipped on memory-constrained devices where it can freeze the main tab.
+      if (!data.skipWarmInference) {
+        try {
+          await transcriber(new Float32Array(WHISPER_SAMPLE_RATE), {
+            language: "en",
+            task: "transcribe",
+            chunk_length_s: 30,
+          });
+        } catch {
+          /* warm inference is best-effort */
+        }
       }
       post({ type: "ready", backend: activeBackend });
     } catch (error) {

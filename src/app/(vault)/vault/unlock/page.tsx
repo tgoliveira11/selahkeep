@@ -108,12 +108,12 @@ export default function VaultUnlockPage() {
             await unlockFromRecoveryPhrase(phrase);
             router.push(afterUnlockPath);
           }}
-          onUnlockPasskey={async () => {
-            await unlockFromPasskey();
+          onUnlockPasskey={async (prefetchedOptions) => {
+            await unlockFromPasskey(prefetchedOptions);
             router.push(afterUnlockPath);
           }}
-          onUnlockLegacyPasskey={async () => {
-            await unlockFromPasskey();
+          onUnlockLegacyPasskey={async (prefetchedOptions) => {
+            await unlockFromPasskey(prefetchedOptions);
             router.push(afterUnlockPath);
           }}
           onUnlockLegacyRecoveryCode={async (code) => {

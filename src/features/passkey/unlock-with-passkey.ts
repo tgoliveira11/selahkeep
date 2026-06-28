@@ -14,8 +14,10 @@ import {
   unlockVaultFromPasskeyEnvelope,
 } from "@/lib/crypto-client/passkey-vault";
 import { logPasskeyVaultEvent } from "@/features/passkey/passkey-vault-audit";
+import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import {
   runVaultUnlockAuthenticationCeremony,
+  runVaultUnlockAuthenticationCeremonyWithOptions,
   verifyVaultUnlockAuthentication,
 } from "@/lib/passkey/vault-unlock-authenticate";
 
@@ -27,11 +29,14 @@ interface PasskeyAuthResult {
 
 export async function unlockVaultWithPasskey(
   userId: string,
-  credentialId?: string
+  credentialId?: string,
+  prefetchedOptions?: PublicKeyCredentialRequestOptionsJSON | null
 ): Promise<CryptoKey> {
   let assertion;
   try {
-    assertion = await runVaultUnlockAuthenticationCeremony(credentialId);
+    assertion = prefetchedOptions
+      ? await runVaultUnlockAuthenticationCeremonyWithOptions(prefetchedOptions, credentialId)
+      : await runVaultUnlockAuthenticationCeremony(credentialId);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (message.includes(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE)) {

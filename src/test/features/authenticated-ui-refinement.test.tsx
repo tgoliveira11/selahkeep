@@ -167,10 +167,10 @@ describe("authenticated UI refinement pass", () => {
       expect(main?.className).toContain(AUTHENTICATED_WIDTH_CLASS.notes);
     });
 
-    it("/notes/new uses editor width container when unlocked", () => {
+    it("/notes/new uses notes width container when unlocked", () => {
       render(<NewNotePage />);
       const main = document.getElementById("main-content");
-      expect(main?.className).toContain(AUTHENTICATED_WIDTH_CLASS.editor);
+      expect(main?.className).toContain(AUTHENTICATED_WIDTH_CLASS.notes);
       expect(screen.getByTestId("note-editor-surface")).toBeTruthy();
     });
 

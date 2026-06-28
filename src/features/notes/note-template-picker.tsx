@@ -7,20 +7,29 @@ interface NoteTemplatePickerProps {
   value: NoteTemplateId;
   onChange: (id: NoteTemplateId) => void;
   disabled?: boolean;
+  hideHeader?: boolean;
 }
 
-export function NoteTemplatePicker({ value, onChange, disabled }: NoteTemplatePickerProps) {
+export function NoteTemplatePicker({
+  value,
+  onChange,
+  disabled,
+  hideHeader = false,
+}: NoteTemplatePickerProps) {
   return (
     <div className="note-template-picker" data-testid="note-template-picker">
-      <div className="note-template-picker__header">
-        <p className="note-template-picker__label" id="note-template-label">
-          Start from a template
-        </p>
-      </div>
+      {!hideHeader && (
+        <div className="note-template-picker__header">
+          <p className="note-template-picker__label" id="note-template-label">
+            Start from a template
+          </p>
+        </div>
+      )}
       <div
         className="note-template-picker__options"
         role="radiogroup"
-        aria-labelledby="note-template-label"
+        aria-labelledby={hideHeader ? undefined : "note-template-label"}
+        aria-label={hideHeader ? "Start from a template" : undefined}
       >
         {NOTE_TEMPLATES.map((template) => {
           const selected = value === template.id;

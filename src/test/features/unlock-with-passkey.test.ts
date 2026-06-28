@@ -9,11 +9,13 @@ import {
 
 const mocks = vi.hoisted(() => ({
   runCeremony: vi.fn(),
+  runCeremonyWithOptions: vi.fn(),
   verifyAuth: vi.fn(),
 }));
 
 vi.mock("@/lib/passkey/vault-unlock-authenticate", () => ({
   runVaultUnlockAuthenticationCeremony: mocks.runCeremony,
+  runVaultUnlockAuthenticationCeremonyWithOptions: mocks.runCeremonyWithOptions,
   verifyVaultUnlockAuthentication: mocks.verifyAuth,
 }));
 
@@ -35,6 +37,12 @@ describe("unlockVaultWithPasskey", () => {
         prf: { results: { first: new Uint8Array(32).fill(9).buffer } },
       },
     });
+    mocks.runCeremonyWithOptions.mockResolvedValue({
+      id: "vault-cred",
+      clientExtensionResults: {
+        prf: { results: { first: new Uint8Array(32).fill(9).buffer } },
+      },
+    });
     mocks.verifyAuth.mockResolvedValue({
       verified: true,
       encryptedVaultKey: { version: "enc-v1" },
@@ -51,6 +59,16 @@ describe("unlockVaultWithPasskey", () => {
   it("passes optional credential id to ceremony for settings test parity", async () => {
     await unlockVaultWithPasskey(USER_ID, "vault-cred");
     expect(mocks.runCeremony).toHaveBeenCalledWith("vault-cred");
+  });
+
+  it("uses prefetched options without fetching again during the tap gesture", async () => {
+    const prefetched = {
+      challenge: "prefetched",
+      allowCredentials: [{ id: "vault-cred", type: "public-key" as const, transports: ["internal"] }],
+    };
+    await unlockVaultWithPasskey(USER_ID, undefined, prefetched);
+    expect(mocks.runCeremony).not.toHaveBeenCalled();
+    expect(mocks.runCeremonyWithOptions).toHaveBeenCalledWith(prefetched, undefined);
   });
 
   it("fails before verify when no vault passkey is configured", async () => {

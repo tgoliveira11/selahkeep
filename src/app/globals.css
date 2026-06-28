@@ -761,15 +761,18 @@ body {
     align-items: start;
     grid-template-areas:
       "title       rail"
+      "tags        rail"
       "category    rail"
       "editor      rail"
       "attachments rail"
-      "tags        rail"
       "error       rail";
   }
 
   .note-editor-grid > [data-area="title"] {
     grid-area: title;
+  }
+  .note-editor-grid > [data-area="tags"] {
+    grid-area: tags;
   }
   .note-editor-grid > [data-area="category"] {
     grid-area: category;
@@ -782,9 +785,6 @@ body {
   }
   .note-editor-grid > [data-area="attachments"] {
     grid-area: attachments;
-  }
-  .note-editor-grid > [data-area="tags"] {
-    grid-area: tags;
   }
   .note-editor-grid > [data-area="error"] {
     grid-area: error;

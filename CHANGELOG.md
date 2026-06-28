@@ -15,6 +15,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Mobile: passkey unlock on `/vault/unlock`.** WebAuthn options are prefetched when the unlock screen loads so `startAuthentication` runs immediately on tap (iOS Safari loses the user gesture after an async network round-trip).
+- **Mobile: note editor stays responsive with voice notes enabled.** Background model warm-up and dictation-panel auto-load are skipped on memory-constrained devices; the model downloads only when the user opens dictation and taps record, without running the heavy warm inference pass that froze typing.
+
+### Changed
+
+- **`/notes/new` aligned with the Stillness note-editor mockup.** Full-width layout (matching notes list and detail), tags under the title, white right-rail cards with header dividers (templates, dictate, encryption notice), and a top bar with draft status dot plus Discard/Save actions.
+
+### Fixed
+
 - **iPhone: `/vault/unlock` reloading in a loop (couldn't unlock).** The on-device speech-model **background warm-up** ran on every authenticated page — including the locked unlock screen — and eagerly loading the multi-MB model could exceed the tab's memory budget on phones, causing iOS Safari to reload the tab (which restarted the warm-up → loop). The warm-up is now skipped on memory-constrained/mobile devices (the model loads on demand when dictation/audio upload is opened) and never runs while the vault is locked.
 
 ### Added

@@ -106,6 +106,7 @@ export function useAudioFileTranscription(): UseAudioFileTranscriptionResult {
     setFileName(file.name);
     setStatus("decoding");
     try {
+      ensureModelLoaded();
       const pcm = await decodeAudioFileToPcm(file, setDecodeProgress);
       if (pcm.length === 0) {
         setError("That file didn't contain any audio we could read.");

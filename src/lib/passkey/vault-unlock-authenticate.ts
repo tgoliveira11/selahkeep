@@ -47,13 +47,21 @@ export async function requestVaultUnlockAuthenticationOptions(
   return filtered;
 }
 
+export async function runVaultUnlockAuthenticationCeremonyWithOptions(
+  options: PublicKeyCredentialRequestOptionsJSON,
+  credentialId?: string
+): Promise<Awaited<ReturnType<typeof startAuthentication>>> {
+  const filtered = filterAuthenticationOptionsForCredential(options, credentialId);
+  return startAuthentication({
+    optionsJSON: prepareAuthenticationOptions(filtered),
+  });
+}
+
 export async function runVaultUnlockAuthenticationCeremony(
   credentialId?: string
 ): Promise<Awaited<ReturnType<typeof startAuthentication>>> {
   const options = await requestVaultUnlockAuthenticationOptions(credentialId);
-  return startAuthentication({
-    optionsJSON: prepareAuthenticationOptions(options),
-  });
+  return runVaultUnlockAuthenticationCeremonyWithOptions(options, credentialId);
 }
 
 export async function verifyVaultUnlockAuthentication(

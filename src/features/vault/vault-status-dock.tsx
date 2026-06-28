@@ -335,8 +335,8 @@ export function VaultStatusDock() {
             await vault.unlockFromVaultPassword(password);
             vaultClient.recheck();
           }}
-          onUnlockPasskey={async () => {
-            await vault.unlockFromPasskey();
+          onUnlockPasskey={async (prefetchedOptions) => {
+            await vault.unlockFromPasskey(prefetchedOptions);
             vaultClient.recheck();
           }}
         />

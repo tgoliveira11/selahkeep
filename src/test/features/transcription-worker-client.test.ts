@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   warmUpTranscription,
+  ensureModelLoaded,
   getTranscriptionWorker,
   subscribeTranscription,
   resetTranscriptionWorkerForTests,
@@ -20,7 +21,20 @@ class FakeWorker {
   terminate() {}
 }
 
+function installDesktopMatchMedia() {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: () => ({
+      matches: false,
+      media: "",
+      addEventListener() {},
+      removeEventListener() {},
+    }),
+  });
+}
+
 function installCapableEnv() {
+  installDesktopMatchMedia();
   vi.stubGlobal("Worker", FakeWorker);
   vi.stubGlobal("AudioWorkletNode", class {});
   Object.defineProperty(navigator, "mediaDevices", {
@@ -93,6 +107,25 @@ describe("transcription worker client", () => {
     });
     warmUpTranscription();
     expect(lastWorker).toBeNull();
+    Object.defineProperty(window, "matchMedia", { configurable: true, value: original });
+  });
+
+  it("ensureModelLoaded skips warm inference on memory-constrained devices", () => {
+    installCapableEnv();
+    const original = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({
+        matches: /pointer: coarse|max-width/.test(query),
+        media: query,
+        addEventListener() {},
+        removeEventListener() {},
+      }),
+    });
+    ensureModelLoaded();
+    expect(lastWorker?.posted).toEqual([
+      expect.objectContaining({ type: "warmup", skipWarmInference: true }),
+    ]);
     Object.defineProperty(window, "matchMedia", { configurable: true, value: original });
   });
 
