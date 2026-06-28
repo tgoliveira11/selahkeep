@@ -131,6 +131,7 @@ describe("transcription worker client", () => {
         modelId: "Xenova/whisper-tiny",
         skipWarmInference: true,
         forceWasmOnly: true,
+        lowMemory: true,
       }),
     ]);
     Object.defineProperty(window, "matchMedia", { configurable: true, value: original });

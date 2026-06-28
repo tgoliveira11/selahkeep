@@ -30,6 +30,13 @@ interface VoiceCapturePanelProps {
 
 const WAVE_DELAYS = ["0s", ".12s", ".24s", ".36s", ".48s", ".6s", ".72s", ".4s", ".2s", ".55s"];
 
+function formatModelLoadError(message: string): string {
+  if (/out of memory|no available backend/i.test(message)) {
+    return "This device ran out of memory loading the speech model. Close other tabs, try again, or type your note.";
+  }
+  return "Could not load the speech model. Try again, or keep typing your note.";
+}
+
 /**
  * On-device dictation panel (Stillness hero spec). Records mic audio,
  * transcribes locally with Whisper (transformers.js), and lets the user
@@ -84,11 +91,10 @@ export function VoiceCapturePanel({ onInsert, onClose }: VoiceCapturePanelProps)
         ensureModelLoaded({ force: true });
         try {
           await waitForVoiceModelReady();
-        } catch {
+        } catch (error) {
           setPreparingModel(false);
-          setModelLoadError(
-            "Could not load the speech model. Try again, or keep typing your note."
-          );
+          const message = error instanceof Error ? error.message : "";
+          setModelLoadError(formatModelLoadError(message));
           return;
         }
         setPreparingModel(false);

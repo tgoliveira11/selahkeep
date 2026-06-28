@@ -144,17 +144,26 @@ export function isMemoryConstrainedDevice(): boolean {
   return false;
 }
 
+export function getVoiceLoadOptions(): {
+  forceWasmOnly: boolean;
+  lowMemory: boolean;
+} {
+  const lowMemory = isMemoryConstrainedDevice();
+  return { forceWasmOnly: lowMemory, lowMemory };
+}
+
 function postWarmup(options?: { force?: boolean }): void {
   if (warmed) return;
   const memoryConstrained = isMemoryConstrainedDevice();
   if (memoryConstrained && !options?.force) return;
   warmed = true;
+  const loadOptions = getVoiceLoadOptions();
   postTranscription({
     type: "warmup",
     modelId: memoryConstrained ? MOBILE_VOICE_MODEL : getVoiceModelId(),
     modelHost: getVoiceModelHost(),
     skipWarmInference: memoryConstrained,
-    forceWasmOnly: memoryConstrained,
+    ...loadOptions,
   });
 }
 
@@ -175,6 +184,9 @@ export function warmUpTranscription(): void {
  */
 export function ensureModelLoaded(options?: { force?: boolean }): void {
   if (!canRunVoice()) return;
+  if (options?.force && isMemoryConstrainedDevice()) {
+    releaseTranscriptionWorker();
+  }
   postWarmup(options);
 }
 
@@ -192,16 +204,26 @@ export function waitForVoiceModelReady(timeoutMs = 10 * 60 * 1000): Promise<void
   if (modelReady) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      unsub();
+      cleanup();
       reject(new Error("Speech model load timed out"));
     }, timeoutMs);
-    const unsub = subscribeModelStatus((status) => {
+    const unsubStatus = subscribeModelStatus((status) => {
       if (status.ready) {
-        clearTimeout(timer);
-        unsub();
+        cleanup();
         resolve();
       }
     });
+    const unsubWorker = subscribeTranscription((message) => {
+      if (message.type === "error") {
+        cleanup();
+        reject(new Error(message.message));
+      }
+    });
+    function cleanup() {
+      clearTimeout(timer);
+      unsubStatus();
+      unsubWorker();
+    }
   });
 }
 

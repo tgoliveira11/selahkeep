@@ -59,6 +59,8 @@ import { useVaultAutoLockedCopy } from "@/features/vault/use-vault-auto-locked-c
 import { touchVaultActivity } from "@/features/vault/use-vault-activity";
 import { appendTranscript } from "@/lib/voice/transcript-format";
 import { isVoiceNotesEnabled } from "@/lib/voice/voice-config";
+import { shouldDeferVoiceModelLoad } from "@/features/voice/transcription-worker-client";
+import { NoteEditorPausedForVoice } from "@/features/voice/note-editor-paused-for-voice";
 import { AudioUploadButton } from "@/features/voice/audio-upload-button";
 import { useOnlineStatus } from "@/features/notes/use-online-status";
 import { encryptAttachment } from "@/lib/crypto-client/note-attachments";
@@ -141,6 +143,8 @@ export default function NewNotePage() {
   const dirty = isDraftActivatedByUser(draftActivation);
   const showManualCategory = templateId === "blank";
   const showTemplateCategory = categoryLocked && isTemplateWithLockedCategory(templateId);
+  const pauseEditorForVoice =
+    shouldDeferVoiceModelLoad() && (voiceOpen || uploadOpen);
 
   useUnsavedChangesWarning(dirty);
   const { requestLeave, confirmDialog } = useConfirmLeave(dirty);
@@ -519,19 +523,23 @@ export default function NewNotePage() {
           </aside>
 
           <div data-area="editor" data-testid="new-note-editor-field">
-            <MarkdownEditor
-              value={body}
-              onChange={(value) => {
-                setBody(value);
-                if (applyingTemplateRef.current) {
-                  applyingTemplateRef.current = false;
-                  return;
-                }
-                activateDraft("content");
-              }}
-              onSave={() => void handleSubmit()}
-              status={editorStatus}
-            />
+            {pauseEditorForVoice ? (
+              <NoteEditorPausedForVoice testId="new-note-editor-paused" />
+            ) : (
+              <MarkdownEditor
+                value={body}
+                onChange={(value) => {
+                  setBody(value);
+                  if (applyingTemplateRef.current) {
+                    applyingTemplateRef.current = false;
+                    return;
+                  }
+                  activateDraft("content");
+                }}
+                onSave={() => void handleSubmit()}
+                status={editorStatus}
+              />
+            )}
           </div>
 
           {(showManualCategory || showTemplateCategory) && (

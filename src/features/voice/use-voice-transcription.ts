@@ -14,6 +14,7 @@ import type { TranscribeRequest } from "./transcription.worker";
 import {
   getActiveVoiceModelId,
   getTranscriptionWorker,
+  getVoiceLoadOptions,
   postTranscription,
   subscribeTranscription,
 } from "./transcription-worker-client";
@@ -196,6 +197,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
         language: languageRef.current,
         modelId: getActiveVoiceModelId(),
         modelHost: getVoiceModelHost(),
+        ...getVoiceLoadOptions(),
       };
       postTranscription(request, [pcm.buffer]);
     },

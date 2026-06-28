@@ -17,6 +17,8 @@ export type TranscribeRequest =
       language: string;
       modelId: string;
       modelHost?: string;
+      forceWasmOnly?: boolean;
+      lowMemory?: boolean;
     }
   | {
       // Whole-file transcription. `language` forces the transcription language;
@@ -27,6 +29,8 @@ export type TranscribeRequest =
       language?: string;
       modelId: string;
       modelHost?: string;
+      forceWasmOnly?: boolean;
+      lowMemory?: boolean;
     }
   | {
       type: "warmup";
@@ -34,6 +38,7 @@ export type TranscribeRequest =
       modelHost?: string;
       skipWarmInference?: boolean;
       forceWasmOnly?: boolean;
+      lowMemory?: boolean;
     };
 
 export type VoiceBackend = "webgpu" | "wasm";
@@ -49,6 +54,21 @@ const WHISPER_SAMPLE_RATE = 16_000;
 // Lazily-created singleton pipeline, reused across requests.
 let transcriberPromise: Promise<unknown> | null = null;
 let activeBackend: VoiceBackend = "wasm";
+
+type TranscriberLoadOptions = {
+  forceWasmOnly?: boolean;
+  lowMemory?: boolean;
+};
+
+function configureOnnxWasm(
+  env: { backends?: { onnx?: { wasm?: { numThreads?: number; proxy?: boolean } } } },
+  options?: TranscriberLoadOptions
+): void {
+  const wasm = env.backends?.onnx?.wasm;
+  if (!wasm || !options?.lowMemory) return;
+  wasm.numThreads = 1;
+  wasm.proxy = false;
+}
 
 /** WebGPU is dramatically faster than WASM for Whisper; probe it (in-worker). */
 async function detectWebGPU(): Promise<boolean> {
@@ -66,7 +86,7 @@ async function detectWebGPU(): Promise<boolean> {
 async function getTranscriber(
   modelId: string,
   modelHost: string | undefined,
-  options?: { forceWasmOnly?: boolean }
+  options?: TranscriberLoadOptions
 ) {
   if (transcriberPromise) return transcriberPromise;
 
@@ -77,6 +97,7 @@ async function getTranscriber(
 
     // Fetch model weights remotely (no local bundling); never user content.
     env.allowLocalModels = false;
+    configureOnnxWasm(env, options);
     if (modelHost) {
       // Self-hosted: serve both the model weights and the ONNX-runtime WASM
       // from the configured first-party host (no third-party CDN contact).
@@ -115,7 +136,7 @@ async function getTranscriber(
 
     const cpuPipe = await pipeline("automatic-speech-recognition", modelId, {
       device: "wasm",
-      dtype: "q8",
+      dtype: options?.lowMemory ? "q4" : "q8",
       progress_callback,
     } as Record<string, unknown>);
     activeBackend = "wasm";
@@ -206,6 +227,7 @@ self.onmessage = async (event: MessageEvent<TranscribeRequest>) => {
     try {
       const transcriber = (await getTranscriber(data.modelId, data.modelHost, {
         forceWasmOnly: data.forceWasmOnly,
+        lowMemory: data.lowMemory,
       })) as (
         audio: Float32Array,
         options: Record<string, unknown>
@@ -238,7 +260,10 @@ self.onmessage = async (event: MessageEvent<TranscribeRequest>) => {
   // requested, label speakers using on-device diarization.
   if (data.type === "transcribe-file") {
     try {
-      const transcriber = (await getTranscriber(data.modelId, data.modelHost)) as (
+      const transcriber = (await getTranscriber(data.modelId, data.modelHost, {
+        forceWasmOnly: data.forceWasmOnly,
+        lowMemory: data.lowMemory,
+      })) as (
         audio: Float32Array,
         options: Record<string, unknown>
       ) => Promise<{ text: string; chunks?: Array<{ text: string; timestamp: [number, number] }> }>;
@@ -286,7 +311,10 @@ self.onmessage = async (event: MessageEvent<TranscribeRequest>) => {
   if (data.type !== "transcribe") return;
 
   try {
-    const transcriber = (await getTranscriber(data.modelId, data.modelHost)) as (
+    const transcriber = (await getTranscriber(data.modelId, data.modelHost, {
+      forceWasmOnly: data.forceWasmOnly,
+      lowMemory: data.lowMemory,
+    })) as (
       audio: Float32Array,
       options: Record<string, unknown>
     ) => Promise<{ text: string }>;

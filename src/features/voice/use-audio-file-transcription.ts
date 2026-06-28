@@ -8,6 +8,7 @@ import type { TranscribeRequest } from "./transcription.worker";
 import {
   ensureModelLoaded,
   getActiveVoiceModelId,
+  getVoiceLoadOptions,
   getTranscriptionWorker,
   postTranscription,
   shouldDeferVoiceModelLoad,
@@ -128,6 +129,7 @@ export function useAudioFileTranscription(): UseAudioFileTranscriptionResult {
         language,
         modelId: getActiveVoiceModelId(),
         modelHost: getVoiceModelHost(),
+        ...getVoiceLoadOptions(),
       };
       postTranscription(request, [pcm.buffer]);
     } catch (err) {

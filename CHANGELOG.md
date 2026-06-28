@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Mobile: voice model download OOM.** On phones/tablets the speech worker now loads `whisper-tiny` with **q4** WASM weights, single-thread ONNX, and pauses the TipTap editor while dictation/upload is open so iOS Safari has enough heap for the model.
 - **Production SSR: markdown sanitization no longer pulls jsdom.** Replaced `isomorphic-dompurify` with `sanitize-html` for markdown preview and editor paste sanitization, avoiding the Vercel `encoding-lite` / `html-encoding-sniffer` ESM require failure during server render.
 - **Mobile: passkey unlock on `/vault/unlock`.** WebAuthn options are prefetched when the unlock screen loads so `startAuthentication` runs immediately on tap (iOS Safari loses the user gesture after an async network round-trip).
 - **Mobile: note editor stays responsive with voice notes enabled.** Background model warm-up and dictation-panel auto-load are skipped on memory-constrained devices; the model downloads only when the user opens dictation and taps record, without running the heavy warm inference pass that froze typing.

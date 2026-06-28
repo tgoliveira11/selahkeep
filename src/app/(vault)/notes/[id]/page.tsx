@@ -31,6 +31,8 @@ import { NoteDetailActionBar } from "@/components/notes/note-detail-action-bar";
 import type { DecryptedNoteVersion } from "@/lib/crypto-client/note-versions";
 import { appendTranscript } from "@/lib/voice/transcript-format";
 import { isVoiceNotesEnabled } from "@/lib/voice/voice-config";
+import { shouldDeferVoiceModelLoad } from "@/features/voice/transcription-worker-client";
+import { NoteEditorPausedForVoice } from "@/features/voice/note-editor-paused-for-voice";
 import { DictateButton } from "@/features/voice/dictate-button";
 import { AudioUploadButton } from "@/features/voice/audio-upload-button";
 import { useOnlineStatus } from "@/features/notes/use-online-status";
@@ -133,6 +135,8 @@ export default function NoteDetailPage() {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const voiceEnabled = isVoiceNotesEnabled();
+  const pauseEditorForVoice =
+    shouldDeferVoiceModelLoad() && (voiceOpen || uploadOpen);
   const online = useOnlineStatus();
   const checklistSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoLocked = useVaultAutoLockedCopy();
@@ -818,14 +822,18 @@ export default function NoteDetailPage() {
                 )}
               </div>
             )}
-            <MarkdownEditor
-              value={body}
-              onChange={setBody}
-              id="edit-note-markdown"
-              onSave={() => void handleSave()}
-              checklistsDisabled={busy}
-              status={editorStatus}
-            />
+            {pauseEditorForVoice ? (
+              <NoteEditorPausedForVoice testId="edit-note-editor-paused" />
+            ) : (
+              <MarkdownEditor
+                value={body}
+                onChange={setBody}
+                id="edit-note-markdown"
+                onSave={() => void handleSave()}
+                checklistsDisabled={busy}
+                status={editorStatus}
+              />
+            )}
           </FormField>
 
           <div className={cn(focusMode && "note-focus-hide")} data-testid="edit-note-attachments-field">
