@@ -40,6 +40,8 @@ export const testSecureAuthUiConfig: SecureAuthUIPublicConfig = {
     accountSettings: "/settings/account",
     securitySettings: "/settings/account",
     sessionsSettings: "/settings/account",
+    waitlistPending: "/waitlist",
+    adminPanel: "/admin",
   },
   messages: { ...authPageMessages },
   passwordPolicy: buildTestPasswordPolicyFromEnv(),

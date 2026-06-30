@@ -24,6 +24,10 @@ export type SecureAuthEnvSlice = Pick<
   | "oauth"
   | "webauthn"
   | "ui"
+  | "admin"
+  | "accountLockout"
+  | "invites"
+  | "apiKeys"
 >;
 
 function readCsvEnv(env: NodeJS.ProcessEnv, key: string): string[] {
@@ -197,6 +201,8 @@ function parseSecureAuthEnv(
     ),
   };
 
+  const adminPath = readEnv(env, "AUTH_ADMIN_PATH") ?? "/admin";
+
   const uiPaths = {
     home: "/",
     login: "/login",
@@ -211,6 +217,8 @@ function parseSecureAuthEnv(
     accountSettings: "/settings/account",
     securitySettings: "/settings/account",
     sessionsSettings: "/settings/account",
+    waitlistPending: "/waitlist",
+    adminPanel: adminPath,
   };
 
   return {
@@ -245,6 +253,19 @@ function parseSecureAuthEnv(
     githubClientSecret,
     passwordPolicy,
     uiPaths,
+    adminPath,
+    adminEnabled: readBoolEnv(env, "AUTH_ADMIN_ENABLED", false),
+    adminBootstrapEmail: readEnv(env, "ADMIN_BOOTSTRAP_EMAIL"),
+    adminConfigCacheTtlSeconds: readIntEnv(env, "AUTH_ADMIN_CONFIG_CACHE_TTL_SECONDS", 60, {
+      min: 0,
+    }),
+    accountLockoutEnabled: readBoolEnv(env, "AUTH_ACCOUNT_LOCKOUT_ENABLED", false),
+    invitesEnabled: readBoolEnv(env, "AUTH_INVITES_ENABLED", false),
+    invitesRequireApproval: readBoolEnv(env, "AUTH_INVITES_REQUIRE_APPROVAL", false),
+    invitesRequireCode: readBoolEnv(env, "AUTH_INVITES_REQUIRE_CODE", false),
+    invitesDefaultQuota: readIntEnv(env, "AUTH_INVITES_DEFAULT_QUOTA", 0, { min: 0 }),
+    invitesCodeExpiryDays: readIntEnv(env, "AUTH_INVITES_CODE_EXPIRY_DAYS", 30, { min: 1 }),
+    apiKeysEnabled: readBoolEnv(env, "AUTH_API_KEYS_ENABLED", false),
   };
 }
 
@@ -326,6 +347,17 @@ export function buildSecureAuthConfigFromEnv(
     githubClientSecret,
     passwordPolicy,
     uiPaths,
+    adminPath,
+    adminEnabled,
+    adminBootstrapEmail,
+    adminConfigCacheTtlSeconds,
+    accountLockoutEnabled,
+    invitesEnabled,
+    invitesRequireApproval,
+    invitesRequireCode,
+    invitesDefaultQuota,
+    invitesCodeExpiryDays,
+    apiKeysEnabled,
   } = parsed;
 
   return {
@@ -423,6 +455,25 @@ export function buildSecureAuthConfigFromEnv(
       passwordStrength: {
         position: passwordStrengthPosition,
       },
+    },
+    admin: {
+      enabled: adminEnabled,
+      path: adminPath,
+      bootstrapEmail: adminBootstrapEmail,
+      configCacheTtlSeconds: adminConfigCacheTtlSeconds,
+    },
+    accountLockout: {
+      enabled: accountLockoutEnabled,
+    },
+    invites: {
+      enabled: invitesEnabled,
+      requireApproval: invitesRequireApproval,
+      requireInviteCode: invitesRequireCode,
+      defaultQuotaPerUser: invitesDefaultQuota,
+      codeExpiryDays: invitesCodeExpiryDays,
+    },
+    apiKeys: {
+      enabled: apiKeysEnabled,
     },
   };
 }

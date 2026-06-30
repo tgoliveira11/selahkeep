@@ -29,6 +29,13 @@ const delegateRoutes = [
   ["sessions revoke others", () => import("@/app/api/account/sessions/revoke-others/route")],
   ["sessions revoke all", () => import("@/app/api/account/sessions/revoke-all/route")],
   ["nextauth", () => import("@/app/api/auth/[...nextauth]/route")],
+  ["admin users", () => import("@/app/api/auth/admin/users/route")],
+  ["admin user by id", () => import("@/app/api/auth/admin/users/[id]/route")],
+  ["admin waitlist", () => import("@/app/api/auth/admin/waitlist/route")],
+  ["admin locks", () => import("@/app/api/auth/admin/locks/route")],
+  ["admin invites", () => import("@/app/api/auth/admin/invites/route")],
+  ["admin api keys", () => import("@/app/api/auth/admin/api-keys/route")],
+  ["admin config", () => import("@/app/api/auth/admin/config/route")],
 ] as const;
 
 describe("secure-auth delegate API routes", () => {

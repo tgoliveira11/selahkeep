@@ -150,6 +150,22 @@ When `true`, working SMTP (`EMAIL_PROVIDER=smtp`) is effectively required.
 | `AUTH_ALLOWED_ORIGINS` | Optional | Preview | `https://staging.example.com` | secure-auth | Extra allowed origins (comma-separated) | In addition to `APP_BASE_URL` and WebAuthn origin. |
 | `AUTH_DEBUG_EXPOSE_TRACE_ROUTE` | Optional | Never in prod | `false` | secure-auth | Expose `GET /api/auth/login/trace` | Default `false`. Requires `AUTH_TRACE=true` as well. Never enable in production. |
 
+### Admin platform (secure-auth 0.4.1+)
+
+| Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
+|----------|-----------|--------------|---------------|---------|---------|-------|
+| `AUTH_ADMIN_ENABLED` | Optional | Production, Preview | `true` | secure-auth + `src/proxy.ts` | Enable `/admin` UI and `/api/auth/admin/*` | Default `false`. When off, admin routes are not gated by proxy. |
+| `AUTH_ADMIN_PATH` | Optional | All | `/admin` | secure-auth UI paths | Admin panel URL prefix | Default `/admin`. |
+| `ADMIN_BOOTSTRAP_EMAIL` | Optional | Production | `tgoliveira11@gmail.com` | secure-auth `admin.bootstrapEmail` | Promote first admin when none exists | No-op once an admin user exists in DB. |
+| `AUTH_ADMIN_CONFIG_CACHE_TTL_SECONDS` | Optional | All | `60` | secure-auth admin | In-memory config override cache TTL | `0` disables cache. |
+| `AUTH_ACCOUNT_LOCKOUT_ENABLED` | Optional | All | `false` | secure-auth + `/admin/locks` | Progressive login lockout | Requires migration `0014_secure_auth_admin_platform.sql`. |
+| `AUTH_INVITES_ENABLED` | Optional | All | `false` | secure-auth + admin waitlist/invites | Invite / waitlist system | Enable for waitlist and invite admin pages. |
+| `AUTH_INVITES_REQUIRE_APPROVAL` | Optional | All | `false` | secure-auth | New users start as pending | Admin approves via `/admin/waitlist`. |
+| `AUTH_INVITES_REQUIRE_CODE` | Optional | All | `false` | secure-auth | Registration requires invite code | |
+| `AUTH_INVITES_DEFAULT_QUOTA` | Optional | All | `0` | secure-auth | Invite codes per approved user | |
+| `AUTH_INVITES_CODE_EXPIRY_DAYS` | Optional | All | `30` | secure-auth | Invite code validity | |
+| `AUTH_API_KEYS_ENABLED` | Optional | All | `false` | secure-auth + `/admin/api-keys` | Machine-to-machine API keys | |
+
 ### Sessions
 
 | Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
@@ -275,11 +291,11 @@ Add OAuth variables only for providers you enable. Run database migrations again
 |-------|--------|
 | `npm install` without `--legacy-peer-deps` | Passes (`nodemailer@7.x` satisfies `next-auth` peer) |
 | `package-lock.json` committed | Yes |
-| No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.1.25` from npm registry |
+| No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.4.1` from npm registry |
 | Private registry | Public npm scope `@tgoliveira` — no extra `.npmrc` required for Vercel |
 | Local `npm run build` | Passes |
 | Production domain | `https://www.selahkeep.com` |
-| Package health | `GET /api/auth/package-health` → `version: 0.1.25` |
+| Package health | `GET /api/auth/package-health` → `version: 0.4.1` |
 | Production deploy validated | **Not re-run in this phase** — redeploy after env review |
 
 ---
@@ -292,7 +308,7 @@ After deploy:
 curl https://www.selahkeep.com/api/auth/package-health
 ```
 
-Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.1.25" }` when runtime secrets and DB are configured.
+Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.4.1" }` when runtime secrets and DB are configured.
 
 ---
 

@@ -40,6 +40,13 @@ Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`;
 | `/vault/recovery` | Session | Shipped | Recovery phrase unlock |
 | `/settings/account` | Session | Shipped | Profile, delete account |
 | `/settings/security` | Session | Shipped | 2FA, sessions, passkeys |
+| `/admin` | Session + admin role | Shipped (when `AUTH_ADMIN_ENABLED`) | Secure-auth admin overview |
+| `/admin/users` | Session + admin role | Shipped | User management |
+| `/admin/waitlist` | Session + admin role | Shipped | Pending registrations |
+| `/admin/invites` | Session + admin role | Shipped | Invite codes |
+| `/admin/locks` | Session + admin role | Shipped | Account lockouts |
+| `/admin/api-keys` | Session + admin role | Shipped | M2M API keys |
+| `/admin/config` | Session + admin role | Shipped | Runtime config overrides |
 | `/api-docs` | Dev / `ENABLE_API_DOCS` | Shipped | Swagger UI (off in prod by default) |
 
 ---
@@ -51,6 +58,7 @@ Grouped by domain. Full tables: [`API_REFERENCE.md`](./API_REFERENCE.md), OpenAP
 | Domain | Prefix / examples | Notes |
 |--------|-------------------|--------|
 | **Auth (secure-auth)** | `/api/auth/*`, NextAuth catch-all | Register, login, OAuth, 2FA, passkey login, email verify, password reset |
+| **Auth admin (secure-auth)** | `/api/auth/admin/*` | Users, waitlist, invites, locks, API keys, config (admin role; when `AUTH_ADMIN_ENABLED`) |
 | **Account** | `/api/account/*` | Profile, sessions, passkeys, 2FA, change password |
 | **Vault** | `/api/vault/*` | Setup, status, settings, index, unlock envelopes, recovery phrase, storage |
 | **Passkeys (vault)** | `/api/passkeys/*` | Vault passkey register/authenticate |

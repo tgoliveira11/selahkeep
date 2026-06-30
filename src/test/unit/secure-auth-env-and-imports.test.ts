@@ -242,4 +242,36 @@ describe("buildSecureAuthConfigFromEnv", () => {
       "Start writing private notes in a protected space."
     );
   });
+
+  it("maps admin platform config from env (0.4.1+)", () => {
+    const config = buildSecureAuthConfigFromEnv(
+      {
+        ...baseEnv,
+        AUTH_ADMIN_ENABLED: "true",
+        AUTH_ADMIN_PATH: "/admin",
+        ADMIN_BOOTSTRAP_EMAIL: "tgoliveira11@gmail.com",
+        AUTH_INVITES_ENABLED: "true",
+        AUTH_API_KEYS_ENABLED: "true",
+        AUTH_ACCOUNT_LOCKOUT_ENABLED: "true",
+      },
+      { appName: "Test", appSlug: "test", baseUrl: "http://localhost:3001" }
+    );
+
+    expect(config.admin?.enabled).toBe(true);
+    expect(config.admin?.path).toBe("/admin");
+    expect(config.admin?.bootstrapEmail).toBe("tgoliveira11@gmail.com");
+    expect(config.invites?.enabled).toBe(true);
+    expect(config.apiKeys?.enabled).toBe(true);
+    expect(config.accountLockout?.enabled).toBe(true);
+    expect(config.ui?.paths?.adminPanel).toBe("/admin");
+
+    const ui = buildSecureAuthUiPublicConfigFromEnv(
+      {
+        AUTH_ADMIN_PATH: "/admin",
+      },
+      { appName: "SelahKeep", appSlug: "letters-to-god", baseUrl: "http://localhost:3001" }
+    );
+    expect(ui.paths.adminPanel).toBe("/admin");
+    expect(ui.paths.waitlistPending).toBe("/waitlist");
+  });
 });

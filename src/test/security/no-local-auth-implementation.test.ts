@@ -42,6 +42,13 @@ const delegatedAuthRoutes = [
   "src/app/api/auth/passkey/login/verify/route.ts",
   "src/app/api/auth/package-health/route.ts",
   "src/app/api/auth/[...nextauth]/route.ts",
+  "src/app/api/auth/admin/users/route.ts",
+  "src/app/api/auth/admin/users/[id]/route.ts",
+  "src/app/api/auth/admin/waitlist/route.ts",
+  "src/app/api/auth/admin/locks/route.ts",
+  "src/app/api/auth/admin/invites/route.ts",
+  "src/app/api/auth/admin/api-keys/route.ts",
+  "src/app/api/auth/admin/config/route.ts",
   "src/app/api/account/route.ts",
   "src/app/api/account/change-password/route.ts",
   "src/app/api/account/sessions/route.ts",
@@ -64,15 +71,15 @@ describe("no local auth implementation guard", () => {
     }
   });
 
-  it("pins @tgoliveira/secure-auth to 0.1.25", () => {
+  it("pins @tgoliveira/secure-auth to 0.4.1", () => {
     const packageJson = JSON.parse(readSource("package.json")) as {
       dependencies: Record<string, string>;
     };
-    expect(packageJson.dependencies["@tgoliveira/secure-auth"]).toBe("0.1.25");
+    expect(packageJson.dependencies["@tgoliveira/secure-auth"]).toBe("0.4.1");
 
     const lockfile = readSource("package-lock.json");
-    expect(lockfile).toContain('"@tgoliveira/secure-auth": "0.1.25"');
-    expect(lockfile).toContain("secure-auth-0.1.25.tgz");
+    expect(lockfile).toContain('"@tgoliveira/secure-auth": "0.4.1"');
+    expect(lockfile).toContain("secure-auth-0.4.1.tgz");
   });
 
   it("delegates account auth API routes to @tgoliveira/secure-auth", () => {

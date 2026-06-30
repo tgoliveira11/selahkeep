@@ -7,8 +7,10 @@ import {
 } from "@/lib/security/content-security-policy";
 import { sanitizeAuthCallbackUrl } from "@/lib/auth/safe-auth-callback";
 import { buildSecureAuthUiPublicConfigFromEnv } from "@/lib/env/secure-auth-from-env";
+import { readBoolEnv } from "@/lib/env/parse";
 
 const secureAuthUiConfig = buildSecureAuthUiPublicConfigFromEnv(process.env);
+const adminEnabled = readBoolEnv(process.env, "AUTH_ADMIN_ENABLED", false);
 
 const GUEST_ONLY_PATHS = [
   secureAuthUiConfig.paths.login,
@@ -129,6 +131,22 @@ export async function proxy(request: NextRequest) {
       url.search = "";
       return NextResponse.redirect(url);
     }
+  }
+
+  const pathname = request.nextUrl.pathname;
+  const adminPath = secureAuthUiConfig.paths.adminPanel;
+  if (
+    adminEnabled &&
+    adminPath &&
+    (pathname === adminPath || pathname.startsWith(`${adminPath}/`)) &&
+    !isFullyAuthenticatedToken(token)
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = secureAuthUiConfig.paths.login;
+    url.search = "";
+    const attemptedPath = `${pathname}${request.nextUrl.search}`;
+    url.searchParams.set("callbackUrl", sanitizeAuthCallbackUrl(attemptedPath));
+    return NextResponse.redirect(url);
   }
 
   return nextWithContentSecurityPolicy(request);
