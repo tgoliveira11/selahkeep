@@ -13,10 +13,22 @@ import { PRODUCT_NAME } from "@/lib/marketing/brand";
 
 type RouteHandler = (request: Request, ...args: unknown[]) => Promise<Response>;
 
+let adminBootstrapPromise: Promise<void> | null = null;
+
+async function ensureAdminBootstrap(): Promise<void> {
+  if (!adminBootstrapPromise) {
+    adminBootstrapPromise = initSecureAuth()
+      .getServices()
+      .then((services) => services.adminService.bootstrapAdminIfNeeded());
+  }
+  await adminBootstrapPromise;
+}
+
 function wrapSecureAuthHandler(handler: RouteHandler): RouteHandler {
   return async (request, ...args) => {
     try {
       await ensureSecureAuthDatabaseReady();
+      await ensureAdminBootstrap();
     } catch (error) {
       return NextResponse.json(
         {

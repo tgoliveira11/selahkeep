@@ -293,7 +293,7 @@ Add OAuth variables only for providers you enable. Run database migrations again
 
 | Check | Status |
 |-------|--------|
-| `npm install` without `--legacy-peer-deps` | Passes (`nodemailer@7.x` satisfies `next-auth` peer) |
+| `npm install` without `--legacy-peer-deps` | Passes (`nodemailer@9.x` satisfies Outpost peer; `next-auth` uses project override) |
 | `package-lock.json` committed | Yes |
 | No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.4.1` from npm registry |
 | Private registry | Public npm scope `@tgoliveira` — no extra `.npmrc` required for Vercel |

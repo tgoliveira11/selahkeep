@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - **Upgraded `@tgoliveira/secure-auth` from 0.1.25 to 0.4.1** (admin platform, user roles/status, invites, API keys, account lockout schema).
+- **Upgraded `nodemailer` to 9.x** to align with `@tgoliveira/outpost` peer requirements; removed `.npmrc` `legacy-peer-deps` workaround.
 
 ### Fixed
 
