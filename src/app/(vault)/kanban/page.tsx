@@ -29,6 +29,7 @@ export default function KanbanBoardsPage() {
   const { index } = useVaultIndex(vaultUserId, vaultUnlocked);
   const {
     standaloneBoards,
+    noteBoundBoards,
     loading,
     saving,
     error,
@@ -77,6 +78,7 @@ export default function KanbanBoardsPage() {
       )}
       <KanbanBoardList
         boards={standaloneBoards}
+        noteBoards={noteBoundBoards}
         cachedBoards={index?.kanbanBoards ?? []}
         loading={loading || saving}
         onCreate={async (title) => {

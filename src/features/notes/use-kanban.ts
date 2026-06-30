@@ -81,6 +81,7 @@ export interface UseKanbanState {
   encryptedWrappedKey: EncryptedPayload | null;
   response: KanbanBoardResponse | null;
   standaloneBoards: KanbanBoardPlaintext[];
+  noteBoundBoards: KanbanBoardPlaintext[];
   loading: boolean;
   saving: boolean;
   error: string | null;
@@ -92,6 +93,7 @@ export function useKanban(userId: string | null) {
     encryptedWrappedKey: null,
     response: null,
     standaloneBoards: [],
+    noteBoundBoards: [],
     loading: false,
     saving: false,
     error: null,
@@ -106,6 +108,7 @@ export function useKanban(userId: string | null) {
           encryptedWrappedKey: null,
           response: null,
           standaloneBoards: [],
+          noteBoundBoards: [],
           loading: false,
           saving: false,
           error: null,
@@ -113,6 +116,19 @@ export function useKanban(userId: string | null) {
       ),
     []
   );
+
+  async function decryptBoardRows(rows: KanbanBoardResponse[]): Promise<KanbanBoardPlaintext[]> {
+    const results = await Promise.allSettled(
+      rows.map((row) => decryptKanbanBoard(row.encryptedBoard, row.encryptedWrappedKey))
+    );
+    const boards: KanbanBoardPlaintext[] = [];
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        boards.push(result.value);
+      }
+    }
+    return boards;
+  }
 
   const hydrateBoard = useCallback(async (row: KanbanBoardResponse) => {
     const board = await decryptKanbanBoard(row.encryptedBoard, row.encryptedWrappedKey);
@@ -175,12 +191,12 @@ export function useKanban(userId: string | null) {
   const loadStandaloneBoards = useCallback(async () => {
     setState((current) => ({ ...current, loading: true, error: null }));
     try {
-      const rows = await kanbanApi.list({ scope: "standalone" });
-      const boards = await Promise.all(
-        rows.map((row) => decryptKanbanBoard(row.encryptedBoard, row.encryptedWrappedKey))
-      );
-      setState((current) => ({ ...current, standaloneBoards: boards }));
-      return boards;
+      const rows = await kanbanApi.list();
+      const boards = await decryptBoardRows(rows);
+      const standaloneBoards = boards.filter((board) => board.scope === "standalone");
+      const noteBoundBoards = boards.filter((board) => board.scope === "note");
+      setState((current) => ({ ...current, standaloneBoards, noteBoundBoards }));
+      return standaloneBoards;
     } catch (error) {
       setState((current) => ({
         ...current,
@@ -237,6 +253,10 @@ export function useKanban(userId: string | null) {
             board.scope === "standalone"
               ? [board, ...current.standaloneBoards.filter((item) => item.boardId !== board.boardId)]
               : current.standaloneBoards,
+          noteBoundBoards:
+            board.scope === "note"
+              ? [board, ...current.noteBoundBoards.filter((item) => item.boardId !== board.boardId)]
+              : current.noteBoundBoards,
         }));
         return board;
       } catch (error) {
@@ -279,6 +299,7 @@ export function useKanban(userId: string | null) {
           board,
           encryptedWrappedKey: encryptedWrappedNoteKey,
           response: row,
+          noteBoundBoards: [board, ...current.noteBoundBoards.filter((item) => item.boardId !== board.boardId)],
         }));
         return board;
       } catch (error) {
@@ -320,6 +341,7 @@ export function useKanban(userId: string | null) {
           encryptedWrappedKey: wrappedKey,
           response: row,
           standaloneBoards: [board, ...current.standaloneBoards],
+          noteBoundBoards: current.noteBoundBoards,
         }));
         return board;
       } catch (error) {
@@ -358,6 +380,7 @@ export function useKanban(userId: string | null) {
         ...current,
         board: current.board?.boardId === board.boardId ? null : current.board,
         standaloneBoards: current.standaloneBoards.filter((item) => item.boardId !== board.boardId),
+        noteBoundBoards: current.noteBoundBoards.filter((item) => item.boardId !== board.boardId),
       }));
     },
     [userId]

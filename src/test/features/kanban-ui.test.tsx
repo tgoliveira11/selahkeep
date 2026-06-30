@@ -197,4 +197,14 @@ describe("kanban UI", () => {
     expect(onCreate).toHaveBeenCalledWith("Home");
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  it("lists note-bound boards in a separate section", () => {
+    const noteBoard = sampleBoard();
+    render(<KanbanBoardList boards={[]} noteBoards={[noteBoard]} onCreate={vi.fn()} />);
+
+    expect(screen.getByTestId("kanban-note-board-list")).toBeInTheDocument();
+    expect(screen.getByTestId(`kanban-board-list-item-${BOARD_ID}`)).toHaveTextContent("Note board");
+    expect(screen.getByRole("link", { name: "Open note" })).toHaveAttribute("href", `/notes/${NOTE_ID}`);
+    expect(screen.getByText("No standalone boards yet")).toBeInTheDocument();
+  });
 });
