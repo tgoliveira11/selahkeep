@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-30
+
 ### Added
 
 - **Secure-auth admin platform (`@tgoliveira/secure-auth@0.4.1`).** `/admin` UI (overview, users, waitlist, invites, locks, API keys, config) with navigation at 1000px max width; API routes under `/api/auth/admin/*` delegate to the package. Access requires sign-in (proxy) and `admin` role (package API enforcement); `ADMIN_BOOTSTRAP_EMAIL` promotes the bootstrap account when no admin exists. Migration `0014_secure_auth_admin_platform.sql`.
