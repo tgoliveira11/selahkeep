@@ -1,0 +1,87 @@
+name: Release
+
+# Manual releases only — never on push/tag. See docs/releasing.md.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version bump (blank/auto=patch or recovery, patch, minor, major, or x.y.z)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Prepare release metadata
+        id: prepare
+        run: |
+          set -euo pipefail
+          INPUT="${{ github.event.inputs.version }}"
+          if [ -z "$INPUT" ]; then INPUT="auto"; fi
+          RESULT=$(node scripts/prepare-release.mjs --version="$INPUT")
+          echo "$RESULT"
+          echo "$RESULT" | node -e "const j=JSON.parse(require('fs').readFileSync(0,'utf8')); if(j.error){console.error(j.error); process.exit(1)}"
+          echo "changed=$(echo "$RESULT" | node -pe "JSON.parse(require('fs').readFileSync(0,'utf8')).changed")" >> "$GITHUB_OUTPUT"
+          echo "version=$(echo "$RESULT" | node -pe "JSON.parse(require('fs').readFileSync(0,'utf8')).version")" >> "$GITHUB_OUTPUT"
+          echo "recovery=$(echo "$RESULT" | node -pe "JSON.parse(require('fs').readFileSync(0,'utf8')).recovery")" >> "$GITHUB_OUTPUT"
+          echo "$RESULT" | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync(0,'utf8')).releaseNotes)" > release-notes.md
+
+      - name: Commit version metadata
+        if: steps.prepare.outputs.changed == 'true'
+        run: |
+          git add package.json CHANGELOG.md
+          git commit -m "Release ${{ steps.prepare.outputs.version }}"
+          git push origin main
+
+      - name: Create and push tag
+        env:
+          VERSION: ${{ steps.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="v${VERSION}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists — skipping tag creation"
+          else
+            git tag -a "$TAG" -m "SelahKeep ${VERSION}"
+            git push origin "$TAG"
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="v${VERSION}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "GitHub Release $TAG already exists — skipping"
+            exit 0
+          fi
+          NOTES_FILE="release-notes.md"
+          if [ -s "$NOTES_FILE" ]; then
+            gh release create "$TAG" \
+              --title "SelahKeep ${VERSION}" \
+              --notes-file "$NOTES_FILE"
+          else
+            gh release create "$TAG" \
+              --title "SelahKeep ${VERSION}" \
+              --generate-notes
+          fi

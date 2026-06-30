@@ -1,0 +1,118 @@
+# Current product surface — SelahKeep
+
+Living inventory of what the app exposes **today**. Update this file when routes, APIs, jobs, integrations, or shipped/planned status changes.
+
+**Last reviewed:** 2026-06-16 · **Version in repo:** see `package.json`
+
+---
+
+## Product scope
+
+Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`; note title/body encrypted client-side only. Former working name: LTG Vault (retired).
+
+**Not shipped / out of scope:** public letters, admin note content access, server-side AI on note plaintext, npm package publish.
+
+---
+
+## User-facing routes (pages)
+
+| Route | Auth | Status | Purpose |
+|-------|------|--------|---------|
+| `/` | Public | Shipped | Marketing / landing |
+| `/register` | Guest | Shipped | Account registration |
+| `/login` | Guest | Shipped | Sign in |
+| `/login/2fa` | Partial session | Shipped | TOTP step |
+| `/login/complete` | Session | Shipped | Post-login handoff |
+| `/forgot-password` | Guest | Shipped | Password reset request |
+| `/reset-password` | Guest | Shipped | Password reset confirm |
+| `/verify-email` | Guest / session | Shipped | Email verification |
+| `/check-email` | Guest | Shipped | Post-register notice |
+| `/account-deleted` | Public | Shipped | Post-deletion confirmation |
+| `/notes` | Session + vault | Shipped | Notes list |
+| `/notes/new` | Session + vault | Shipped | Create note |
+| `/notes/[id]` | Session + vault | Shipped | View / edit note |
+| `/notes/remembrance` | Session + vault | Shipped | Remembrance workflow |
+| `/notes/weekly-reflection` | Session + vault | Shipped | Weekly reflection |
+| `/vault/setup` | Session | Shipped | Vault + recovery phrase setup |
+| `/vault/unlock` | Session | Shipped | Vault unlock |
+| `/vault/settings` | Session + vault | Shipped | Vault passkeys, recovery |
+| `/vault/security` | Session + vault | Shipped | Security events |
+| `/vault/recovery` | Session | Shipped | Recovery phrase unlock |
+| `/settings/account` | Session | Shipped | Profile, delete account |
+| `/settings/security` | Session | Shipped | 2FA, sessions, passkeys |
+| `/api-docs` | Dev / `ENABLE_API_DOCS` | Shipped | Swagger UI (off in prod by default) |
+
+---
+
+## API surface (`/api/*`)
+
+Grouped by domain. Full tables: [`API_REFERENCE.md`](./API_REFERENCE.md), OpenAPI: [`openapi.yaml`](./openapi.yaml).
+
+| Domain | Prefix / examples | Notes |
+|--------|-------------------|--------|
+| **Auth (secure-auth)** | `/api/auth/*`, NextAuth catch-all | Register, login, OAuth, 2FA, passkey login, email verify, password reset |
+| **Account** | `/api/account/*` | Profile, sessions, passkeys, 2FA, change password |
+| **Vault** | `/api/vault/*` | Setup, status, settings, index, unlock envelopes, recovery phrase, storage |
+| **Passkeys (vault)** | `/api/passkeys/*` | Vault passkey register/authenticate |
+| **Notes** | `/api/notes`, `/api/notes/[id]` | Encrypted CRUD only |
+| **Note versions** | `/api/notes/[id]/versions/*` | Encrypted version history |
+| **Attachments** | `/api/notes/[id]/attachments/*` | Encrypted attachments |
+| **Recovery (legacy)** | `/api/recovery-code` | Legacy recovery codes only |
+| **Admin** | `/api/admin/users/[id]` | User admin; no note plaintext |
+| **Meta** | `/api/openapi`, `/api/auth/package-health` | Spec + health |
+
+**Invariant:** No API accepts or returns plaintext note title/body.
+
+---
+
+## Client-only capabilities
+
+| Feature | Status | Notes |
+|---------|--------|--------|
+| On-device voice dictation | Shipped | Whisper via transformers.js; optional `NEXT_PUBLIC_VOICE_*` |
+| Audio file upload transcribe | Shipped | On-device decode ladder |
+| Encrypted local drafts | Shipped | IndexedDB; not server plaintext |
+| Vault auto-lock | Shipped | Client session timer |
+| Passkey PRF vault unlock | Shipped | Separate from account passkeys |
+
+---
+
+## Background jobs / cron
+
+| Job | Status |
+|-----|--------|
+| Server cron / scheduled tasks | **None** in this repo |
+| Rate limit bucket cleanup | DB-backed when `RATE_LIMIT_STORE=postgres` |
+
+---
+
+## External integrations
+
+| Integration | Purpose | Config |
+|-------------|---------|--------|
+| PostgreSQL | Primary datastore | `DATABASE_URL` |
+| SMTP / email provider | Verification, reset | `EMAIL_*`, `SMTP_*` |
+| OAuth providers | Google, Apple, GitHub, Microsoft | `AUTH_*` / provider secrets |
+| Hugging Face CDN (optional) | Voice model weights | Default or `NEXT_PUBLIC_VOICE_MODEL_HOST` |
+| Vercel (typical hosting) | Deploy | Dashboard; not in release workflow |
+
+---
+
+## Feature flags / env gates
+
+| Variable | Effect |
+|----------|--------|
+| `NEXT_PUBLIC_VOICE_NOTES_ENABLED=false` | Hides dictation |
+| `ENABLE_API_DOCS=true` | Swagger in production |
+| `EMAIL_PROVIDER=console` | Dev-only email (blocked in prod) |
+
+---
+
+## Planned / not on this surface
+
+- Public letter sharing (removed; `letters` domain retired)
+- Trusted devices as separate vault unlock path (removed)
+- Server-side autosave of plaintext drafts
+- Automated GitHub Releases or deploy on tag push
+
+See [`LGPD_BETA_GATES.md`](./LGPD_BETA_GATES.md) for beta readiness gaps.
