@@ -16,13 +16,13 @@ const ADMIN_NAV_ITEMS = [
 ] as const;
 
 const OUTPOST_NAV_ITEMS = [
-  { suffix: "/outpost", label: "Outpost" },
-  { suffix: "/outpost/queue", label: "Email queue" },
-  { suffix: "/outpost/config", label: "Email config" },
-  { suffix: "/outpost/observability", label: "Observability" },
+  { suffix: "", label: "Outpost" },
+  { suffix: "/queue", label: "Email queue" },
+  { suffix: "/config", label: "Email config" },
+  { suffix: "/observability", label: "Observability" },
 ] as const;
 
-export function AdminNav() {
+export function AdminNav({ outpostAdminBase }: { outpostAdminBase: string }) {
   const resolved = useUiPaths();
   const pathname = usePathname();
   const base = resolved.adminPanel ?? "/admin";
@@ -60,10 +60,10 @@ export function AdminNav() {
           })}
           <div className="mx-1 h-5 w-px shrink-0 bg-[var(--border)]" />
           {OUTPOST_NAV_ITEMS.map(({ suffix, label }) => {
-            const href = suffix;
+            const href = `${outpostAdminBase}${suffix}`;
             const isActive =
-              suffix === "/outpost"
-                ? pathname === "/admin/outpost"
+              suffix === ""
+                ? pathname === outpostAdminBase
                 : pathname.startsWith(href);
             return (
               <Link

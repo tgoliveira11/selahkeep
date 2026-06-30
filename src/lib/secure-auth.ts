@@ -10,6 +10,7 @@ import { buildSecureAuthConfigFromEnv } from "@/lib/env/secure-auth-from-env";
 import { readEnv } from "@/lib/env/parse";
 import { ACCOUNT_PASSWORD_VAULT_NOTE } from "@/lib/account-auth-messages";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
+import { ensureBootstrapEmailAdminRole } from "@/lib/secure-auth-admin-bootstrap";
 
 type RouteHandler = (request: Request, ...args: unknown[]) => Promise<Response>;
 
@@ -17,11 +18,18 @@ let adminBootstrapPromise: Promise<void> | null = null;
 
 async function ensureAdminBootstrap(): Promise<void> {
   if (!adminBootstrapPromise) {
-    adminBootstrapPromise = initSecureAuth()
-      .getServices()
-      .then((services) => services.adminService.bootstrapAdminIfNeeded());
+    adminBootstrapPromise = (async () => {
+      const services = await initSecureAuth().getServices();
+      await services.adminService.bootstrapAdminIfNeeded();
+      await ensureBootstrapEmailAdminRole();
+    })();
   }
   await adminBootstrapPromise;
+}
+
+export async function ensureAdminBootstrapAccess(): Promise<void> {
+  await ensureSecureAuthDatabaseReady();
+  await ensureAdminBootstrap();
 }
 
 function wrapSecureAuthHandler(handler: RouteHandler): RouteHandler {

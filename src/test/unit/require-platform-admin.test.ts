@@ -14,6 +14,15 @@ describe("require-platform-admin", () => {
     expect(isPlatformAdminUser({ email: PLATFORM_ADMIN_EMAIL, role: "user" })).toBe(true);
   });
 
+  it("allows ADMIN_BOOTSTRAP_EMAIL without admin role", () => {
+    expect(
+      isPlatformAdminUser(
+        { email: "bootstrap@example.com", role: "user" },
+        { ADMIN_BOOTSTRAP_EMAIL: "bootstrap@example.com" }
+      )
+    ).toBe(true);
+  });
+
   it("rejects non-admin users", () => {
     expect(isPlatformAdminUser({ email: "user@example.com", role: "user" })).toBe(false);
   });

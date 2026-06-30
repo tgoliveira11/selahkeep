@@ -156,7 +156,7 @@ When `true`, working SMTP (`EMAIL_PROVIDER=smtp`) is effectively required.
 |----------|-----------|--------------|---------------|---------|---------|-------|
 | `AUTH_ADMIN_ENABLED` | Optional | Production, Preview | `true` | secure-auth + `src/proxy.ts` | Enable `/admin` UI and `/api/auth/admin/*` | Default `false`. When off, admin routes are not gated by proxy. |
 | `AUTH_ADMIN_PATH` | Optional | All | `/admin` | secure-auth UI paths | Admin panel URL prefix | Default `/admin`. |
-| `ADMIN_BOOTSTRAP_EMAIL` | Optional | Production | `tgoliveira11@gmail.com` | secure-auth `admin.bootstrapEmail` | Promote first admin when none exists | No-op once an admin user exists in DB. |
+| `ADMIN_BOOTSTRAP_EMAIL` | Optional | Production | `tgoliveira11@gmail.com` | secure-auth + app bootstrap | Grant admin access to this account | App promotes this email to `role=admin` on `/admin` load and before secure-auth admin APIs (idempotent). Package bootstrap also promotes when no admin exists yet. |
 | `AUTH_ADMIN_CONFIG_CACHE_TTL_SECONDS` | Optional | All | `60` | secure-auth admin | In-memory config override cache TTL | `0` disables cache. |
 | `OUTPOST_ADMIN_ENABLED` | Optional | Production, Preview | `true` | outpost admin + routes | Enable `/admin/outpost` and `/api/outpost/admin/*` | Defaults to `AUTH_ADMIN_ENABLED` when unset. |
 | `OUTPOST_ADMIN_PATH` | Optional | All | `/admin/outpost` | Outpost UI paths | Outpost admin panel URL prefix | Used by `OutpostUIProvider`. |
