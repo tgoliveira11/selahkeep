@@ -158,6 +158,10 @@ When `true`, working SMTP (`EMAIL_PROVIDER=smtp`) is effectively required.
 | `AUTH_ADMIN_PATH` | Optional | All | `/admin` | secure-auth UI paths | Admin panel URL prefix | Default `/admin`. |
 | `ADMIN_BOOTSTRAP_EMAIL` | Optional | Production | `tgoliveira11@gmail.com` | secure-auth `admin.bootstrapEmail` | Promote first admin when none exists | No-op once an admin user exists in DB. |
 | `AUTH_ADMIN_CONFIG_CACHE_TTL_SECONDS` | Optional | All | `60` | secure-auth admin | In-memory config override cache TTL | `0` disables cache. |
+| `OUTPOST_ADMIN_ENABLED` | Optional | Production, Preview | `true` | outpost admin + routes | Enable `/admin/outpost` and `/api/outpost/admin/*` | Defaults to `AUTH_ADMIN_ENABLED` when unset. |
+| `OUTPOST_ADMIN_PATH` | Optional | All | `/admin/outpost` | Outpost UI paths | Outpost admin panel URL prefix | Used by `OutpostUIProvider`. |
+| `OUTPOST_RECIPIENT_HMAC_KEY` | Recommended | Production | *(secret)* | `createOutpost` | HMAC key for recipient hashing / suppression | ≥16 bytes entropy; required for production outbox. Falls back to `NEXTAUTH_SECRET` in dev only. |
+| `OUTPOST_ADMIN_CONFIG_CACHE_TTL_SECONDS` | Optional | All | `60` | outpost admin config service | Config override cache TTL | `0` disables cache. |
 | `AUTH_ACCOUNT_LOCKOUT_ENABLED` | Optional | All | `false` | secure-auth + `/admin/locks` | Progressive login lockout | Requires migration `0014_secure_auth_admin_platform.sql`. |
 | `AUTH_INVITES_ENABLED` | Optional | All | `false` | secure-auth + admin waitlist/invites | Invite / waitlist system | Enable for waitlist and invite admin pages. |
 | `AUTH_INVITES_REQUIRE_APPROVAL` | Optional | All | `false` | secure-auth | New users start as pending | Admin approves via `/admin/waitlist`. |
