@@ -1,7 +1,7 @@
 import { PageLayout } from "@/components/layout/page-layout";
 import { cn } from "@/lib/ui/cn";
 
-export type AuthenticatedPageWidth = "settings" | "notes" | "editor" | "narrow";
+export type AuthenticatedPageWidth = "settings" | "notes" | "editor" | "narrow" | "wide";
 
 interface AuthenticatedPageProps {
   width: AuthenticatedPageWidth;

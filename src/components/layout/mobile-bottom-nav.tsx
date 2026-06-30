@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { isFullyAuthenticatedSession } from "@/lib/auth/session-state";
 import {
+  getLoggedInNavLinks,
   isLoggedInNavLinkActive,
-  LOGGED_IN_NAV_LINKS,
 } from "@/lib/navigation/logged-in-nav";
 import { cn } from "@/lib/ui/cn";
 
@@ -16,6 +16,14 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" />
       <path d="M8 9h7M8 13h7M8 17h4" />
+    </svg>
+  ),
+  "/kanban": (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="4" y="5" width="4" height="14" rx="1.2" />
+      <rect x="10" y="5" width="4" height="14" rx="1.2" />
+      <rect x="16" y="5" width="4" height="14" rx="1.2" />
+      <path d="M5.5 9h1M11.5 13h1M17.5 8h1" />
     </svg>
   ),
   "/vault/settings": (
@@ -51,7 +59,7 @@ export function MobileBottomNav() {
       data-testid="mobile-bottom-nav"
       className="fixed inset-x-0 bottom-0 z-40 flex h-[72px] items-start justify-around border-t border-[var(--border)] bg-[var(--card)] px-6 pt-[11px] md:hidden"
     >
-      {LOGGED_IN_NAV_LINKS.map((link) => {
+      {getLoggedInNavLinks().map((link) => {
         const active = isLoggedInNavLinkActive(pathname, link.href);
         return (
           <Link

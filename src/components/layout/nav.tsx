@@ -11,8 +11,8 @@ import { AppMark } from "@/components/ui/app-mark";
 import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { lockVaultSession } from "@/lib/crypto-client/vault-session";
 import {
+  getLoggedInNavLinks,
   isLoggedInNavLinkActive,
-  LOGGED_IN_NAV_LINKS,
 } from "@/lib/navigation/logged-in-nav";
 import { cn } from "@/lib/ui/cn";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
@@ -123,7 +123,7 @@ export function Nav() {
             Workspace
           </p>
           <ul className="space-y-1">
-            {LOGGED_IN_NAV_LINKS.filter((link) => link.group === "core").map((link) => (
+            {getLoggedInNavLinks().filter((link) => link.group === "core").map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
@@ -145,7 +145,7 @@ export function Nav() {
             Vault protection
           </p>
           <ul className="space-y-1">
-            {LOGGED_IN_NAV_LINKS.filter((link) => link.group === "vault").map((link) => (
+            {getLoggedInNavLinks().filter((link) => link.group === "vault").map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
@@ -167,7 +167,7 @@ export function Nav() {
             Account security
           </p>
           <ul className="space-y-1">
-            {LOGGED_IN_NAV_LINKS.filter((link) => link.group === "account").map((link) => (
+            {getLoggedInNavLinks().filter((link) => link.group === "account").map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}

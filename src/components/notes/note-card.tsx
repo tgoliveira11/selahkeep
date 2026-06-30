@@ -29,6 +29,8 @@ interface NoteCardProps {
   bodySnippet?: string | null;
   bodyExcerpt?: string | null;
   bodyPreview?: string | null;
+  kanbanTotal?: number;
+  kanbanDone?: number;
   locked?: boolean;
   resolving?: boolean;
   onToggleResolved?: () => void;
@@ -54,6 +56,8 @@ export function NoteCard({
   bodySnippet,
   bodyExcerpt,
   bodyPreview,
+  kanbanTotal,
+  kanbanDone,
   locked,
   resolving = false,
   onToggleResolved,
@@ -205,6 +209,11 @@ export function NoteCard({
             {tagNames.map((name) => (
               <NoteTagChip key={name} name={name} />
             ))}
+            {typeof kanbanTotal === "number" && kanbanTotal > 0 && (
+              <span className="inline-flex rounded-full border border-[var(--border-2)] px-2 py-[3px] text-[11px] font-semibold text-[var(--primary)]">
+                Kanban {kanbanDone ?? 0}/{kanbanTotal}
+              </span>
+            )}
           </div>
           <span className="shrink-0 text-[11.5px] text-[var(--muted)]">
             {formatNoteUpdatedShort(updatedAt)}

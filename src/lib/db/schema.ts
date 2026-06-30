@@ -24,9 +24,13 @@ export {
   notes,
   noteVersions,
   noteAttachments,
+  noteKanbanBoards,
+  noteKanbanVersions,
   type Note,
   type NoteVersion,
   type NoteAttachment,
+  type NoteKanbanBoard,
+  type NoteKanbanVersion,
   type VaultEnvelope,
 } from "./app-schema";
 

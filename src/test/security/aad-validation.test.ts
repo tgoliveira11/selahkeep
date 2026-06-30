@@ -3,11 +3,21 @@ import {
   assertPayloadAad,
   assertNoteCreateAad,
   assertNoteUpdateAad,
+  assertKanbanBoardAad,
+  assertKanbanVersionAad,
   assertVaultKeyAad,
   AadValidationError,
 } from "@/server/policies/aad-validation";
-import { encryptedPayload, USER_ID, NOTE_ID } from "@/test/helpers/fixtures";
-import { createNoteInput } from "@/test/helpers/fixtures";
+import {
+  createKanbanBoardInput,
+  createKanbanVersionInput,
+  createNoteInput,
+  encryptedPayload,
+  KANBAN_BOARD_ID,
+  KANBAN_VERSION_ID,
+  NOTE_ID,
+  USER_ID,
+} from "@/test/helpers/fixtures";
 
 describe("AAD validation policy", () => {
   it("accepts matching userId, resourceId, and field", () => {
@@ -75,6 +85,46 @@ describe("AAD validation policy", () => {
     ).not.toThrow();
     expect(() =>
       assertVaultKeyAad(USER_ID, encryptedPayload("vault_key", NOTE_ID))
+    ).toThrow(AadValidationError);
+  });
+
+  it("validates note-bound kanban board AAD", () => {
+    expect(() =>
+      assertKanbanBoardAad(USER_ID, KANBAN_BOARD_ID, NOTE_ID, createKanbanBoardInput())
+    ).not.toThrow();
+  });
+
+  it("validates standalone kanban board AAD", () => {
+    expect(() =>
+      assertKanbanBoardAad(USER_ID, KANBAN_BOARD_ID, null, createKanbanBoardInput(null))
+    ).not.toThrow();
+  });
+
+  it("rejects standalone kanban board wrapped keys bound to another resource", () => {
+    const input = createKanbanBoardInput(null);
+    input.encryptedWrappedKey.aad.resourceId = NOTE_ID;
+    expect(() => assertKanbanBoardAad(USER_ID, KANBAN_BOARD_ID, null, input)).toThrow(
+      AadValidationError
+    );
+  });
+
+  it("validates note-bound kanban version AAD", () => {
+    expect(() =>
+      assertKanbanVersionAad(
+        USER_ID,
+        KANBAN_BOARD_ID,
+        KANBAN_VERSION_ID,
+        NOTE_ID,
+        createKanbanVersionInput()
+      )
+    ).not.toThrow();
+  });
+
+  it("rejects kanban version content bound to the board instead of version id", () => {
+    const input = createKanbanVersionInput();
+    input.encryptedBoard.aad.resourceId = KANBAN_BOARD_ID;
+    expect(() =>
+      assertKanbanVersionAad(USER_ID, KANBAN_BOARD_ID, KANBAN_VERSION_ID, NOTE_ID, input)
     ).toThrow(AadValidationError);
   });
 });

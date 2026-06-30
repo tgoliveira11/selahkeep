@@ -146,3 +146,45 @@ export function IconMoreVertical({ className }: IconProps) {
     </svg>
   );
 }
+
+export function IconChevronLeft({ className }: IconProps) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M10 3.5 5.5 8 10 12.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconChevronRight({ className }: IconProps) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M6 3.5 10.5 8 6 12.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconTrash({ className }: IconProps) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M3.5 4.5h9M6 4.5V3.5h4v1M5 4.5v8h6v-8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

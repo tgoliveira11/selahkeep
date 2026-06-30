@@ -50,8 +50,8 @@ describe("home page marketing content", () => {
     render(<HomePage />);
     expect(screen.getByRole("heading", { name: /pause and reflect/i })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /keep everything in one vault/i })).toBeTruthy();
-    expect(screen.getByText(/write prayers, reflections/i)).toBeTruthy();
-    expect(screen.getByText(/return whenever you need comfort/i)).toBeTruthy();
+    expect(screen.getByText(/write prayers, journal entries/i)).toBeTruthy();
+    expect(screen.getByText(/categories, tags, attachments/i)).toBeTruthy();
   });
 
   it("explains marking notes as resolved", () => {
@@ -59,10 +59,25 @@ describe("home page marketing content", () => {
     expect(screen.getByRole("heading", { name: /mark as resolved/i })).toBeTruthy();
   });
 
+  it("explains Kanban boards and on-device dictation", () => {
+    render(<HomePage />);
+    expect(screen.getByRole("heading", { name: /organize with kanban boards/i })).toBeTruthy();
+    expect(screen.getByText(/edits stay in sync between your note and the board/i)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /dictate on your device/i })).toBeTruthy();
+    expect(screen.getByText(/recordings and transcripts are not sent to us/i)).toBeTruthy();
+  });
+
   it("explains vault recovery options", () => {
     render(<HomePage />);
     expect(screen.getByRole("heading", { name: /recover thoughtfully/i })).toBeTruthy();
-    expect(screen.getByText(/vault password, recovery phrase, or passkey/i)).toBeTruthy();
+    expect(screen.getByText(/vault password, recovery phrase, or vault passkey/i)).toBeTruthy();
+  });
+
+  it("separates account sign-in from vault unlock", () => {
+    render(<HomePage />);
+    expect(screen.getByRole("heading", { name: homeCopy.security.heading })).toBeTruthy();
+    expect(screen.getByText(/passkey, password, or optional two-step verification/i)).toBeTruthy();
+    expect(screen.getByText(/signing in does not decrypt your notes/i)).toBeTruthy();
   });
 
   it("documents deferred features including import/export", () => {

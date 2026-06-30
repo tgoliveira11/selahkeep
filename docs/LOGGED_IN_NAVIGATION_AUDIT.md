@@ -1,6 +1,6 @@
 # Logged-in Navigation Audit
 
-Last updated: 2026-06-17
+Last updated: 2026-06-30
 
 This document audits SelahKeep logged-in navigation after Phases 0–5 and records the navigation/favicon changes from the focused nav audit.
 
@@ -8,7 +8,7 @@ This document audits SelahKeep logged-in navigation after Phases 0–5 and recor
 
 | Area | Decision |
 |------|----------|
-| Primary workspace | **Notes** (`/notes`) |
+| Primary workspace | **Notes** (`/notes`) + **Boards** (`/kanban`) |
 | Vault protection | **Vault** (`/vault/settings`) + conditional **Unlock vault** |
 | Account authentication | **Account** (`/settings/account`) — package-owned security UI |
 | Removed from primary nav | `Write`, `Devices`, `Recovery`, `My notes` label |
@@ -23,6 +23,7 @@ This document audits SelahKeep logged-in navigation after Phases 0–5 and recor
 |---------------|-------|------|------------|-----------|--------------|----------------|---------|--------|--------|
 | SelahKeep (brand) | `/` or `/notes` | AppMark | Yes | Yes | Yes | Yes | Product home | **Keep** | Consistent branding |
 | Notes | `/notes` | — | No | Yes | Yes* | Yes | Main workspace | **Keep / rename** | Primary workspace; was "My notes" |
+| Boards | `/kanban` | Kanban columns | No | Yes | Yes* | Yes | Standalone private Kanban boards | **Add** | Note-bound boards link from notes; standalone boards need a workspace destination |
 | Write | `/notes/new` | — | No | Was yes | — | — | Quick compose | **Remove** | Notes page has create CTA; reduces clutter |
 | Vault | `/vault/settings` | — | No | Yes | Yes | Yes | Vault behavior, legacy links | **Keep** | Vault protection settings |
 | Devices | `/vault/devices` | — | — | Removed | — | — | Trusted devices removed | **Removed** | See `docs/TRUSTED_DEVICES_REMOVAL.md` |
@@ -45,6 +46,7 @@ This document audits SelahKeep logged-in navigation after Phases 0–5 and recor
 | `/vault/unlock` | Vault locked | Unlock | Conditional link + direct URL |
 | `/notes/new` | Signed in | Create note | From Notes page CTA |
 | `/notes/[id]` | Signed in | Edit note | From Notes list |
+| `/kanban/[boardId]` | Signed in | Board detail | From Boards list or note detail Kanban action |
 | `/login`, `/register` | Signed out | Account auth | Public header only |
 
 ---
@@ -61,7 +63,7 @@ This document audits SelahKeep logged-in navigation after Phases 0–5 and recor
 8. **Account deletion under account settings?** — **Yes.** With vault deletion warning.
 9. **Missing from nav?** — Nothing essential; legacy Devices/Recovery moved to Vault settings.
 10. **Should not be visible?** — `Write`, top-level `Devices`, top-level `Recovery`, any `Letters` link.
-11. **Mobile vs desktop consistent?** — **Yes.** Same three primary links; mobile groups Workspace / Vault protection / Account security.
+11. **Mobile vs desktop consistent?** — **Yes.** Same four primary links; mobile groups Workspace / Vault protection / Account security.
 12. **Old letter or green envelope identity?** — **Removed.** Header `AppMark` and `icon.svg` now use purple SK monogram.
 
 ---
@@ -71,7 +73,7 @@ This document audits SelahKeep logged-in navigation after Phases 0–5 and recor
 ### Desktop (signed in)
 
 ```text
-[SelahKeep]   Notes | Vault | Account                    Sign out
+[SelahKeep]   Notes | Boards | Vault | Account           Sign out
 ─────────────────────────────────────────────────────────────────
 [Vault status bar: setup / unlock / open + countdown / Lock now]
 [Page content]
@@ -86,7 +88,7 @@ This document audits SelahKeep logged-in navigation after Phases 0–5 and recor
 [Page content]
 
 Menu →
-  Workspace: Notes
+  Workspace: Notes, Boards
   Vault protection: Vault
   Account security: Account
   Sign out
@@ -96,7 +98,7 @@ Menu →
 
 | Element | Rule |
 |---------|------|
-| Notes, Vault, Account | Always when signed in (header) |
+| Notes, Boards, Vault, Account | Always when signed in (header/mobile primary nav) |
 | Vault status bar | Always when signed in (below header) |
 | Unlock vault (bar CTA) | Signed in && vault locked |
 | Lock now (bar CTA) | Signed in && vault unlocked |
@@ -134,5 +136,5 @@ Account session does **not** unlock the vault. Navigation copy and grouping rein
 ## Implementation reference
 
 - Nav config: `src/lib/navigation/logged-in-nav.ts`
-- Nav UI: `src/components/layout/nav.tsx`
+- Nav UI: `src/components/layout/nav.tsx`, `src/components/layout/app-sidebar.tsx`, `src/components/layout/mobile-bottom-nav.tsx`
 - Tests: `src/test/features/logged-in-navigation.test.tsx`, `src/test/unit/app-mark.test.ts`

@@ -17,6 +17,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:check-auth": "node scripts/check-auth-db.mjs",
+    "db:check-kanban": "node scripts/check-kanban-db.mjs",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "postinstall": "mkdir -p public/swagger-ui && cp node_modules/swagger-ui-dist/swagger-ui.css node_modules/swagger-ui-dist/swagger-ui-bundle.js public/swagger-ui/ && node scripts/copy-ffmpeg.mjs"

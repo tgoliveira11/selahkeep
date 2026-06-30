@@ -11,6 +11,8 @@ export type SmartLocalFilter =
   | "no-category"
   | "no-tags"
   | "checklist"
+  | "has-kanban"
+  | "kanban-in-progress"
   | "recently-updated"
   | "recently-viewed"
   | "daily-notes"
@@ -27,6 +29,8 @@ export const SMART_FILTER_OPTIONS: { value: SmartLocalFilter; label: string }[] 
   { value: "no-category", label: "No category" },
   { value: "no-tags", label: "No tags" },
   { value: "checklist", label: "Checklist notes" },
+  { value: "has-kanban", label: "Has kanban" },
+  { value: "kanban-in-progress", label: "Kanban in progress" },
   { value: "recently-updated", label: "Recently updated" },
   { value: "recently-viewed", label: "Recently viewed" },
   { value: "daily-notes", label: "Daily notes" },
@@ -72,6 +76,15 @@ export function matchesSmartFilter(
       return isActiveNoteEntry(entry) && entry.tagIds.length === 0;
     case "checklist":
       return isActiveNoteEntry(entry) && Boolean(entry.hasChecklist);
+    case "has-kanban":
+      return isActiveNoteEntry(entry) && Boolean(entry.hasKanban);
+    case "kanban-in-progress":
+      return (
+        isActiveNoteEntry(entry) &&
+        Boolean(entry.hasKanban) &&
+        (entry.kanbanTotal ?? 0) > 0 &&
+        (entry.kanbanDone ?? 0) < (entry.kanbanTotal ?? 0)
+      );
     case "recently-updated":
       return isActiveNoteEntry(entry) && isRecentlyUpdated(entry);
     case "recently-viewed":

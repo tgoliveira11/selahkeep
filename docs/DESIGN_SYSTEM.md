@@ -87,6 +87,12 @@ legible in dark mode.
 - **Version history & diff** (`note-version-diff.tsx`, `note-version-history.tsx`):
   From/To compare selectors; diff rows use `--add-*`/`--del-*` with a 3px left
   border and `+`/`−` markers; version list with numbered chips + Restore.
+- **Kanban boards** (`src/features/kanban/`): columns are Stillness cards with
+  hairline borders, `--card-2` inset surfaces, outlined done/progress chips, and
+  token-only priority/label chips. Desktop supports drag/drop; mobile always has
+  a visible Move menu plus simple column-forward/back controls so touch users do
+  not depend on drag gestures. Board history uses a semantic diff and Restore,
+  matching note version-history behavior without raw JSON-first UI.
 - **Dictate / voice** (`dictate-button.tsx`, `voice-capture-panel.tsx`): button
   status dot (green `--success` when ready, amber `--warning` pulsing while
   loading) + `%` tooltip; panel states ready → loading (progress) → recording
@@ -102,9 +108,10 @@ bars), `selahRise` (panel/overlay entrance). Existing `pulse-soft` retained.
 
 ## 5. Navigation & layout
 
-- **Mobile:** bottom tab bar — **Notes · Vault · Account**; the Vault Dock lives
+- **Mobile:** bottom tab bar — **Notes · Boards · Vault · Account**; the Vault Dock lives
   in the page header.
-- **Desktop:** left sidebar + the Vault Dock in the top chrome.
+- **Desktop:** left sidebar with Notes, Boards, Vault, Account + the Vault Dock
+  in the top chrome.
 - Single-column, mobile-first; reading/editor widths stay comfortable for prose.
 
 ## 6. Rules for contributors

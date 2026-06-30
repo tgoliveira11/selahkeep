@@ -7,7 +7,9 @@ import {
   integer,
   jsonb,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { users } from "@tgoliveira/secure-auth/drizzle/schema";
 
 /** Product extension: vault unlock columns are not in package passkeyCredentials. */
@@ -129,7 +131,63 @@ export const noteAttachments = pgTable(
   ]
 );
 
+/**
+ * Current encrypted kanban board state. A board may be note-bound or standalone;
+ * all columns/cards/labels remain inside `encryptedBoard`.
+ */
+export const noteKanbanBoards = pgTable(
+  "note_kanban_boards",
+  {
+    id: uuid("id").primaryKey(),
+    noteId: uuid("note_id").references(() => notes.id, { onDelete: "cascade" }),
+    vaultId: uuid("vault_id")
+      .notNull()
+      .references(() => userVaults.id, { onDelete: "cascade" }),
+    encryptedBoard: jsonb("encrypted_board").notNull(),
+    encryptedWrappedKey: jsonb("encrypted_wrapped_key").notNull(),
+    boardEncryptionVersion: text("board_encryption_version").notNull(),
+    versionNumber: integer("version_number").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_note_kanban_boards_vault_id").on(table.vaultId),
+    uniqueIndex("idx_note_kanban_boards_note_id")
+      .on(table.noteId)
+      .where(sql`${table.noteId} IS NOT NULL`),
+  ]
+);
+
+/**
+ * Immutable encrypted kanban snapshots. Version content is AAD-bound to the
+ * snapshot id; the wrapped key follows the current board scope.
+ */
+export const noteKanbanVersions = pgTable(
+  "note_kanban_versions",
+  {
+    id: uuid("id").primaryKey(),
+    boardId: uuid("board_id")
+      .notNull()
+      .references(() => noteKanbanBoards.id, { onDelete: "cascade" }),
+    noteId: uuid("note_id").references(() => notes.id, { onDelete: "cascade" }),
+    vaultId: uuid("vault_id")
+      .notNull()
+      .references(() => userVaults.id, { onDelete: "cascade" }),
+    versionNumber: integer("version_number").notNull(),
+    encryptedBoard: jsonb("encrypted_board").notNull(),
+    encryptedWrappedKey: jsonb("encrypted_wrapped_key").notNull(),
+    boardEncryptionVersion: text("board_encryption_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_note_kanban_versions_board_id_version").on(table.boardId, table.versionNumber),
+    index("idx_note_kanban_versions_board_id_created").on(table.boardId, table.createdAt),
+  ]
+);
+
 export type Note = typeof notes.$inferSelect;
 export type NoteVersion = typeof noteVersions.$inferSelect;
 export type NoteAttachment = typeof noteAttachments.$inferSelect;
+export type NoteKanbanBoard = typeof noteKanbanBoards.$inferSelect;
+export type NoteKanbanVersion = typeof noteKanbanVersions.$inferSelect;
 export type VaultEnvelope = typeof vaultEnvelopes.$inferSelect;

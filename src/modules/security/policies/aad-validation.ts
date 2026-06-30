@@ -2,6 +2,11 @@ import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import type { CreateNoteInput, UpdateNoteInput } from "@/lib/validation/notes";
 import type { CreateNoteVersionInput } from "@/lib/validation/note-versions";
 import type { CreateAttachmentInput } from "@/lib/validation/note-attachments";
+import type {
+  CreateKanbanBoardInput,
+  CreateKanbanVersionInput,
+  UpdateKanbanBoardInput,
+} from "@/lib/validation/kanban";
 
 export class AadValidationError extends Error {
   constructor(message: string) {
@@ -95,4 +100,46 @@ export function assertAttachmentCreateAad(
     resourceId: attachmentId,
     field: "note_attachment_blob",
   });
+}
+
+function assertKanbanWrappedKeyAad(
+  userId: string,
+  boardId: string,
+  noteId: string | null,
+  payload: EncryptedPayload
+): void {
+  if (noteId) {
+    assertPayloadAad(payload, { userId, resourceId: noteId, field: "note_key" });
+    return;
+  }
+  assertPayloadAad(payload, { userId, resourceId: boardId, field: "note_kanban_key" });
+}
+
+export function assertKanbanBoardAad(
+  userId: string,
+  boardId: string,
+  noteId: string | null,
+  input: CreateKanbanBoardInput | UpdateKanbanBoardInput
+): void {
+  assertPayloadAad(input.encryptedBoard, {
+    userId,
+    resourceId: boardId,
+    field: "note_kanban_board",
+  });
+  assertKanbanWrappedKeyAad(userId, boardId, noteId, input.encryptedWrappedKey);
+}
+
+export function assertKanbanVersionAad(
+  userId: string,
+  boardId: string,
+  versionId: string,
+  noteId: string | null,
+  input: CreateKanbanVersionInput
+): void {
+  assertPayloadAad(input.encryptedBoard, {
+    userId,
+    resourceId: versionId,
+    field: "note_kanban_version",
+  });
+  assertKanbanWrappedKeyAad(userId, boardId, noteId, input.encryptedWrappedKey);
 }

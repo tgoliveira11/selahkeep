@@ -2,7 +2,7 @@ import { PublicCtaButtons } from "@/components/marketing/public-cta-buttons";
 import { PageLayout } from "@/components/layout/page-layout";
 import { homeCopy } from "@/lib/marketing/home-copy";
 
-/** Icons for the four "What you can do" cards, in copy order. */
+/** Icons for the "What you can do" cards, in copy order. */
 const FEATURE_ICONS: React.ReactNode[] = [
   // Pause and reflect
   <svg key="reflect" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -17,6 +17,18 @@ const FEATURE_ICONS: React.ReactNode[] = [
   <svg key="resolved" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <circle cx="12" cy="12" r="9" />
     <path d="m8.5 12 2.5 2.5 4.5-5" />
+  </svg>,
+  // Organize with Kanban boards
+  <svg key="kanban" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="4" width="5" height="16" rx="1.2" />
+    <rect x="10" y="4" width="5" height="10" rx="1.2" />
+    <rect x="17" y="4" width="4" height="13" rx="1.2" />
+  </svg>,
+  // Dictate on your device
+  <svg key="dictate" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z" />
+    <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
+    <path d="M12 19v3" />
   </svg>,
   // Recover thoughtfully
   <svg key="recover" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -69,7 +81,7 @@ export default function HomePage() {
         >
           {homeCopy.features.heading}
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {homeCopy.features.cards.map((card, index) => (
             <div
               key={card.title}
@@ -87,6 +99,24 @@ export default function HomePage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Sign in vs vault unlock */}
+      <section aria-labelledby="home-security-heading" className="mx-auto max-w-2xl">
+        <h2
+          id="home-security-heading"
+          className="text-center text-2xl font-semibold tracking-[-0.01em] text-[var(--foreground)]"
+        >
+          {homeCopy.security.heading}
+        </h2>
+        <ul className="mt-6 space-y-3.5">
+          {homeCopy.security.body.map((paragraph) => (
+            <li key={paragraph} className="flex gap-3 text-[var(--fg-2)]">
+              <span className="mt-[9px] h-1.5 w-1.5 flex-none rounded-full bg-[var(--primary)]" aria-hidden="true" />
+              <span className="text-[14.5px] leading-relaxed">{paragraph}</span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* Privacy, in plain language */}

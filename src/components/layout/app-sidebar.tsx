@@ -10,6 +10,7 @@ import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { lockVaultSession } from "@/lib/crypto-client/vault-session";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
+import { isKanbanEnabled } from "@/lib/notes/kanban-config";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/ui/cn";
 
@@ -23,6 +24,18 @@ const LIBRARY: { href: string; view: string | null; label: string; icon: React.R
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" />
         <path d="M8 9h7M8 13h7" />
+      </svg>
+    ),
+  },
+  {
+    href: "/kanban",
+    view: "kanban",
+    label: "Boards",
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="4" y="5" width="4" height="14" rx="1.2" />
+        <rect x="10" y="5" width="4" height="14" rx="1.2" />
+        <rect x="16" y="5" width="4" height="14" rx="1.2" />
       </svg>
     ),
   },
@@ -133,8 +146,12 @@ export function AppSidebar() {
         </p>
       )}
       <nav aria-label="Library" className="flex flex-col gap-0.5">
-        {unlocked && LIBRARY.map((item) => {
-          const active = onNotes && (item.view ? view === item.view : !view);
+        {unlocked &&
+          LIBRARY.filter((item) => item.href !== "/kanban" || isKanbanEnabled()).map((item) => {
+          const active =
+            item.href === "/kanban"
+              ? pathname.startsWith("/kanban")
+              : onNotes && (item.view ? view === item.view : !view);
           return (
             <Link
               key={item.label}

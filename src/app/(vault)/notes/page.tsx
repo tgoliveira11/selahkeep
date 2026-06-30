@@ -485,6 +485,8 @@ export default function NotesPage() {
                   tagNames={note.tagNames}
                   searchQuery={searchHighlightQuery}
                   bodyExcerpt={noteExcerpts.get(note.id) ?? null}
+                  kanbanTotal={note.kanbanTotal}
+                  kanbanDone={note.kanbanDone}
                   resolving={resolvingId === note.id}
                   onToggleResolved={
                     note.trashed ? undefined : () => void handleToggleResolved(note.id, note.answered)
@@ -509,6 +511,8 @@ export default function NotesPage() {
                   bodySnippet={note.bodySnippet}
                   bodyExcerpt={noteExcerpts.get(note.id) ?? null}
                   bodyPreview={notePreviews.get(note.id) ?? null}
+                  kanbanTotal={note.kanbanTotal}
+                  kanbanDone={note.kanbanDone}
                   resolving={resolvingId === note.id}
                   onToggleResolved={
                     note.trashed ? undefined : () => void handleToggleResolved(note.id, note.answered)
