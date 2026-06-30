@@ -31,6 +31,9 @@ vi.mock("@/lib/db/transaction", () => ({
 beforeEach(() => {
   resetAllInMemoryRateLimits();
   setRateLimitAdapterForTests(new InMemoryRateLimitAdapter());
+  if (typeof localStorage !== "undefined" && typeof localStorage.clear === "function") {
+    localStorage.clear();
+  }
 });
 
 process.env.DATABASE_URL =

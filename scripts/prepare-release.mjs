@@ -16,8 +16,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const CHANGELOG_PATH = join(ROOT, "CHANGELOG.md");
-const PACKAGE_PATH = join(ROOT, "package.json");
+const CHANGELOG_PATH = join(
+  process.env.PREPARE_RELEASE_ROOT?.trim() || ROOT,
+  "CHANGELOG.md"
+);
+const PACKAGE_PATH = join(
+  process.env.PREPARE_RELEASE_ROOT?.trim() || ROOT,
+  "package.json"
+);
 
 function parseArgs() {
   let versionInput = "auto";
@@ -68,9 +74,9 @@ function unreleasedHasContent(body) {
 }
 
 function extractVersionSection(changelog, version) {
+  const escaped = version.replace(/\./g, "\\.");
   const pattern = new RegExp(
-    `^## \\[${version.replace(/\./g, "\\.")}\\][^\\n]*\\n([\\s\\S]*?)(?=^## \\[|$)`,
-    "m"
+    `(?:^|\\n)## \\[${escaped}\\][^\\n]*\\n([\\s\\S]*?)(?=\\n## \\[|$)`
   );
   const match = changelog.match(pattern);
   return match ? match[1].trim() : "";

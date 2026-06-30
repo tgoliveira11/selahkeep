@@ -3,6 +3,9 @@ import {
   generateAesKey,
   encryptField,
   decryptField,
+  encryptBytes,
+  decryptBytes,
+  encryptedPayloadCiphertextBytes,
   exportAesKey,
   importAesKey,
 } from "@/lib/crypto-client/aes-gcm";
@@ -29,5 +32,18 @@ describe("aes-gcm helpers", () => {
       field: "title",
     });
     await expect(decryptField(encrypted, key)).resolves.toBe("x");
+  });
+
+  it("round-trips binary payloads with encryptBytes/decryptBytes", async () => {
+    const key = await generateAesKey();
+    const plaintext = new Uint8Array([0, 1, 2, 255, 128]);
+    const encrypted = await encryptBytes(plaintext, key, {
+      userId: USER_ID,
+      resourceId: LETTER_ID,
+      field: "note_attachment_blob",
+    });
+    const decrypted = await decryptBytes(encrypted, key);
+    expect(Array.from(decrypted)).toEqual(Array.from(plaintext));
+    expect(encryptedPayloadCiphertextBytes(encrypted)).toBeGreaterThan(0);
   });
 });

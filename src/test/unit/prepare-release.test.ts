@@ -1,17 +1,27 @@
-import { describe, it, expect } from "vitest";
-import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = join(process.cwd());
-const SCRIPT = join(ROOT, "scripts/prepare-release.mjs");
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+const SCRIPT = join(REPO_ROOT, "scripts/prepare-release.mjs");
 
-function runPrepare(args: string[]) {
-  const stdout = execFileSync("node", [SCRIPT, ...args], {
-    cwd: ROOT,
+function runPrepareIn(dir: string, args: string[]) {
+  const { stdout, status } = spawnSync("node", [SCRIPT, ...args], {
+    cwd: dir,
     encoding: "utf8",
+    env: {
+      ...process.env,
+      PREPARE_RELEASE_ROOT: dir,
+    },
   });
-  return JSON.parse(stdout.trim()) as {
+  const output = (stdout ?? "").trim();
+  if (!output) {
+    throw new Error(`prepare-release produced no stdout (exit ${status})`);
+  }
+  return JSON.parse(output) as {
     changed: boolean;
     version: string | null;
     recovery: boolean;
@@ -20,14 +30,74 @@ function runPrepare(args: string[]) {
   };
 }
 
+function writeFixture(
+  dir: string,
+  options: {
+    version?: string;
+    unreleased?: string;
+    releasedVersion?: string;
+    releasedBody?: string;
+  } = {}
+) {
+  writeFileSync(
+    join(dir, "package.json"),
+    `${JSON.stringify({ name: "letters-to-god", version: options.version ?? "0.1.0", private: true }, null, 2)}\n`,
+    "utf8"
+  );
+
+  const unreleased = options.unreleased ?? "### Fixed\n\n- Example change\n";
+  const released =
+    options.releasedVersion && options.releasedBody
+      ? `\n## [${options.releasedVersion}] - 2026-01-01\n\n${options.releasedBody}\n`
+      : "";
+
+  writeFileSync(
+    join(dir, "CHANGELOG.md"),
+    `# Changelog\n\n## [Unreleased]\n\n${unreleased}${released}`,
+    "utf8"
+  );
+}
+
 describe("prepare-release.mjs", () => {
+  let workDir = "";
+
+  beforeEach(() => {
+    workDir = mkdtempSync(join(tmpdir(), "selahkeep-release-"));
+  });
+
+  afterEach(() => {
+    if (workDir) rmSync(workDir, { recursive: true, force: true });
+  });
+
   it("dry-run patch bump reads unreleased notes without writing files", () => {
-    const result = runPrepare(["--version=patch", "--dry-run"]);
+    writeFixture(workDir);
+    const result = runPrepareIn(workDir, ["--version=patch", "--dry-run"]);
     expect(result.error).toBeUndefined();
     expect(result.recovery).toBe(false);
     expect(result.changed).toBe(true);
     expect(result.version).toBe("0.1.1");
-    expect(result.releaseNotes).toContain("Mobile: voice model download OOM");
-    expect(readFileSync(join(ROOT, "package.json"), "utf8")).toContain('"version": "0.1.0"');
+    expect(result.releaseNotes).toContain("Example change");
+    expect(JSON.parse(readFileSync(join(workDir, "package.json"), "utf8")).version).toBe("0.1.0");
+  });
+
+  it("recovery mode reuses current version when unreleased is empty", () => {
+    writeFixture(workDir, {
+      version: "0.2.0",
+      unreleased: "",
+      releasedVersion: "0.2.0",
+      releasedBody: "### Fixed\n\n- Shipped fix\n",
+    });
+    const result = runPrepareIn(workDir, ["--version=auto", "--dry-run"]);
+    expect(result.error).toBeUndefined();
+    expect(result.recovery).toBe(true);
+    expect(result.changed).toBe(false);
+    expect(result.version).toBe("0.2.0");
+    expect(result.releaseNotes).toContain("Shipped fix");
+  });
+
+  it("fails when unreleased is empty and explicit bump is requested", () => {
+    writeFixture(workDir, { unreleased: "" });
+    const result = runPrepareIn(workDir, ["--version=minor", "--dry-run"]);
+    expect(result.error).toMatch(/\[Unreleased\] has no release notes/);
   });
 });

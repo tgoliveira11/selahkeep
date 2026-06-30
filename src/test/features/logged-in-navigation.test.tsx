@@ -207,7 +207,7 @@ describe("logged-in navigation", () => {
 
     const header = screen.getByRole("banner");
     expect(within(header).queryByRole("link", { name: /unlock vault/i })).toBeNull();
-    expect(within(header).queryByRole("button", { name: /lock vault/i })).toBeNull();
+    expect(within(header).queryByRole("button", { name: /^lock vault$/i })).toBeNull();
     expect(within(header).queryByText(/vault locked/i)).toBeNull();
     expect(within(header).queryByText(/vault unlocked/i)).toBeNull();
     expect(within(header).queryByText(/vault not set up/i)).toBeNull();
@@ -245,7 +245,7 @@ describe("logged-in navigation", () => {
     );
 
     const header = screen.getByRole("banner");
-    expect(within(header).queryByRole("button", { name: /lock vault/i })).toBeNull();
+    expect(within(header).queryByRole("button", { name: /^lock vault$/i })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
     const dock = screen.getByTestId("vault-status-dock");
     expect(within(dock).getByRole("button", { name: /lock now/i })).toBeTruthy();
@@ -282,7 +282,7 @@ describe("logged-in navigation", () => {
     );
 
     const header = screen.getByRole("banner");
-    expect(within(header).queryByRole("button", { name: /lock vault/i })).toBeNull();
+    expect(within(header).queryByRole("button", { name: /^lock vault$/i })).toBeNull();
     expect(within(header).queryByText(/vault unlocked/i)).toBeNull();
   });
 

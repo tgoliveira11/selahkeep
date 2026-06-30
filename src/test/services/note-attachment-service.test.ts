@@ -88,4 +88,54 @@ describe("note attachment service", () => {
       NotFoundError
     );
   });
+
+  it("creates an attachment when within limits", async () => {
+    const input = createAttachmentInput();
+    const created = { id: input.id, noteId: NOTE_ID };
+    mocks.create.mockResolvedValue(created);
+    await expect(noteAttachmentService.create(NOTE_ID, USER_ID, input)).resolves.toEqual(created);
+    expect(mocks.create).toHaveBeenCalled();
+  });
+
+  it("rejects unsupported encryption version", async () => {
+    const input = { ...createAttachmentInput(), blobEncryptionVersion: "legacy" as typeof ENCRYPTION_VERSION };
+    await expect(noteAttachmentService.create(NOTE_ID, USER_ID, input)).rejects.toThrow(
+      /Unsupported encryption version/
+    );
+  });
+
+  it("getById returns attachment and maps missing table to not found", async () => {
+    mocks.findByIdForNote.mockResolvedValue({ id: ATTACHMENT_ID });
+    await expect(
+      noteAttachmentService.getById(NOTE_ID, ATTACHMENT_ID, USER_ID)
+    ).resolves.toEqual({ id: ATTACHMENT_ID });
+
+    mocks.findByIdForNote.mockRejectedValue({ code: "42P01" });
+    await expect(
+      noteAttachmentService.getById(NOTE_ID, ATTACHMENT_ID, USER_ID)
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("delete returns success and maps missing table to unavailable", async () => {
+    mocks.delete.mockResolvedValue(true);
+    await expect(
+      noteAttachmentService.delete(NOTE_ID, ATTACHMENT_ID, USER_ID)
+    ).resolves.toEqual({ success: true });
+
+    mocks.delete.mockRejectedValue({ code: "42P01" });
+    await expect(
+      noteAttachmentService.delete(NOTE_ID, ATTACHMENT_ID, USER_ID)
+    ).rejects.toBeInstanceOf(AttachmentsUnavailableError);
+  });
+
+  it("getStorageUsage returns totals when attachments table exists", async () => {
+    mocks.sumCiphertextBytesByVaultId.mockResolvedValue(2048);
+    mocks.sumNoteCiphertextBytesByVaultId.mockResolvedValue(4096);
+    await expect(noteAttachmentService.getStorageUsage(USER_ID)).resolves.toMatchObject({
+      notesCiphertextBytes: 4096,
+      attachmentsCiphertextBytes: 2048,
+      totalCiphertextBytes: 6144,
+      partial: false,
+    });
+  });
 });

@@ -27,6 +27,7 @@ The workflow [`.github/workflows/release.yml`](../.github/workflows/release.yml)
 | Rule | Detail |
 |------|--------|
 | Trigger | `workflow_dispatch` only — no push/tag/release triggers |
+| Prerequisite | The **Release** workflow runs the full **`validate`** job first; release steps abort if CI checks fail |
 | Who runs it | Maintainer (or explicit request) — **not** agents by default |
 | Deploy | Vercel / other hosting is **outside** this workflow |
 | npm publish | **Never** — `private: true` |

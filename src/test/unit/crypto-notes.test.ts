@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   encryptNote,
   decryptNote,
+  rotateNoteKey,
   TITLE_MAX_LENGTH,
   BODY_MAX_LENGTH,
 } from "@/lib/crypto-client/notes";
@@ -51,5 +52,29 @@ describe("note encryption", () => {
     await expect(
       encryptNote(USER_ID, NOTE_ID, { title: "title", body: "x".repeat(BODY_MAX_LENGTH + 1) })
     ).rejects.toThrow("Body too long");
+  });
+
+  it("rotates note key and re-encrypts content", async () => {
+    const encrypted = await encryptNote(USER_ID, NOTE_ID, {
+      title: "Original",
+      body: "Original body",
+    });
+    const rotated = await rotateNoteKey(
+      USER_ID,
+      NOTE_ID,
+      { title: "Rotated", tagIds: [], answered: false, categoryId: null },
+      "Rotated body",
+      vaultKey
+    );
+    const decrypted = await decryptNote(
+      rotated.encryptedMetadata,
+      rotated.encryptedBody,
+      rotated.encryptedWrappedNoteKey
+    );
+    expect(decrypted.metadata.title).toBe("Rotated");
+    expect(decrypted.body).toBe("Rotated body");
+    expect(rotated.encryptedWrappedNoteKey.ciphertext).not.toBe(
+      encrypted.encryptedWrappedNoteKey.ciphertext
+    );
   });
 });
