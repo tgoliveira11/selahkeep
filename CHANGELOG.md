@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Admin bootstrap email now grants `/admin` access reliably.** `ADMIN_BOOTSTRAP_EMAIL` is promoted to `role=admin` on admin layout load and before secure-auth API handlers; Outpost platform-admin checks honor the same env var.
+- **Outpost admin nav links now include the `/admin` prefix.** Nav and `OutpostUIProvider` read `OUTPOST_ADMIN_PATH` from the server layout instead of linking to bare `/outpost/*` paths.
 - **CI: release workflow now requires green `validate`.** `workflow_dispatch` releases call the CI workflow first; tag and GitHub Release steps run only after lint, tests, and build pass on `main`.
 - **CI: vault dock header tests no longer false-match `Unlock vault`.** Assertions use exact `Lock vault` naming; test `localStorage` is cleared between runs to avoid dock state bleed in GitHub Actions.
 - **CI: `prepare-release` tests use isolated fixture directories** so they do not depend on the repo's live `[Unreleased]` section after a version cut.

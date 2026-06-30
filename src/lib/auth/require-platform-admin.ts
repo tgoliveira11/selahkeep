@@ -5,7 +5,9 @@ import { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 import { users } from "@tgoliveira/secure-auth/drizzle/schema";
 import { secureAuthDb } from "@/lib/secure-auth-db";
+import { readAdminBootstrapEmail } from "@/lib/secure-auth-admin-bootstrap";
 
+/** @deprecated Prefer ADMIN_BOOTSTRAP_EMAIL env via readAdminBootstrapEmail(). */
 export const PLATFORM_ADMIN_EMAIL = "tgoliveira11@gmail.com";
 
 export class AdminForbiddenError extends Error {
@@ -15,8 +17,15 @@ export class AdminForbiddenError extends Error {
   }
 }
 
-export function isPlatformAdminUser(user: { email: string; role: string }): boolean {
+export function isPlatformAdminUser(
+  user: { email: string; role: string },
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
   if (user.role === "admin") return true;
+  const bootstrapEmail = readAdminBootstrapEmail(env);
+  if (bootstrapEmail) {
+    return user.email.trim().toLowerCase() === bootstrapEmail;
+  }
   return user.email.trim().toLowerCase() === PLATFORM_ADMIN_EMAIL;
 }
 
@@ -41,7 +50,7 @@ export async function requirePlatformAdmin(request: Request): Promise<{ actor: s
     .limit(1);
 
   const user = rows[0];
-  if (!user || !isPlatformAdminUser(user)) {
+  if (!user || !isPlatformAdminUser(user, process.env)) {
     throw new AdminForbiddenError("Admin access required");
   }
 
