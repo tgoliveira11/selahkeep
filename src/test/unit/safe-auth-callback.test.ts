@@ -9,6 +9,8 @@ describe("sanitizeAuthCallbackUrl", () => {
     expect(sanitizeAuthCallbackUrl("/vault/security")).toBe("/vault/security");
     expect(sanitizeAuthCallbackUrl("/vault/recovery")).toBe("/vault/recovery");
     expect(sanitizeAuthCallbackUrl("/settings/account")).toBe("/settings/account");
+    expect(sanitizeAuthCallbackUrl("/admin")).toBe("/admin");
+    expect(sanitizeAuthCallbackUrl("/admin/users")).toBe("/admin/users");
   });
 
   it("defaults to /notes when path is missing or invalid", () => {

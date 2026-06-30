@@ -10,6 +10,11 @@ export {
   userTwoFactorSessionUpgrades,
   userTwoFactorSettings,
   webauthnChallenges,
+  adminConfigOverrides,
+  apiKeys,
+  inviteCodes,
+  inviteUses,
+  loginAttemptCounters,
 } from "@tgoliveira/secure-auth/drizzle/schema";
 
 export {

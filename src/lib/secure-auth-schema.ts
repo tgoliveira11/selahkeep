@@ -9,6 +9,8 @@ const REQUIRED_USER_COLUMNS = [
   "password_hash",
   "email_verified_at",
   "password_updated_at",
+  "role",
+  "status",
   "created_at",
   "updated_at",
 ] as const;
@@ -22,6 +24,11 @@ const REQUIRED_AUTH_TABLES = [
   "user_two_factor_login_tokens",
   "user_two_factor_session_upgrades",
   "user_two_factor_backup_codes",
+  "admin_config_overrides",
+  "api_keys",
+  "invite_codes",
+  "invite_uses",
+  "login_attempt_counters",
 ] as const;
 
 export class SecureAuthDatabaseNotReadyError extends Error {

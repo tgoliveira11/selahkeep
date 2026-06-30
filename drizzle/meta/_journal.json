@@ -99,6 +99,13 @@
       "when": 1781270000000,
       "tag": "0013_note_attachments",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1781280000000,
+      "tag": "0014_secure_auth_admin_platform",
+      "breakpoints": true
     }
   ]
 }
