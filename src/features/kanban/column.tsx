@@ -7,6 +7,14 @@ import type {
 } from "@/lib/notes/kanban-types";
 import { canDeleteKanbanColumn } from "@/lib/notes/kanban-progress";
 import { KanbanCard } from "@/features/kanban/card";
+import { ToolbarButton } from "@/components/ui/toolbar-button";
+import {
+  IconCheck,
+  IconChevronLeft,
+  IconChevronRight,
+  IconPlus,
+  IconTrash,
+} from "@/components/ui/toolbar-icons";
 import { cn } from "@/lib/ui/cn";
 
 interface KanbanColumnProps {
@@ -70,43 +78,48 @@ export function KanbanColumn({
             {column.isDoneColumn ? "Done" : `${cards.length}`}
           </span>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            className="rounded-md border border-[var(--border)] px-2 py-1 text-xs font-semibold text-[var(--primary)]"
+        <div
+          className="flex flex-nowrap items-center gap-1"
+          data-testid={`kanban-column-toolbar-${column.id}`}
+        >
+          <ToolbarButton
+            label="Add card"
+            testId={`kanban-column-add-card-${column.id}`}
+            icon={<IconPlus />}
+            iconOnly
+            primary
             onClick={() => onAddCard(column.id)}
-          >
-            Add card
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted)]"
-            onClick={() => onToggleDone(column.id)}
+          />
+          <ToolbarButton
+            label={column.isDoneColumn ? "Unmark done" : "Mark done"}
+            testId={`kanban-column-toggle-done-${column.id}`}
+            icon={<IconCheck />}
+            iconOnly
+            active={column.isDoneColumn}
             disabled={column.isDoneColumn && !canDelete}
-            title={column.isDoneColumn && !canDelete ? "Keep at least one done column" : undefined}
-          >
-            {column.isDoneColumn ? "Unmark done" : "Mark done"}
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted)]"
-            onClick={() => onMoveColumn(column.id, -1)}
+            onClick={() => onToggleDone(column.id)}
+          />
+          <ToolbarButton
+            label="Move column left"
+            testId={`kanban-column-move-left-${column.id}`}
+            icon={<IconChevronLeft />}
+            iconOnly
             disabled={columnIndex <= 0}
-          >
-            Left
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted)]"
-            onClick={() => onMoveColumn(column.id, 1)}
+            onClick={() => onMoveColumn(column.id, -1)}
+          />
+          <ToolbarButton
+            label="Move column right"
+            testId={`kanban-column-move-right-${column.id}`}
+            icon={<IconChevronRight />}
+            iconOnly
             disabled={columnIndex === orderedColumns.length - 1}
-          >
-            Right
-          </button>
+            onClick={() => onMoveColumn(column.id, 1)}
+          />
           <button
             type="button"
-            className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-[var(--danger)]"
-            onClick={() => onDeleteColumn(column.id)}
+            data-testid={`kanban-column-delete-${column.id}`}
+            className="toolbar-button toolbar-button--icon-only text-[var(--danger)]"
+            aria-label="Delete column"
             disabled={!canDelete || cards.length > 0}
             title={
               cards.length > 0
@@ -115,8 +128,12 @@ export function KanbanColumn({
                   ? "Keep at least one done column"
                   : undefined
             }
+            onClick={() => onDeleteColumn(column.id)}
           >
-            Delete
+            <span className="toolbar-button__icon">
+              <IconTrash />
+            </span>
+            <span className="sr-only">Delete</span>
           </button>
         </div>
       </header>

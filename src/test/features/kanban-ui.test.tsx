@@ -207,4 +207,24 @@ describe("kanban UI", () => {
     expect(screen.getByRole("link", { name: "Open note" })).toHaveAttribute("href", `/notes/${NOTE_ID}`);
     expect(screen.getByText("No standalone boards yet")).toBeInTheDocument();
   });
+
+  it("keeps column action controls on one toolbar row", () => {
+    render(<KanbanBoard board={sampleBoard()} onChange={vi.fn()} />);
+
+    for (const columnId of ["todo", "done"]) {
+      const toolbar = screen.getByTestId(`kanban-column-toolbar-${columnId}`);
+      expect(toolbar.className).toContain("flex-nowrap");
+      expect(toolbar.className).not.toContain("flex-wrap");
+      expect(toolbar.children).toHaveLength(5);
+
+      expect(screen.getByTestId(`kanban-column-add-card-${columnId}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`kanban-column-toggle-done-${columnId}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`kanban-column-move-left-${columnId}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`kanban-column-move-right-${columnId}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`kanban-column-delete-${columnId}`)).toBeInTheDocument();
+    }
+
+    expect(screen.getByTestId("kanban-column-toggle-done-todo")).toHaveAttribute("aria-label", "Mark done");
+    expect(screen.getByTestId("kanban-column-toggle-done-done")).toHaveAttribute("aria-label", "Unmark done");
+  });
 });

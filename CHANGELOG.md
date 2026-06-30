@@ -20,6 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Kanban column header actions wrapped to multiple lines.** Column toolbars now use compact icon-only controls on a single `flex-nowrap` row (add card, mark done, move left/right, delete) via the shared `ToolbarButton` pattern.
+
 - **Kanban `/kanban` list hid note-bound boards.** The page only queried `scope=standalone`, so boards generated from notes never appeared. The list now loads all vault boards, shows standalone and note-bound sections separately, and explains where each type lives.
 
 - **Kanban `/api/kanban` 503 after pulling the feature branch.** Migration `0016_note_kanban.sql` was skipped when `drizzle/meta/_journal.json` did not list it; `npm run db:migrate` reported success without creating `note_kanban_boards` / `note_kanban_versions`. Register the journal entry (commit `4a59583`), run `npm run db:migrate`, then verify with `npm run db:check-kanban`.
