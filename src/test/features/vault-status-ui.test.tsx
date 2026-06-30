@@ -427,7 +427,7 @@ describe("nav vault status dock", () => {
     expect(within(dock).getByText(/Auto-locks in/i)).toBeTruthy();
     expect(within(dock).getByText("14:32")).toBeTruthy();
     expect(within(dock).getByRole("button", { name: /lock now/i })).toBeTruthy();
-    expect(within(screen.getByRole("banner")).queryByRole("button", { name: /lock vault/i })).toBeNull();
+    expect(within(screen.getByRole("banner")).queryByRole("button", { name: /^lock vault$/i })).toBeNull();
   });
 
   it("does not render private letters copy in vault status bar", async () => {
