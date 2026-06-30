@@ -17,6 +17,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Note Kanban Boards (end-to-end).** Encrypted Kanban boards (note-bound or standalone) with columns, cards, due dates, priorities, labels, drag-and-drop, mobile Move menus, version history (restore + diff), note resolve/reopen prompts, vault-index progress chips, and `/kanban` navigation. Client-only encryption (`note_kanban_board` / `note_kanban_version` / `note_kanban_key` AAD fields); API under `/api/kanban/*`. Migration `0016_note_kanban.sql`. Kill switch: `NEXT_PUBLIC_KANBAN_ENABLED` (default on).
 
+### Changed
+
+- **Logged-out home page copy** now reflects the full shipped product surface: encrypted notes vault, Kanban boards (note-bound and standalone), on-device voice dictation, attachments and version history, passkey sign-in and vault unlock, and recovery options — written for privacy-conscious, non-technical readers.
+
+- **Note-bound Kanban boards now sync bidirectionally with their source note.** Checklist and list edits on the note update the board (debounced ~500ms); card moves, completion, title edits, and add/remove on the board write back to the note (debounced ~800ms). Stable `source.key` IDs anchor field-level merge; manual re-sync remains as a fallback reconcile action.
+
 
 ### Fixed
 

@@ -24,8 +24,8 @@ import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 import {
   createKanbanBoardFromNote,
   createStandaloneKanbanBoard,
-  mergeKanbanBoardFromNote,
 } from "@/lib/notes/kanban-from-note";
+import { syncBoardFromNoteBody } from "@/lib/notes/kanban-sync";
 import { getKanbanProgress } from "@/lib/notes/kanban-progress";
 import type { KanbanBoardPlaintext } from "@/lib/notes/kanban-types";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
@@ -360,9 +360,11 @@ export function useKanban(userId: string | null) {
   const regenerateFromNote = useCallback(
     async (body: string) => {
       if (!state.board) throw new Error("No board loaded");
-      const { board, added } = mergeKanbanBoardFromNote(state.board, body);
-      await saveBoard(board, state.encryptedWrappedKey, { appendVersion: added > 0 });
-      return { board, added };
+      const result = syncBoardFromNoteBody(state.board, body);
+      await saveBoard(result.board, state.encryptedWrappedKey, {
+        appendVersion: result.added > 0 || result.removed > 0,
+      });
+      return { board: result.board, added: result.added, removed: result.removed };
     },
     [saveBoard, state.board, state.encryptedWrappedKey]
   );

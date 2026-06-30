@@ -47,7 +47,10 @@ export function GenerateFromNotePanel({
     return (
       <Alert variant="info" data-testid="kanban-existing-panel">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span>This note already has a Kanban board. Re-sync adds newly recognized items only.</span>
+          <span>
+            This note stays in sync with its Kanban board. Use re-sync to force a reconcile from the
+            note if something looks out of date.
+          </span>
           {onResync && (
             <Button type="button" variant="secondary" disabled={loading} onClick={() => void onResync()}>
               Re-sync from note

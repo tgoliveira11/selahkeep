@@ -212,7 +212,7 @@ export function KanbanBoard({
           </div>
           <p className="mt-1 text-sm text-[var(--muted)]">
             {draft.scope === "note"
-              ? "Generated from a note, then edited independently."
+              ? "Linked to the source note — checklist and card changes sync both ways."
               : "Standalone private board."}
           </p>
         </div>

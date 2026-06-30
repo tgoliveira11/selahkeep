@@ -91,6 +91,7 @@ Grouped by domain. Full tables: [`API_REFERENCE.md`](./API_REFERENCE.md), OpenAP
 | Vault auto-lock | Shipped | Client session timer |
 | Passkey PRF vault unlock | Shipped | Separate from account passkeys |
 | Note Kanban generation | Shipped | Deterministic on-device parsing of decrypted note markdown; no LLM/plaintext egress |
+| Note ↔ Kanban bidirectional sync | Shipped | Note-bound boards sync checklist/list structure and card state client-side (debounced); encryption unchanged |
 
 ---
 

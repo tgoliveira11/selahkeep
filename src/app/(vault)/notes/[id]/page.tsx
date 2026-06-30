@@ -53,6 +53,8 @@ import { VaultLockedState } from "@/features/vault/vault-locked-state";
 import { useCategoriesTags } from "@/features/notes/use-categories-tags";
 import { useNotes } from "@/features/notes/use-notes";
 import { useKanban } from "@/features/notes/use-kanban";
+import { useKanbanNoteToBoardSync } from "@/features/notes/use-kanban-note-to-board-sync";
+import { isKanbanEnabled } from "@/lib/notes/kanban-config";
 import { useVaultIndex } from "@/features/notes/use-vault-index";
 import { useNoteSearchContext } from "@/features/notes/note-search-context";
 import { recordRecentlyViewed } from "@/lib/notes/recently-viewed";
@@ -154,13 +156,22 @@ export default function NoteDetailPage() {
   const { updateNote, moveNoteToTrash, restoreNoteFromTrash, permanentlyDeleteNote, toggleNoteResolved, resolveNoteWithReflection, toggleNotePinned, toggleNoteFavorite, toggleNoteArchived, duplicateNote, busy, error: notesError } = useNotes(vaultUserId);
   const {
     board: kanbanBoard,
+    encryptedWrappedKey: kanbanWrappedKey,
     loading: kanbanLoading,
     saving: kanbanSaving,
     error: kanbanError,
     loadBoardForNote,
     createNoteBoard,
     regenerateFromNote,
+    saveBoard: saveKanbanBoard,
   } = useKanban(vaultUserId);
+  useKanbanNoteToBoardSync({
+    body,
+    board: kanbanBoard,
+    enabled: isKanbanEnabled() && Boolean(kanbanBoard?.scope === "note"),
+    encryptedWrappedKey: kanbanWrappedKey,
+    saveBoard: saveKanbanBoard,
+  });
   const { mutateIndex } = useVaultIndex(vaultUserId, vaultUnlocked);
   const { query: searchQuery } = useNoteSearchContext();
   const { categories, tags, createCategory, createTag } = useCategoriesTags(vaultUserId, vaultUnlocked);

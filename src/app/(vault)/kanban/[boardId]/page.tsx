@@ -11,6 +11,7 @@ import { VaultLockedState } from "@/features/vault/vault-locked-state";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { useKanban } from "@/features/notes/use-kanban";
+import { useKanbanBoardToNoteSync } from "@/features/notes/use-kanban-board-to-note-sync";
 import { useNotes } from "@/features/notes/use-notes";
 import { KanbanBoard } from "@/features/kanban/board";
 import type { ResolvedReflectionFields } from "@/components/notes/resolved-reflection-dialog";
@@ -27,8 +28,16 @@ export default function KanbanBoardPage() {
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
   const clientStatus = vaultClient.status === "ready" ? vaultClient.clientStatus : null;
   const canRead = vault.status === "ready" && vaultUnlocked && clientStatus === "unlocked";
-  const { board, loading, saving, error, loadBoard, saveBoard } = useKanban(vaultUserId);
-  const { resolveNoteWithReflection, toggleNoteResolved, busy } = useNotes(vaultUserId);
+  const { board, loading, saving, error, loadBoard, saveBoard, encryptedWrappedKey } =
+    useKanban(vaultUserId);
+  const { updateNote, resolveNoteWithReflection, toggleNoteResolved, busy } = useNotes(vaultUserId);
+  useKanbanBoardToNoteSync({
+    board,
+    enabled: Boolean(board?.scope === "note"),
+    saveBoard,
+    updateNote,
+    encryptedWrappedKey,
+  });
   const [noteResolved, setNoteResolved] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
