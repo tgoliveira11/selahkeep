@@ -25,6 +25,18 @@ const PLAINTEXT_FORBIDDEN_FIELDS = [
   "plaintextBody",
   "decryptedContent",
   "metadata",
+  "kanban",
+  "board",
+  "columns",
+  "cards",
+  "column",
+  "card",
+  "boardState",
+  "labels",
+  "label",
+  "priority",
+  "dueDate",
+  "description",
 ] as const;
 
 export function rejectPlaintextNoteFields(body: Record<string, unknown>): string | null {

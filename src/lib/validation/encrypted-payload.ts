@@ -21,6 +21,9 @@ const aadSchema = z.object({
     "note_draft",
     "note_attachment_metadata",
     "note_attachment_blob",
+    "note_kanban_board",
+    "note_kanban_version",
+    "note_kanban_key",
   ]),
 });
 
