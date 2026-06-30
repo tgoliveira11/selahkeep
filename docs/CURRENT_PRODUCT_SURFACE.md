@@ -8,7 +8,7 @@ Living inventory of what the app exposes **today**. Update this file when routes
 
 ## Product scope
 
-Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`; note title/body encrypted client-side only. Former name: LTG Vault.
+Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`; note title/body encrypted client-side only. Former working name: LTG Vault (retired).
 
 **Not shipped / out of scope:** public letters, admin note content access, server-side AI on note plaintext, npm package publish.
 
