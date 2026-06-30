@@ -1,3 +1,5 @@
+import { isKanbanEnabled } from "@/lib/notes/kanban-config";
+
 /** Logged-in primary navigation for SelahKeep. */
 
 export type LoggedInNavGroup = "core" | "vault" | "account";
@@ -15,6 +17,10 @@ export const LOGGED_IN_NAV_LINKS: readonly LoggedInNavLink[] = [
   { href: "/vault/settings", label: "Vault", group: "vault" },
   { href: "/settings/account", label: "Account", group: "account" },
 ] as const;
+
+export function getLoggedInNavLinks(): readonly LoggedInNavLink[] {
+  return LOGGED_IN_NAV_LINKS.filter((link) => link.href !== "/kanban" || isKanbanEnabled());
+}
 
 export function isLoggedInNavLinkActive(pathname: string, href: string): boolean {
   if (href === "/notes") {

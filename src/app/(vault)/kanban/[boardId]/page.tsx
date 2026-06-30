@@ -1,5 +1,6 @@
 "use client";
 
+import { notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AuthenticatedPage } from "@/components/layout/authenticated-page";
@@ -13,8 +14,11 @@ import { useKanban } from "@/features/notes/use-kanban";
 import { useNotes } from "@/features/notes/use-notes";
 import { KanbanBoard } from "@/features/kanban/board";
 import type { ResolvedReflectionFields } from "@/components/notes/resolved-reflection-dialog";
+import { isKanbanEnabled } from "@/lib/notes/kanban-config";
 
 export default function KanbanBoardPage() {
+  if (!isKanbanEnabled()) notFound();
+
   const params = useParams();
   const boardId = params.boardId as string;
   const vault = useRequireVault();

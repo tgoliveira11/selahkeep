@@ -1,5 +1,6 @@
 "use client";
 
+import { notFound } from "next/navigation";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AuthenticatedPage } from "@/components/layout/authenticated-page";
@@ -13,8 +14,11 @@ import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { useVaultIndex } from "@/features/notes/use-vault-index";
 import { useKanban } from "@/features/notes/use-kanban";
 import { KanbanBoardList } from "@/features/kanban/board-list";
+import { isKanbanEnabled } from "@/lib/notes/kanban-config";
 
 export default function KanbanBoardsPage() {
+  if (!isKanbanEnabled()) notFound();
+
   const router = useRouter();
   const vault = useRequireVault();
   const vaultClient = useVaultClientStatus();

@@ -10,6 +10,7 @@ import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { lockVaultSession } from "@/lib/crypto-client/vault-session";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
+import { isKanbanEnabled } from "@/lib/notes/kanban-config";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/ui/cn";
 
@@ -145,7 +146,8 @@ export function AppSidebar() {
         </p>
       )}
       <nav aria-label="Library" className="flex flex-col gap-0.5">
-        {unlocked && LIBRARY.map((item) => {
+        {unlocked &&
+          LIBRARY.filter((item) => item.href !== "/kanban" || isKanbanEnabled()).map((item) => {
           const active =
             item.href === "/kanban"
               ? pathname.startsWith("/kanban")

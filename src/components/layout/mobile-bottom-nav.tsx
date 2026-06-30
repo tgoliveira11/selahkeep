@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { isFullyAuthenticatedSession } from "@/lib/auth/session-state";
 import {
+  getLoggedInNavLinks,
   isLoggedInNavLinkActive,
-  LOGGED_IN_NAV_LINKS,
 } from "@/lib/navigation/logged-in-nav";
 import { cn } from "@/lib/ui/cn";
 
@@ -59,7 +59,7 @@ export function MobileBottomNav() {
       data-testid="mobile-bottom-nav"
       className="fixed inset-x-0 bottom-0 z-40 flex h-[72px] items-start justify-around border-t border-[var(--border)] bg-[var(--card)] px-6 pt-[11px] md:hidden"
     >
-      {LOGGED_IN_NAV_LINKS.map((link) => {
+      {getLoggedInNavLinks().map((link) => {
         const active = isLoggedInNavLinkActive(pathname, link.href);
         return (
           <Link

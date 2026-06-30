@@ -77,6 +77,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 
 - `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted notes (Markdown body, metadata blob)
 - `GET/POST /api/notes/:id/versions`, `GET /api/notes/:id/versions/:versionId` — immutable encrypted note version snapshots (history + GitHub-style compare/restore). Client-encrypted under the note's Note Key, AAD-bound to a per-version id; retention via `NOTE_VERSION_HISTORY_LIMIT`. Table `note_versions` (migration `0012`). See `docs/TDR_Note_Version_History.md`
+- `GET/POST /api/kanban`, `GET/PUT/DELETE /api/kanban/:boardId`, `GET/POST /api/kanban/:boardId/versions`, `GET /api/kanban/:boardId/versions/:versionId` — encrypted Kanban boards (note-bound or standalone). Client-only encryption; tables `note_kanban_boards`, `note_kanban_versions` (migration `0016`). See `docs/TDR_Note_Kanban_Boards.md`
 - `GET/PATCH /api/vault/index` — encrypted vault index blob (v3: note lifecycle metadata, categories, tags, saved views, recently viewed)
 - `GET/PATCH /api/vault/settings` — encrypted vault settings (unlock behavior, setup metadata)
 - `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id` — encrypted note payloads only
