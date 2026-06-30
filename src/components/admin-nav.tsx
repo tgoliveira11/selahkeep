@@ -15,6 +15,13 @@ const ADMIN_NAV_ITEMS = [
   { suffix: "/config", label: "Config" },
 ] as const;
 
+const OUTPOST_NAV_ITEMS = [
+  { suffix: "/outpost", label: "Outpost" },
+  { suffix: "/outpost/queue", label: "Email queue" },
+  { suffix: "/outpost/config", label: "Email config" },
+  { suffix: "/outpost/observability", label: "Observability" },
+] as const;
+
 export function AdminNav() {
   const resolved = useUiPaths();
   const pathname = usePathname();
@@ -37,6 +44,27 @@ export function AdminNav() {
           {ADMIN_NAV_ITEMS.map(({ suffix, label }) => {
             const href = `${base}${suffix}`;
             const isActive = suffix === "" ? pathname === base : pathname.startsWith(href);
+            return (
+              <Link
+                key={suffix}
+                href={href}
+                className={`whitespace-nowrap rounded px-3 py-1.5 text-sm transition-colors ${
+                  isActive
+                    ? "bg-[var(--card-muted)] font-medium text-[var(--foreground)]"
+                    : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+          <div className="mx-1 h-5 w-px shrink-0 bg-[var(--border)]" />
+          {OUTPOST_NAV_ITEMS.map(({ suffix, label }) => {
+            const href = suffix;
+            const isActive =
+              suffix === "/outpost"
+                ? pathname === "/admin/outpost"
+                : pathname.startsWith(href);
             return (
               <Link
                 key={suffix}

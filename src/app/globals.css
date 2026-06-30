@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@tgoliveira/secure-auth/styles.css";
+@import "@tgoliveira/outpost/styles.css";
 
 /* Design tokens — "Stillness" direction. See docs/DESIGN_SYSTEM.md. */
 :root {

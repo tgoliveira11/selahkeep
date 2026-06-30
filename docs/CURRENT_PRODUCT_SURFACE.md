@@ -47,6 +47,10 @@ Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`;
 | `/admin/locks` | Session + admin role | Shipped | Account lockouts |
 | `/admin/api-keys` | Session + admin role | Shipped | M2M API keys |
 | `/admin/config` | Session + admin role | Shipped | Runtime config overrides |
+| `/admin/outpost` | Session + platform admin | Shipped (when `OUTPOST_ADMIN_ENABLED`) | Outpost email outbox overview |
+| `/admin/outpost/queue` | Session + platform admin | Shipped | Outbox queue + manual worker |
+| `/admin/outpost/config` | Session + platform admin | Shipped | Outpost runtime config |
+| `/admin/outpost/observability` | Session + platform admin | Shipped | Outbox metrics and worker runs |
 | `/api-docs` | Dev / `ENABLE_API_DOCS` | Shipped | Swagger UI (off in prod by default) |
 
 ---
@@ -59,6 +63,7 @@ Grouped by domain. Full tables: [`API_REFERENCE.md`](./API_REFERENCE.md), OpenAP
 |--------|-------------------|--------|
 | **Auth (secure-auth)** | `/api/auth/*`, NextAuth catch-all | Register, login, OAuth, 2FA, passkey login, email verify, password reset |
 | **Auth admin (secure-auth)** | `/api/auth/admin/*` | Users, waitlist, invites, locks, API keys, config (admin role; when `AUTH_ADMIN_ENABLED`) |
+| **Outpost admin** | `/api/outpost/admin/*` | Email queue, worker send, config, observability (platform admin; when `OUTPOST_ADMIN_ENABLED`) |
 | **Account** | `/api/account/*` | Profile, sessions, passkeys, 2FA, change password |
 | **Vault** | `/api/vault/*` | Setup, status, settings, index, unlock envelopes, recovery phrase, storage |
 | **Passkeys (vault)** | `/api/passkeys/*` | Vault passkey register/authenticate |
