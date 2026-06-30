@@ -1,0 +1,54 @@
+---
+description: Branch-first workflow, PR rules, manual releases, and agent restrictions for SelahKeep
+alwaysApply: true
+---
+
+# Branch, PR, and release guardrails
+
+Read also: `docs/contributing.md`, `docs/releasing.md`, `AGENTS.md`.
+
+## Branch and main
+
+- Default base: **`main`** (no `develop`).
+- Before substantive work: branch from `main` — `feature/`, `fix/`, `docs/`, or `chore/` prefix.
+- **Never** commit or push to `main` unless the user explicitly asks.
+- **Never** merge, approve PRs, or run the release workflow unless explicitly asked.
+- **Never** use destructive git (`push --force`, `reset --hard`) unless explicitly asked.
+- Commits only when the user asks; otherwise leave changes uncommitted or on a feature branch.
+
+## Commits
+
+- Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`, `ci:` (optional scope).
+- Clear subject; body only when it adds context.
+
+## Pre-PR / task completion (code changes)
+
+```bash
+npm run validate
+```
+
+Also when behavior changes:
+
+- Update `CHANGELOG.md` → `## [Unreleased]`
+- Update `docs/CURRENT_PRODUCT_SURFACE.md` if routes, APIs, or shipped status changed
+- Add/update tests
+- No secrets in git
+
+Trivial docs-only edits may skip validate.
+
+## Pull requests
+
+- Open with `gh pr create` only when asked (summary + test plan).
+- Prefer squash merge; address review on the same branch.
+
+## Releases (manual only)
+
+Invariant: `package.json` version **X.Y.Z** ⟺ tag **vX.Y.Z** ⟺ GitHub Release **vX.Y.Z**.
+
+- **Do not** dispatch `.github/workflows/release.yml`, create tags, or publish releases without explicit user instruction.
+- This repo does **not** publish to npm.
+- Deploy (Vercel, etc.) is separate and manual.
+
+## Version source
+
+Canonical version: `package.json` → `"version"`.

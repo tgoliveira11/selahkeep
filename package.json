@@ -13,6 +13,7 @@
     "test:coverage": "vitest run --coverage",
     "test:all": "npm run test:coverage",
     "test:watch": "vitest",
+    "validate": "npm run lint && npm run test:coverage && npm run build",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:check-auth": "node scripts/check-auth-db.mjs",

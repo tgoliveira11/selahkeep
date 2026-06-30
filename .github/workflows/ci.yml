@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  branch-name:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require feature/fix/docs/chore prefix
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if [[ ! "$BRANCH" =~ ^(feature|fix|docs|chore)/ ]]; then
+            echo "::error::Branch '$BRANCH' must start with feature/, fix/, docs/, or chore/"
+            exit 1
+          fi
+          echo "Branch name OK: $BRANCH"
+
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate (lint, coverage, build)
+        run: npm run validate
+        env:
+          NEXTAUTH_SECRET: ci-test-secret-for-github-actions-only
+          DATABASE_URL: postgresql://letters:letters_dev@localhost:5435/letters_to_god
+          TWO_FACTOR_SECRET_ENCRYPTION_KEY: ci-test-2fa-encryption-key-actions-only
+          APP_BASE_URL: http://localhost:3001
+          NEXTAUTH_URL: http://localhost:3001

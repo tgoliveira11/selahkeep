@@ -26,6 +26,15 @@ Migration history: [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SE
 
 Documentation index: [`docs/README.md`](./docs/README.md).
 
+## Contributing and releases
+
+- **[Contributing](docs/contributing.md)** — branches, PRs, commits, changelog
+- **[Releasing](docs/releasing.md)** — manual version cuts (`package.json` ⟺ `vX.Y.Z` tag ⟺ GitHub Release)
+- **[Product surface](docs/CURRENT_PRODUCT_SURFACE.md)** — live routes, APIs, integrations
+- **[Repo settings](docs/repo-settings.md)** — GitHub branch protection checklist
+
+Agents: see [`AGENTS.md`](./AGENTS.md) and `.cursor/rules/branch-pr-release.mdc`.
+
 ## Quick Start
 
 ```bash
@@ -284,6 +293,7 @@ See [`docs/VERCEL_ENVIRONMENT_VARIABLES.md`](./docs/VERCEL_ENVIRONMENT_VARIABLES
 | `npm run test` | Run all Vitest tests |
 | `npm run test:coverage` | Vitest with coverage thresholds (≥90% lines/statements/functions/branches) |
 | `npm run test:all` | Alias for `npm run test:coverage` |
+| `npm run validate` | Lint + coverage + production build (pre-PR gate) |
 | `npm run db:generate` | Generate Drizzle migrations |
 | `npm run db:migrate` | Apply migrations to PostgreSQL |
 | `docker compose up -d` | Start local PostgreSQL |
@@ -318,12 +328,12 @@ Recent passkey-related coverage includes:
 Coverage is enforced on core application code (`src/lib`, `src/server/services`, `src/server/policies`, `src/app/api`, `src/features/passkey`). Repository adapters and UI pages are covered indirectly via service/API/feature tests.
 
 ```bash
+npm run validate        # lint + coverage + build (pre-PR)
 npm ci                  # clean install
 npm run lint            # ESLint
 npm run test:coverage   # must pass before merge (≥90% lines/statements/functions/branches)
 npm run build           # production build
 npm run db:migrate      # apply migrations (requires PostgreSQL)
-npm run test:all        # coverage + E2E smoke
 ```
 
 ## Architecture

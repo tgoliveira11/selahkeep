@@ -83,16 +83,33 @@ Keep docs accurate with the code. **Do not merge behavior changes without updati
 | Setup, commands, ports, env vars | `README.md` |
 | Layers, directories, data flow | `ARCHITECTURE.md`, `docs/MODULE_BOUNDARIES.md` |
 | Crypto, vault, passkeys, recovery | `SECURITY.md`, ADR-005/006 |
-| Agent workflow, testing, boundaries | `AGENTS.md`, `.cursor/rules/*.md` |
+| Agent workflow, testing, boundaries | `AGENTS.md`, `.cursor/rules/*.md`, `docs/contributing.md` |
 | Navigation / branding | `docs/LOGGED_IN_NAVIGATION_AUDIT.md`, `docs/UI_UX_DIRECTION.md` |
 | Visual language / tokens / components / dark mode | `docs/DESIGN_SYSTEM.md`, `docs/design/` |
-| New API routes or contracts | `docs/API_REFERENCE.md`, `ARCHITECTURE.md` |
+| New API routes or contracts | `docs/API_REFERENCE.md`, `ARCHITECTURE.md`, `docs/CURRENT_PRODUCT_SURFACE.md` |
+
+## Branch, PR, and releases
+
+Follow **`docs/contributing.md`** and **`.cursor/rules/branch-pr-release.mdc`**:
+
+- Work on `feature/`, `fix/`, `docs/`, or `chore/` branches — not directly on `main`.
+- Run **`npm run validate`** before finishing code changes (unless trivial docs-only).
+- Update **`CHANGELOG.md`** (`## [Unreleased]`) and **`docs/CURRENT_PRODUCT_SURFACE.md`** when applicable.
+- Do **not** open PRs, merge, push to `main`, or run the release workflow unless explicitly asked.
+
+Releases are **manual only** (`workflow_dispatch`). Invariant: `package.json` version ⟺ tag `vX.Y.Z` ⟺ GitHub Release. See **`docs/releasing.md`**.
 
 ## Testing (required on every change)
 
 **Minimum coverage: 90%** for enforced scope (see `vitest.config.ts`).
 
 Before finishing any task:
+
+```bash
+npm run validate
+```
+
+(`validate` runs `lint`, `test:coverage`, and `build`. Equivalent to the steps below.)
 
 ```bash
 npm ci

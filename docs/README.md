@@ -55,6 +55,11 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 | Document | Purpose |
 |----------|---------|
 | [`../README.md`](../README.md) | Quick start, stack, commands |
+| [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | Pointer to contributing guide |
+| [`contributing.md`](./contributing.md) | Branches, PRs, commits, changelog |
+| [`releasing.md`](./releasing.md) | Manual releases, version invariant |
+| [`repo-settings.md`](./repo-settings.md) | GitHub branch protection |
+| [`CURRENT_PRODUCT_SURFACE.md`](./CURRENT_PRODUCT_SURFACE.md) | Live routes, APIs, integrations |
 | [`../ARCHITECTURE.md`](../ARCHITECTURE.md) | Layers, data flow |
 | [`../AGENTS.md`](../AGENTS.md) | Agent workflow rules |
 
