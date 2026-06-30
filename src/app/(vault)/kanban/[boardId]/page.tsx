@@ -38,7 +38,7 @@ export default function KanbanBoardPage() {
 
   if (vault.status === "loading" || vault.status === "redirecting" || vaultClient.status === "loading") {
     return (
-      <AuthenticatedPage width="wide">
+      <AuthenticatedPage width="notes">
         <LoadingState label="Opening board" />
       </AuthenticatedPage>
     );
@@ -46,7 +46,7 @@ export default function KanbanBoardPage() {
 
   if (vault.status === "error" || vaultClient.status === "error") {
     return (
-      <AuthenticatedPage width="wide">
+      <AuthenticatedPage width="notes">
         <ErrorState message="We could not verify your vault status." />
       </AuthenticatedPage>
     );
@@ -54,7 +54,7 @@ export default function KanbanBoardPage() {
 
   if (clientStatus && clientStatus !== "unlocked") {
     return (
-      <AuthenticatedPage width="wide">
+      <AuthenticatedPage width="notes">
         <VaultLockedState variant="read-note" returnTo={`/kanban/${boardId}`} />
       </AuthenticatedPage>
     );
@@ -62,14 +62,14 @@ export default function KanbanBoardPage() {
 
   if (loading || !board) {
     return (
-      <AuthenticatedPage width="wide">
+      <AuthenticatedPage width="notes">
         <LoadingState label="Opening board" />
       </AuthenticatedPage>
     );
   }
 
   return (
-    <AuthenticatedPage width="wide">
+    <AuthenticatedPage width="notes">
       {(error || actionError) && (
         <Alert variant="danger" className="mb-4">
           {error ?? actionError}
