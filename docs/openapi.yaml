@@ -19,6 +19,7 @@ servers:
 tags:
   - name: Auth
   - name: Notes
+  - name: Kanban
   - name: Vault
   - name: Passkeys
   - name: Recovery
@@ -68,7 +69,21 @@ components:
               format: uuid
             field:
               type: string
-              enum: [title, body, letter_key, vault_key]
+              enum:
+                - title
+                - body
+                - letter_key
+                - note_metadata
+                - note_body
+                - note_key
+                - note_version_metadata
+                - note_version_body
+                - note_kanban_board
+                - note_kanban_version
+                - note_kanban_key
+                - vault_key
+                - vault_settings
+                - vault_index
     KdfMetadata:
       oneOf:
         - type: object
@@ -156,6 +171,81 @@ components:
           $ref: '#/components/schemas/EncryptedPayload'
         bodyEncryptionVersion:
           type: string
+    KanbanBoard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        noteId:
+          type: string
+          format: uuid
+          nullable: true
+        vaultId:
+          type: string
+          format: uuid
+        encryptedBoard:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptedWrappedKey:
+          $ref: '#/components/schemas/EncryptedPayload'
+        boardEncryptionVersion:
+          type: string
+          enum: [enc-v1]
+        versionNumber:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateKanbanBoardRequest:
+      type: object
+      required: [id, noteId, encryptedBoard, encryptedWrappedKey, boardEncryptionVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        noteId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Null creates a standalone board; a UUID creates a note-bound board.
+        encryptedBoard:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptedWrappedKey:
+          $ref: '#/components/schemas/EncryptedPayload'
+        boardEncryptionVersion:
+          type: string
+          enum: [enc-v1]
+    UpdateKanbanBoardRequest:
+      type: object
+      required: [id, encryptedBoard, encryptedWrappedKey, boardEncryptionVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        encryptedBoard:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptedWrappedKey:
+          $ref: '#/components/schemas/EncryptedPayload'
+        boardEncryptionVersion:
+          type: string
+          enum: [enc-v1]
+    CreateKanbanVersionRequest:
+      type: object
+      required: [id, encryptedBoard, encryptedWrappedKey, boardEncryptionVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        encryptedBoard:
+          $ref: '#/components/schemas/EncryptedPayload'
+        encryptedWrappedKey:
+          $ref: '#/components/schemas/EncryptedPayload'
+        boardEncryptionVersion:
+          type: string
+          enum: [enc-v1]
     TwoFactorStatus:
       type: object
       properties:
@@ -624,6 +714,162 @@ paths:
           description: Encrypted note version
         '404':
           description: Not found
+  /api/kanban:
+    get:
+      tags: [Kanban]
+      summary: List encrypted Kanban boards for the authenticated user's vault
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: noteId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Filter to the single note-bound board for a note.
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [standalone]
+          description: Filter to standalone boards.
+      responses:
+        '200':
+          description: Encrypted Kanban boards
+        '400':
+          description: Invalid query
+        '503':
+          description: Kanban storage unavailable
+    post:
+      tags: [Kanban]
+      summary: Create an encrypted Kanban board
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateKanbanBoardRequest'
+      responses:
+        '201':
+          description: Board created
+        '400':
+          description: Plaintext rejected or invalid encrypted payload
+        '409':
+          description: Note already has a Kanban board
+        '503':
+          description: Kanban storage unavailable
+  /api/kanban/{boardId}:
+    parameters:
+      - name: boardId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Kanban]
+      summary: Get one encrypted Kanban board
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Encrypted Kanban board
+        '404':
+          description: Board not found
+    put:
+      tags: [Kanban]
+      summary: Replace an encrypted Kanban board blob
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateKanbanBoardRequest'
+      responses:
+        '200':
+          description: Board updated
+        '400':
+          description: Plaintext rejected or invalid encrypted payload
+        '404':
+          description: Board not found
+    delete:
+      tags: [Kanban]
+      summary: Delete a Kanban board and its versions
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Deleted
+        '404':
+          description: Board not found
+  /api/kanban/{boardId}/versions:
+    parameters:
+      - name: boardId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Kanban]
+      summary: List encrypted Kanban version snapshots (newest first)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Encrypted Kanban versions
+        '404':
+          description: Board not found
+    post:
+      tags: [Kanban]
+      summary: Append an encrypted Kanban version snapshot
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateKanbanVersionRequest'
+      responses:
+        '201':
+          description: Version created
+        '400':
+          description: Plaintext rejected or invalid encrypted payload
+        '404':
+          description: Board not found
+        '503':
+          description: Kanban version history unavailable
+  /api/kanban/{boardId}/versions/{versionId}:
+    parameters:
+      - name: boardId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Kanban]
+      summary: Get one encrypted Kanban version snapshot
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Encrypted Kanban version
+        '404':
+          description: Version not found
   /api/vault/index:
     get:
       tags: [Vault]

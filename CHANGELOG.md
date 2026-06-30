@@ -13,6 +13,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Note Kanban board API layer.** Added encrypted board/version service policies, AAD validation, plaintext rejection, retention config, and `/api/kanban/*` routes without React UI.
+- **Note Kanban board React UI.** Added deterministic note-to-board generation, encrypted board routes, desktop drag/drop, mobile Move menus, board history restore, note resolve/reopen prompts, standalone Boards navigation, and encrypted-index progress chips.
+
 ## [0.1.2] - 2026-06-30
 
 ### Added

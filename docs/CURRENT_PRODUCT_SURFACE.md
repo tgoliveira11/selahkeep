@@ -2,7 +2,7 @@
 
 Living inventory of what the app exposes **today**. Update this file when routes, APIs, jobs, integrations, or shipped/planned status changes.
 
-**Last reviewed:** 2026-06-16 · **Version in repo:** see `package.json`
+**Last reviewed:** 2026-06-30 · **Version in repo:** see `package.json`
 
 ---
 
@@ -31,6 +31,8 @@ Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`;
 | `/notes` | Session + vault | Shipped | Notes list |
 | `/notes/new` | Session + vault | Shipped | Create note |
 | `/notes/[id]` | Session + vault | Shipped | View / edit note |
+| `/kanban` | Session + vault | Shipped | Standalone encrypted Kanban boards list |
+| `/kanban/[boardId]` | Session + vault | Shipped | Encrypted Kanban board detail, mobile move controls, version history |
 | `/notes/remembrance` | Session + vault | Shipped | Remembrance workflow |
 | `/notes/weekly-reflection` | Session + vault | Shipped | Weekly reflection |
 | `/vault/setup` | Session | Shipped | Vault + recovery phrase setup |
@@ -70,11 +72,12 @@ Grouped by domain. Full tables: [`API_REFERENCE.md`](./API_REFERENCE.md), OpenAP
 | **Notes** | `/api/notes`, `/api/notes/[id]` | Encrypted CRUD only |
 | **Note versions** | `/api/notes/[id]/versions/*` | Encrypted version history |
 | **Attachments** | `/api/notes/[id]/attachments/*` | Encrypted attachments |
+| **Kanban boards** | `/api/kanban`, `/api/kanban/[boardId]/versions/*` | Encrypted board CRUD + version history; React UI under `/kanban` |
 | **Recovery (legacy)** | `/api/recovery-code` | Legacy recovery codes only |
 | **Admin** | `/api/admin/users/[id]` | User admin; no note plaintext |
 | **Meta** | `/api/openapi`, `/api/auth/package-health` | Spec + health |
 
-**Invariant:** No API accepts or returns plaintext note title/body.
+**Invariant:** No API accepts or returns plaintext note title/body or Kanban board/card content.
 
 ---
 
@@ -87,6 +90,7 @@ Grouped by domain. Full tables: [`API_REFERENCE.md`](./API_REFERENCE.md), OpenAP
 | Encrypted local drafts | Shipped | IndexedDB; not server plaintext |
 | Vault auto-lock | Shipped | Client session timer |
 | Passkey PRF vault unlock | Shipped | Separate from account passkeys |
+| Note Kanban generation | Shipped | Deterministic on-device parsing of decrypted note markdown; no LLM/plaintext egress |
 
 ---
 

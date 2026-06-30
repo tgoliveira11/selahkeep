@@ -127,6 +127,24 @@ Responses include masked IP and coarse browser/platform metadata only — never 
 
 **Email delivery:** transactional messages use `sendEmail()` with `EMAIL_PROVIDER=console` (dev debug), `smtp` (Mailpit locally or Brevo/staging), or future providers. Emails contain account-auth links only — never private letter content. See `README.md` for Mailpit and Brevo SMTP configuration.
 
+### Encrypted Kanban boards
+
+Kanban board APIs store and return encrypted blobs only. Note-bound boards reuse the note wrapped key; standalone boards use a wrapped Kanban board key. No card titles, descriptions, labels, due dates, priorities, or columns are accepted in plaintext.
+
+| Method | Path | Auth |
+|--------|------|------|
+| `GET` | `/api/kanban?noteId=:noteId` | Session |
+| `GET` | `/api/kanban?scope=standalone` | Session |
+| `POST` | `/api/kanban` | Session |
+| `GET` | `/api/kanban/:boardId` | Session |
+| `PUT` | `/api/kanban/:boardId` | Session |
+| `DELETE` | `/api/kanban/:boardId` | Session |
+| `GET` | `/api/kanban/:boardId/versions` | Session |
+| `POST` | `/api/kanban/:boardId/versions` | Session |
+| `GET` | `/api/kanban/:boardId/versions/:versionId` | Session |
+
+Missing Kanban tables return `503` via `KanbanUnavailableError` / `KanbanVersionsUnavailableError`, matching the note-version graceful migration behavior.
+
 ## Security notes
 
 - **Never** send plaintext `title`, `body`, or similar fields — only structured `encrypted*` payloads.
