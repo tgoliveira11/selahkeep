@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-30
+
 ### Fixed
 
 - **Mobile: voice model download OOM.** On phones/tablets the speech worker now loads `whisper-tiny` with **q4** WASM weights, single-thread ONNX, and pauses the TipTap editor while dictation/upload is open so iOS Safari has enough heap for the model.
