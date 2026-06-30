@@ -138,6 +138,18 @@ describe("kanban service", () => {
     );
   });
 
+
+  it("throws KanbanUnavailableError for drizzle-wrapped missing-table errors", async () => {
+    mocks.findByVaultId.mockRejectedValue(
+      Object.assign(new Error("Failed query: select from note_kanban_boards"), {
+        cause: Object.assign(new Error('relation "note_kanban_boards" does not exist'), {
+          code: "42P01",
+        }),
+      })
+    );
+    await expect(kanbanService.list(USER_ID)).rejects.toBeInstanceOf(KanbanUnavailableError);
+  });
+
   it("throws KanbanUnavailableError when the board table is missing", async () => {
     mocks.findByVaultId.mockRejectedValue(
       Object.assign(new Error('relation "note_kanban_boards" does not exist'), { code: "42P01" })

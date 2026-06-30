@@ -17,6 +17,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Note Kanban Boards (end-to-end).** Encrypted Kanban boards (note-bound or standalone) with columns, cards, due dates, priorities, labels, drag-and-drop, mobile Move menus, version history (restore + diff), note resolve/reopen prompts, vault-index progress chips, and `/kanban` navigation. Client-only encryption (`note_kanban_board` / `note_kanban_version` / `note_kanban_key` AAD fields); API under `/api/kanban/*`. Migration `0016_note_kanban.sql`. Kill switch: `NEXT_PUBLIC_KANBAN_ENABLED` (default on).
 
+
+### Fixed
+
+- **Kanban `/api/kanban` 503 after pulling the feature branch.** Migration `0016_note_kanban.sql` was skipped when `drizzle/meta/_journal.json` did not list it; `npm run db:migrate` reported success without creating `note_kanban_boards` / `note_kanban_versions`. Register the journal entry (commit `4a59583`), run `npm run db:migrate`, then verify with `npm run db:check-kanban`.
+
 ## [0.1.2] - 2026-06-30
 
 ### Added

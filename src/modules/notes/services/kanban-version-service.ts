@@ -30,7 +30,7 @@ function isMissingVersionsTable(error: unknown): boolean {
 }
 
 function warnMissingVersionsTable(endpoint: string): void {
-  safeLogger.warn("note_kanban_versions table missing — run migration 0014", { endpoint });
+  safeLogger.warn("note_kanban_versions table missing — run migration 0016_note_kanban", { endpoint });
 }
 
 function validatePayloadSize(payload: unknown): void {

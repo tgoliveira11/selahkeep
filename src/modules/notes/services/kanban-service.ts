@@ -34,9 +34,14 @@ export class ConflictError extends Error {
 
 function isMissingKanbanTable(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
-  const e = error as { code?: string; message?: string; cause?: { code?: string } };
+  const e = error as {
+    code?: string;
+    message?: string;
+    cause?: { code?: string; message?: string };
+  };
   if (e.code === "42P01" || e.cause?.code === "42P01") return true;
-  return typeof e.message === "string" && /note_kanban_boards.*does not exist/i.test(e.message);
+  const message = [e.message, e.cause?.message].filter((part): part is string => typeof part === "string").join(" ");
+  return /note_kanban_boards.*does not exist/i.test(message);
 }
 
 function isDuplicateNoteBoard(error: unknown): boolean {
@@ -47,7 +52,7 @@ function isDuplicateNoteBoard(error: unknown): boolean {
 }
 
 function warnMissingKanbanTable(endpoint: string): void {
-  safeLogger.warn("note_kanban_boards table missing — run migration 0014", { endpoint });
+  safeLogger.warn("note_kanban_boards table missing — run migration 0016_note_kanban", { endpoint });
 }
 
 function validatePayloadSize(payload: unknown): void {
