@@ -1,6 +1,7 @@
 import type { NoteSortOption } from "@/lib/notes/note-sort";
 import type { ResolvedFilter } from "@/lib/crypto-client/note-search";
 import type { SmartLocalFilter } from "@/lib/notes/smart-filters";
+import type { KanbanBoardIndexEntry } from "@/lib/notes/kanban-types";
 
 export type VaultCategory = {
   id: string;
@@ -54,6 +55,9 @@ export type VaultIndexNoteEntry = {
   trashed: boolean;
   trashedAt?: string | null;
   hasChecklist?: boolean;
+  hasKanban?: boolean;
+  kanbanTotal?: number;
+  kanbanDone?: number;
   isDailyNote?: boolean;
   hasResolvedReflection?: boolean;
   resolvedAt?: string | null;
@@ -89,6 +93,7 @@ export type VaultIndexPlaintext = {
   entries: VaultIndexNoteEntry[];
   savedViews?: SavedView[];
   recentlyViewed?: RecentlyViewedNote[];
+  kanbanBoards?: KanbanBoardIndexEntry[];
 };
 
 export type NoteMetadataForIndex = {
@@ -103,6 +108,9 @@ export type NoteMetadataForIndex = {
   trashed?: boolean;
   trashedAt?: string | null;
   hasChecklist?: boolean;
+  hasKanban?: boolean;
+  kanbanTotal?: number;
+  kanbanDone?: number;
   isDailyNote?: boolean;
   hasResolvedReflection?: boolean;
   resolvedAt?: string | null;

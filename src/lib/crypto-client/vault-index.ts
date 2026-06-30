@@ -12,6 +12,7 @@ import type {
   VaultTag,
   NoteMetadataForIndex,
 } from "./vault-index-types";
+import type { KanbanBoardIndexEntry } from "@/lib/notes/kanban-types";
 
 export type {
   VaultCategory,
@@ -33,7 +34,15 @@ const DEFAULT_ENTRY_LIFECYCLE = {
 };
 
 export function createEmptyVaultIndex(): VaultIndexPlaintext {
-  return { version: 3, categories: [], tags: [], entries: [], savedViews: [], recentlyViewed: [] };
+  return {
+    version: 3,
+    categories: [],
+    tags: [],
+    entries: [],
+    savedViews: [],
+    recentlyViewed: [],
+    kanbanBoards: [],
+  };
 }
 
 function normalizeIndexEntry(entry: Partial<VaultIndexNoteEntry> & { id: string }): VaultIndexNoteEntry {
@@ -53,7 +62,12 @@ function normalizeIndexEntry(entry: Partial<VaultIndexNoteEntry> & { id: string 
     trashed: trashedFromLegacy,
     trashedAt: trashedFromLegacy ? trashedAt : null,
     hasChecklist: entry.hasChecklist,
+    hasKanban: entry.hasKanban,
+    kanbanTotal: entry.kanbanTotal,
+    kanbanDone: entry.kanbanDone,
     isDailyNote: entry.isDailyNote ?? isDailyNoteTitle(entry.title ?? ""),
+    hasResolvedReflection: entry.hasResolvedReflection,
+    resolvedAt: entry.resolvedAt,
     createdAt: entry.createdAt ?? new Date().toISOString(),
     updatedAt: entry.updatedAt ?? new Date().toISOString(),
   };
@@ -70,6 +84,7 @@ function migrateToV3(
       entries: parsed.entries.map((entry) => normalizeIndexEntry(entry)),
       savedViews: parsed.savedViews ?? [],
       recentlyViewed: parsed.recentlyViewed ?? [],
+      kanbanBoards: parsed.kanbanBoards ?? [],
     };
   }
 
@@ -81,6 +96,7 @@ function migrateToV3(
       entries: parsed.entries.map((entry) => normalizeIndexEntry(entry)),
       savedViews: [],
       recentlyViewed: [],
+      kanbanBoards: [],
     };
   }
 
@@ -98,6 +114,7 @@ function migrateToV3(
     ),
     savedViews: [],
     recentlyViewed: [],
+    kanbanBoards: [],
   };
 }
 
@@ -263,6 +280,8 @@ export function rebuildVaultIndexFromNotes(
     categories: base.categories,
     tags: base.tags,
     savedViews: base.savedViews ?? [],
+    recentlyViewed: base.recentlyViewed ?? [],
+    kanbanBoards: base.kanbanBoards ?? [],
     entries: entries.sort(
       (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     ),
@@ -376,6 +395,31 @@ export function getArchivedVaultEntries(index: VaultIndexPlaintext): VaultIndexN
 
 export function getTrashedVaultEntries(index: VaultIndexPlaintext): VaultIndexNoteEntry[] {
   return index.entries.filter((e) => e.trashed);
+}
+
+export function upsertStandaloneKanbanBoardIndexEntry(
+  index: VaultIndexPlaintext,
+  entry: KanbanBoardIndexEntry
+): VaultIndexPlaintext {
+  const without = (index.kanbanBoards ?? []).filter((board) => board.id !== entry.id);
+  return {
+    ...index,
+    version: 3,
+    kanbanBoards: [entry, ...without].sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    ),
+  };
+}
+
+export function removeStandaloneKanbanBoardIndexEntry(
+  index: VaultIndexPlaintext,
+  boardId: string
+): VaultIndexPlaintext {
+  return {
+    ...index,
+    version: 3,
+    kanbanBoards: (index.kanbanBoards ?? []).filter((board) => board.id !== boardId),
+  };
 }
 
 export { activeCategories, activeTags };

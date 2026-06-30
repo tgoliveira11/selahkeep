@@ -20,6 +20,8 @@ interface NoteListRowProps {
   tagNames?: string[];
   searchQuery?: string;
   bodyExcerpt?: string | null;
+  kanbanTotal?: number;
+  kanbanDone?: number;
   locked?: boolean;
   resolving?: boolean;
   onToggleResolved?: () => void;
@@ -37,6 +39,8 @@ export function NoteListRow({
   categoryName,
   searchQuery = "",
   bodyExcerpt,
+  kanbanTotal,
+  kanbanDone,
   locked,
   resolving = false,
   onToggleResolved,
@@ -57,6 +61,12 @@ export function NoteListRow({
       </Link>
 
       <span className="note-list-row__category">{categoryName ?? ""}</span>
+
+      {typeof kanbanTotal === "number" && kanbanTotal > 0 && (
+        <span className="rounded-full border border-[var(--border-2)] px-2 py-[2px] text-[11px] font-semibold text-[var(--primary)]">
+          Kanban {kanbanDone ?? 0}/{kanbanTotal}
+        </span>
+      )}
 
       {!locked && bodyExcerpt && (
         <span className="note-list-row__excerpt text-sm text-[var(--muted)] line-clamp-1" data-testid="note-list-excerpt">

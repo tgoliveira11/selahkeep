@@ -19,6 +19,18 @@ export interface KanbanBoardResponse {
   updatedAt: string;
 }
 
+export interface KanbanBoardVersionResponse {
+  id: string;
+  boardId: string;
+  noteId: string | null;
+  vaultId: string;
+  versionNumber: number;
+  encryptedBoard: EncryptedPayload;
+  encryptedWrappedKey: EncryptedPayload;
+  boardEncryptionVersion: string;
+  createdAt: string;
+}
+
 function kanbanListPath(query: ListKanbanBoardsQuery = {}): string {
   const params = new URLSearchParams();
   if (query.noteId) params.set("noteId", query.noteId);
@@ -37,4 +49,10 @@ export const kanbanApi = {
     apiClient.put<KanbanBoardResponse>(`/api/kanban/${boardId}`, payload),
   delete: (boardId: string) =>
     apiClient.delete<{ success: boolean }>(`/api/kanban/${boardId}`),
+  listVersions: (boardId: string) =>
+    apiClient.get<KanbanBoardVersionResponse[]>(`/api/kanban/${boardId}/versions`),
+  getVersion: (boardId: string, versionId: string) =>
+    apiClient.get<KanbanBoardVersionResponse>(`/api/kanban/${boardId}/versions/${versionId}`),
+  createVersion: (boardId: string, payload: EncryptedKanbanBoardPayload) =>
+    apiClient.post<KanbanBoardVersionResponse>(`/api/kanban/${boardId}/versions`, payload),
 };

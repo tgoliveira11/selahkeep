@@ -27,6 +27,18 @@ const LIBRARY: { href: string; view: string | null; label: string; icon: React.R
     ),
   },
   {
+    href: "/kanban",
+    view: "kanban",
+    label: "Boards",
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="4" y="5" width="4" height="14" rx="1.2" />
+        <rect x="10" y="5" width="4" height="14" rx="1.2" />
+        <rect x="16" y="5" width="4" height="14" rx="1.2" />
+      </svg>
+    ),
+  },
+  {
     href: "/notes?view=pinned",
     view: "pinned",
     label: "Pinned",
@@ -134,7 +146,10 @@ export function AppSidebar() {
       )}
       <nav aria-label="Library" className="flex flex-col gap-0.5">
         {unlocked && LIBRARY.map((item) => {
-          const active = onNotes && (item.view ? view === item.view : !view);
+          const active =
+            item.href === "/kanban"
+              ? pathname.startsWith("/kanban")
+              : onNotes && (item.view ? view === item.view : !view);
           return (
             <Link
               key={item.label}

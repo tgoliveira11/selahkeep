@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ToolbarButton } from "@/components/ui/toolbar-button";
 import {
   IconCheck,
@@ -18,6 +19,9 @@ interface NoteDetailActionBarProps {
   onMarkResolved?: () => void;
   onReopen?: () => void;
   onEnterZen?: () => void;
+  kanbanHref?: string | null;
+  kanbanProgressLabel?: string | null;
+  onGenerateKanban?: () => void;
   onTogglePinned: () => void;
   onToggleFavorite: () => void;
   onToggleArchived: () => void;
@@ -36,6 +40,9 @@ export function NoteDetailActionBar({
   onMarkResolved,
   onReopen,
   onEnterZen,
+  kanbanHref,
+  kanbanProgressLabel,
+  onGenerateKanban,
   onTogglePinned,
   onToggleFavorite,
   onToggleArchived,
@@ -75,6 +82,23 @@ export function NoteDetailActionBar({
         disabled={busy}
         onClick={onEdit}
       />
+      {kanbanHref ? (
+        <Link
+          href={kanbanHref}
+          className="inline-flex min-h-[var(--toolbar-control-height)] items-center rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 text-sm font-semibold text-[var(--fg-2)] transition-colors hover:bg-[var(--card-muted)]"
+          data-testid="note-kanban-link"
+        >
+          Kanban{kanbanProgressLabel ? ` ${kanbanProgressLabel}` : ""}
+        </Link>
+      ) : onGenerateKanban ? (
+        <ToolbarButton
+          label="Generate kanban"
+          testId="note-generate-kanban-button"
+          icon={<IconMoreVertical />}
+          disabled={busy}
+          onClick={onGenerateKanban}
+        />
+      ) : null}
       {onEnterZen && (
         <ToolbarButton
           label="Zen"

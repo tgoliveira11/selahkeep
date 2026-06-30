@@ -18,6 +18,14 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
       <path d="M8 9h7M8 13h7M8 17h4" />
     </svg>
   ),
+  "/kanban": (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="4" y="5" width="4" height="14" rx="1.2" />
+      <rect x="10" y="5" width="4" height="14" rx="1.2" />
+      <rect x="16" y="5" width="4" height="14" rx="1.2" />
+      <path d="M5.5 9h1M11.5 13h1M17.5 8h1" />
+    </svg>
+  ),
   "/vault/settings": (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="4" y="10" width="16" height="11" rx="2.4" />

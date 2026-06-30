@@ -11,6 +11,7 @@ export type LoggedInNavLink = {
 /** Primary links shown when the user is signed in (desktop + mobile). */
 export const LOGGED_IN_NAV_LINKS: readonly LoggedInNavLink[] = [
   { href: "/notes", label: "Notes", group: "core" },
+  { href: "/kanban", label: "Boards", group: "core" },
   { href: "/vault/settings", label: "Vault", group: "vault" },
   { href: "/settings/account", label: "Account", group: "account" },
 ] as const;
@@ -18,6 +19,9 @@ export const LOGGED_IN_NAV_LINKS: readonly LoggedInNavLink[] = [
 export function isLoggedInNavLinkActive(pathname: string, href: string): boolean {
   if (href === "/notes") {
     return pathname === "/notes" || pathname.startsWith("/notes/");
+  }
+  if (href === "/kanban") {
+    return pathname === "/kanban" || pathname.startsWith("/kanban/");
   }
   if (href === "/vault/settings") {
     return (

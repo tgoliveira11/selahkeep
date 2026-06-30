@@ -52,6 +52,7 @@ import { touchVaultActivity } from "@/features/vault/use-vault-activity";
 import { VaultLockedState } from "@/features/vault/vault-locked-state";
 import { useCategoriesTags } from "@/features/notes/use-categories-tags";
 import { useNotes } from "@/features/notes/use-notes";
+import { useKanban } from "@/features/notes/use-kanban";
 import { useVaultIndex } from "@/features/notes/use-vault-index";
 import { useNoteSearchContext } from "@/features/notes/note-search-context";
 import { recordRecentlyViewed } from "@/lib/notes/recently-viewed";
@@ -77,6 +78,9 @@ import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import { cn } from "@/lib/ui/cn";
 import { ResolvedReflectionDialog } from "@/components/notes/resolved-reflection-dialog";
 import { NoteNotFoundPanel } from "@/components/layout/app-not-found";
+import { GenerateFromNotePanel } from "@/features/kanban/generate-panel";
+import { getKanbanProgress } from "@/lib/notes/kanban-progress";
+import { recognizeKanbanActivities } from "@/lib/notes/kanban-from-note";
 
 function editSnapshot(metadata: NoteMetadataPlaintext, body: string): string {
   return JSON.stringify({
@@ -148,6 +152,15 @@ export default function NoteDetailPage() {
   const vaultUserId = vault.status === "ready" ? vault.userId : null;
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
   const { updateNote, moveNoteToTrash, restoreNoteFromTrash, permanentlyDeleteNote, toggleNoteResolved, resolveNoteWithReflection, toggleNotePinned, toggleNoteFavorite, toggleNoteArchived, duplicateNote, busy, error: notesError } = useNotes(vaultUserId);
+  const {
+    board: kanbanBoard,
+    loading: kanbanLoading,
+    saving: kanbanSaving,
+    error: kanbanError,
+    loadBoardForNote,
+    createNoteBoard,
+    regenerateFromNote,
+  } = useKanban(vaultUserId);
   const { mutateIndex } = useVaultIndex(vaultUserId, vaultUnlocked);
   const { query: searchQuery } = useNoteSearchContext();
   const { categories, tags, createCategory, createTag } = useCategoriesTags(vaultUserId, vaultUnlocked);
@@ -162,6 +175,14 @@ export default function NoteDetailPage() {
     ? getLockedCategoryDisplayName(metadata.categoryId, categories)
     : null;
   const recordedViewRef = useRef<string | null>(null);
+  const recognizedKanbanActivities = useMemo(
+    () => recognizeKanbanActivities(body),
+    [body]
+  );
+  const kanbanProgress = useMemo(
+    () => (kanbanBoard ? getKanbanProgress(kanbanBoard) : null),
+    [kanbanBoard]
+  );
 
   const editSnapshotValue = useMemo(
     () => (metadata ? editSnapshot(metadata, body) : ""),
@@ -268,6 +289,13 @@ export default function NoteDetailPage() {
     recordedViewRef.current = id;
     void mutateIndex((current) => recordRecentlyViewed(current, id));
   }, [canRead, metadata, vaultUserId, id, mutateIndex]);
+
+  useEffect(() => {
+    if (!canRead || !metadata || !vaultUserId) return;
+    void loadBoardForNote(id).catch(() => {
+      // Optional surface: note reading should still work if kanban is unavailable.
+    });
+  }, [canRead, metadata, vaultUserId, id, loadBoardForNote]);
 
   useEffect(() => {
     return () => {
@@ -413,6 +441,28 @@ export default function NoteDetailPage() {
       throw e;
     } finally {
       setRestoringVersion(false);
+    }
+  }
+
+  async function handleCreateKanbanBoard() {
+    touchVaultActivity();
+    if (!metadata || !wrappedKey) return;
+    setError(null);
+    try {
+      const board = await createNoteBoard(id, metadata.title, body, wrappedKey);
+      router.push(`/kanban/${board.boardId}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to create kanban board");
+    }
+  }
+
+  async function handleResyncKanbanBoard() {
+    touchVaultActivity();
+    setError(null);
+    try {
+      await regenerateFromNote(body);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to re-sync kanban board");
     }
   }
 
@@ -876,6 +926,15 @@ export default function NoteDetailPage() {
               onMarkResolved={() => void handleMarkResolved()}
               onReopen={() => void handleReopen()}
               onEnterZen={() => setZenMode(true)}
+              kanbanHref={kanbanBoard ? `/kanban/${kanbanBoard.boardId}` : null}
+              kanbanProgressLabel={
+                kanbanProgress ? `${kanbanProgress.done}/${kanbanProgress.total}` : null
+              }
+              onGenerateKanban={
+                !kanbanBoard && recognizedKanbanActivities.length > 0
+                  ? () => void handleCreateKanbanBoard()
+                  : undefined
+              }
               onTogglePinned={() => void toggleNotePinned(id, !metadata.pinned).then(setMetadata)}
               onToggleFavorite={() => void toggleNoteFavorite(id, !metadata.favorite).then(setMetadata)}
               onToggleArchived={() => void toggleNoteArchived(id, !metadata.archived).then(setMetadata)}
@@ -924,6 +983,24 @@ export default function NoteDetailPage() {
                 ) : null
               }
             />
+            {!metadata.trashed && (
+              <div className="mt-6">
+                {(kanbanError || notesError) && (
+                  <Alert variant="danger" className="mb-3">
+                    {kanbanError ?? notesError}
+                  </Alert>
+                )}
+                <GenerateFromNotePanel
+                  noteId={id}
+                  noteTitle={metadata.title}
+                  body={body}
+                  existingBoard={kanbanBoard}
+                  loading={kanbanLoading || kanbanSaving}
+                  onCreate={handleCreateKanbanBoard}
+                  onResync={handleResyncKanbanBoard}
+                />
+              </div>
+            )}
           </div>
 
           <aside className="mt-6 space-y-4 lg:mt-0 lg:w-[300px] lg:flex-none" data-testid="note-detail-rail">
