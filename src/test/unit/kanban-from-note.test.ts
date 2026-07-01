@@ -3,6 +3,7 @@ import {
   createKanbanBoardFromNote,
   mergeKanbanBoardFromNote,
   normalizeKanbanSourceText,
+  parseKanbanNoteGroups,
   recognizeKanbanActivities,
 } from "@/lib/notes/kanban-from-note";
 import { NOTE_ID } from "@/test/helpers/fixtures";
@@ -81,5 +82,62 @@ Plain prose
     expect(result.board.cards).toHaveLength(2);
     expect(result.board.cards[0].columnId).toBe(board.columns[1].id);
     expect(result.board.cards[1]).toMatchObject({ id: "new-card", title: "New task" });
+  });
+
+  it("maps interstitial prose before checklist groups to card descriptions", () => {
+    const body = `Some intro text
+
+- [ ] Task A
+- [ ] Task B
+
+This paragraph is between groups
+
+- [ ] Task C`;
+
+    const groups = parseKanbanNoteGroups(body);
+    expect(groups).toHaveLength(2);
+    expect(groups[0].description).toBe("Some intro text");
+    expect(groups[1].description).toBe("This paragraph is between groups");
+    expect(groups[0].items.map((item) => item.title)).toEqual(["Task A", "Task B"]);
+    expect(groups[1].items.map((item) => item.title)).toEqual(["Task C"]);
+
+    const board = createKanbanBoardFromNote(NOTE_ID, "Grouped", body, {
+      now: "2026-06-30T00:00:00.000Z",
+      createId: idFactory(),
+    });
+
+    const taskA = board.cards.find((card) => card.title === "Task A");
+    const taskB = board.cards.find((card) => card.title === "Task B");
+    const taskC = board.cards.find((card) => card.title === "Task C");
+
+    expect(taskA?.description).toBe("Some intro text");
+    expect(taskB?.description).toBe("Some intro text");
+    expect(taskC?.description).toBe("This paragraph is between groups");
+  });
+
+  it("prefers interstitial prose over section heading fallback for descriptions", () => {
+    const body = `Context for care tasks
+
+## Care
+- [ ] Call mom`;
+
+    const board = createKanbanBoardFromNote(NOTE_ID, "Care", body, {
+      now: "2026-06-30T00:00:00.000Z",
+      createId: idFactory(),
+    });
+
+    expect(board.cards[0].description).toBe("Context for care tasks");
+  });
+
+  it("uses section heading fallback when no interstitial prose exists", () => {
+    const body = `## Care
+- [ ] Call mom`;
+
+    const board = createKanbanBoardFromNote(NOTE_ID, "Care", body, {
+      now: "2026-06-30T00:00:00.000Z",
+      createId: idFactory(),
+    });
+
+    expect(board.cards[0].description).toBe("Section: Care");
   });
 });

@@ -1,6 +1,7 @@
 import {
   hashKanbanSourceBody,
   normalizeKanbanSourceText,
+  parseKanbanNoteGroups,
   recognizeKanbanActivities,
   type KanbanFromNoteOptions,
 } from "@/lib/notes/kanban-from-note";
@@ -42,6 +43,14 @@ function columnByTitle(columns: KanbanColumnPlaintext[], title: string): KanbanC
   return column;
 }
 
+function cardDescriptionFromActivity(
+  activity: ReturnType<typeof recognizeKanbanActivities>[number]
+): string | undefined {
+  if (activity.description) return activity.description;
+  if (activity.section) return `Section: ${activity.section}`;
+  return undefined;
+}
+
 function activityToCard(
   activity: ReturnType<typeof recognizeKanbanActivities>[number],
   columnId: string,
@@ -53,7 +62,7 @@ function activityToCard(
     id: createId(),
     columnId,
     title: activity.title,
-    description: activity.section ? `Section: ${activity.section}` : undefined,
+    description: cardDescriptionFromActivity(activity),
     order,
     labelIds: [],
     priority: null,
@@ -62,6 +71,118 @@ function activityToCard(
     updatedAt: now,
     source: { kind: activity.kind, key: activity.key },
   };
+}
+
+function normalizeCardDescription(description?: string | null): string | undefined {
+  const text = description?.trim();
+  return text || undefined;
+}
+
+function groupDescriptionFromCards(cards: KanbanCardPlaintext[]): string | undefined {
+  for (const card of cards) {
+    const description = normalizeCardDescription(card.description);
+    if (description) return description;
+  }
+  return undefined;
+}
+
+/**
+ * Writes card descriptions back into interstitial prose between checklist groups.
+ * Each group's description is taken from the first card in that group (note order).
+ */
+function syncGroupDescriptionsInNote(
+  body: string,
+  board: KanbanBoardPlaintext,
+  options: KanbanSyncOptions = {}
+): { body: string; changed: boolean } {
+  const groups = parseKanbanNoteGroups(body, options);
+  if (groups.length === 0) return { body, changed: false };
+
+  const cardByKey = new Map<string, KanbanCardPlaintext>();
+  for (const card of board.cards) {
+    const key = card.source?.key;
+    if (key) cardByKey.set(key, card);
+  }
+
+  const lines = body.split(/\r?\n/);
+  const skipLines = new Set<number>();
+  const insertBeforeLine = new Map<number, string[]>();
+  let changed = false;
+
+  for (const group of groups) {
+    const groupCards = group.items
+      .map((item) => cardByKey.get(item.key))
+      .filter((card): card is KanbanCardPlaintext => Boolean(card));
+    const desired = groupDescriptionFromCards(groupCards);
+    const current = normalizeCardDescription(group.description);
+
+    if (desired === current) continue;
+    changed = true;
+
+    if (group.descriptionStartLine !== undefined && group.descriptionEndLine !== undefined) {
+      for (let line = group.descriptionStartLine; line <= group.descriptionEndLine; line += 1) {
+        skipLines.add(line);
+      }
+    }
+
+    if (desired) {
+      insertBeforeLine.set(group.firstItemLine, [...desired.split("\n"), ""]);
+    }
+  }
+
+  if (!changed) return { body, changed: false };
+
+  const output: string[] = [];
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const insertion = insertBeforeLine.get(lineIndex);
+    if (insertion) output.push(...insertion);
+    if (skipLines.has(lineIndex)) continue;
+    output.push(lines[lineIndex]);
+  }
+
+  return { body: output.join("\n"), changed: true };
+}
+
+function alignBoardCardDescriptions(
+  board: KanbanBoardPlaintext,
+  body: string,
+  now: string,
+  options: KanbanSyncOptions = {}
+): { board: KanbanBoardPlaintext; changed: boolean } {
+  const groups = parseKanbanNoteGroups(body, options);
+  if (groups.length === 0) return { board, changed: false };
+
+  const cardByKey = new Map<string, KanbanCardPlaintext>();
+  for (const card of board.cards) {
+    const key = card.source?.key;
+    if (key) cardByKey.set(key, card);
+  }
+
+  let changed = false;
+  const nextCards = board.cards.map((card) => {
+    const key = card.source?.key;
+    if (!key) return card;
+
+    const group = groups.find((item) => item.items.some((activity) => activity.key === key));
+    if (!group) return card;
+
+    const groupCards = group.items
+      .map((item) => cardByKey.get(item.key))
+      .filter((item): item is KanbanCardPlaintext => Boolean(item));
+    const desired = groupDescriptionFromCards(groupCards);
+    const current = normalizeCardDescription(card.description);
+
+    if (desired === current) return card;
+    changed = true;
+    return {
+      ...card,
+      description: desired,
+      updatedAt: now,
+    };
+  });
+
+  if (!changed) return { board, changed: false };
+  return { board: { ...board, cards: nextCards, updatedAt: now }, changed: true };
 }
 
 /**
@@ -115,6 +236,12 @@ export function syncBoardFromNoteBody(
 
     if (card.title !== activity.title) {
       nextCard = { ...nextCard, title: activity.title, updatedAt: now };
+      cardChanged = true;
+    }
+
+    const nextDescription = cardDescriptionFromActivity(activity);
+    if (normalizeCardDescription(card.description) !== normalizeCardDescription(nextDescription)) {
+      nextCard = { ...nextCard, description: nextDescription, updatedAt: now };
       cardChanged = true;
     }
 
@@ -325,9 +452,21 @@ export function syncNoteBodyFromBoard(
     nextBody += appendLines.join("\n");
   }
 
+  const descriptionSync = syncGroupDescriptionsInNote(nextBody, nextBoard, options);
+  if (descriptionSync.changed) {
+    nextBody = descriptionSync.body;
+    bodyChanged = true;
+  }
+
+  const alignedBoard = alignBoardCardDescriptions(nextBoard, nextBody, now, options);
+  if (alignedBoard.changed) {
+    nextBoard = alignedBoard.board;
+    boardChanged = true;
+  }
+
   return {
     body: nextBody,
-    board: boardChanged ? { ...nextBoard, updatedAt: now } : nextBoard,
+    board: nextBoard,
     changed: bodyChanged || boardChanged,
   };
 }

@@ -130,4 +130,57 @@ describe("kanban-sync", () => {
     const boardResult = syncNoteAndBoardFromBoardChange(completed, noteResult.body);
     expect(boardResult.body).toContain("- [x] Alpha");
   });
+
+  it("syncs interstitial note prose to card descriptions", () => {
+    const body = `Intro for first group
+
+- [ ] Task A
+- [ ] Task B
+
+Between groups
+
+- [ ] Task C`;
+    const board = noteBoard(body);
+
+    expect(board.cards.find((card) => card.title === "Task A")?.description).toBe(
+      "Intro for first group"
+    );
+    expect(board.cards.find((card) => card.title === "Task C")?.description).toBe("Between groups");
+  });
+
+  it("writes card description edits back to interstitial note prose", () => {
+    const body = `- [ ] Task A
+
+- [ ] Task B`;
+    const board = noteBoard(body);
+    const taskB = board.cards.find((card) => card.title === "Task B")!;
+    const edited = {
+      ...board,
+      cards: board.cards.map((card) =>
+        card.id === taskB.id ? { ...card, description: "Updated group context" } : card
+      ),
+    };
+
+    const result = syncNoteBodyFromBoard(edited, body);
+
+    expect(result.changed).toBe(true);
+    expect(result.body).toContain("Updated group context");
+    expect(result.body).toMatch(/Updated group context\n\n- \[ \] Task B/);
+    expect(
+      result.board.cards.find((card) => card.title === "Task B")?.description
+    ).toBe("Updated group context");
+  });
+
+  it("updates card descriptions when interstitial note prose changes", () => {
+    const body = `Original context
+
+- [ ] Task A`;
+    const board = noteBoard(body);
+    const result = syncBoardFromNoteBody(board, `Revised context
+
+- [ ] Task A`);
+
+    expect(result.changed).toBe(true);
+    expect(result.board.cards[0].description).toBe("Revised context");
+  });
 });

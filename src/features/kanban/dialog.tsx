@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
-import { Textarea } from "@/components/ui/textarea";
+import { MarkdownEditor } from "@/features/notes/markdown-editor";
 import type {
   KanbanCardPlaintext,
   KanbanLabelPlaintext,
@@ -86,13 +86,16 @@ export function KanbanCardDialog({
           </FormField>
 
           <FormField id="kanban-card-description" label="Description">
-            <Textarea
-              id="kanban-card-description"
-              value={draft.description ?? ""}
-              rows={5}
-              maxLength={4000}
-              onChange={(event) => update({ description: event.target.value })}
-            />
+            <div className="kanban-card-description-editor">
+              <MarkdownEditor
+                id="kanban-card-description"
+                value={draft.description ?? ""}
+                onChange={(description) => update({ description: description || undefined })}
+                placeholder="Add context for this card…"
+                maxLength={4000}
+                checklistsDisabled
+              />
+            </div>
           </FormField>
 
           <div className="grid gap-3 sm:grid-cols-2">

@@ -23,6 +23,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Note-bound Kanban boards now sync bidirectionally with their source note.** Checklist and list edits on the note update the board (debounced ~500ms); card moves, completion, title edits, and add/remove on the board write back to the note (debounced ~800ms). Stable `source.key` IDs anchor field-level merge; manual re-sync remains as a fallback reconcile action.
 
+- **Kanban card editor reuses the note Markdown editor.** Card descriptions open in the same visual/markdown editor as notes (toolbar, formatting, light/dark tokens) instead of a plain textarea.
+
+- **Interstitial note prose maps to Kanban card descriptions.** Text between checklist groups (or before the first group) becomes the shared `description` on cards in the following checklist group; edits sync back to the note as interstitial paragraphs.
+
 
 ### Fixed
 
