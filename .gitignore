@@ -10,6 +10,9 @@
 
 # testing
 /coverage
+.eslintcache
+.cache/
+.vitest-reports/
 
 # next.js
 /.next/

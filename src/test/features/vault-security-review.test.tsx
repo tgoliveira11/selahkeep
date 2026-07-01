@@ -1,4 +1,3 @@
-/** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { VaultSecurityReview } from "@/features/vault/vault-security-review";

@@ -1,4 +1,3 @@
-/** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { AttachmentPreview } from "@/components/notes/attachment-preview";

@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **Test & CI performance.** Vitest split into `unit` (node) and `ui` (happy-dom) projects; parallel GitHub Actions jobs for lint, typecheck, test coverage, and build; ESLint and TypeScript incremental caches; shared lazy vault crypto fixtures for repeated KDF work; removed coverage sharding scripts.
 - **Vault session semantics.** Auto-lock countdown renews only on explicit **Stay unlocked** / `touchVaultSession()` — global pointer/keyboard activity listeners removed (`registerActivityGuard: false`).
 - **Vault unlock return paths.** `buildVaultUnlockHref` / `readVaultUnlockReturnPath` use query param **`next`** (vault-core default); legacy **`returnTo`** is still accepted when reading callbacks.
 - **Post-login routing.** Default authenticated redirect is **`/home`** (was `/notes`); users with an unlocked vault on `/home` are sent to `/notes`.
@@ -34,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Test worker OOM.** `editor-track-2.test.tsx` no longer renders `NotesPage` under `vi.useFakeTimers()` (effect/timer loop exhausted the heap); daily-note behavior is covered via `findDailyNoteIdForDate` and `NewNoteAction` instead.
 - **Dock passkey unlock on `/vault/settings`.** A duplicate auto-start (Strict Mode / remount after unlock) could succeed once then fail and redirect to `/vault/unlock` even though the vault was open; concurrent attempts are deduped and failure redirect is skipped when the session is already unlocked.
 - **Vault admin config fetch loop.** `/admin/vault/config` no longer hammers `GET /api/vault/admin/config` — stable `env` / `adminOverrides` refs are passed into vault-core (its default `env = {}` recreated `load` every render).
 - **Authenticated header scroll.** The top toolbar (search + vault dock) stays pinned while page content scrolls underneath; sticky lived on `VaultLockOverlayExclude`, which vault-core styles as `position: relative`.

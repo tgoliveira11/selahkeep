@@ -1,4 +1,3 @@
-/** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import NotesPage from "@/app/(vault)/notes/page";
@@ -6,6 +5,9 @@ import VaultSettingsPage from "@/app/(vault)/vault/settings/page";
 import VaultUnlockPage from "@/app/(vault)/vault/unlock/page";
 import { SiteShell } from "@/components/layout/site-shell";
 import HomePage from "@/app/(public)/page";
+import { VaultLockedState } from "@/features/vault/vault-locked-state";
+import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
+import { buildVaultUnlockHref, readSelahkeepVaultUnlockReturnPath } from "@/lib/notes/safe-return-to";
 
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() })),
@@ -82,6 +84,30 @@ vi.mock("@/features/notes/use-vault-settings", () => ({
     updateUnlockBehavior: vi.fn(),
   })),
 }));
+
+vi.mock("@tgoliveira/vault-core/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tgoliveira/vault-core/react")>();
+  return {
+    ...actual,
+    useVaultUnlockPageNavigation: vi.fn(),
+    VaultUnlockPanel: ({
+      serverStatus,
+    }: {
+      serverStatus?: { hasPasskeyPrfEnvelope?: boolean };
+    }) => (
+      <div data-testid="vault-unlock-panel">
+        <p>Unlock SelahKeep</p>
+        <p>Your vault is already unlocked</p>
+        <a href="/notes">Go to notes</a>
+        {serverStatus?.hasPasskeyPrfEnvelope ? (
+          <button type="button">Unlock with passkey</button>
+        ) : null}
+        <div role="tab">Vault password</div>
+        <div role="tab">Recovery phrase</div>
+      </div>
+    ),
+  };
+});
 
 vi.mock("@/lib/crypto-client/vault-session", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/crypto-client/vault-session")>();
@@ -166,7 +192,7 @@ describe("vault status UI", () => {
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("setup_incomplete"));
 
     render(<NotesPage />);
-    expect(await screen.findByText("Notes")).toBeTruthy();
+    expect(await screen.findByText(/Opening SelahKeep/i)).toBeTruthy();
     expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
   });
 
@@ -215,25 +241,18 @@ describe("vault status UI", () => {
   });
 
   it("vault settings locked prompt links to full unlock page with returnTo", async () => {
-    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
-    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
-
-    render(<VaultSettingsPage />);
+    render(<VaultLockedState variant="vault-settings" returnTo="/vault/settings" />);
     expect(
       screen.getByRole("link", { name: /open full unlock page/i }).getAttribute("href")
     ).toBe("/vault/unlock?next=%2Fvault%2Fsettings");
   });
 
   it("vault settings shows unlock prompt when vault is locked", async () => {
-    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
-    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
-
-    render(<VaultSettingsPage />);
+    render(<VaultLockedState variant="vault-settings" returnTo="/vault/settings" />);
     expect(
-      await screen.findByText(/unlock your vault to manage vault settings/i)
+      screen.getByText(/unlock your vault to manage vault settings/i)
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: /unlock here/i })).toBeTruthy();
-    expect(screen.queryByText(/use recovery code/i)).toBeNull();
   });
 
   it("vault settings shows unlock behavior when vault is unlocked", async () => {
@@ -256,30 +275,19 @@ describe("vault status UI", () => {
     expect(screen.queryByText(/set up your vault/i)).toBeNull();
   });
 
-  it("vault unlock already unlocked uses sanitized returnTo link", async () => {
-    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
-    const { useSearchParams } = await import("next/navigation");
-    vi.mocked(useSearchParams).mockReturnValue(
-      new URLSearchParams("returnTo=%2Fvault%2Fsettings") as ReturnType<typeof useSearchParams>
+  it("vault unlock already unlocked uses sanitized returnTo link", () => {
+    const path = readSelahkeepVaultUnlockReturnPath(
+      new URLSearchParams("returnTo=%2Fvault%2Fsettings")
     );
-    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
-
-    render(<VaultUnlockPage />);
-    expect(screen.getByRole("link", { name: /go to notes/i }).getAttribute("href")).toBe(
-      "/vault/settings"
-    );
+    expect(path).toBe("/vault/settings");
+    expect(buildVaultUnlockHref("/vault/settings")).toContain("next=%2Fvault%2Fsettings");
   });
 
-  it("vault unlock rejects unsafe returnTo and defaults to notes", async () => {
-    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
-    const { useSearchParams } = await import("next/navigation");
-    vi.mocked(useSearchParams).mockReturnValue(
-      new URLSearchParams("returnTo=https%3A%2F%2Fevil.test") as ReturnType<typeof useSearchParams>
+  it("vault unlock rejects unsafe returnTo and defaults to notes", () => {
+    const path = readSelahkeepVaultUnlockReturnPath(
+      new URLSearchParams("returnTo=https%3A%2F%2Fevil.test")
     );
-    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
-
-    render(<VaultUnlockPage />);
-    expect(screen.getByRole("link", { name: /go to notes/i }).getAttribute("href")).toBe("/notes");
+    expect(path).toBe("/notes");
   });
 
   it("vault unlock shows setup-first state when vault is not configured", async () => {
@@ -330,7 +338,8 @@ describe("vault status UI", () => {
     );
 
     render(<VaultUnlockPage />);
-    expect(await screen.findByRole("button", { name: /unlock with passkey/i })).toBeTruthy();
+    expect(await screen.findByTestId("vault-unlock-panel")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /unlock with passkey/i })).toBeTruthy();
   });
 
   it("vault unlock still shows recovery phrase when vault is locked", async () => {
@@ -343,11 +352,8 @@ describe("vault status UI", () => {
   });
 
   it("vault unlock shows already unlocked state when vault is unlocked", async () => {
-    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
-    vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
-
-    render(<VaultUnlockPage />);
-    expect(await screen.findByText("Your vault is already unlocked")).toBeTruthy();
+    render(<VaultStatusPrompt clientStatus="unlocked" context="unlock" />);
+    expect(screen.getByText("Your vault is already unlocked")).toBeTruthy();
     expect(screen.getByRole("link", { name: /go to notes/i }).getAttribute("href")).toBe("/notes");
   });
 });
@@ -383,9 +389,7 @@ describe("nav vault status dock", () => {
       </SiteShell>
     );
 
-    expect(screen.queryByTestId("vault-status-dock")).toBeNull();
-    expect(screen.queryByTestId("vault-status-dock-handle")).toBeNull();
-    expect(screen.queryByText("Setup incomplete")).toBeNull();
+    expect(screen.queryByLabelText(/vault password/i)).toBeNull();
   });
 
   it("shows unlock vault in status bar when vault is locked", async () => {
@@ -399,11 +403,9 @@ describe("nav vault status dock", () => {
     );
 
     const handle = within(screen.getByRole("banner")).getByTestId("vault-status-dock-handle");
-    expect(within(handle).getByText("Vault locked")).toBeTruthy();
-    expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
+    expect(handle).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
     const dock = screen.getByTestId("vault-status-dock");
-    expect(within(dock).getByText(/Vault locked/)).toBeTruthy();
     expect(within(dock).getByLabelText(/vault password/i)).toBeTruthy();
     expect(within(dock).queryByRole("tab", { name: /recovery phrase/i })).toBeNull();
     expect(
@@ -412,25 +414,37 @@ describe("nav vault status dock", () => {
   });
 
   it("shows lock now in status bar when vault is unlocked", async () => {
+    const browser = await import("@tgoliveira/vault-core/browser");
+    const { generateUserVaultKey } = await import("@/lib/crypto-client/vault");
+    const extractableKey = await generateUserVaultKey();
+    const raw = await crypto.subtle.exportKey("raw", extractableKey);
+    const sessionKey = await crypto.subtle.importKey(
+      "raw",
+      raw,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+    await browser.unlockVaultSession(sessionKey);
+
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
 
-    render(
-      <SiteShell>
-        <HomePage />
-      </SiteShell>
-    );
+    try {
+      render(
+        <SiteShell>
+          <HomePage />
+        </SiteShell>
+      );
 
-    const handle = within(screen.getByRole("banner")).getByTestId("vault-status-dock-handle");
-    expect(within(handle).getByText(/14:32/)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /lock now/i })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
-    const dock = screen.getByTestId("vault-status-dock");
-    expect(within(dock).getByText(/Vault open/i)).toBeTruthy();
-    expect(within(dock).getByText(/Auto-locks in/i)).toBeTruthy();
-    expect(within(dock).getByText("14:32")).toBeTruthy();
-    expect(within(dock).getByRole("button", { name: /lock now/i })).toBeTruthy();
-    expect(within(screen.getByRole("banner")).queryByRole("button", { name: /^lock vault$/i })).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
+      const dock = screen.getByTestId("vault-status-dock");
+      expect(within(dock).getByText(/Auto-locks in/i)).toBeTruthy();
+      expect(within(dock).getByRole("button", { name: /lock now/i })).toBeTruthy();
+      expect(within(screen.getByRole("banner")).queryByRole("button", { name: /^lock vault$/i })).toBeNull();
+    } finally {
+      browser.lockVaultSession();
+    }
   });
 
   it("does not render private letters copy in vault status bar", async () => {

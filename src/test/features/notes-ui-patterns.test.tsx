@@ -1,4 +1,3 @@
-/** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import NotesPage from "@/app/(vault)/notes/page";

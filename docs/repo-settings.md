@@ -9,7 +9,7 @@ Target configuration for **tgoliveira11/selahkeep**. Apply in **Settings → Bra
 | Setting | Value | Notes |
 |---------|-------|-------|
 | Require pull request before merging | **Yes** | No direct pushes except release bot (see below) |
-| Required status checks | **`validate`**, **`branch-name`** | Strict: branches must be up to date |
+| Required status checks | **`lint`**, **`typecheck`**, **`test`**, **`build`**, **`branch-name`** (PRs) | Strict: branches must be up to date |
 | Require linear history | **Yes** | Squash merge preferred |
 | Allow force pushes | **No** | |
 | Allow deletions | **No** | |
@@ -19,8 +19,13 @@ Target configuration for **tgoliveira11/selahkeep**. Apply in **Settings → Bra
 
 From [`.github/workflows/ci.yml`](../.github/workflows/ci.yml):
 
-- Job id **`validate`** — `npm run validate`
-- Job id **`branch-name`** — branch prefix `feature/`, `fix/`, `docs/`, `chore/`
+- Job id **`lint`** — `npm run lint` (ESLint cache)
+- Job id **`typecheck`** — `npm run typecheck` (`tsconfig.ci.json`, incremental cache)
+- Job id **`test`** — `npm run test:coverage`
+- Job id **`build`** — `npm run build`
+- Job id **`branch-name`** — branch prefix `feature/`, `fix/`, `docs/`, `chore/` (PRs only)
+
+Local pre-PR equivalent: `npm run validate` (runs all four steps sequentially).
 
 After the first workflow run on a PR, enable these as required checks in the UI (exact names match job ids).
 

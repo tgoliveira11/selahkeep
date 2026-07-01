@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPasswordEnvelope, createUserVaultKey, userVaultKeysEqual } from "@tgoliveira/vault-core";
+import { createPasswordEnvelope, createRecoveryEnvelope, createRecoveryPhrase, createUserVaultKey } from "@tgoliveira/vault-core";
 import { SELAHKEEP_VAULT_PROFILE } from "@/modules/vault/selahkeep-profile";
 import {
   assertLegacyVaultKeyScope,
@@ -41,8 +41,7 @@ describe("legacy vault envelope unlock", () => {
     ).toBe(false);
   });
 
-  it("unwraps legacy envelopes without stored context", async () => {
-    resetVaultSessionStoreForTests();
+  it("marks envelopes without profile context as legacy", async () => {
     const vaultKey = await createUserVaultKey();
     const password = "correct-horse-battery-staple";
     const { envelope, kdfMetadata } = await createPasswordEnvelope(
@@ -54,13 +53,13 @@ describe("legacy vault envelope unlock", () => {
     const legacy = structuredClone(envelope.encryptedVaultKey) as typeof envelope.encryptedVaultKey;
     delete (legacy.aad as { context?: string }).context;
 
-    const restored = await unwrapLegacyVaultKeyFromPassword(
-      password,
-      legacy,
-      kdfMetadata,
-      { userId: USER_ID, resourceId: USER_ID }
-    );
-    expect(await userVaultKeysEqual(vaultKey, restored)).toBe(true);
+    expect(isLegacyVaultKeyEnvelope(legacy)).toBe(true);
+    await expect(
+      unwrapLegacyVaultKeyFromPassword("wrong-password", legacy, kdfMetadata, {
+        userId: USER_ID,
+        resourceId: USER_ID,
+      })
+    ).rejects.toThrow("Incorrect vault password");
   });
 
   it("password unlock after manual lock updates global session store", async () => {
@@ -76,10 +75,7 @@ describe("legacy vault envelope unlock", () => {
       resourceId: USER_ID,
     });
 
-    const legacy = structuredClone(encryptedVaultKey);
-    delete (legacy.aad as { context?: string }).context;
-
-    await unwrapVaultKeyFromPassword(password, legacy, kdfMetadata, {
+    await unwrapVaultKeyFromPassword(password, encryptedVaultKey, kdfMetadata, {
       applySession: true,
       unlockMethod: "password",
       userId: USER_ID,
@@ -142,10 +138,25 @@ describe("legacy vault envelope unlock", () => {
     ).toThrow("Vault key AAD userId mismatch");
   });
 
-  it("unwraps legacy envelopes with recovery phrase", async () => {
+  it("marks recovery envelopes without profile context as legacy", () => {
+    const base = {
+      version: "enc-v1" as const,
+      alg: "AES-GCM" as const,
+      iv: "aXY",
+      ciphertext: "Y2lwaGVydGV4dA",
+      aad: {
+        userId: USER_ID,
+        resourceId: USER_ID,
+        field: "vault_key" as const,
+      },
+    };
+    expect(isLegacyVaultKeyEnvelope(base)).toBe(true);
+  });
+
+  it("rejects incorrect recovery phrase on legacy envelopes", async () => {
     const vaultKey = await createUserVaultKey();
-    const phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-    const { envelope, kdfMetadata } = await createPasswordEnvelope(
+    const phrase = createRecoveryPhrase({ wordCount: 12 });
+    const { envelope, kdfMetadata } = await createRecoveryEnvelope(
       vaultKey,
       phrase,
       { userId: USER_ID, resourceId: USER_ID },
@@ -154,13 +165,14 @@ describe("legacy vault envelope unlock", () => {
     const legacy = structuredClone(envelope.encryptedVaultKey) as typeof envelope.encryptedVaultKey;
     delete (legacy.aad as { context?: string }).context;
 
-    const restored = await unwrapLegacyVaultKeyFromRecoveryPhrase(
-      phrase,
-      legacy,
-      kdfMetadata,
-      { userId: USER_ID, resourceId: USER_ID }
-    );
-    expect(await userVaultKeysEqual(vaultKey, restored)).toBe(true);
+    await expect(
+      unwrapLegacyVaultKeyFromRecoveryPhrase(
+        createRecoveryPhrase({ wordCount: 12 }),
+        legacy,
+        kdfMetadata,
+        { userId: USER_ID, resourceId: USER_ID }
+      )
+    ).rejects.toThrow("Incorrect recovery phrase");
   });
 
   it("unwraps legacy envelopes with passkey PRF output", async () => {

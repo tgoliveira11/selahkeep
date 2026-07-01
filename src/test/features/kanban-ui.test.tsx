@@ -1,4 +1,3 @@
-/** @vitest-environment happy-dom */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { axe } from "jest-axe";

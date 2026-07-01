@@ -2,7 +2,6 @@ import {
   base64UrlToBytes,
   deriveRecoveryPhraseKeyFromMetadata,
   deriveVaultPasswordKeyFromMetadata,
-  importAesKey,
   toBufferSource,
 } from "@tgoliveira/vault-core";
 import type { EncryptedPayload, KdfMetadata } from "@/lib/validation/encrypted-payload";
@@ -136,7 +135,7 @@ export async function unwrapLegacyVaultKeyFromPassword(
     const keyBytes = base64UrlToBytes(
       await decryptLegacyVaultKeyField(encryptedVaultKey, derivedKey)
     );
-    return importAesKey(keyBytes);
+    return importLocalAesKey(keyBytes);
   } catch {
     throw new Error("Incorrect vault password");
   }
@@ -160,7 +159,7 @@ export async function unwrapLegacyVaultKeyFromRecoveryPhrase(
     const keyBytes = base64UrlToBytes(
       await decryptLegacyVaultKeyField(encryptedVaultKey, derivedKey)
     );
-    return importAesKey(keyBytes);
+    return importLocalAesKey(keyBytes);
   } catch {
     throw new Error("Incorrect recovery phrase");
   }

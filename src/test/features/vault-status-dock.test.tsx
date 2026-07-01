@@ -1,4 +1,3 @@
-/** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { SiteShell } from "@/components/layout/site-shell";

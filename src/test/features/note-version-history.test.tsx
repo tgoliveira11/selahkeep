@@ -1,5 +1,4 @@
 import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
-/** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { NoteVersionHistory } from "@/components/notes/note-version-history";

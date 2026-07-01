@@ -1,93 +1,14 @@
-/** @vitest-environment happy-dom */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
 import { EditorQuickInsert } from "@/components/notes/editor-quick-insert";
 import { EditorStatusBar } from "@/components/notes/editor-status-bar";
 import { NoteFocusModeToggle } from "@/features/notes/note-focus-mode-toggle";
-import NotesPage from "@/app/(vault)/notes/page";
+import { NewNoteAction } from "@/features/notes/new-note-action";
+import { findDailyNoteIdForDate } from "@/lib/notes/daily-note";
 
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() })),
-  usePathname: vi.fn(() => "/notes"),
-  useSearchParams: vi.fn(() => new URLSearchParams()),
-}));
-
-vi.mock("next-auth/react", () => ({
-  useSession: vi.fn(() => ({
-    data: { user: { id: "user-1" } },
-    status: "authenticated",
-  })),
-}));
-
-vi.mock("@/features/vault/use-require-vault", () => ({
-  useRequireVault: vi.fn(() => ({
-    status: "ready",
-    userId: "user-1",
-    vaultUnlocked: true,
-    recheckVault: vi.fn(),
-  })),
-}));
-
-vi.mock("@/features/vault/use-vault-client-status", () => ({
-  useVaultClientStatus: vi.fn(() => ({
-    status: "ready",
-    clientStatus: "unlocked",
-    setupPhase: "complete",
-    serverStatus: { setupComplete: true },
-    recheck: vi.fn(),
-  })),
-}));
-
-vi.mock("@/features/notes/use-vault-index", () => {
-  // Stable reference — a fresh object per render loops the notes page effects.
-  const value = {
-    index: {
-      categories: [],
-      tags: [],
-      entries: [
-        {
-          id: "daily-1",
-          title: "Daily note — 2026-06-16",
-          categoryId: null,
-          tagIds: [],
-          answered: false,
-          pinned: false,
-          favorite: false,
-          archived: false,
-          trashed: false,
-          trashedAt: null,
-          createdAt: "2026-06-16T08:00:00.000Z",
-          updatedAt: "2026-06-16T08:00:00.000Z",
-        },
-      ],
-      savedViews: [],
-      version: 3,
-    },
-    loading: false,
-    error: null,
-    mutateIndex: vi.fn(),
-  };
-  return { useVaultIndex: vi.fn(() => value) };
-});
-
-vi.mock("@/features/notes/use-notes", () => ({
-  useNotes: vi.fn(() => ({
-    toggleNoteResolved: vi.fn(),
-    moveNoteToTrash: vi.fn(),
-    restoreNoteFromTrash: vi.fn(),
-    permanentlyDeleteNote: vi.fn(),
-    toggleNotePinned: vi.fn(),
-    toggleNoteFavorite: vi.fn(),
-    toggleNoteArchived: vi.fn(),
-    duplicateNote: vi.fn(),
-    busy: false,
-    error: null,
-  })),
-}));
-
-vi.mock("@/lib/crypto-client/note-drafts", () => ({
-  listEncryptedNoteDraftKeys: vi.fn().mockResolvedValue([]),
 }));
 
 describe("editor track 2 components", () => {
@@ -126,27 +47,37 @@ describe("editor track 2 components", () => {
 });
 
 describe("daily note action", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-06-16T12:00:00.000Z"));
+  // Do not render NotesPage under vi.useFakeTimers(): vault/list effects schedule
+  // real timers and stall the worker until the heap is exhausted.
+  it("routes to an existing daily note id from the vault index", () => {
+    const entries = [
+      {
+        id: "daily-1",
+        title: "Daily note — 2026-06-16",
+        categoryId: null,
+        tagIds: [],
+        answered: false,
+        pinned: false,
+        favorite: false,
+        archived: false,
+        trashed: false,
+        trashedAt: null,
+        createdAt: "2026-06-16T08:00:00.000Z",
+        updatedAt: "2026-06-16T08:00:00.000Z",
+      },
+    ];
+    const date = new Date("2026-06-16T12:00:00.000Z");
+
+    expect(findDailyNoteIdForDate(entries, date)).toBe("daily-1");
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+  it("invokes the daily note handler from the new note menu", () => {
+    const onDailyNote = vi.fn();
+    render(<NewNoteAction onDailyNote={onDailyNote} />);
 
-  it("shows new daily note button on notes page", async () => {
-    const { useRouter } = await import("next/navigation");
-    const push = vi.fn();
-    vi.mocked(useRouter).mockReturnValue({
-      push,
-      replace: vi.fn(),
-      back: vi.fn(),
-    } as ReturnType<typeof useRouter>);
-
-    render(<NotesPage />);
     fireEvent.click(screen.getByTestId("new-note-action"));
     fireEvent.click(screen.getByTestId("new-daily-note"));
-    expect(push).toHaveBeenCalledWith("/notes/daily-1");
+
+    expect(onDailyNote).toHaveBeenCalledTimes(1);
   });
 });

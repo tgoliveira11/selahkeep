@@ -11,8 +11,7 @@ import { setRateLimitAdapterForTests } from "@/server/policies/rate-limit";
 expect.extend(toHaveNoViolations);
 
 // Unmount React Testing Library trees after every test so DOM-heavy renders
-// (Tiptap editor, notes pages) are released and memory does not accumulate
-// across a worker's files. See vitest.config.ts for the worker heap size.
+// (Tiptap editor, notes pages) are released and memory does not accumulate.
 afterEach(() => {
   cleanup();
 });
