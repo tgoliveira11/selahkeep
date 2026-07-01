@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-01
+
 ### Added
 
 - **`@tgoliveira/vault-core@^1.0.0`.** Dependency bump from `^0.2.0`; session, React UI, rate limiting, and admin surfaces now integrate with the 1.0.0 contract.
