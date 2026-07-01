@@ -8,6 +8,9 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     exclude: ["node_modules/**"],
+    pool: process.env.CI ? "forks" : undefined,
+    maxWorkers: process.env.CI ? 2 : undefined,
+    minWorkers: process.env.CI ? 1 : undefined,
     deps: {
       // Inline `@tgoliveira/secure-auth` so Vitest/Vite can resolve `next/server`
       // subpath imports correctly from the package's ESM dist.
