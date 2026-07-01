@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { VaultAdminProfilePage } from "@tgoliveira/vault-core/react";
+import { VaultAdminProfilePageClient } from "@/features/vault/vault-admin-page-clients";
 import { getVaultAdminConfig } from "@/lib/env/vault-from-env";
 
 export default function Page() {
-  return <VaultAdminProfilePage config={getVaultAdminConfig()} LinkComponent={Link} />;
+  return <VaultAdminProfilePageClient config={getVaultAdminConfig()} />;
 }

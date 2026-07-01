@@ -54,14 +54,14 @@ Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`;
 | `/admin/outpost/queue` | Session + platform admin | Shipped | Outbox queue + manual worker |
 | `/admin/outpost/config` | Session + platform admin | Shipped | Outpost runtime config |
 | `/admin/outpost/observability` | Session + platform admin | Shipped | Outbox metrics and worker runs |
-| `/admin/vault` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Vault admin hub (vault-core) |
-| `/admin/vault/config` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Effective vault configuration |
-| `/admin/vault/env-template` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Copy-ready vault env block |
-| `/admin/vault/crypto-policy` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | KDF and encryption policy |
-| `/admin/vault/profile` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Crypto profile and PRF defaults |
-| `/admin/vault/session` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Auto-lock and session policy |
-| `/admin/vault/password-policy` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Vault password rules |
-| `/admin/vault/security` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Zero-knowledge boundaries |
+| `/admin/vault` | Session + admin role | Shipped (when `AUTH_ADMIN_ENABLED`) | Vault admin hub (vault-core) |
+| `/admin/vault/config` | Session + admin role | Shipped | Effective vault configuration (env + DB overrides) |
+| `/admin/vault/env-template` | Session + admin role | Shipped | Copy-ready vault env block |
+| `/admin/vault/crypto-policy` | Session + admin role | Shipped | KDF and encryption policy |
+| `/admin/vault/profile` | Session + admin role | Shipped | Crypto profile and PRF defaults |
+| `/admin/vault/session` | Session + admin role | Shipped | Auto-lock and session policy |
+| `/admin/vault/password-policy` | Session + admin role | Shipped | Vault password rules |
+| `/admin/vault/security` | Session + admin role | Shipped | Zero-knowledge boundaries |
 | `/api-docs` | Dev / `ENABLE_API_DOCS` | Shipped | Swagger UI (off in prod by default) |
 
 ---
@@ -75,6 +75,7 @@ Grouped by domain. Full tables: [`API_REFERENCE.md`](./API_REFERENCE.md), OpenAP
 | **Auth (secure-auth)** | `/api/auth/*`, NextAuth catch-all | Register, login, OAuth, 2FA, passkey login, email verify, password reset |
 | **Auth admin (secure-auth)** | `/api/auth/admin/*` | Users, waitlist, invites, locks, API keys, config (admin role; when `AUTH_ADMIN_ENABLED`) |
 | **Outpost admin** | `/api/outpost/admin/*` | Email queue, worker send, config, observability (platform admin; when `OUTPOST_ADMIN_ENABLED`) |
+| **Vault admin** | `/api/vault/admin/config` | Runtime vault config overrides (platform admin; requires `vault_admin_config_overrides` table) |
 | **Account** | `/api/account/*` | Profile, sessions, passkeys, 2FA, change password |
 | **Vault** | `/api/vault/*` | Setup, status, settings, index, unlock envelopes, recovery phrase, storage |
 | **Passkeys (vault)** | `/api/passkeys/*` | Vault passkey register/authenticate |

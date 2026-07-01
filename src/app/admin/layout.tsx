@@ -8,16 +8,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await ensureAdminBootstrapAccess();
 
   const { adminPath: outpostAdminPath } = buildOutpostEnvConfig();
-  const vaultAdminConfig = getVaultAdminConfig();
+  const { basePath: vaultAdminPath } = getVaultAdminConfig();
 
   return (
     <OutpostAdminProvider adminPanelPath={outpostAdminPath}>
       <div className="min-h-screen bg-[var(--background)]">
-        <AdminNav
-          outpostAdminBase={outpostAdminPath}
-          vaultAdminBase={vaultAdminConfig.basePath}
-          showVaultAdmin={vaultAdminConfig.enabled}
-        />
+        <AdminNav outpostAdminBase={outpostAdminPath} vaultAdminBase={vaultAdminPath} />
         <main className="mx-auto max-w-[1000px] px-6 py-8">{children}</main>
       </div>
     </OutpostAdminProvider>

@@ -35,12 +35,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - **Dock passkey unlock on `/vault/settings`.** A duplicate auto-start (Strict Mode / remount after unlock) could succeed once then fail and redirect to `/vault/unlock` even though the vault was open; concurrent attempts are deduped and failure redirect is skipped when the session is already unlocked.
+- **Vault admin config fetch loop.** `/admin/vault/config` no longer hammers `GET /api/vault/admin/config` — stable `env` / `adminOverrides` refs are passed into vault-core (its default `env = {}` recreated `load` every render).
 - **Authenticated header scroll.** The top toolbar (search + vault dock) stays pinned while page content scrolls underneath; sticky lived on `VaultLockOverlayExclude`, which vault-core styles as `position: relative`.
 - **Desktop sidebar height.** The left rail stays viewport-tall while scrolling long pages (sticky `h-screen` on the aside) so the card background no longer stops above the bottom of the screen.
 
 ### Changed
 
-- **Vault admin navigation.** When `VAULT_ADMIN_ENABLED=true`, `/admin/vault/*` screens appear in the existing admin header nav (alongside secure-auth and Outpost sections).
+- **Vault admin navigation.** All eight `/admin/vault/*` screens appear in the admin header nav alongside secure-auth and Outpost (labels from vault-core `VAULT_ADMIN_SECTIONS`).
+- **Admin overview hub.** `/admin` lists every secure-auth, Outpost, and Vault admin link (same set as the header menu) in grouped cards.
+- **Vault admin config persistence.** Migration `0017_vault_admin_platform.sql` creates `vault_admin_config_overrides`; `GET`/`POST`/`DELETE` `/api/vault/admin/config` for runtime overrides (platform admin).
+
+### Fixed
+
+- **Vault admin runtime.** Server routes no longer pass `Link` into vault-core client pages directly; thin client wrappers own `LinkComponent` to satisfy the Next.js RSC boundary.
 - **Vault setup and settings** use vault-core password policy components and auto-lock preference field; password policy comes from admin env config.
 - **Unlock orchestration (`useVault`).** All unlock methods run through vault-core rate limiting; recovery-phrase envelope KDF upgrade on unlock persists via `replaceRecoveryPhrase` when vault-core recommends an upgrade.
 - **KDF metadata schema** accepts Argon2id **`kdf-v2`** envelopes in API validation.

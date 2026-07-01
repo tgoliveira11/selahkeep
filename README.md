@@ -282,6 +282,7 @@ See [`docs/VERCEL_ENVIRONMENT_VARIABLES.md`](./docs/VERCEL_ENVIRONMENT_VARIABLES
 - `EMAIL_PROVIDER=smtp` with `EMAIL_FROM` — **never** `EMAIL_PROVIDER=console` in production
 - OAuth callback URLs: `{APP_BASE_URL}/api/auth/callback/{provider}`
 - Run `npm run db:migrate` after pulling Kanban schema updates (`0016_note_kanban.sql`). Verify with `npm run db:check-kanban` if `/kanban` or `GET /api/kanban` returns 503 ("Kanban boards are not available yet").
+- Run `npm run db:migrate` after pulling vault admin schema updates (`0017_vault_admin_platform.sql`). Verify with `npm run db:check-vault-admin` if `/admin/vault/config` or `GET /api/vault/admin/config` fails on missing table.
 - Run `npm run db:migrate` before serving traffic
 - MVP acceptance: [`docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md`](./docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md)
 
