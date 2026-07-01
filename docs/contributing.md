@@ -10,7 +10,7 @@ Conservative workflow for humans and AI agents: **branch-first**, **merge via PR
 | Shipped routes, APIs, features | [CURRENT_PRODUCT_SURFACE.md](./CURRENT_PRODUCT_SURFACE.md) |
 | Agent guardrails | [AGENTS.md](../AGENTS.md), `.cursor/rules/branch-pr-release.mdc` |
 
-**Repository:** `tgoliveira11/letter-to-god` · **Product:** SelahKeep · **Default branch:** `main`
+**Repository:** `tgoliveira11/selahkeep` · **Product:** SelahKeep · **Default branch:** `main`
 
 ---
 

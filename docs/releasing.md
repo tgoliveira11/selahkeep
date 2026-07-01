@@ -1,6 +1,6 @@
 # Releasing — SelahKeep
 
-Manual, versioned releases for **tgoliveira11/letter-to-god**. This app is **not** an npm package; nothing is published to a registry.
+Manual, versioned releases for **tgoliveira11/selahkeep**. This app is **not** an npm package; nothing is published to a registry.
 
 ---
 

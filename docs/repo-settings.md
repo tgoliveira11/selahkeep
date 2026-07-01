@@ -1,6 +1,6 @@
 # GitHub repository settings
 
-Target configuration for **tgoliveira11/letter-to-god**. Apply in **Settings → Branches → Branch protection rules** (or via `gh api`).
+Target configuration for **tgoliveira11/selahkeep**. Apply in **Settings → Branches → Branch protection rules** (or via `gh api`).
 
 ---
 
@@ -42,7 +42,7 @@ Document which option you chose when enabling protection.
 
 ```bash
 # Example: list current protection (requires gh auth)
-gh api repos/tgoliveira11/letter-to-god/branches/main/protection 2>/dev/null || echo "Not configured yet"
+gh api repos/tgoliveira11/selahkeep/branches/main/protection 2>/dev/null || echo "Not configured yet"
 ```
 
 Branch protection is easiest to configure in the GitHub UI after CI has run at least once (so check names exist).

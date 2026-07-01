@@ -7,7 +7,7 @@
 | Field | Value |
 |-------|--------|
 | **Status** | Proposed |
-| **Repository** | [https://github.com/tgoliveira11/letter-to-god](https://github.com/tgoliveira11/letter-to-god) |
+| **Repository** | [https://github.com/tgoliveira11/selahkeep](https://github.com/tgoliveira11/selahkeep) |
 | **Product name** | SelahKeep |
 | **Product direction** | Encrypted private vault for prayers, reflections, and personal notes |
 | **Primary auth dependency** | `@tgoliveira/secure-auth@0.1.25` |
