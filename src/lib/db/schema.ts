@@ -26,6 +26,7 @@ export {
   noteAttachments,
   noteKanbanBoards,
   noteKanbanVersions,
+  vaultAdminConfigOverrides,
   type Note,
   type NoteVersion,
   type NoteAttachment,

@@ -76,7 +76,7 @@ export async function unwrapVaultKeyFromPassword(
       );
 
   if (options?.applySession ?? true) {
-    setUnlockedVaultSession({
+    await setUnlockedVaultSession({
       userVaultKey: vaultKey,
       method: options?.unlockMethod ?? "password",
     });

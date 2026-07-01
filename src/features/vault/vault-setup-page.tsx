@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import type { PasswordPolicyConfig } from "@tgoliveira/secure-auth/client/password-policy";
+import type { VaultAdminPasswordPolicy } from "@tgoliveira/vault-core";
 import { PageLayout } from "@/components/layout/page-layout";
 import { PageHeader } from "@/components/ui/page-header";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -14,7 +14,7 @@ import { useLtgVaultSetup } from "@/features/vault/use-ltg-vault-setup";
 import { VaultSetupWizard } from "@/features/vault/vault-setup-wizard";
 
 interface VaultSetupPageProps {
-  vaultPasswordPolicy: PasswordPolicyConfig;
+  vaultPasswordPolicy: VaultAdminPasswordPolicy;
 }
 
 export function VaultSetupPage({ vaultPasswordPolicy }: VaultSetupPageProps) {

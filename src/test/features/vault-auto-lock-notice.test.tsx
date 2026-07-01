@@ -1,24 +1,16 @@
-/** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import {
   VaultAutoLockNotice,
   VAULT_INACTIVITY_LOCK_MESSAGE,
 } from "@/features/vault/vault-auto-lock-notice";
-import {
-  clearVaultAutoLockTimer,
-  configureVaultAutoLock,
-  lockVaultSession,
-  unlockVaultSession,
-  VAULT_INACTIVITY_MS,
-} from "@/lib/crypto-client/vault-session";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { clearVaultAutoLockTimer, configureVaultAutoLock, lockVaultSession, unlockVaultSession, VAULT_INACTIVITY_MS } from "@/lib/crypto-client/vault-session";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 
 describe("VaultAutoLockNotice", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     clearVaultAutoLockTimer();
-    setSessionVaultKey(null);
+    lockVaultSession();
     configureVaultAutoLock();
   });
 

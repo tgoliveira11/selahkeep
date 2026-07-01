@@ -1,8 +1,8 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, beforeEach } from "vitest";
 import { encryptNote } from "@/lib/crypto-client/notes";
 import { encryptKanbanVersion } from "@/lib/crypto-client/kanban";
-import type { KanbanBoardPlaintext } from "@/lib/notes/kanban-types";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import type { KanbanBoardPlaintext } from "@/lib/notes/kanban-types";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { SENTINEL_PHRASE } from "./sentinel-phrase.test";
 import { KANBAN_VERSION_ID, NOTE_ID, USER_ID } from "@/test/helpers/fixtures";
 
@@ -10,7 +10,7 @@ const BOARD_ID = "550e8400-e29b-41d4-a716-446655440010";
 
 describe("sentinel phrase kanban version snapshots", () => {
   beforeEach(async () => {
-    setSessionVaultKey(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
   });
 
   it("never exposes sentinel plaintext in encrypted version payloads", async () => {

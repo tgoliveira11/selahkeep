@@ -1,3 +1,4 @@
+import { lockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";

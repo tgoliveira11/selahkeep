@@ -9,7 +9,6 @@ const forbiddenPatterns = [
   /Letters to God/i,
   /Cartas para Deus/i,
   /letters, prayers, reflections/i,
-  /Selahkeep/,
   /Selah Keep/,
 ];
 

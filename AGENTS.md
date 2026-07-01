@@ -109,7 +109,7 @@ Before finishing any task:
 npm run validate
 ```
 
-(`validate` runs `lint`, `test:coverage`, and `build`. Equivalent to the steps below.)
+(`validate` runs `lint`, `typecheck`, `test:coverage`, and `build`. Equivalent to the steps below.)
 
 ```bash
 npm ci

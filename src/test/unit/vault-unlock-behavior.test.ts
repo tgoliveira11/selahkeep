@@ -1,11 +1,11 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   defaultVaultSettings,
   encryptVaultSettings,
   decryptVaultSettings,
   normalizeVaultSettings,
-} from "@/lib/crypto-client/vault-settings";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+} from "@/lib/crypto-client/vault-settings";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { USER_ID } from "@/test/helpers/fixtures";
 
 describe("vault unlock behavior settings", () => {
@@ -13,7 +13,7 @@ describe("vault unlock behavior settings", () => {
 
   beforeEach(async () => {
     vaultKey = await generateUserVaultKey();
-    setSessionVaultKey(vaultKey);
+    await unlockVaultSession(vaultKey);
   });
 
   it("defaults to metadata_only", () => {

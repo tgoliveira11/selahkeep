@@ -1,6 +1,6 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 /** @vitest-environment happy-dom */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { describe, it, expect, vi, beforeEach } from "vitest";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import {
   clearUserNoteDrafts,
   deleteEncryptedNoteDraft,
@@ -41,7 +41,7 @@ describe("encrypted note drafts", () => {
     store.clear();
     resetNoteDraftDbForTests();
     const key = await generateUserVaultKey();
-    setSessionVaultKey(key);
+    await unlockVaultSession(key);
   });
 
   it("stores and loads encrypted drafts", async () => {
@@ -97,7 +97,7 @@ describe("encrypted note drafts", () => {
 
   it("no-ops when vault is locked", async () => {
     const { setSessionVaultKey } = await import("@/lib/crypto-client/vault");
-    setSessionVaultKey(null);
+    lockVaultSession();
     await saveEncryptedNoteDraft(USER_ID, NEW_NOTE_DRAFT_KEY, {
       title: "Draft",
       body: "Body",

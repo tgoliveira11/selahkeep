@@ -1,4 +1,3 @@
-/** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import VaultSecurityPage from "@/app/(vault)/vault/security/page";
@@ -131,7 +130,7 @@ describe("VaultSecurityPage", () => {
     expect(screen.getByText(/protection overview \(vault closed\)/i)).toBeTruthy();
     expect(
       screen.getByRole("link", { name: /open full unlock page/i }).getAttribute("href")
-    ).toBe("/vault/unlock?returnTo=%2Fvault%2Fsecurity");
+    ).toBe("/vault/unlock?next=%2Fvault%2Fsecurity");
     fireEvent.click(screen.getByRole("button", { name: /unlock here/i }));
     expect(requestVaultDockExpand).toHaveBeenCalled();
     expect(screen.queryByTestId("vault-security-review")).toBeNull();

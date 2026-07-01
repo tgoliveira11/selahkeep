@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PasswordSetupFields } from "@tgoliveira/secure-auth/react/client";
-import type { PasswordPolicyConfig } from "@tgoliveira/secure-auth/client/password-policy";
+import type { VaultAdminPasswordPolicy } from "@tgoliveira/vault-core";
+import { VaultPasswordSetupFields } from "@tgoliveira/vault-core/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
@@ -20,7 +20,7 @@ interface VaultSetupWizardProps {
   step: VaultSetupStep;
   loading: boolean;
   error: string | null;
-  vaultPasswordPolicy: PasswordPolicyConfig;
+  vaultPasswordPolicy: VaultAdminPasswordPolicy;
   vaultPassword: string;
   vaultPasswordConfirm: string;
   recoveryPhrase: string;
@@ -98,21 +98,15 @@ export function VaultSetupWizard({
               Your account password signs you in. Your vault password unlocks your private notes.
             </p>
           </div>
-          <PasswordSetupFields
-            passwordId="vault-password"
-            confirmId="vault-password-confirm"
-            passwordName="vaultPassword"
-            confirmName="confirmVaultPassword"
-            passwordLabel="Vault password"
-            confirmLabel="Confirm vault password"
-            value={vaultPassword}
-            confirmValue={vaultPasswordConfirm}
-            onChange={onVaultPasswordChange}
-            onConfirmChange={onVaultPasswordConfirmChange}
+          <VaultPasswordSetupFields
+            password={vaultPassword}
+            confirmation={vaultPasswordConfirm}
+            onPasswordChange={onVaultPasswordChange}
+            onConfirmationChange={onVaultPasswordConfirmChange}
             policy={vaultPasswordPolicy}
-            feedbackPosition="above"
-            passwordPlaceholder="Choose a vault password"
-            confirmPlaceholder="Confirm your vault password"
+            passwordLabel="Vault password"
+            confirmationLabel="Confirm vault password"
+            disabled={loading}
             onValidityChange={(isValid) => setPasswordStepValid(isValid)}
           />
           <div className="flex gap-3">

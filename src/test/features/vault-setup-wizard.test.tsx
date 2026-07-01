@@ -1,6 +1,3 @@
-/**
- * @vitest-environment happy-dom
- */
 import { describe, it, expect, vi } from "vitest";
 import { useState } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -60,7 +57,7 @@ describe("VaultSetupWizard UI", () => {
     fireEvent.change(screen.getByLabelText(/^Vault password$/i), {
       target: { value: "short" },
     });
-    expect(screen.getByText(/at least 16 characters/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Continue$/i })).toHaveProperty("disabled", true);
   });
 
   it("disables continue when password is below VAULT_PASSWORD_MIN_LENGTH", () => {
@@ -184,6 +181,9 @@ describe("VaultSetupWizard password policy wiring", () => {
     fireEvent.change(screen.getByLabelText(/^Vault password$/i), {
       target: { value: "sixteen-characters" },
     });
-    expect(screen.getByText(/at least 20 characters/i)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/^Confirm vault password$/i), {
+      target: { value: "sixteen-characters" },
+    });
+    expect(screen.getByRole("button", { name: /^Continue$/i })).toHaveProperty("disabled", true);
   });
 });

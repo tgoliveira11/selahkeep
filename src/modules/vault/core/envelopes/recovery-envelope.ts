@@ -81,7 +81,7 @@ export async function unwrapVaultKeyFromRecoveryPhrase(
       );
 
   if (options?.applySession ?? true) {
-    setUnlockedVaultSession({
+    await setUnlockedVaultSession({
       userVaultKey: vaultKey,
       method: options?.unlockMethod ?? "recovery_phrase",
     });

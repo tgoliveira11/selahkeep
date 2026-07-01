@@ -1,10 +1,10 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   encryptNote,
   decryptNote,
   reencryptNoteWithUpdatedMetadata,
-} from "@/lib/crypto-client/notes";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+} from "@/lib/crypto-client/notes";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { USER_ID, NOTE_ID } from "@/test/helpers/fixtures";
 
 describe("duplicate note encryption", () => {
@@ -12,7 +12,7 @@ describe("duplicate note encryption", () => {
 
   beforeEach(async () => {
     vaultKey = await generateUserVaultKey();
-    setSessionVaultKey(vaultKey);
+    await unlockVaultSession(vaultKey);
   });
 
   it("creates independent encryption payloads for duplicate", async () => {

@@ -1,13 +1,12 @@
 import type { EncryptedPayload, KdfMetadata } from "@/lib/validation/encrypted-payload";
 import {
-  decryptField,
-  importAesKey,
-  exportAesKey,
+  unlockWithRecoveryEnvelope,
+  userVaultKeysEqual,
   type EncryptedPayload as VaultCoreEncryptedPayload,
+  type KdfMetadata as VaultCoreKdfMetadata,
 } from "@tgoliveira/vault-core";
+import { SELAHKEEP_VAULT_PROFILE } from "@/modules/vault/selahkeep-profile";
 import { getSessionVaultKey } from "./vault";
-import { deriveRecoveryPhraseKeyFromMetadata } from "./recovery-phrase";
-import { base64UrlToBytes } from "./encoding";
 
 export type RecoveryDrillResult =
   | { status: "verified" }
@@ -19,24 +18,24 @@ async function unwrapVaultKeyOnly(
   encryptedVaultKey: EncryptedPayload,
   kdfMetadata: KdfMetadata
 ): Promise<CryptoKey> {
-  if (kdfMetadata.kdf !== "argon2id") {
-    throw new Error("Recovery phrase envelope requires Argon2id metadata");
-  }
-  const derivedKey = await deriveRecoveryPhraseKeyFromMetadata(recoveryPhrase, kdfMetadata);
-  const keyBytes = base64UrlToBytes(
-    await decryptField(encryptedVaultKey as VaultCoreEncryptedPayload, derivedKey)
+  const scope = {
+    userId: encryptedVaultKey.aad.userId,
+    resourceId: encryptedVaultKey.aad.resourceId ?? encryptedVaultKey.aad.userId,
+  };
+  return unlockWithRecoveryEnvelope(
+    recoveryPhrase,
+    {
+      method: "recovery_phrase",
+      encryptedVaultKey: encryptedVaultKey as VaultCoreEncryptedPayload,
+      kdfMetadata: kdfMetadata as VaultCoreKdfMetadata,
+    },
+    scope,
+    SELAHKEEP_VAULT_PROFILE
   );
-  return importAesKey(keyBytes);
 }
 
 async function cryptoKeysEqual(a: CryptoKey, b: CryptoKey): Promise<boolean> {
-  const left = await exportAesKey(a);
-  const right = await exportAesKey(b);
-  if (left.length !== right.length) return false;
-  for (let i = 0; i < left.length; i++) {
-    if (left[i] !== right[i]) return false;
-  }
-  return true;
+  return userVaultKeysEqual(a, b);
 }
 
 /**

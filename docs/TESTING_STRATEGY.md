@@ -1,6 +1,6 @@
 # Testing Strategy
 
-Last updated: 2026-06-16
+Last updated: 2026-07-01
 
 ## Overview
 
@@ -8,10 +8,51 @@ All automated tests run through **Vitest** (`npm run test`, `npm run test:covera
 
 `npm run test:all` is an alias for `npm run test:coverage`.
 
+## Vitest projects (environment split)
+
+`vitest.config.ts` defines two projects so pure logic tests do not pay DOM startup cost:
+
+| Project | Environment | Includes |
+|---------|-------------|----------|
+| **unit** | `node` | `src/**/*.test.ts` |
+| **ui** | `happy-dom` | `src/**/*.test.tsx` |
+
+A small number of `.test.ts` files that need DOM APIs keep a file-level directive:
+
+```ts
+/** @vitest-environment happy-dom */
+```
+
+Heavy SDK imports are pre-bundled via `test.deps.optimizer.ssr` (`@tgoliveira/secure-auth`, `@tgoliveira/vault-core`, `hash-wasm`).
+
+## Shared vault crypto fixtures
+
+Repeated Argon2/KDF work in vault tests uses lazy singleton fixtures in `src/test/helpers/vault-crypto-fixtures.ts`:
+
+- `loadPasswordVaultFixture()` — one password envelope per worker
+- `loadRecoveryPhraseVaultFixture()` — one recovery-phrase envelope per worker
+
+Use these for read-only unwrap/drill assertions; create fresh envelopes when a test mutates state or needs a unique key.
+
+**Avoid** combining `vi.useFakeTimers()` with a full `NotesPage` render — vault/list effects schedule real timers and can loop until the worker OOMs (`editor-track-2.test.tsx` was rewritten to test `NewNoteAction` / `findDailyNoteIdForDate` instead).
+
 ## Coverage gate
 
 - **Minimum: 90%** lines, statements, functions, and branches on enforced scope (`vitest.config.ts`).
-- Run `npm ci && npm run lint && npm run test:coverage && npm run build` before merging.
+- Run `npm run validate` before merging (`lint`, `typecheck`, `test:coverage`, `build`).
+
+## CI pipeline
+
+GitHub Actions (`.github/workflows/ci.yml`) runs **parallel jobs** so wall clock ≈ the slowest step, not the sum:
+
+| Job | Command |
+|-----|---------|
+| `lint` | `npm run lint` (ESLint cache in `.eslintcache`) |
+| `typecheck` | `npm run typecheck` (`tsc --noEmit -p tsconfig.ci.json`, app code only; incremental cache in `.cache/tsconfig.tsbuildinfo`) |
+| `test` | `npm run test:coverage` (`NODE_OPTIONS=--max-old-space-size=8192`) |
+| `build` | `npm run build` |
+
+PR branches must use the `feature/`, `fix/`, `docs/`, or `chore/` prefix (`branch-name` job).
 
 ## Test layers
 
@@ -58,7 +99,10 @@ Vitest, Testing Library, jest-axe, and happy-dom remain in use.
 
 ```bash
 npm ci
+npm run validate
+# or step-by-step:
 npm run lint
+npm run typecheck
 npm run test
 npm run test:coverage
 npm run build

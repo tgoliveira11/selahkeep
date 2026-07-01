@@ -1,6 +1,6 @@
+import { lockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { unlockVaultWithPasskey } from "@/features/passkey/unlock-with-passkey";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { unlockVaultWithPasskey } from "@/features/passkey/unlock-with-passkey";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { USER_ID } from "@/test/helpers/fixtures";
 import {
   PASSKEY_NOT_LINKED_TO_VAULT_UNLOCK_MESSAGE,
@@ -30,7 +30,7 @@ vi.mock("@/lib/crypto-client/passkey-vault", async (importOriginal) => {
 describe("unlockVaultWithPasskey", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    setSessionVaultKey(null);
+    lockVaultSession();
     mocks.runCeremony.mockResolvedValue({
       id: "vault-cred",
       clientExtensionResults: {

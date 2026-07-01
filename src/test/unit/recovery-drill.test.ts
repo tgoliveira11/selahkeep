@@ -36,7 +36,7 @@ describe("verifyRecoveryPhraseDrill", () => {
       { userId, resourceId: userId }
     );
 
-    unlockVaultSession(vaultKey);
+    await unlockVaultSession(vaultKey);
 
     const match = await verifyRecoveryPhraseDrill(phrase, encryptedVaultKey, kdfMetadata, {
       vaultCurrentlyUnlocked: true,
@@ -44,7 +44,7 @@ describe("verifyRecoveryPhraseDrill", () => {
     expect(match.status).toBe("verified");
 
     const otherKey = await generateUserVaultKey();
-    unlockVaultSession(otherKey);
+    await unlockVaultSession(otherKey);
     const mismatch = await verifyRecoveryPhraseDrill(
       phrase,
       encryptedVaultKey,

@@ -1,4 +1,3 @@
-/** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import RecoveryPage from "@/app/(vault)/vault/recovery/page";
@@ -114,7 +113,7 @@ describe("RecoveryPage", () => {
     render(<RecoveryPage />);
 
     expect(screen.getByRole("link", { name: /unlock vault/i }).getAttribute("href")).toBe(
-      "/vault/unlock?returnTo=%2Fvault%2Frecovery"
+      "/vault/unlock?next=%2Fvault%2Frecovery"
     );
   });
 

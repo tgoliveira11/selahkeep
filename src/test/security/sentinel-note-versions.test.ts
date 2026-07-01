@@ -1,14 +1,14 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, beforeEach } from "vitest";
 import { encryptNote } from "@/lib/crypto-client/notes";
 import { encryptNoteVersion } from "@/lib/crypto-client/note-versions";
-import { normalizeNoteMetadata } from "@/lib/notes/note-metadata";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { normalizeNoteMetadata } from "@/lib/notes/note-metadata";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { SENTINEL_PHRASE } from "./sentinel-phrase.test";
 import { USER_ID, NOTE_ID, VERSION_ID } from "@/test/helpers/fixtures";
 
 describe("sentinel phrase note versions", () => {
   beforeEach(async () => {
-    setSessionVaultKey(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
   });
 
   it("never exposes sentinel plaintext in an encrypted version payload", async () => {

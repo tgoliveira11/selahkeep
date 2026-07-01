@@ -81,6 +81,7 @@ export const vaultApi = {
     apiClient.post<{
       encryptedVaultKey: EncryptedPayload;
       kdfMetadata: KdfMetadata;
+      publicMetadata?: { phraseLength?: 12 | 24 };
     }>("/api/vault/unlock-envelope", { method }),
 
   getIndex: () =>

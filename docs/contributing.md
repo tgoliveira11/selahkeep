@@ -59,7 +59,7 @@ Before opening a PR or declaring a task done:
 npm run validate
 ```
 
-(`lint` → `test:coverage` → `build`; see `package.json`.)
+(`lint` → `typecheck` → `test:coverage` → `build`; see `package.json`.)
 
 Also:
 
@@ -81,7 +81,7 @@ Trivial docs-only changes may skip `npm run validate`.
 5. Address review feedback on the same branch.
 6. After merge: `git checkout main && git pull`, delete the merged local branch, confirm changelog/surface/tests before closing.
 
-CI required checks (when branch protection is enabled): **`validate`**, **`branch-name`**.
+CI required checks (when branch protection is enabled): **`lint`**, **`typecheck`**, **`test`**, **`build`**, and **`branch-name`** (PRs).
 
 ---
 

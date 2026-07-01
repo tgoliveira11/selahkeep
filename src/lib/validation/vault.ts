@@ -1,12 +1,10 @@
+import {
+  assertNoVaultPlaintextFields as coreAssertNoVaultPlaintextFields,
+} from "@tgoliveira/vault-core";
 import { z } from "zod";
 import { encryptedPayloadSchema, kdfMetadataSchema } from "./encrypted-payload";
 
-const PLAINTEXT_FORBIDDEN_VAULT_FIELDS = [
-  "vaultPassword",
-  "password",
-  "recoveryPhrase",
-  "recoveryWords",
-  "userVaultKey",
+const SELAHKEEP_EXTRA_FORBIDDEN_FIELDS = [
   "noteKey",
   "title",
   "body",
@@ -25,20 +23,13 @@ const PLAINTEXT_FORBIDDEN_VAULT_FIELDS = [
   "plaintextBody",
 ] as const;
 
-const ALLOWED_ENCRYPTED_PREFIXES = [
-  "encrypted",
-  "kdf",
-  "public",
-  "vaultVersion",
-  "envelopes",
-  "method",
-  "id",
-  "answered",
-  "encryptionVersion",
-] as const;
-
 export function rejectVaultPlaintextFields(body: Record<string, unknown>): string | null {
-  for (const field of PLAINTEXT_FORBIDDEN_VAULT_FIELDS) {
+  try {
+    coreAssertNoVaultPlaintextFields(body);
+  } catch (error) {
+    return error instanceof Error ? error.message : "Plaintext field rejected";
+  }
+  for (const field of SELAHKEEP_EXTRA_FORBIDDEN_FIELDS) {
     if (field in body && body[field] !== undefined) {
       return `Plaintext field '${field}' is not allowed`;
     }
@@ -127,4 +118,14 @@ export type VaultInitInput = z.infer<typeof vaultInitSchema>;
 export type RecoveryCodeInput = z.infer<typeof recoveryCodeSchema>;
 export type RecoveryPhraseReplaceInput = z.infer<typeof recoveryPhraseReplaceSchema>;
 
-export { ALLOWED_ENCRYPTED_PREFIXES };
+export const ALLOWED_ENCRYPTED_PREFIXES = [
+  "encrypted",
+  "kdf",
+  "public",
+  "vaultVersion",
+  "envelopes",
+  "method",
+  "id",
+  "answered",
+  "encryptionVersion",
+] as const;

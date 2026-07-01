@@ -23,7 +23,7 @@ describe("vault module boundaries", () => {
     expect(content).not.toContain("@tgoliveira/vault-core/browser");
   });
 
-  it("keeps the in-memory vault key in one app-owned session module", () => {
+  it("keeps vault session UVK in the vault-core browser adapter module", () => {
     const sessionShim = readFileSync(
       path.join(process.cwd(), "src/lib/crypto-client/vault-session.ts"),
       "utf8"
@@ -32,8 +32,8 @@ describe("vault module boundaries", () => {
       path.join(process.cwd(), "src/modules/vault/core/vault-key.ts"),
       "utf8"
     );
-    expect(sessionShim).toContain("__selahkeepVaultSessionStore");
-    expect(sessionShim).not.toContain("@tgoliveira/vault-core/browser");
+    expect(sessionShim).toContain("@tgoliveira/vault-core/browser");
+    expect(sessionShim).toContain("coreUnlockVaultSession");
     expect(vaultKey).toContain('@/lib/crypto-client/vault-session');
     expect(vaultKey).not.toContain("let sessionVaultKey");
   });
@@ -43,7 +43,7 @@ describe("vault module boundaries", () => {
       path.join(process.cwd(), "src/features/vault/use-vault.ts"),
       "utf8"
     );
-    expect(content).toContain('applySession: true');
+    expect(content).toContain("withVaultUnlockRateLimit");
     expect(content).toContain('unlockMethod: "password"');
     expect(content).toContain("hasUnlockedVaultSession()");
     expect(content).not.toContain("explicit: false");

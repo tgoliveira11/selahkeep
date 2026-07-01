@@ -1,6 +1,6 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { encryptNote } from "@/lib/crypto-client/notes";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { encryptNote } from "@/lib/crypto-client/notes";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { noteService } from "@/server/services/note-service";
 import { adminService } from "@/server/services/admin-service";
 import { safeLogger } from "@/lib/logger";
@@ -54,7 +54,7 @@ describe("sentinel phrase runtime integration", () => {
 
   it("never exposes sentinel plaintext through service, API, admin, or logs", async () => {
     const vaultKey = await generateUserVaultKey();
-    setSessionVaultKey(vaultKey);
+    await unlockVaultSession(vaultKey);
 
     const encrypted = await encryptNote(USER_ID, NOTE_ID, {
       title: SENTINEL_PHRASE,

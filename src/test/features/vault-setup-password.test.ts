@@ -9,8 +9,8 @@ const root = join(process.cwd());
 describe("vault setup password integration", () => {
   it("vault setup wizard imports PasswordSetupFields from secure-auth", () => {
     const source = readFileSync(join(root, "src/features/vault/vault-setup-wizard.tsx"), "utf8");
-    expect(source).toContain('from "@tgoliveira/secure-auth/react/client"');
-    expect(source).toContain("PasswordSetupFields");
+    expect(source).toContain('from "@tgoliveira/vault-core/react"');
+    expect(source).toContain("VaultPasswordSetupFields");
     expect(source).toContain("policy={vaultPasswordPolicy}");
     expect(source).not.toMatch(/vaultPassword\.length >= 12/);
   });

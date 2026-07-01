@@ -185,6 +185,13 @@ export const noteKanbanVersions = pgTable(
   ]
 );
 
+/** Runtime overrides for vault-core admin config (`/admin/vault/config`). */
+export const vaultAdminConfigOverrides = pgTable("vault_admin_config_overrides", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Note = typeof notes.$inferSelect;
 export type NoteVersion = typeof noteVersions.$inferSelect;
 export type NoteAttachment = typeof noteAttachments.$inferSelect;

@@ -282,6 +282,7 @@ See [`docs/VERCEL_ENVIRONMENT_VARIABLES.md`](./docs/VERCEL_ENVIRONMENT_VARIABLES
 - `EMAIL_PROVIDER=smtp` with `EMAIL_FROM` — **never** `EMAIL_PROVIDER=console` in production
 - OAuth callback URLs: `{APP_BASE_URL}/api/auth/callback/{provider}`
 - Run `npm run db:migrate` after pulling Kanban schema updates (`0016_note_kanban.sql`). Verify with `npm run db:check-kanban` if `/kanban` or `GET /api/kanban` returns 503 ("Kanban boards are not available yet").
+- Run `npm run db:migrate` after pulling vault admin schema updates (`0017_vault_admin_platform.sql`). Verify with `npm run db:check-vault-admin` if `/admin/vault/config` or `GET /api/vault/admin/config` fails on missing table.
 - Run `npm run db:migrate` before serving traffic
 - MVP acceptance: [`docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md`](./docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md)
 
@@ -296,7 +297,7 @@ See [`docs/VERCEL_ENVIRONMENT_VARIABLES.md`](./docs/VERCEL_ENVIRONMENT_VARIABLES
 | `npm run test` | Run all Vitest tests |
 | `npm run test:coverage` | Vitest with coverage thresholds (≥90% lines/statements/functions/branches) |
 | `npm run test:all` | Alias for `npm run test:coverage` |
-| `npm run validate` | Lint + coverage + production build (pre-PR gate) |
+| `npm run validate` | Lint + typecheck + coverage + production build (pre-PR gate) |
 | `npm run db:generate` | Generate Drizzle migrations |
 | `npm run db:migrate` | Apply migrations to PostgreSQL |
 | `docker compose up -d` | Start local PostgreSQL |
@@ -331,7 +332,7 @@ Recent passkey-related coverage includes:
 Coverage is enforced on core application code (`src/lib`, `src/server/services`, `src/server/policies`, `src/app/api`, `src/features/passkey`). Repository adapters and UI pages are covered indirectly via service/API/feature tests.
 
 ```bash
-npm run validate        # lint + coverage + build (pre-PR)
+npm run validate        # lint + typecheck + coverage + build (pre-PR)
 npm ci                  # clean install
 npm run lint            # ESLint
 npm run test:coverage   # must pass before merge (≥90% lines/statements/functions/branches)

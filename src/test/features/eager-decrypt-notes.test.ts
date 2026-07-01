@@ -1,11 +1,11 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   applyUnlockBehavior,
   clearNoteBodyCache,
   getCachedNoteBody,
   setCachedNoteBody,
-} from "@/features/notes/eager-decrypt-notes";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+} from "@/features/notes/eager-decrypt-notes";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { encryptNote } from "@/lib/crypto-client/notes";
 import { encryptVaultSettings } from "@/lib/crypto-client/vault-settings";
 import { USER_ID } from "@/test/helpers/fixtures";
@@ -38,7 +38,7 @@ describe("eager decrypt unlock behavior", () => {
 
   it("does not cache bodies for metadata_only", async () => {
     const vaultKey = await generateUserVaultKey();
-    setSessionVaultKey(vaultKey);
+    await unlockVaultSession(vaultKey);
 
     const settings = await encryptVaultSettings(
       { setupVersion: 1, recoveryPhraseLength: 12, unlockBehavior: "metadata_only" },
@@ -54,7 +54,7 @@ describe("eager decrypt unlock behavior", () => {
 
   it("caches decrypted bodies for decrypt_all", async () => {
     const vaultKey = await generateUserVaultKey();
-    setSessionVaultKey(vaultKey);
+    await unlockVaultSession(vaultKey);
     const noteId = crypto.randomUUID();
 
     const payload = await encryptNote(USER_ID, noteId, { title: "T", body: "Secret body" });

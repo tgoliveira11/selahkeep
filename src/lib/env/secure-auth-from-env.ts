@@ -59,7 +59,7 @@ function parseSecureAuthEnv(
   const nextAuthSecret = readEnv(env, "NEXTAUTH_SECRET");
   const twoFactorEncryptionKey = readEnv(env, "TWO_FACTOR_SECRET_ENCRYPTION_KEY");
 
-  const afterLoginPath = readEnv(env, "AUTH_AFTER_LOGIN_PATH") ?? "/notes";
+  const afterLoginPath = readEnv(env, "AUTH_AFTER_LOGIN_PATH") ?? "/home";
   const afterLogoutPath = readEnv(env, "AUTH_AFTER_LOGOUT_PATH") ?? "/login";
   const authenticatedRedirectPath =
     readEnv(env, "AUTH_AUTHENTICATED_REDIRECT_PATH") ?? afterLoginPath;

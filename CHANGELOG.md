@@ -13,6 +13,59 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **`@tgoliveira/vault-core@^1.0.0`.** Dependency bump from `^0.2.0`; session, React UI, rate limiting, and admin surfaces now integrate with the 1.0.0 contract.
+- **Vault session provider.** `VaultSessionProvider` at the app root; `vault-session.ts` is a thin adapter over `@tgoliveira/vault-core/browser` (async `unlockVaultSession`, non-extractable UVK after unlock, SelahKeep hooks for note cache clear and pre-lock handlers).
+- **Vault-core React UI.** Status dock (`VaultStatusDock` + `VaultDockQuickUnlock`), full unlock page (`VaultUnlockPanel`), protected layout gate (`VaultProtectedGate` + `VaultLockOverlayExclude` on the left sidebar and vault dock), setup/settings password fields (`VaultPasswordSetupFields`, `VaultAutoLockPreferenceField`), and `@import "@tgoliveira/vault-core/vault-admin.css"` in global styles.
+- **Vault admin UI (8 pages).** `/admin/vault/*` — overview, config, session, security, password policy, crypto policy, profile, env template — wired through `buildVaultAdminConfigFromEnv()` / `getVaultAdminConfig()`.
+- **Vault rate limiting.** Client unlock paths use `withVaultUnlockRateLimit`; vault HTTP routes use `consumeVaultApiRateLimit` (setup, recovery-phrase replace, unlock-envelope) with limits from admin env config.
+- **Logged-in home (`/home`).** Post-login landing only when the vault is locked (or not yet configured) — unlock hero and privacy reassurance; excluded from `VaultProtectedGate` so the page stays fully interactive on first sign-in. Direct visits to `/home` without a fresh login redirect to `/notes`.
+- **Legacy vault-v1 unlock panel.** `LegacyVaultUnlockPanel` retained for pre–vault-v2 accounts on the unlock route when LTG setup is incomplete.
+
+### Changed
+
+- **Test & CI performance.** Vitest split into `unit` (node) and `ui` (happy-dom) projects; parallel GitHub Actions jobs for lint, typecheck, test coverage, and build; ESLint and TypeScript incremental caches; shared lazy vault crypto fixtures for repeated KDF work; removed coverage sharding scripts.
+- **Vault session semantics.** Auto-lock countdown renews only on explicit **Stay unlocked** / `touchVaultSession()` — global pointer/keyboard activity listeners removed (`registerActivityGuard: false`).
+- **Vault unlock return paths.** `buildVaultUnlockHref` / `readVaultUnlockReturnPath` use query param **`next`** (vault-core default); legacy **`returnTo`** is still accepted when reading callbacks.
+- **Post-login routing.** Default authenticated redirect is **`/home`** (was `/notes`); users with an unlocked vault on `/home` are sent to `/notes`.
+- **Vault locked on protected routes.** `VaultProtectedGate` overlay on vault-protected screens (e.g. `/notes`); `/home` is shown only immediately after login when the vault is closed, not as a redirect from other routes.
+- **Vault lock overlay exclusions.** `VaultLockOverlayExclude` wraps the desktop left sidebar, mobile bottom nav, and the full authenticated header (vault-core consumer-demo pattern) so the expanded dock stays above the lock overlay.
+- **`/vault/unlock` vault gate.** Unlock page is session-only (excluded from `VaultProtectedGate`); dock passkey auto-starts when configured and redirects to `/vault/unlock` on passkey failure from the dock.
+
+### Fixed
+
+- **Test worker OOM.** `editor-track-2.test.tsx` no longer renders `NotesPage` under `vi.useFakeTimers()` (effect/timer loop exhausted the heap); daily-note behavior is covered via `findDailyNoteIdForDate` and `NewNoteAction` instead.
+- **Dock passkey unlock on `/vault/settings`.** A duplicate auto-start (Strict Mode / remount after unlock) could succeed once then fail and redirect to `/vault/unlock` even though the vault was open; concurrent attempts are deduped and failure redirect is skipped when the session is already unlocked.
+- **Vault admin config fetch loop.** `/admin/vault/config` no longer hammers `GET /api/vault/admin/config` — stable `env` / `adminOverrides` refs are passed into vault-core (its default `env = {}` recreated `load` every render).
+- **Authenticated header scroll.** The top toolbar (search + vault dock) stays pinned while page content scrolls underneath; sticky lived on `VaultLockOverlayExclude`, which vault-core styles as `position: relative`.
+- **Desktop sidebar height.** The left rail stays viewport-tall while scrolling long pages (sticky `h-screen` on the aside) so the card background no longer stops above the bottom of the screen.
+
+### Changed
+
+- **Vault admin navigation.** All eight `/admin/vault/*` screens appear in the admin header nav alongside secure-auth and Outpost (labels from vault-core `VAULT_ADMIN_SECTIONS`).
+- **Admin overview hub.** `/admin` lists every secure-auth, Outpost, and Vault admin link (same set as the header menu) in grouped cards.
+- **Vault admin config persistence.** Migration `0017_vault_admin_platform.sql` creates `vault_admin_config_overrides`; `GET`/`POST`/`DELETE` `/api/vault/admin/config` for runtime overrides (platform admin).
+
+### Fixed
+
+- **Vault admin runtime.** Server routes no longer pass `Link` into vault-core client pages directly; thin client wrappers own `LinkComponent` to satisfy the Next.js RSC boundary.
+- **Vault setup and settings** use vault-core password policy components and auto-lock preference field; password policy comes from admin env config.
+- **Unlock orchestration (`useVault`).** All unlock methods run through vault-core rate limiting; recovery-phrase envelope KDF upgrade on unlock persists via `replaceRecoveryPhrase` when vault-core recommends an upgrade.
+- **KDF metadata schema** accepts Argon2id **`kdf-v2`** envelopes in API validation.
+- **Recovery phrase drill** derives keys via vault-core `encryptionKey` from `deriveRecoveryPhraseKeyFromMetadata` (1.0.0 dual-key envelope shape).
+- **Vault status dock placement.** On desktop, the dock shares the header toolbar row with the notes search bar (search left, dock right) on all authenticated routes; the duplicate dock row below the header was removed.
+
+### Removed
+
+- **Custom vault dock and unlock UI** — `vault-dock-quick-unlock.tsx`, `ltg-vault-unlock-panel.tsx`, `vault-unlock-panel.tsx`, and activity-based auto-lock renewal (`use-vault-activity` global listeners; thin no-op shim kept for editor touch calls).
+
+### Security
+
+- **Plaintext guards** delegate to vault-core `assertNoVaultPlaintextFields` with SelahKeep extensions for note-specific forbidden fields (`src/lib/validation/vault.ts`).
+- **Unlock rate limits** on every client unlock path via `withVaultUnlockRateLimit` and configurable admin/env limits.
+- **Vault API rate limits** on setup, recovery-phrase replace, and unlock-envelope routes via shared vault-core limiter helpers.
+
 ## [0.2.0] - 2026-06-30
 
 ### Added

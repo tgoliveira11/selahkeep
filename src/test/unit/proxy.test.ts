@@ -106,7 +106,7 @@ describe("proxy authenticated guest-page redirects", () => {
     const { proxy } = await import("@/proxy");
     const response = await proxy(new NextRequest("http://localhost:3001/login"));
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toContain("/notes");
+    expect(response.headers.get("location")).toContain("/home");
   });
 
   it("redirects fully authenticated users away from /register and /forgot-password", async () => {
@@ -118,10 +118,10 @@ describe("proxy authenticated guest-page redirects", () => {
     const { proxy } = await import("@/proxy");
 
     const register = await proxy(new NextRequest("http://localhost:3001/register"));
-    expect(register.headers.get("location")).toContain("/notes");
+    expect(register.headers.get("location")).toContain("/home");
 
     const forgot = await proxy(new NextRequest("http://localhost:3001/forgot-password"));
-    expect(forgot.headers.get("location")).toContain("/notes");
+    expect(forgot.headers.get("location")).toContain("/home");
   });
 
   it("does not redirect unauthenticated users from guest pages", async () => {

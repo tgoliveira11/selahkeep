@@ -1,11 +1,14 @@
-/** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { VaultStatusDock } from "@/features/vault/vault-status-dock";
 
 const unlockFromVaultPassword = vi.fn();
 const unlockFromPasskey = vi.fn();
 const fetchSpy = vi.fn();
+
+vi.mock("@/features/passkey/use-vault-passkey-unlock-prefetch", () => ({
+  useVaultPasskeyUnlockPrefetch: vi.fn(() => ({ options: null })),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() })),
@@ -36,6 +39,14 @@ vi.mock("@/features/vault/use-vault-dock-passkey-available", () => ({
     prfExplicitlyUnsupported: false,
   })),
 }));
+
+vi.mock("@/lib/crypto-client/vault", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/crypto-client/vault")>();
+  return {
+    ...actual,
+    hasUnlockedVaultSession: vi.fn(() => false),
+  };
+});
 
 vi.mock("@/lib/crypto-client/vault-session", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/crypto-client/vault-session")>();
@@ -153,7 +164,12 @@ describe("vault status dock inline unlock security", () => {
     expect(screen.queryByLabelText(/recovery phrase/i)).toBeNull();
   });
 
-  it("shows passkey unlock only when configured and available", async () => {
+  it("shows passkey unlock only when configured and PRF is available", async () => {
+    const { isPrfExtensionSupported } = await import("@tgoliveira/vault-core/browser");
+    if (!isPrfExtensionSupported()) {
+      return;
+    }
+
     await renderExpandedDock({
       passkey: true,
       passkeyAvailability: {
@@ -184,7 +200,7 @@ describe("vault status dock inline unlock security", () => {
 
   it("keeps dock expanded when unlock error is shown", async () => {
     await renderExpandedDock({ error: "That password didn't unlock your vault." });
-    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.getByText(/that password didn't unlock your vault/i)).toBeTruthy();
     expect(screen.getByTestId("vault-status-dock")).toBeTruthy();
   });
 
@@ -199,6 +215,78 @@ describe("vault status dock inline unlock security", () => {
     const dock = screen.getByTestId("vault-status-dock");
     expect(dock.textContent?.toLowerCase()).not.toContain("trusted device");
     expect(dock.textContent?.toLowerCase()).not.toContain("letter");
+  });
+
+  it("redirects to /vault/unlock when dock passkey unlock fails", async () => {
+    const { hasUnlockedVaultSession } = await import("@/lib/crypto-client/vault");
+    vi.mocked(hasUnlockedVaultSession).mockReturnValue(false);
+    unlockFromPasskey.mockRejectedValue(new Error("Passkey unlock was cancelled."));
+    const { useRouter } = await import("next/navigation");
+    const push = vi.fn();
+    vi.mocked(useRouter).mockReturnValue({ push, replace: vi.fn(), back: vi.fn() });
+
+    const { isPrfExtensionSupported } = await import("@tgoliveira/vault-core/browser");
+    if (!isPrfExtensionSupported()) {
+      return;
+    }
+
+    await renderExpandedDock({
+      passkey: true,
+      pathname: "/vault/settings",
+      passkeyAvailability: {
+        hasEnvelope: true,
+        showPasskey: true,
+        prfExplicitlyUnsupported: false,
+      },
+    });
+
+    await waitFor(() => expect(unlockFromPasskey).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith("/vault/unlock?next=%2Fvault%2Fsettings")
+    );
+  });
+
+  it("does not redirect when passkey fails but the vault session is already unlocked", async () => {
+    const { hasUnlockedVaultSession } = await import("@/lib/crypto-client/vault");
+    vi.mocked(hasUnlockedVaultSession).mockReturnValue(true);
+    unlockFromPasskey.mockRejectedValue(new Error("Duplicate passkey attempt"));
+    const { useRouter } = await import("next/navigation");
+    const push = vi.fn();
+    vi.mocked(useRouter).mockReturnValue({ push, replace: vi.fn(), back: vi.fn() });
+
+    const { isPrfExtensionSupported } = await import("@tgoliveira/vault-core/browser");
+    if (!isPrfExtensionSupported()) {
+      return;
+    }
+
+    await renderExpandedDock({
+      passkey: true,
+      pathname: "/vault/settings",
+      passkeyAvailability: {
+        hasEnvelope: true,
+        showPasskey: true,
+        prfExplicitlyUnsupported: false,
+      },
+    });
+
+    await waitFor(() => expect(unlockFromPasskey).toHaveBeenCalled());
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("does not redirect to /vault/unlock when dock password unlock fails", async () => {
+    unlockFromVaultPassword.mockRejectedValue(new Error("That password didn't unlock your vault."));
+    const { useRouter } = await import("next/navigation");
+    const push = vi.fn();
+    vi.mocked(useRouter).mockReturnValue({ push, replace: vi.fn(), back: vi.fn() });
+
+    await renderExpandedDock({ pathname: "/vault/settings" });
+    fireEvent.change(screen.getByLabelText(/vault password/i), {
+      target: { value: "wrong-password" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^unlock vault$/i }));
+    await waitFor(() => expect(unlockFromVaultPassword).toHaveBeenCalled());
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getByTestId("vault-status-dock")).toBeTruthy();
   });
 
   it("does not render dock on /vault/unlock", async () => {

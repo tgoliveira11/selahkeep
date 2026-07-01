@@ -1,13 +1,13 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect } from "vitest";
-import { encryptNote } from "@/lib/crypto-client/notes";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { encryptNote } from "@/lib/crypto-client/notes";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { SENTINEL_PHRASE } from "./sentinel-phrase.test";
 import { USER_ID, NOTE_ID } from "@/test/helpers/fixtures";
 
 describe("sentinel phrase encrypted payload leakage", () => {
   it("does not expose sentinel phrase outside ciphertext fields", async () => {
     const vaultKey = await generateUserVaultKey();
-    setSessionVaultKey(vaultKey);
+    await unlockVaultSession(vaultKey);
 
     const payload = await encryptNote(USER_ID, NOTE_ID, {
       title: SENTINEL_PHRASE,

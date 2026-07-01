@@ -1,3 +1,4 @@
+import { userVaultKeysEqual } from "@tgoliveira/vault-core";
 import { describe, it, expect } from "vitest";
 import { generateUserVaultKey, VAULT_VERSION_V2 } from "@/lib/crypto-client/vault";
 import {
@@ -7,7 +8,6 @@ import {
   unwrapVaultKeyFromRecoveryPhrase,
 } from "@/lib/crypto-client/vault-envelope";
 import { generateRecoveryPhrase } from "@/lib/crypto-client/recovery-phrase";
-import { exportAesKey } from "@/lib/crypto-client/aes-gcm";
 
 const userId = "00000000-0000-4000-8000-000000000001";
 
@@ -29,9 +29,7 @@ describe("vault envelopes (LTG Phase 1)", () => {
     const unwrapped = await unwrapVaultKeyFromPassword(password, encryptedVaultKey, kdfMetadata, {
       applySession: false,
     });
-    const a = new Uint8Array(await exportAesKey(vaultKey));
-    const b = new Uint8Array(await exportAesKey(unwrapped));
-    expect(a).toEqual(b);
+    expect(await userVaultKeysEqual(vaultKey, unwrapped)).toBe(true);
   });
 
   it("wraps and unwraps UVK with recovery phrase envelope", async () => {
@@ -48,9 +46,7 @@ describe("vault envelopes (LTG Phase 1)", () => {
       kdfMetadata,
       { applySession: false }
     );
-    const a = new Uint8Array(await exportAesKey(vaultKey));
-    const b = new Uint8Array(await exportAesKey(unwrapped));
-    expect(a).toEqual(b);
+    expect(await userVaultKeysEqual(vaultKey, unwrapped)).toBe(true);
   });
 
   it("wrong vault password fails unwrap", async () => {

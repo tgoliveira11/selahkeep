@@ -4,34 +4,58 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { Button, useUiPaths } from "@tgoliveira/secure-auth/react";
+import {
+  OUTPOST_NAV_ITEMS,
+  SECURE_AUTH_NAV_ITEMS,
+  VAULT_NAV_ITEMS,
+} from "@/lib/admin/admin-hub-links";
 
-const ADMIN_NAV_ITEMS = [
-  { suffix: "", label: "Overview" },
-  { suffix: "/users", label: "Users" },
-  { suffix: "/waitlist", label: "Waitlist" },
-  { suffix: "/invites", label: "Invites" },
-  { suffix: "/locks", label: "Locks" },
-  { suffix: "/api-keys", label: "API Keys" },
-  { suffix: "/config", label: "Config" },
-] as const;
+type NavItem = { suffix: string; label: string };
 
-const OUTPOST_NAV_ITEMS = [
-  { suffix: "", label: "Outpost" },
-  { suffix: "/queue", label: "Email queue" },
-  { suffix: "/config", label: "Email config" },
-  { suffix: "/observability", label: "Observability" },
-] as const;
+function NavSection({
+  items,
+  base,
+  pathname,
+}: {
+  items: readonly NavItem[];
+  base: string;
+  pathname: string;
+}) {
+  return items.map(({ suffix, label }) => {
+    const href = `${base}${suffix}`;
+    const isActive = suffix === "" ? pathname === base : pathname.startsWith(href);
+    return (
+      <Link
+        key={`${base}${suffix}`}
+        href={href}
+        className={`whitespace-nowrap rounded px-3 py-1.5 text-sm transition-colors ${
+          isActive
+            ? "bg-[var(--card-muted)] font-medium text-[var(--foreground)]"
+            : "text-[var(--muted)] hover:text-[var(--foreground)]"
+        }`}
+      >
+        {label}
+      </Link>
+    );
+  });
+}
 
-export function AdminNav({ outpostAdminBase }: { outpostAdminBase: string }) {
+export function AdminNav({
+  outpostAdminBase,
+  vaultAdminBase,
+}: {
+  outpostAdminBase: string;
+  vaultAdminBase: string;
+}) {
   const resolved = useUiPaths();
   const pathname = usePathname();
-  const base = resolved.adminPanel ?? "/admin";
+  const secureAuthBase = resolved.adminPanel ?? "/admin";
 
   return (
     <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--card)]">
       <div className="mx-auto flex max-w-[1000px] items-center gap-4 px-6 py-0">
         <Link
-          href={base}
+          href={secureAuthBase}
           className="flex shrink-0 items-center gap-2 py-3 text-sm font-semibold text-[var(--foreground)]"
         >
           <span className="flex h-6 w-6 items-center justify-center rounded bg-[var(--danger)] text-[10px] font-bold text-white">
@@ -41,44 +65,11 @@ export function AdminNav({ outpostAdminBase }: { outpostAdminBase: string }) {
         </Link>
         <div className="h-5 w-px shrink-0 bg-[var(--border)]" />
         <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
-          {ADMIN_NAV_ITEMS.map(({ suffix, label }) => {
-            const href = `${base}${suffix}`;
-            const isActive = suffix === "" ? pathname === base : pathname.startsWith(href);
-            return (
-              <Link
-                key={suffix}
-                href={href}
-                className={`whitespace-nowrap rounded px-3 py-1.5 text-sm transition-colors ${
-                  isActive
-                    ? "bg-[var(--card-muted)] font-medium text-[var(--foreground)]"
-                    : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                }`}
-              >
-                {label}
-              </Link>
-            );
-          })}
+          <NavSection items={SECURE_AUTH_NAV_ITEMS} base={secureAuthBase} pathname={pathname} />
           <div className="mx-1 h-5 w-px shrink-0 bg-[var(--border)]" />
-          {OUTPOST_NAV_ITEMS.map(({ suffix, label }) => {
-            const href = `${outpostAdminBase}${suffix}`;
-            const isActive =
-              suffix === ""
-                ? pathname === outpostAdminBase
-                : pathname.startsWith(href);
-            return (
-              <Link
-                key={suffix}
-                href={href}
-                className={`whitespace-nowrap rounded px-3 py-1.5 text-sm transition-colors ${
-                  isActive
-                    ? "bg-[var(--card-muted)] font-medium text-[var(--foreground)]"
-                    : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                }`}
-              >
-                {label}
-              </Link>
-            );
-          })}
+          <NavSection items={OUTPOST_NAV_ITEMS} base={outpostAdminBase} pathname={pathname} />
+          <div className="mx-1 h-5 w-px shrink-0 bg-[var(--border)]" />
+          <NavSection items={VAULT_NAV_ITEMS} base={vaultAdminBase} pathname={pathname} />
         </nav>
         <div className="flex shrink-0 items-center gap-3 py-2">
           <Link

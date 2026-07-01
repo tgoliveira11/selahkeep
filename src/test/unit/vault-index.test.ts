@@ -1,3 +1,4 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   createEmptyVaultIndex,
@@ -18,8 +19,7 @@ import {
   deleteVaultTag,
   getActiveVaultEntries,
   getTrashedVaultEntries,
-} from "@/lib/crypto-client/vault-index";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+} from "@/lib/crypto-client/vault-index";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { USER_ID } from "@/test/helpers/fixtures";
 
 const baseEntry = {
@@ -42,7 +42,7 @@ describe("vault index", () => {
 
   beforeEach(async () => {
     vaultKey = await generateUserVaultKey();
-    setSessionVaultKey(vaultKey);
+    await unlockVaultSession(vaultKey);
   });
 
   it("adds and updates entries", () => {

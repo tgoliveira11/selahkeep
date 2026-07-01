@@ -1,3 +1,4 @@
+import { userVaultKeysEqual } from "@tgoliveira/vault-core";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   extractPasskeyPrfOutput,
@@ -46,9 +47,7 @@ describe("passkey vault crypto", () => {
     const prfOutput = crypto.getRandomValues(new Uint8Array(32));
     const envelope = await wrapVaultKeyForPasskey(vaultKey, prfOutput, USER_ID, USER_ID);
     const restored = await unwrapVaultKeyFromPasskey(envelope, prfOutput);
-    expect(await crypto.subtle.exportKey("raw", restored)).toEqual(
-      await crypto.subtle.exportKey("raw", vaultKey)
-    );
+    expect(await userVaultKeysEqual(restored, vaultKey)).toBe(true);
   });
 
   it("unlockVaultFromPasskeyEnvelope unlocks with PRF output only", async () => {

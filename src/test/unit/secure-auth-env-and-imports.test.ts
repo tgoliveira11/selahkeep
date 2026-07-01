@@ -179,7 +179,7 @@ describe("buildSecureAuthConfigFromEnv", () => {
 
     const withDefaults = buildSecureAuthConfigFromEnv(baseEnv, defaults);
     expect(withDefaults.auth?.redirectAuthenticatedFromGuestPages).toBe(true);
-    expect(withDefaults.auth?.authenticatedRedirectPath).toBe("/notes");
+    expect(withDefaults.auth?.authenticatedRedirectPath).toBe("/home");
 
     const withCustom = buildSecureAuthConfigFromEnv(
       {
@@ -212,7 +212,7 @@ describe("buildSecureAuthConfigFromEnv", () => {
 
     expect(config.appName).toBe("SelahKeep");
     expect(config.passwordPolicy.minLength).toBe(10);
-    expect(config.paths.afterLogin).toBe("/notes");
+    expect(config.paths.afterLogin).toBe("/home");
     expect(config.messages.loginDescription).toBe("Sign in to continue to your account.");
   });
 

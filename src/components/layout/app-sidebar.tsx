@@ -13,6 +13,7 @@ import { PRODUCT_NAME } from "@/lib/marketing/brand";
 import { isKanbanEnabled } from "@/lib/notes/kanban-config";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/ui/cn";
+import { VaultLockOverlayExclude } from "@/features/vault/vault-protected-shell";
 
 /** Library destinations (filtered views of the notes list), matching the mockup. */
 const LIBRARY: { href: string; view: string | null; label: string; icon: React.ReactNode }[] = [
@@ -110,14 +111,11 @@ export function AppSidebar() {
   const initial = (session?.user?.email ?? "?").charAt(0).toUpperCase();
 
   return (
-    // The <aside> stretches to the full content height (its card background
-    // fills the whole column, so there is no gap); the inner wrapper is the
-    // sticky, viewport-tall rail that actually holds the nav.
-    <aside
-      data-testid="app-sidebar"
-      className="hidden w-[248px] flex-none border-r border-[var(--border)] bg-[var(--card)] md:block"
-    >
-      <div className="sticky top-0 flex h-screen flex-col px-4 py-5">
+    <VaultLockOverlayExclude className="hidden md:block md:flex-none">
+      <aside
+        data-testid="app-sidebar"
+        className="sticky top-0 flex h-screen w-[248px] flex-col border-r border-[var(--border)] bg-[var(--card)] px-4 py-5"
+      >
       <Link
         href="/notes"
         className="mb-[18px] flex items-center gap-2 px-2 text-[17px] font-semibold tracking-[0.01em] text-[var(--primary)]"
@@ -236,7 +234,7 @@ export function AppSidebar() {
           </svg>
         </button>
       </div>
-      </div>
-    </aside>
+      </aside>
+    </VaultLockOverlayExclude>
   );
 }

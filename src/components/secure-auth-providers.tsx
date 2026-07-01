@@ -3,6 +3,7 @@
 import type { SecureAuthUIPublicConfig } from "@tgoliveira/secure-auth/react";
 import { SecureAuthUIProvider } from "@tgoliveira/secure-auth/react";
 import { SessionProvider } from "next-auth/react";
+import { VaultProviders } from "@/components/vault-providers";
 
 export function SecureAuthProviders({
   uiConfig,
@@ -16,7 +17,9 @@ export function SecureAuthProviders({
 
   return (
     <SessionProvider refetchInterval={refetchInterval}>
-      <SecureAuthUIProvider config={uiConfig}>{children}</SecureAuthUIProvider>
+      <SecureAuthUIProvider config={uiConfig}>
+        <VaultProviders>{children}</VaultProviders>
+      </SecureAuthUIProvider>
     </SessionProvider>
   );
 }

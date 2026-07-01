@@ -52,6 +52,6 @@ export const testSecureAuthUiConfig: SecureAuthUIPublicConfig = {
   },
   auth: {
     redirectAuthenticatedFromGuestPages: true,
-    authenticatedRedirectPath: "/notes",
+    authenticatedRedirectPath: "/home",
   },
 };

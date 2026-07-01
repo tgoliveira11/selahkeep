@@ -1,14 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  clearVaultAutoLockTimer,
-  configureVaultAutoLock,
-  lockVaultSession,
-  registerVaultBeforeAutoLock,
-  unlockVaultSession,
-  VAULT_INACTIVITY_MS,
-} from "@/lib/crypto-client/vault-session";
-import { saveEncryptedNoteDraft } from "@/lib/crypto-client/note-drafts";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { clearVaultAutoLockTimer, configureVaultAutoLock, lockVaultSession, registerVaultBeforeAutoLock, unlockVaultSession, VAULT_INACTIVITY_MS } from "@/lib/crypto-client/vault-session";
+import { saveEncryptedNoteDraft } from "@/lib/crypto-client/note-drafts";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 
 vi.mock("@/lib/crypto-client/note-drafts", () => ({
   saveEncryptedNoteDraft: vi.fn().mockResolvedValue(undefined),
@@ -18,7 +10,7 @@ describe("vault auto-lock draft security", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     clearVaultAutoLockTimer();
-    setSessionVaultKey(null);
+    lockVaultSession();
     configureVaultAutoLock();
     vi.mocked(saveEncryptedNoteDraft).mockClear();
   });
