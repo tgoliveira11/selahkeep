@@ -10,6 +10,23 @@ import {
 import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/marketing/brand";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import {
+  configureSelahkeepVaultSession,
+  lockVaultSession,
+  resetVaultSessionStoreForTests,
+} from "@/lib/crypto-client/vault-session";
+
+vi.mock("@/features/passkey/use-vault-passkey-unlock-prefetch", () => ({
+  useVaultPasskeyUnlockPrefetch: vi.fn(() => ({ options: null })),
+}));
+
+vi.mock("@/features/vault/use-vault-dock-passkey-available", () => ({
+  useVaultDockPasskeyAvailable: vi.fn(() => ({
+    hasEnvelope: false,
+    showPasskey: false,
+    prfExplicitlyUnsupported: false,
+  })),
+}));
 
 vi.mock("next-auth/react", () => ({
   useSession: vi.fn(() => ({ data: null, status: "unauthenticated" })),
@@ -53,25 +70,12 @@ vi.mock("@/features/vault/use-vault", () => ({
   })),
 }));
 
-vi.mock("@/lib/crypto-client/vault-session", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/crypto-client/vault-session")>();
-  return {
-    ...actual,
-    subscribeVaultSession: vi.fn(() => () => {}),
-    subscribeVaultActivityTimer: vi.fn(() => () => {}),
-    getVaultAutoLockRemainingMs: vi.fn(() => 14 * 60 * 1000 + 32 * 1000),
-    lockVaultSession: vi.fn(),
-    lockVaultSessionManually: vi.fn(),
-    registerVaultBeforeAutoLock: vi.fn(() => () => {}),
-    isVaultManuallyLocked: vi.fn(() => false),
-    wasVaultLockedByInactivity: vi.fn(() => false),
-    registerVaultUnloadGuard: vi.fn(() => () => {}),
-  };
-});
-
 describe("logged-in navigation", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    resetVaultSessionStoreForTests();
+    configureSelahkeepVaultSession();
+    lockVaultSession();
   });
 
   it("defines Notes, Vault, and Account primary links without Letters", () => {
@@ -94,6 +98,41 @@ describe("logged-in navigation", () => {
     expect(isLoggedInNavLinkActive("/vault/security", "/vault/settings")).toBe(true);
     expect(isLoggedInNavLinkActive("/vault/unlock", "/vault/settings")).toBe(true);
     expect(isLoggedInNavLinkActive("/vault/setup", "/vault/settings")).toBe(true);
+  });
+
+  it("places search and vault dock in the same header toolbar row on notes", async () => {
+    const { useSession } = await import("next-auth/react");
+    const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
+    vi.mocked(useSession).mockReturnValue({
+      data: { user: { id: "user-1", email: "user@example.com" } },
+      status: "authenticated",
+      update: vi.fn(),
+    });
+    vi.mocked(useVaultClientStatus).mockReturnValue({
+      status: "ready",
+      clientStatus: "unlocked",
+      setupPhase: "complete",
+      serverStatus: {
+        initialized: true,
+        setupPhase: "complete",
+        setupComplete: true,
+        vaultVersion: "vault-v2",
+        ltgSetupComplete: true,
+        hasVaultPassword: true,
+        availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: false },
+      },
+      recheck: vi.fn(),
+    } as ReturnType<typeof useVaultClientStatus>);
+
+    render(
+      <SiteShell>
+        <HomePage />
+      </SiteShell>
+    );
+
+    const toolbar = screen.getByTestId("header-toolbar-row");
+    expect(within(toolbar).getByTestId("header-search")).toBeTruthy();
+    expect(within(toolbar).getByTestId("vault-status-dock-handle")).toBeTruthy();
   });
 
   it("shows primary destinations in the desktop sidebar when signed in", async () => {
@@ -136,7 +175,7 @@ describe("logged-in navigation", () => {
     expect(within(sidebar).queryByRole("link", { name: /letters/i })).toBeNull();
   });
 
-  it("shows vault status bar below header when signed in and locked", async () => {
+  it("shows vault status dock in header toolbar when signed in and locked", async () => {
     const { useSession } = await import("next-auth/react");
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useSession).mockReturnValue({
@@ -167,9 +206,10 @@ describe("logged-in navigation", () => {
     );
 
     const header = screen.getByRole("banner");
-    const handle = within(header).getByTestId("vault-status-dock-handle");
+    const toolbar = within(header).getByTestId("header-toolbar-row");
+    const handle = within(toolbar).getByTestId("vault-status-dock-handle");
     expect(within(header).queryByRole("link", { name: /unlock vault/i })).toBeNull();
-    expect(within(handle).getByText("Vault closed")).toBeTruthy();
+    expect(within(handle).getByText("Vault locked")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
     const dock = screen.getByTestId("vault-status-dock");
     expect(within(dock).getByLabelText(/vault password/i)).toBeTruthy();
@@ -208,13 +248,14 @@ describe("logged-in navigation", () => {
     const header = screen.getByRole("banner");
     expect(within(header).queryByRole("link", { name: /unlock vault/i })).toBeNull();
     expect(within(header).queryByRole("button", { name: /^lock vault$/i })).toBeNull();
-    expect(within(header).queryByText(/vault locked/i)).toBeNull();
+    // Dock handle may show compact status copy; standalone lock/unlock controls stay out of the bar.
+    expect(within(header).getByTestId("vault-status-dock-handle")).toBeTruthy();
     expect(within(header).queryByText(/vault unlocked/i)).toBeNull();
     expect(within(header).queryByText(/vault not set up/i)).toBeNull();
     expect(within(header).queryByText(/setup incomplete/i)).toBeNull();
   });
 
-  it("shows lock now in status bar when vault is unlocked", async () => {
+  it("keeps vault dock in header toolbar when vault is unlocked", async () => {
     const { useSession } = await import("next-auth/react");
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useSession).mockReturnValue({
@@ -244,11 +285,9 @@ describe("logged-in navigation", () => {
       </SiteShell>
     );
 
-    const header = screen.getByRole("banner");
-    expect(within(header).queryByRole("button", { name: /^lock vault$/i })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
-    const dock = screen.getByTestId("vault-status-dock");
-    expect(within(dock).getByRole("button", { name: /lock now/i })).toBeTruthy();
+    const toolbar = screen.getByTestId("header-toolbar-row");
+    expect(within(toolbar).getByTestId("vault-status-dock-handle")).toBeTruthy();
+    expect(within(screen.getByRole("banner")).queryByRole("button", { name: /^lock vault$/i })).toBeNull();
   });
 
   it("does not show vault lock controls in header when vault is unlocked", async () => {

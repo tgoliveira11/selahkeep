@@ -8,8 +8,8 @@ import { SiteFooter } from "@/components/layout/site-footer";
  * Shared product shell. On `md+` for authenticated users a left sidebar
  * (`AppSidebar`) provides primary navigation; on small screens the header
  * menu + fixed bottom nav take over (the sidebar and bottom nav render
- * themselves only when signed in). The header stays as the top bar that hosts
- * the vault status dock.
+ * themselves only when signed in). The header top bar hosts search (notes)
+ * and the vault status dock on one row.
  */
 export function SiteShell({
   children,

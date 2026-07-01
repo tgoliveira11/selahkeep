@@ -10,8 +10,12 @@ describe("isVaultUnprotectedPath", () => {
     expect(isVaultUnprotectedPath("/home/welcome")).toBe(true);
   });
 
+  it("matches /vault/unlock exactly", () => {
+    expect(isVaultUnprotectedPath("/vault/unlock")).toBe(true);
+  });
+
   it("does not match vault-protected routes", () => {
     expect(isVaultUnprotectedPath("/notes")).toBe(false);
-    expect(isVaultUnprotectedPath("/vault/unlock")).toBe(false);
+    expect(isVaultUnprotectedPath("/vault/settings")).toBe(false);
   });
 });

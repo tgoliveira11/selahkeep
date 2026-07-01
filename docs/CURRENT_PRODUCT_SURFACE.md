@@ -28,7 +28,7 @@ Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`;
 | `/verify-email` | Guest / session | Shipped | Email verification |
 | `/check-email` | Guest | Shipped | Post-register notice |
 | `/account-deleted` | Public | Shipped | Post-deletion confirmation |
-| `/home` | Session | Shipped | Logged-in home while vault is locked (no vault unlock required) |
+| `/home` | Session | Shipped | Post-login landing when vault is locked or not configured (direct visits redirect to `/notes`) |
 | `/notes` | Session + vault | Shipped | Notes list |
 | `/notes/new` | Session + vault | Shipped | Create note |
 | `/notes/[id]` | Session + vault | Shipped | View / edit note |
@@ -37,7 +37,7 @@ Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`;
 | `/notes/remembrance` | Session + vault | Shipped | Remembrance workflow |
 | `/notes/weekly-reflection` | Session + vault | Shipped | Weekly reflection |
 | `/vault/setup` | Session | Shipped | Vault + recovery phrase setup |
-| `/vault/unlock` | Session | Shipped | Vault unlock |
+| `/vault/unlock` | Session (no vault gate) | Shipped | Vault unlock |
 | `/vault/settings` | Session + vault | Shipped | Vault passkeys, recovery |
 | `/vault/security` | Session + vault | Shipped | Security events |
 | `/vault/recovery` | Session | Shipped | Recovery phrase unlock |

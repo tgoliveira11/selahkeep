@@ -9,6 +9,7 @@ import {
   isLoggedInNavLinkActive,
 } from "@/lib/navigation/logged-in-nav";
 import { cn } from "@/lib/ui/cn";
+import { VaultLockOverlayExclude } from "@/features/vault/vault-protected-shell";
 
 /** SVG glyphs for the three primary destinations, matching the design mockup. */
 const NAV_ICONS: Record<string, React.ReactNode> = {
@@ -54,6 +55,7 @@ export function MobileBottomNav() {
   if (!isFullyAuthenticatedSession(session)) return null;
 
   return (
+    <VaultLockOverlayExclude>
     <nav
       aria-label="Primary"
       data-testid="mobile-bottom-nav"
@@ -79,5 +81,6 @@ export function MobileBottomNav() {
         );
       })}
     </nav>
+    </VaultLockOverlayExclude>
   );
 }

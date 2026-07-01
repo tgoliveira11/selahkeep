@@ -17,10 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **`@tgoliveira/vault-core@^1.0.0`.** Dependency bump from `^0.2.0`; session, React UI, rate limiting, and admin surfaces now integrate with the 1.0.0 contract.
 - **Vault session provider.** `VaultSessionProvider` at the app root; `vault-session.ts` is a thin adapter over `@tgoliveira/vault-core/browser` (async `unlockVaultSession`, non-extractable UVK after unlock, SelahKeep hooks for note cache clear and pre-lock handlers).
-- **Vault-core React UI.** Status dock (`VaultStatusDock` + `VaultDockQuickUnlock`), full unlock page (`VaultUnlockPanel`), protected layout gate (`VaultProtectedGate` + `VaultLockOverlayExclude`), setup/settings password fields (`VaultPasswordSetupFields`, `VaultAutoLockPreferenceField`), and `@import "@tgoliveira/vault-core/vault-admin.css"` in global styles.
+- **Vault-core React UI.** Status dock (`VaultStatusDock` + `VaultDockQuickUnlock`), full unlock page (`VaultUnlockPanel`), protected layout gate (`VaultProtectedGate` + `VaultLockOverlayExclude` on the left sidebar and vault dock), setup/settings password fields (`VaultPasswordSetupFields`, `VaultAutoLockPreferenceField`), and `@import "@tgoliveira/vault-core/vault-admin.css"` in global styles.
 - **Vault admin UI (8 pages).** `/admin/vault/*` — overview, config, session, security, password policy, crypto policy, profile, env template — wired through `buildVaultAdminConfigFromEnv()` / `getVaultAdminConfig()`.
 - **Vault rate limiting.** Client unlock paths use `withVaultUnlockRateLimit`; vault HTTP routes use `consumeVaultApiRateLimit` (setup, recovery-phrase replace, unlock-envelope) with limits from admin env config.
-- **Logged-in home (`/home`).** Auth-only landing when the vault is locked — same unlock hero and privacy reassurance previously shown on `/notes`; excluded from `VaultProtectedGate` so the page stays fully interactive while locked.
+- **Logged-in home (`/home`).** Post-login landing only when the vault is locked (or not yet configured) — unlock hero and privacy reassurance; excluded from `VaultProtectedGate` so the page stays fully interactive on first sign-in. Direct visits to `/home` without a fresh login redirect to `/notes`.
 - **Legacy vault-v1 unlock panel.** `LegacyVaultUnlockPanel` retained for pre–vault-v2 accounts on the unlock route when LTG setup is incomplete.
 
 ### Changed
@@ -28,11 +28,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Vault session semantics.** Auto-lock countdown renews only on explicit **Stay unlocked** / `touchVaultSession()` — global pointer/keyboard activity listeners removed (`registerActivityGuard: false`).
 - **Vault unlock return paths.** `buildVaultUnlockHref` / `readVaultUnlockReturnPath` use query param **`next`** (vault-core default); legacy **`returnTo`** is still accepted when reading callbacks.
 - **Post-login routing.** Default authenticated redirect is **`/home`** (was `/notes`); users with an unlocked vault on `/home` are sent to `/notes`.
-- **`/notes` when vault is locked** redirects to `/home` instead of rendering the locked-state hero inline.
+- **Vault locked on protected routes.** `VaultProtectedGate` overlay on vault-protected screens (e.g. `/notes`); `/home` is shown only immediately after login when the vault is closed, not as a redirect from other routes.
+- **Vault lock overlay exclusions.** `VaultLockOverlayExclude` wraps the desktop left sidebar, mobile bottom nav, and the full authenticated header (vault-core consumer-demo pattern) so the expanded dock stays above the lock overlay.
+- **`/vault/unlock` vault gate.** Unlock page is session-only (excluded from `VaultProtectedGate`); dock passkey auto-starts when configured and redirects to `/vault/unlock` on passkey failure from the dock.
+
+### Fixed
+
+- **Dock passkey unlock on `/vault/settings`.** A duplicate auto-start (Strict Mode / remount after unlock) could succeed once then fail and redirect to `/vault/unlock` even though the vault was open; concurrent attempts are deduped and failure redirect is skipped when the session is already unlocked.
 - **Vault setup and settings** use vault-core password policy components and auto-lock preference field; password policy comes from admin env config.
 - **Unlock orchestration (`useVault`).** All unlock methods run through vault-core rate limiting; recovery-phrase envelope KDF upgrade on unlock persists via `replaceRecoveryPhrase` when vault-core recommends an upgrade.
 - **KDF metadata schema** accepts Argon2id **`kdf-v2`** envelopes in API validation.
 - **Recovery phrase drill** derives keys via vault-core `encryptionKey` from `deriveRecoveryPhraseKeyFromMetadata` (1.0.0 dual-key envelope shape).
+- **Vault status dock placement.** On desktop, the dock shares the header toolbar row with the notes search bar (search left, dock right) on all authenticated routes; the duplicate dock row below the header was removed.
 
 ### Removed
 

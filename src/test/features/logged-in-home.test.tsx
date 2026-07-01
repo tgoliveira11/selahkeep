@@ -15,6 +15,11 @@ vi.mock("@/features/vault/use-require-vault", () => ({
   useRequireVault: vi.fn(),
 }));
 
+vi.mock("@/lib/auth/post-login-home", () => ({
+  consumePostLoginHomePending: vi.fn(() => true),
+  markPostLoginHomePending: vi.fn(),
+}));
+
 vi.mock("@/features/vault/use-vault-client-status", () => ({
   useVaultClientStatus: vi.fn(),
 }));
@@ -73,5 +78,14 @@ describe("logged-in home (/home)", () => {
 
     render(<LoggedInHomePage />);
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/notes"));
+  });
+
+  it("redirects to /notes when visit is not immediately after login", async () => {
+    const { consumePostLoginHomePending } = await import("@/lib/auth/post-login-home");
+    vi.mocked(consumePostLoginHomePending).mockReturnValue(false);
+
+    render(<LoggedInHomePage />);
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/notes"));
+    expect(screen.queryByTestId("notes-vault-locked-state")).toBeNull();
   });
 });

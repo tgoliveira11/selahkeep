@@ -170,7 +170,7 @@ describe("vault status UI", () => {
     expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
   });
 
-  it("notes page redirects to /home when vault is locked", async () => {
+  it("notes page renders notes shell when vault is locked (overlay handled by layout gate)", async () => {
     const replace = vi.fn();
     const { useRouter } = await import("next/navigation");
     vi.mocked(useRouter).mockReturnValue({ push: vi.fn(), replace, back: vi.fn() });
@@ -178,7 +178,8 @@ describe("vault status UI", () => {
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
     render(<NotesPage />);
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/home"));
+    expect(await screen.findByRole("heading", { name: /^notes$/i })).toBeTruthy();
+    expect(replace).not.toHaveBeenCalled();
     expect(screen.queryByTestId("notes-vault-protected-message")).toBeNull();
   });
 
@@ -398,11 +399,11 @@ describe("nav vault status dock", () => {
     );
 
     const handle = within(screen.getByRole("banner")).getByTestId("vault-status-dock-handle");
-    expect(within(handle).getByText("Vault closed")).toBeTruthy();
+    expect(within(handle).getByText("Vault locked")).toBeTruthy();
     expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
     const dock = screen.getByTestId("vault-status-dock");
-    expect(within(dock).getByText(/Vault closed/)).toBeTruthy();
+    expect(within(dock).getByText(/Vault locked/)).toBeTruthy();
     expect(within(dock).getByLabelText(/vault password/i)).toBeTruthy();
     expect(within(dock).queryByRole("tab", { name: /recovery phrase/i })).toBeNull();
     expect(

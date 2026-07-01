@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -9,15 +9,17 @@ import { VaultLockedHomeContent } from "@/features/vault/vault-locked-home-conte
 import { NotesWelcome } from "@/features/vault/notes-welcome";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
+import { consumePostLoginHomePending } from "@/lib/auth/post-login-home";
 
 /**
- * Logged-in home when the vault is locked. Auth-only (no vault unlock required).
- * Unlocked users are sent to /notes; vault setup prompts stay on dedicated flows.
+ * Post-login landing only (vault locked or not yet configured). Not a general locked-state
+ * destination — vault-protected routes use {@link VaultProtectedGate} overlay when locked.
  */
 export default function LoggedInHomePage() {
   const vault = useRequireVault();
   const vaultClient = useVaultClientStatus();
   const router = useRouter();
+  const [isPostLoginHome] = useState(() => consumePostLoginHomePending());
 
   const clientStatus = vaultClient.status === "ready" ? vaultClient.clientStatus : null;
 
@@ -33,12 +35,19 @@ export default function LoggedInHomePage() {
     }
   }, [clientStatus, router]);
 
+  useEffect(() => {
+    if (!isPostLoginHome && clientStatus !== null && clientStatus !== "setup_incomplete") {
+      router.replace("/notes");
+    }
+  }, [clientStatus, isPostLoginHome, router]);
+
   if (
     vault.status === "loading" ||
     vault.status === "redirecting" ||
     vaultClient.status === "loading" ||
     clientStatus === "unlocked" ||
-    clientStatus === "setup_incomplete"
+    clientStatus === "setup_incomplete" ||
+    (!isPostLoginHome && clientStatus !== null)
   ) {
     return (
       <AuthenticatedPage width="notes">

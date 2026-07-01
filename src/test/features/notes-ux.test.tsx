@@ -247,7 +247,7 @@ describe("notes UX", () => {
       expect(await screen.findByLabelText(/search/i)).toBeTruthy();
     });
 
-    it("redirects to /home when vault is locked", async () => {
+    it("renders notes shell when vault is locked (overlay handled by layout gate)", async () => {
       const replace = vi.fn();
       const { useRouter } = await import("next/navigation");
       vi.mocked(useRouter).mockReturnValue({ push: vi.fn(), replace, back: vi.fn() });
@@ -257,7 +257,8 @@ describe("notes UX", () => {
       vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
       render(<NotesPage />);
-      await waitFor(() => expect(replace).toHaveBeenCalledWith("/home"));
+      expect(await screen.findByRole("heading", { name: /^notes$/i })).toBeTruthy();
+      expect(replace).not.toHaveBeenCalled();
       expect(screen.queryByTestId("notes-vault-locked-state")).toBeNull();
     });
 

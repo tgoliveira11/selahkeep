@@ -112,12 +112,6 @@ export default function NotesPage() {
     Boolean(vaultUnlocked && index && !filters.search.trim())
   );
 
-  useEffect(() => {
-    if (clientStatus === "locked") {
-      router.replace("/home");
-    }
-  }, [clientStatus, router]);
-
   useEffect(() => subscribeVaultSession(() => {
     setFilters(defaultNoteFilters);
     setSmartFilter(DEFAULT_SMART_FILTER);
@@ -305,15 +299,7 @@ export default function NotesPage() {
     );
   }
 
-  if (clientStatus === "locked") {
-    return (
-      <AuthenticatedPage width="notes">
-        <LoadingState label="Opening SelahKeep" />
-      </AuthenticatedPage>
-    );
-  }
-
-  if (clientStatus && clientStatus !== "unlocked") {
+  if (clientStatus && clientStatus !== "unlocked" && clientStatus !== "locked") {
     if (clientStatus === "not_configured") {
       return (
         <PageLayout>

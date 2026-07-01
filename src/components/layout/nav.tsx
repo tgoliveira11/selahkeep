@@ -17,7 +17,6 @@ import {
 import { cn } from "@/lib/ui/cn";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
 import { VaultStatusDock } from "@/features/vault/vault-status-dock";
-import { VaultLockOverlayExclude } from "@/features/vault/vault-protected-shell";
 import { HeaderSearch } from "@/components/layout/header-search";
 
 export function Nav() {
@@ -47,7 +46,6 @@ export function Nav() {
   }
 
   return (
-    <VaultLockOverlayExclude>
     <header
       className={cn(
         // Authenticated: the top bar (search + vault dock) with a divider below,
@@ -61,8 +59,6 @@ export function Nav() {
       <div
         className={cn(
           "flex items-center justify-between gap-3 px-4",
-          // Fixed height so the top bar stays consistent whether or not the
-          // search field is shown (the dock is vertically centered in it).
           authenticated ? "h-16 md:px-6 lg:px-8" : "mx-auto max-w-4xl py-3"
         )}
       >
@@ -78,12 +74,20 @@ export function Nav() {
           <span>{PRODUCT_NAME}</span>
         </Link>
 
-        {/* Desktop search lives in the top bar, beside the vault dock. */}
-        {authenticated && (
-          <div className="hidden flex-1 pr-[13.5rem] md:block">
-            <HeaderSearch />
+        {/* Desktop: search (left) and vault dock (right) share one toolbar row. */}
+        {authenticated ? (
+          <div
+            className="hidden min-w-0 flex-1 items-center gap-3 md:flex"
+            data-testid="header-toolbar-row"
+          >
+            <div className="min-w-0 flex-1">
+              <HeaderSearch />
+            </div>
+            <div className="vc-status-dock-host shrink-0">
+              <VaultStatusDock />
+            </div>
           </div>
-        )}
+        ) : null}
 
         {authenticated ? (
           <>
@@ -194,15 +198,6 @@ export function Nav() {
           </div>
         </nav>
       )}
-      {/* The vault status dock is a desktop-only affordance. On mobile it is
-          fully hidden (and non-interactive); mobile unlock happens on the
-          dedicated /vault/unlock page instead. */}
-      {authenticated ? (
-        <div className="hidden md:block">
-          <VaultStatusDock />
-        </div>
-      ) : null}
     </header>
-    </VaultLockOverlayExclude>
   );
 }

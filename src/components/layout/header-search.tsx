@@ -5,10 +5,10 @@ import { useNoteSearchContext } from "@/features/notes/note-search-context";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 
 /**
- * Desktop top-bar search (mockup): lives in the header beside the vault dock
- * and drives the notes list via the shared search context. Only shown on the
- * notes list with an unlocked vault — searching only makes sense where notes
- * are actually listed.
+ * Desktop top-bar search: shares the header toolbar row with the vault dock
+ * (search left, dock right) and drives the notes list via shared search context.
+ * Only shown on the notes list with an unlocked vault — searching only makes
+ * sense where notes are actually listed.
  */
 export function HeaderSearch() {
   const { query, setQuery } = useNoteSearchContext();
