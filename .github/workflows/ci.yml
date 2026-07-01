@@ -38,9 +38,12 @@ jobs:
         run: npm ci
 
       - name: Validate (lint, coverage, build)
-        run: npm run validate
+        run: |
+          npm run lint
+          npm run test:coverage -- --pool=forks --maxWorkers=1
+          npm run build
         env:
-          NODE_OPTIONS: --max-old-space-size=4096
+          NODE_OPTIONS: --max-old-space-size=8192
           NEXTAUTH_SECRET: ci-test-secret-for-github-actions-only
           DATABASE_URL: postgresql://letters:letters_dev@localhost:5435/letters_to_god
           TWO_FACTOR_SECRET_ENCRYPTION_KEY: ci-test-2fa-encryption-key-actions-only
