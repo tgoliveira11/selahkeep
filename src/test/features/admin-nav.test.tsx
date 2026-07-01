@@ -27,7 +27,7 @@ import { AdminNav } from "@/components/admin-nav";
 
 describe("AdminNav", () => {
   it("links Outpost sections under OUTPOST_ADMIN_PATH", () => {
-    render(<AdminNav outpostAdminBase="/admin/outpost" />);
+    render(<AdminNav outpostAdminBase="/admin/outpost" vaultAdminBase="/admin/vault" />);
 
     expect(screen.getByRole("link", { name: "Outpost" })).toHaveAttribute(
       "href",
@@ -45,5 +45,42 @@ describe("AdminNav", () => {
       "href",
       "/admin/outpost/observability"
     );
+  });
+
+  it("links Vault admin sections when showVaultAdmin is true", () => {
+    render(
+      <AdminNav
+        outpostAdminBase="/admin/outpost"
+        vaultAdminBase="/admin/vault"
+        showVaultAdmin
+      />
+    );
+
+    expect(screen.getByRole("link", { name: "Vault" })).toHaveAttribute("href", "/admin/vault");
+    expect(screen.getByRole("link", { name: "Vault config" })).toHaveAttribute(
+      "href",
+      "/admin/vault/config"
+    );
+    expect(screen.getByRole("link", { name: "Vault env" })).toHaveAttribute(
+      "href",
+      "/admin/vault/env-template"
+    );
+    expect(screen.getByRole("link", { name: "Vault security" })).toHaveAttribute(
+      "href",
+      "/admin/vault/security"
+    );
+  });
+
+  it("hides Vault admin links when showVaultAdmin is false", () => {
+    render(
+      <AdminNav
+        outpostAdminBase="/admin/outpost"
+        vaultAdminBase="/admin/vault"
+        showVaultAdmin={false}
+      />
+    );
+
+    expect(screen.queryByRole("link", { name: "Vault" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Vault config" })).toBeNull();
   });
 });

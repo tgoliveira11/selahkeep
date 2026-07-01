@@ -1,17 +1,23 @@
 import { AdminNav } from "@/components/admin-nav";
 import { OutpostAdminProvider } from "@/components/outpost-admin-provider";
 import { buildOutpostEnvConfig } from "@/lib/env/outpost-from-env";
+import { getVaultAdminConfig } from "@/lib/env/vault-from-env";
 import { ensureAdminBootstrapAccess } from "@/lib/secure-auth";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await ensureAdminBootstrapAccess();
 
   const { adminPath: outpostAdminPath } = buildOutpostEnvConfig();
+  const vaultAdminConfig = getVaultAdminConfig();
 
   return (
     <OutpostAdminProvider adminPanelPath={outpostAdminPath}>
       <div className="min-h-screen bg-[var(--background)]">
-        <AdminNav outpostAdminBase={outpostAdminPath} />
+        <AdminNav
+          outpostAdminBase={outpostAdminPath}
+          vaultAdminBase={vaultAdminConfig.basePath}
+          showVaultAdmin={vaultAdminConfig.enabled}
+        />
         <main className="mx-auto max-w-[1000px] px-6 py-8">{children}</main>
       </div>
     </OutpostAdminProvider>

@@ -22,7 +22,27 @@ const OUTPOST_NAV_ITEMS = [
   { suffix: "/observability", label: "Observability" },
 ] as const;
 
-export function AdminNav({ outpostAdminBase }: { outpostAdminBase: string }) {
+/** Vault-core admin screens under `/admin/vault/*` (see `@tgoliveira/vault-core` paths). */
+const VAULT_NAV_ITEMS = [
+  { suffix: "", label: "Vault" },
+  { suffix: "/config", label: "Vault config" },
+  { suffix: "/env-template", label: "Vault env" },
+  { suffix: "/crypto-policy", label: "Vault crypto" },
+  { suffix: "/profile", label: "Vault profile" },
+  { suffix: "/session", label: "Vault session" },
+  { suffix: "/password-policy", label: "Vault passwords" },
+  { suffix: "/security", label: "Vault security" },
+] as const;
+
+export function AdminNav({
+  outpostAdminBase,
+  vaultAdminBase,
+  showVaultAdmin = false,
+}: {
+  outpostAdminBase: string;
+  vaultAdminBase: string;
+  showVaultAdmin?: boolean;
+}) {
   const resolved = useUiPaths();
   const pathname = usePathname();
   const base = resolved.adminPanel ?? "/admin";
@@ -79,6 +99,29 @@ export function AdminNav({ outpostAdminBase }: { outpostAdminBase: string }) {
               </Link>
             );
           })}
+          {showVaultAdmin ? (
+            <>
+              <div className="mx-1 h-5 w-px shrink-0 bg-[var(--border)]" />
+              {VAULT_NAV_ITEMS.map(({ suffix, label }) => {
+                const href = `${vaultAdminBase}${suffix}`;
+                const isActive =
+                  suffix === "" ? pathname === vaultAdminBase : pathname.startsWith(href);
+                return (
+                  <Link
+                    key={suffix}
+                    href={href}
+                    className={`whitespace-nowrap rounded px-3 py-1.5 text-sm transition-colors ${
+                      isActive
+                        ? "bg-[var(--card-muted)] font-medium text-[var(--foreground)]"
+                        : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
+            </>
+          ) : null}
         </nav>
         <div className="flex shrink-0 items-center gap-3 py-2">
           <Link

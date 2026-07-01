@@ -54,6 +54,14 @@ Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`;
 | `/admin/outpost/queue` | Session + platform admin | Shipped | Outbox queue + manual worker |
 | `/admin/outpost/config` | Session + platform admin | Shipped | Outpost runtime config |
 | `/admin/outpost/observability` | Session + platform admin | Shipped | Outbox metrics and worker runs |
+| `/admin/vault` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Vault admin hub (vault-core) |
+| `/admin/vault/config` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Effective vault configuration |
+| `/admin/vault/env-template` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Copy-ready vault env block |
+| `/admin/vault/crypto-policy` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | KDF and encryption policy |
+| `/admin/vault/profile` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Crypto profile and PRF defaults |
+| `/admin/vault/session` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Auto-lock and session policy |
+| `/admin/vault/password-policy` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Vault password rules |
+| `/admin/vault/security` | Session + admin role | Shipped (when `VAULT_ADMIN_ENABLED`) | Zero-knowledge boundaries |
 | `/api-docs` | Dev / `ENABLE_API_DOCS` | Shipped | Swagger UI (off in prod by default) |
 
 ---

@@ -37,6 +37,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Dock passkey unlock on `/vault/settings`.** A duplicate auto-start (Strict Mode / remount after unlock) could succeed once then fail and redirect to `/vault/unlock` even though the vault was open; concurrent attempts are deduped and failure redirect is skipped when the session is already unlocked.
 - **Authenticated header scroll.** The top toolbar (search + vault dock) stays pinned while page content scrolls underneath; sticky lived on `VaultLockOverlayExclude`, which vault-core styles as `position: relative`.
 - **Desktop sidebar height.** The left rail stays viewport-tall while scrolling long pages (sticky `h-screen` on the aside) so the card background no longer stops above the bottom of the screen.
+
+### Changed
+
+- **Vault admin navigation.** When `VAULT_ADMIN_ENABLED=true`, `/admin/vault/*` screens appear in the existing admin header nav (alongside secure-auth and Outpost sections).
 - **Vault setup and settings** use vault-core password policy components and auto-lock preference field; password policy comes from admin env config.
 - **Unlock orchestration (`useVault`).** All unlock methods run through vault-core rate limiting; recovery-phrase envelope KDF upgrade on unlock persists via `replaceRecoveryPhrase` when vault-core recommends an upgrade.
 - **KDF metadata schema** accepts Argon2id **`kdf-v2`** envelopes in API validation.
