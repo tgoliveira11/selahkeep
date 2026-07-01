@@ -7,9 +7,9 @@ import { VaultLockOverlayExclude } from "@/features/vault/vault-protected-shell"
 import { cn } from "@/lib/ui/cn";
 
 /**
- * Sticky authenticated header chrome. Vault dock handle lives inside `Nav`.
- * Matches vault-core consumer-demo: the whole header sits inside
- * `VaultLockOverlayExclude` so the expanded dock stays above the lock overlay.
+ * Authenticated header chrome. Vault dock handle lives inside `Nav`.
+ * The toolbar row uses `.authenticated-header` (sticky) so content scrolls beneath it;
+ * `VaultLockOverlayExclude` wraps the header so the dock stays above the lock overlay.
  */
 export function AppHeaderChrome() {
   const { data: session, status } = useSession();
@@ -17,7 +17,7 @@ export function AppHeaderChrome() {
 
   if (signedIn) {
     return (
-      <VaultLockOverlayExclude className="sticky top-0 overflow-visible">
+      <VaultLockOverlayExclude className="overflow-visible">
         <Nav />
       </VaultLockOverlayExclude>
     );

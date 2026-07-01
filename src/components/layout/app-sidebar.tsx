@@ -111,13 +111,11 @@ export function AppSidebar() {
   const initial = (session?.user?.email ?? "?").charAt(0).toUpperCase();
 
   return (
-    <VaultLockOverlayExclude>
-    {/* The aside stretches to full column height; the inner wrapper is the sticky rail. */}
-    <aside
-      data-testid="app-sidebar"
-      className="hidden w-[248px] flex-none border-r border-[var(--border)] bg-[var(--card)] md:block"
-    >
-      <div className="sticky top-0 flex h-screen flex-col px-4 py-5">
+    <VaultLockOverlayExclude className="hidden md:block md:flex-none">
+      <aside
+        data-testid="app-sidebar"
+        className="sticky top-0 flex h-screen w-[248px] flex-col border-r border-[var(--border)] bg-[var(--card)] px-4 py-5"
+      >
       <Link
         href="/notes"
         className="mb-[18px] flex items-center gap-2 px-2 text-[17px] font-semibold tracking-[0.01em] text-[var(--primary)]"
@@ -236,8 +234,7 @@ export function AppSidebar() {
           </svg>
         </button>
       </div>
-      </div>
-    </aside>
+      </aside>
     </VaultLockOverlayExclude>
   );
 }
