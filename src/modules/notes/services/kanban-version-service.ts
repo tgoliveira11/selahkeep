@@ -9,6 +9,7 @@ import {
   assertKanbanVersionAad,
   AadValidationError,
 } from "@/modules/security/policies/aad-validation";
+import { isMissingRelationError } from "@/lib/db/missing-relation-error";
 import { safeLogger } from "@/lib/logger";
 import { NotFoundError } from "@/modules/notes/services/note-service";
 
@@ -23,10 +24,7 @@ export class KanbanVersionsUnavailableError extends Error {
 }
 
 function isMissingVersionsTable(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  const e = error as { code?: string; message?: string; cause?: { code?: string } };
-  if (e.code === "42P01" || e.cause?.code === "42P01") return true;
-  return typeof e.message === "string" && /note_kanban_versions.*does not exist/i.test(e.message);
+  return isMissingRelationError(error, "note_kanban_versions");
 }
 
 function warnMissingVersionsTable(endpoint: string): void {

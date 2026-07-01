@@ -26,6 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Kanban `GET /api/kanban` false 503 when tables exist.** `isMissingKanbanTable` treated any Postgres `42P01` (and column-missing messages containing `note_kanban_boards … does not exist`) as “table missing”, so partial schema drift or unrelated undefined-relation errors surfaced as `503` even after `npm run db:check-kanban` reported OK. Detection now requires `relation "note_kanban_boards" does not exist`, ignores missing-column errors, and `GET /api/kanban` list degrades to `[]` (matching note-version list behavior). `npm run db:check-kanban` now verifies required columns and runs probe `SELECT`s; confirm Vercel `DATABASE_URL` matches the database you migrate (see `docs/VERCEL_ENVIRONMENT_VARIABLES.md`).
+
 - **Kanban column header actions wrapped to multiple lines.** Column toolbars now use compact icon-only controls on a single `flex-nowrap` row (add card, mark done, move left/right, delete) via the shared `ToolbarButton` pattern.
 
 - **Kanban `/kanban` list hid note-bound boards.** The page only queried `scope=standalone`, so boards generated from notes never appeared. The list now loads all vault boards, shows standalone and note-bound sections separately, and explains where each type lives.

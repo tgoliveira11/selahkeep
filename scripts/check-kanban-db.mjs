@@ -22,6 +22,19 @@ function loadEnvLocal() {
   }
 }
 
+function describeDatabaseTarget(connectionString) {
+  try {
+    const url = new URL(connectionString);
+    const database = url.pathname.replace(/^\//, "") || "(default)";
+    console.log(`Database target: ${url.hostname}/${database}`);
+    console.log(
+      "Ensure this matches Vercel Production DATABASE_URL (see docs/VERCEL_ENVIRONMENT_VARIABLES.md)."
+    );
+  } catch {
+    console.log("Database target: (could not parse DATABASE_URL host)");
+  }
+}
+
 loadEnvLocal();
 
 const connectionString = process.env.DATABASE_URL;
@@ -30,9 +43,52 @@ if (!connectionString) {
   process.exit(1);
 }
 
+describeDatabaseTarget(connectionString);
+
 const requiredTables = ["note_kanban_boards", "note_kanban_versions"];
 
+const requiredBoardColumns = [
+  "id",
+  "note_id",
+  "vault_id",
+  "encrypted_board",
+  "encrypted_wrapped_key",
+  "board_encryption_version",
+  "version_number",
+  "created_at",
+  "updated_at",
+];
+
+const requiredVersionColumns = [
+  "id",
+  "board_id",
+  "note_id",
+  "vault_id",
+  "version_number",
+  "encrypted_board",
+  "encrypted_wrapped_key",
+  "board_encryption_version",
+  "created_at",
+];
+
 const sql = postgres(connectionString, { max: 1 });
+
+async function assertColumns(tableName, requiredColumns) {
+  const columns = await sql`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = ${tableName}
+  `;
+  const columnNames = new Set(columns.map((row) => row.column_name));
+  const missingColumns = requiredColumns.filter((name) => !columnNames.has(name));
+  if (missingColumns.length > 0) {
+    console.error(`Missing ${tableName} column(s):`, missingColumns.join(", "));
+    console.error("Run: npm run db:migrate  (applies drizzle/0016_note_kanban.sql)");
+    process.exit(1);
+  }
+  console.log(`${tableName} columns: OK`);
+}
 
 try {
   await sql`SELECT 1`;
@@ -52,6 +108,21 @@ try {
     process.exit(1);
   }
   console.log("Kanban tables: OK");
+
+  await assertColumns("note_kanban_boards", requiredBoardColumns);
+  await assertColumns("note_kanban_versions", requiredVersionColumns);
+
+  await sql`
+    SELECT id, note_id, vault_id, encrypted_board, encrypted_wrapped_key, board_encryption_version, version_number, created_at, updated_at
+    FROM note_kanban_boards
+    LIMIT 0
+  `;
+  await sql`
+    SELECT id, board_id, note_id, vault_id, version_number, encrypted_board, encrypted_wrapped_key, board_encryption_version, created_at
+    FROM note_kanban_versions
+    LIMIT 0
+  `;
+  console.log("Kanban probe queries: OK");
 } catch (error) {
   console.error("Kanban DB check failed:", error instanceof Error ? error.message : error);
   process.exit(1);

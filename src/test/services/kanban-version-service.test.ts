@@ -138,7 +138,9 @@ describe("kanban version service", () => {
   });
 
   it("list degrades to [] when the versions table is missing", async () => {
-    mocks.findByBoardId.mockRejectedValue({ code: "42P01" });
+    mocks.findByBoardId.mockRejectedValue(
+      Object.assign(new Error('relation "note_kanban_versions" does not exist'), { code: "42P01" })
+    );
     await expect(kanbanVersionService.list(KANBAN_BOARD_ID, USER_ID)).resolves.toEqual([]);
   });
 

@@ -11,10 +11,12 @@ import {
   assertKanbanBoardAad,
   AadValidationError,
 } from "@/modules/security/policies/aad-validation";
+import { isMissingRelationError } from "@/lib/db/missing-relation-error";
 import { safeLogger } from "@/lib/logger";
 import { NotFoundError } from "@/modules/notes/services/note-service";
 
 const MAX_ENCRYPTED_BOARD_PAYLOAD_SIZE = 512 * 1024;
+const KANBAN_BOARDS_RELATION = "note_kanban_boards";
 
 /** Raised when the `note_kanban_boards` table is not yet migrated. */
 export class KanbanUnavailableError extends Error {
@@ -33,15 +35,7 @@ export class ConflictError extends Error {
 }
 
 function isMissingKanbanTable(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  const e = error as {
-    code?: string;
-    message?: string;
-    cause?: { code?: string; message?: string };
-  };
-  if (e.code === "42P01" || e.cause?.code === "42P01") return true;
-  const message = [e.message, e.cause?.message].filter((part): part is string => typeof part === "string").join(" ");
-  return /note_kanban_boards.*does not exist/i.test(message);
+  return isMissingRelationError(error, KANBAN_BOARDS_RELATION);
 }
 
 function isDuplicateNoteBoard(error: unknown): boolean {
@@ -127,17 +121,26 @@ export const kanbanService = {
 
   async list(userId: string, query: ListKanbanBoardsQuery = {}) {
     const vault = await requireVaultForUser(userId);
-    return withKanbanTable("GET /api/kanban", async () => {
+    if (query.noteId) {
+      await requireNoteInVault(query.noteId, vault.id);
+    }
+
+    try {
       if (query.noteId) {
-        await requireNoteInVault(query.noteId, vault.id);
         const board = await kanbanRepository.findByNoteId(query.noteId, vault.id);
         return board ? [board] : [];
       }
       if (query.scope === "standalone") {
-        return kanbanRepository.findStandaloneByVaultId(vault.id);
+        return await kanbanRepository.findStandaloneByVaultId(vault.id);
       }
-      return kanbanRepository.findByVaultId(vault.id);
-    });
+      return await kanbanRepository.findByVaultId(vault.id);
+    } catch (error) {
+      if (isMissingKanbanTable(error)) {
+        warnMissingKanbanTable("GET /api/kanban");
+        return [];
+      }
+      throw error;
+    }
   },
 
   async getById(boardId: string, userId: string) {

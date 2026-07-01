@@ -139,7 +139,7 @@ describe("kanban service", () => {
   });
 
 
-  it("throws KanbanUnavailableError for drizzle-wrapped missing-table errors", async () => {
+  it("returns [] for drizzle-wrapped missing-table errors on list", async () => {
     mocks.findByVaultId.mockRejectedValue(
       Object.assign(new Error("Failed query: select from note_kanban_boards"), {
         cause: Object.assign(new Error('relation "note_kanban_boards" does not exist'), {
@@ -147,13 +147,37 @@ describe("kanban service", () => {
         }),
       })
     );
-    await expect(kanbanService.list(USER_ID)).rejects.toBeInstanceOf(KanbanUnavailableError);
+    await expect(kanbanService.list(USER_ID)).resolves.toEqual([]);
   });
 
-  it("throws KanbanUnavailableError when the board table is missing", async () => {
+  it("lists all boards as [] when the board table is missing", async () => {
     mocks.findByVaultId.mockRejectedValue(
       Object.assign(new Error('relation "note_kanban_boards" does not exist'), { code: "42P01" })
     );
-    await expect(kanbanService.list(USER_ID)).rejects.toBeInstanceOf(KanbanUnavailableError);
+    await expect(kanbanService.list(USER_ID)).resolves.toEqual([]);
+  });
+
+  it("lists note-bound boards as [] when the board table is missing", async () => {
+    mocks.findByNoteId.mockRejectedValue(
+      Object.assign(new Error('relation "note_kanban_boards" does not exist'), { code: "42P01" })
+    );
+    await expect(kanbanService.list(USER_ID, { noteId: NOTE_ID })).resolves.toEqual([]);
+  });
+
+  it("does not map missing kanban columns to KanbanUnavailableError", async () => {
+    mocks.findByNoteId.mockRejectedValue(
+      Object.assign(
+        new Error('column "version_number" of relation "note_kanban_boards" does not exist'),
+        { code: "42703" }
+      )
+    );
+    await expect(kanbanService.list(USER_ID, { noteId: NOTE_ID })).rejects.toThrow(/version_number/);
+  });
+
+  it("does not map unrelated 42P01 errors to KanbanUnavailableError", async () => {
+    mocks.findByVaultId.mockRejectedValue(
+      Object.assign(new Error('relation "notes" does not exist'), { code: "42P01" })
+    );
+    await expect(kanbanService.list(USER_ID)).rejects.toThrow(/notes/);
   });
 });
