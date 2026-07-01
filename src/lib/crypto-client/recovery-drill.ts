@@ -2,7 +2,7 @@ import type { EncryptedPayload, KdfMetadata } from "@/lib/validation/encrypted-p
 import {
   decryptField,
   importAesKey,
-  exportAesKey,
+  userVaultKeysEqual,
   type EncryptedPayload as VaultCoreEncryptedPayload,
 } from "@tgoliveira/vault-core";
 import { getSessionVaultKey } from "./vault";
@@ -22,7 +22,10 @@ async function unwrapVaultKeyOnly(
   if (kdfMetadata.kdf !== "argon2id") {
     throw new Error("Recovery phrase envelope requires Argon2id metadata");
   }
-  const derivedKey = await deriveRecoveryPhraseKeyFromMetadata(recoveryPhrase, kdfMetadata);
+  const { encryptionKey: derivedKey } = await deriveRecoveryPhraseKeyFromMetadata(
+    recoveryPhrase,
+    kdfMetadata
+  );
   const keyBytes = base64UrlToBytes(
     await decryptField(encryptedVaultKey as VaultCoreEncryptedPayload, derivedKey)
   );
@@ -30,13 +33,7 @@ async function unwrapVaultKeyOnly(
 }
 
 async function cryptoKeysEqual(a: CryptoKey, b: CryptoKey): Promise<boolean> {
-  const left = await exportAesKey(a);
-  const right = await exportAesKey(b);
-  if (left.length !== right.length) return false;
-  for (let i = 0; i < left.length; i++) {
-    if (left[i] !== right[i]) return false;
-  }
-  return true;
+  return userVaultKeysEqual(a, b);
 }
 
 /**

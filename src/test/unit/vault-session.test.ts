@@ -1,31 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  lockVaultSession,
-  lockVaultSessionManually,
-  unlockVaultSession,
-  scheduleVaultAutoLock,
-  touchVaultSession,
-  configureVaultAutoLock,
-  isVaultManuallyLocked,
-  subscribeVaultSession,
-  registerVaultBeforeAutoLock,
-  wasVaultLockedByInactivity,
-  VAULT_INACTIVITY_MS,
-  getVaultAutoLockRemainingMs,
-  subscribeVaultActivityTimer,
-  clearVaultAutoLockTimer,
-  suspendVaultAutoLock,
-  resetVaultSessionStoreForTests,
-} from "@/lib/crypto-client/vault-session";
-import { generateUserVaultKey, isVaultUnlocked, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { lockVaultSession, lockVaultSessionManually, unlockVaultSession, scheduleVaultAutoLock, touchVaultSession, configureVaultAutoLock, configureSelahkeepVaultSession, isVaultManuallyLocked, subscribeVaultSession, registerVaultBeforeAutoLock, wasVaultLockedByInactivity, VAULT_INACTIVITY_MS, getVaultAutoLockRemainingMs, subscribeVaultActivityTimer, clearVaultAutoLockTimer, suspendVaultAutoLock, resetVaultSessionStoreForTests } from "@/lib/crypto-client/vault-session";import { generateUserVaultKey, isVaultUnlocked } from "@/lib/crypto-client/vault";
 import { setCachedNoteBody, getCachedNoteBody } from "@/features/notes/eager-decrypt-notes";
 
 describe("vault session auto-lock", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     resetVaultSessionStoreForTests();
+    configureSelahkeepVaultSession();
     clearVaultAutoLockTimer();
-    setSessionVaultKey(null);
+    lockVaultSession();
   });
 
   afterEach(() => {
@@ -35,7 +18,7 @@ describe("vault session auto-lock", () => {
 
   it("locks vault after inactivity timeout", async () => {
     const key = await generateUserVaultKey();
-    unlockVaultSession(key);
+    await unlockVaultSession(key);
     expect(isVaultUnlocked()).toBe(true);
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
     await vi.runAllTimersAsync();
@@ -44,7 +27,7 @@ describe("vault session auto-lock", () => {
   });
 
   it("manual lock clears vault key and blocks silent unlock until explicit unlock", async () => {
-    setSessionVaultKey(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
     lockVaultSession();
     expect(isVaultUnlocked()).toBe(false);
     expect(isVaultManuallyLocked()).toBe(true);
@@ -52,7 +35,7 @@ describe("vault session auto-lock", () => {
 
   it("explicit unlock clears manual lock flag", async () => {
     lockVaultSession();
-    unlockVaultSession(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
     expect(isVaultUnlocked()).toBe(true);
     expect(isVaultManuallyLocked()).toBe(false);
   });
@@ -80,7 +63,7 @@ describe("vault session auto-lock", () => {
   it("notifies activity timer subscribers on touch", async () => {
     const listener = vi.fn();
     const unsubscribe = subscribeVaultActivityTimer(listener);
-    unlockVaultSession(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
     expect(listener).toHaveBeenCalled();
     touchVaultSession();
     expect(listener.mock.calls.length).toBeGreaterThanOrEqual(2);
@@ -89,7 +72,7 @@ describe("vault session auto-lock", () => {
 
   it("returns remaining time while unlocked", async () => {
     const key = await generateUserVaultKey();
-    unlockVaultSession(key);
+    await unlockVaultSession(key);
     const remaining = getVaultAutoLockRemainingMs();
     expect(remaining).not.toBeNull();
     expect(remaining).toBeGreaterThan(VAULT_INACTIVITY_MS - 1000);
@@ -102,7 +85,7 @@ describe("vault session auto-lock", () => {
 
   it("touchVaultSession resets inactivity timer", async () => {
     const key = await generateUserVaultKey();
-    unlockVaultSession(key);
+    await unlockVaultSession(key);
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS - 1000);
     touchVaultSession();
     vi.advanceTimersByTime(2000);
@@ -115,10 +98,10 @@ describe("vault session auto-lock", () => {
   it("configureVaultAutoLock callback runs only on inactivity lock", async () => {
     const callback = vi.fn();
     configureVaultAutoLock(callback);
-    unlockVaultSession(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
     lockVaultSession();
     expect(callback).not.toHaveBeenCalled();
-    unlockVaultSession(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
     await vi.runAllTimersAsync();
     expect(callback).toHaveBeenCalledTimes(1);
@@ -127,7 +110,7 @@ describe("vault session auto-lock", () => {
 
   it("lockVaultSession clears eager-decrypt note body cache", async () => {
     setCachedNoteBody("n1", "cached");
-    unlockVaultSession(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
     lockVaultSession();
     expect(getCachedNoteBody("n1")).toBeUndefined();
   });
@@ -135,7 +118,7 @@ describe("vault session auto-lock", () => {
   it("runs beforeAutoLock handlers before inactivity lock", async () => {
     const beforeLock = vi.fn();
     registerVaultBeforeAutoLock(beforeLock);
-    unlockVaultSession(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
     await vi.runAllTimersAsync();
     expect(beforeLock).toHaveBeenCalledTimes(1);
@@ -143,30 +126,30 @@ describe("vault session auto-lock", () => {
   });
 
   it("marks inactivity lock with wasVaultLockedByInactivity", async () => {
-    unlockVaultSession(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
     await vi.runAllTimersAsync();
     expect(wasVaultLockedByInactivity()).toBe(true);
   });
 
   it("manual lock does not set inactivity flag", async () => {
-    unlockVaultSession(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
     lockVaultSessionManually();
     expect(wasVaultLockedByInactivity()).toBe(false);
   });
 
   it("unlock clears inactivity flag", async () => {
-    unlockVaultSession(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
     await vi.runAllTimersAsync();
     expect(wasVaultLockedByInactivity()).toBe(true);
-    unlockVaultSession(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
     expect(wasVaultLockedByInactivity()).toBe(false);
   });
 
   it("keeps only one inactivity timer", async () => {
     const key = await generateUserVaultKey();
-    unlockVaultSession(key);
+    await unlockVaultSession(key);
     touchVaultSession();
     touchVaultSession();
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS - 1000);
@@ -180,7 +163,7 @@ describe("vault session auto-lock", () => {
 
   it("does not lock while auto-lock is suspended", async () => {
     const key = await generateUserVaultKey();
-    unlockVaultSession(key);
+    await unlockVaultSession(key);
     const release = suspendVaultAutoLock();
     vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
     await vi.runAllTimersAsync();
@@ -193,7 +176,7 @@ describe("vault session auto-lock", () => {
 
   it("resumes the inactivity timer after the last suspend is released", async () => {
     const key = await generateUserVaultKey();
-    unlockVaultSession(key);
+    await unlockVaultSession(key);
     const releaseA = suspendVaultAutoLock();
     const releaseB = suspendVaultAutoLock();
     releaseA();

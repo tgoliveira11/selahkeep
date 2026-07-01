@@ -12,7 +12,8 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
-import { VaultLockedState } from "@/features/vault/vault-locked-state";
+import { VaultAutoLockPreferenceField, useVaultAutoLockPreference } from "@tgoliveira/vault-core/react";
+import { getVaultAdminConfig, getVaultAutoLockMinutesFromConfig } from "@/lib/env/vault-from-env";
 import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
 import { useVaultSettings } from "@/features/notes/use-vault-settings";
 import type { VaultUnlockBehavior } from "@/lib/crypto-client/vault-settings";
@@ -40,6 +41,22 @@ const OPTIONS: Array<{
       "After unlock, eagerly decrypt every note body in memory. Faster browsing when opening notes, but higher memory exposure on this device until you lock the vault.",
   },
 ];
+
+function VaultAutoLockSettings() {
+  const adminMinutes = getVaultAutoLockMinutesFromConfig();
+  const preference = useVaultAutoLockPreference(adminMinutes);
+
+  return (
+    <VaultAutoLockPreferenceField
+      value={preference.minutes}
+      onChange={preference.setMinutes}
+      adminMaxMinutes={preference.adminMaxMinutes}
+      minMinutes={preference.minMinutes}
+      adminDefaultMinutes={adminMinutes}
+      usingUserPreference={preference.usingUserPreference}
+    />
+  );
+}
 
 export default function VaultSettingsPage() {
   const vault = useRequireVault();
@@ -105,15 +122,13 @@ export default function VaultSettingsPage() {
           title="Vault settings"
           description="Control how your vault behaves after unlock on this device."
         />
-        {clientStatus === "locked" ? (
-          <VaultLockedState variant="vault-settings" returnTo="/vault/settings" />
-        ) : (
+        {clientStatus !== "locked" ? (
           <VaultStatusPrompt
             clientStatus={clientStatus}
             context="settings"
             returnTo="/vault/settings"
           />
-        )}
+        ) : null}
       </PageLayout>
     );
   }
@@ -158,6 +173,10 @@ export default function VaultSettingsPage() {
               Unlock behavior updated for this vault.
             </Alert>
           )}
+
+          <Card className="space-y-3 border-dashed p-5">
+            <VaultAutoLockSettings />
+          </Card>
 
           <Card className="space-y-3 border-dashed">
             <h2 className="font-medium">Passkey vault unlock</h2>

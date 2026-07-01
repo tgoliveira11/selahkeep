@@ -92,7 +92,7 @@ export async function unwrapVaultKeyFromRecovery(
   const keyBytes = base64UrlToBytes(await decryptField(encryptedVaultKey, derivedKey));
   const vaultKey = await importAesKey(keyBytes);
   if (options?.applySession ?? true) {
-    setUnlockedVaultSession({ userVaultKey: vaultKey, method: "recovery_phrase" });
+    await setUnlockedVaultSession({ userVaultKey: vaultKey, method: "recovery_phrase" });
   }
   return vaultKey;
 }

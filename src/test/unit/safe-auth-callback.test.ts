@@ -13,25 +13,30 @@ describe("sanitizeAuthCallbackUrl", () => {
     expect(sanitizeAuthCallbackUrl("/admin/users")).toBe("/admin/users");
   });
 
-  it("defaults to /notes when path is missing or invalid", () => {
-    expect(sanitizeAuthCallbackUrl(null)).toBe("/notes");
-    expect(sanitizeAuthCallbackUrl(undefined)).toBe("/notes");
-    expect(sanitizeAuthCallbackUrl("")).toBe("/notes");
-    expect(sanitizeAuthCallbackUrl("https://evil.test/notes")).toBe("/notes");
-    expect(sanitizeAuthCallbackUrl("//evil.test/notes")).toBe("/notes");
-    expect(sanitizeAuthCallbackUrl("javascript:alert(1)")).toBe("/notes");
+  it("defaults to /home when path is missing or invalid", () => {
+    expect(sanitizeAuthCallbackUrl(null)).toBe("/home");
+    expect(sanitizeAuthCallbackUrl(undefined)).toBe("/home");
+    expect(sanitizeAuthCallbackUrl("")).toBe("/home");
+    expect(sanitizeAuthCallbackUrl("https://evil.test/notes")).toBe("/home");
+    expect(sanitizeAuthCallbackUrl("//evil.test/notes")).toBe("/home");
+    expect(sanitizeAuthCallbackUrl("javascript:alert(1)")).toBe("/home");
   });
 
-  it("rejects auth loop paths and defaults to /notes", () => {
-    expect(sanitizeAuthCallbackUrl("/login")).toBe("/notes");
-    expect(sanitizeAuthCallbackUrl("/login/2fa")).toBe("/notes");
-    expect(sanitizeAuthCallbackUrl("/login/complete")).toBe("/notes");
-    expect(sanitizeAuthCallbackUrl("/auth/two-factor")).toBe("/notes");
+  it("allows /home and /notes as safe callback paths", () => {
+    expect(sanitizeAuthCallbackUrl("/home")).toBe("/home");
+    expect(sanitizeAuthCallbackUrl("/notes")).toBe("/notes");
+  });
+
+  it("rejects auth loop paths and defaults to /home", () => {
+    expect(sanitizeAuthCallbackUrl("/login")).toBe("/home");
+    expect(sanitizeAuthCallbackUrl("/login/2fa")).toBe("/home");
+    expect(sanitizeAuthCallbackUrl("/login/complete")).toBe("/home");
+    expect(sanitizeAuthCallbackUrl("/auth/two-factor")).toBe("/home");
   });
 
   it("rejects vault unlock paths", () => {
-    expect(sanitizeAuthCallbackUrl("/vault/unlock")).toBe("/notes");
-    expect(sanitizeAuthCallbackUrl("/vault/unlock?returnTo=%2Fnotes")).toBe("/notes");
+    expect(sanitizeAuthCallbackUrl("/vault/unlock")).toBe("/home");
+    expect(sanitizeAuthCallbackUrl("/vault/unlock?returnTo=%2Fnotes")).toBe("/home");
   });
 
   it("preserves query string for safe paths", () => {

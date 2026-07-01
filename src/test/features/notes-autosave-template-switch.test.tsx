@@ -1,3 +1,4 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 /** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -6,8 +7,7 @@ import {
   saveEncryptedNoteDraft,
   loadEncryptedNoteDraft,
 } from "@/lib/crypto-client/note-drafts";
-import { encryptField } from "@/lib/crypto-client/aes-gcm";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { encryptField } from "@/lib/crypto-client/aes-gcm";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 
 const confirmMock = vi.fn(() => true);
 const useSearchParams = vi.fn(() => new URLSearchParams());
@@ -292,7 +292,7 @@ describe("SelahKeep notes autosave and template switching", () => {
 
     it("persists encrypted payloads in draft store", async () => {
       const key = await generateUserVaultKey();
-      setSessionVaultKey(key);
+      await unlockVaultSession(key);
       const encrypted = await encryptField("secret", key, {
         userId: "user-1",
         resourceId: "user-1",

@@ -54,7 +54,7 @@ export async function unwrapVaultKeyFromPasskey(
       );
 
   if (options?.applySession ?? true) {
-    setUnlockedVaultSession({ userVaultKey: vaultKey, method: "passkey_prf" });
+    await setUnlockedVaultSession({ userVaultKey: vaultKey, method: "passkey_prf" });
   }
   return vaultKey;
 }
@@ -82,7 +82,7 @@ export async function unlockVaultFromPasskeyEnvelope(
       );
 
   if (options?.applySession ?? true) {
-    setUnlockedVaultSession({ userVaultKey: vaultKey, method: "passkey_prf" });
+    await setUnlockedVaultSession({ userVaultKey: vaultKey, method: "passkey_prf" });
   }
   return vaultKey;
 }

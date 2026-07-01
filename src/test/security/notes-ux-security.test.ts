@@ -1,9 +1,9 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
 import { encryptNote } from "@/lib/crypto-client/notes";
-import { encryptVaultIndex } from "@/lib/crypto-client/vault-index";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { encryptVaultIndex } from "@/lib/crypto-client/vault-index";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { USER_ID, NOTE_ID } from "@/test/helpers/fixtures";
 
 const root = path.resolve(__dirname, "../../..");
@@ -24,7 +24,7 @@ function listSourceFiles(target: string, acc: string[] = []): string[] {
 describe("notes UX security regression", () => {
   it("encrypts note titles at rest", async () => {
     const vaultKey = await generateUserVaultKey();
-    setSessionVaultKey(vaultKey);
+    await unlockVaultSession(vaultKey);
     const encrypted = await encryptNote(USER_ID, NOTE_ID, {
       title: "Secret title",
       body: "Secret body",
@@ -35,7 +35,7 @@ describe("notes UX security regression", () => {
 
   it("encrypts category and tag names in the vault index", async () => {
     const vaultKey = await generateUserVaultKey();
-    setSessionVaultKey(vaultKey);
+    await unlockVaultSession(vaultKey);
     const encrypted = await encryptVaultIndex(
       {
         version: 2,

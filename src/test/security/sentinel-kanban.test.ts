@@ -1,3 +1,4 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, beforeEach } from "vitest";
 import { encryptNote } from "@/lib/crypto-client/notes";
 import {
@@ -6,8 +7,7 @@ import {
   generateBoardKey,
   wrapBoardKey,
 } from "@/lib/crypto-client/kanban";
-import type { KanbanBoardPlaintext } from "@/lib/notes/kanban-types";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import type { KanbanBoardPlaintext } from "@/lib/notes/kanban-types";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { SENTINEL_PHRASE } from "./sentinel-phrase.test";
 import { NOTE_ID, USER_ID, VERSION_ID } from "@/test/helpers/fixtures";
 
@@ -49,7 +49,7 @@ function sentinelBoard(scope: "note" | "standalone"): KanbanBoardPlaintext {
 
 describe("sentinel phrase kanban encryption", () => {
   beforeEach(async () => {
-    setSessionVaultKey(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
   });
 
   it("never exposes sentinel plaintext in note-bound board or version payloads", async () => {

@@ -1,10 +1,47 @@
 import { clearNoteBodyCache } from "@/features/notes/eager-decrypt-notes";
 import {
-  getVaultAutoLockTimeoutMs,
-  VAULT_INACTIVITY_MS,
-} from "@/lib/vault/vault-auto-lock-config";
+  assertUserVaultKeyNonExtractable,
+  exportUserVaultKey,
+  importUserVaultKey,
+} from "@tgoliveira/vault-core";
+import {
+  clearVaultAutoLockTimer,
+  configureVaultSession,
+  getSessionVaultKey,
+  getVaultAutoLockMinutes,
+  getVaultAutoLockRemainingMs,
+  isVaultManuallyLocked,
+  isVaultUnlocked,
+  lockVaultSession as coreLockVaultSession,
+  lockVaultSessionManually as coreLockVaultSessionManually,
+  registerVaultUnloadGuard,
+  resetVaultSessionLockState as coreResetVaultSessionLockState,
+  scheduleVaultAutoLock as coreScheduleVaultAutoLock,
+  subscribeVaultSession as coreSubscribeVaultSession,
+  suppressVaultActivity as coreSuppressVaultActivity,
+  touchVaultSession as coreTouchVaultSession,
+  unlockVaultSession as coreUnlockVaultSession,
+} from "@tgoliveira/vault-core/browser";
+import {
+  readUserVaultAutoLockMinutes,
+  resolveVaultAutoLockMinutesPreference,
+} from "@tgoliveira/vault-core/browser";
+import { getVaultAutoLockMinutesFromConfig } from "@/lib/env/vault-from-env";
+import { VAULT_INACTIVITY_MS as LEGACY_VAULT_INACTIVITY_MS } from "@/lib/vault/vault-auto-lock-config";
 
-export { VAULT_INACTIVITY_MS };
+export { LEGACY_VAULT_INACTIVITY_MS as VAULT_INACTIVITY_MS };
+
+export {
+  configureVaultSession,
+  getSessionVaultKey,
+  getVaultAutoLockMinutes,
+  getVaultAutoLockRemainingMs,
+  isVaultManuallyLocked,
+  isVaultUnlocked,
+  registerVaultUnloadGuard,
+  clearVaultAutoLockTimer,
+  coreSuppressVaultActivity as suppressVaultActivity,
+};
 
 export type VaultUnlockMethod = "password" | "recovery_phrase" | "passkey_prf";
 
@@ -20,128 +57,122 @@ export type VaultSessionState = {
 
 type BeforeAutoLockHandler = () => void | Promise<void>;
 
-type VaultSessionStore = {
-  sessionVaultKey: CryptoKey | null;
-  manuallyLocked: boolean;
-  lockedByInactivity: boolean;
-  unlockedAt: number;
-  lastActivityAt: number;
-  unlockMethod?: VaultUnlockMethod;
-  inactivityTimer: ReturnType<typeof setTimeout> | null;
-  /** Ref-counted holds (e.g. voice model load) pause the inactivity timer. */
-  autoLockSuspendCount: number;
-  onAutoLock: (() => void) | null;
-  listeners: Set<(state: VaultSessionState) => void>;
-  activityListeners: Set<() => void>;
-  beforeAutoLockHandlers: Set<BeforeAutoLockHandler>;
-  unloadGuardRegistered: boolean;
-};
+let unlockedAt = 0;
+let unlockMethod: VaultUnlockMethod | undefined;
+let lockedByInactivity = false;
+let autoLockSuspendCount = 0;
+let onAutoLockCallback: (() => void) | null = null;
+let preLockTimer: ReturnType<typeof setTimeout> | null = null;
+let lockInProgressFromApp = false;
 
-const VAULT_SESSION_STORE_KEY = "__selahkeepVaultSessionStore";
+const beforeAutoLockHandlers = new Set<BeforeAutoLockHandler>();
+const sessionSnapshotListeners = new Set<(state: VaultSessionState) => void>();
+const activityListeners = new Set<() => void>();
 
-function createVaultSessionStore(): VaultSessionStore {
-  return {
-    sessionVaultKey: null,
-    manuallyLocked: false,
-    lockedByInactivity: false,
-    unlockedAt: 0,
-    lastActivityAt: 0,
-    unlockMethod: undefined,
-    inactivityTimer: null,
-    autoLockSuspendCount: 0,
-    onAutoLock: null,
-    listeners: new Set(),
-    activityListeners: new Set(),
-    beforeAutoLockHandlers: new Set(),
-    unloadGuardRegistered: false,
-  };
-}
-
-function getVaultSessionStore(): VaultSessionStore {
-  const globalRecord = globalThis as typeof globalThis & {
-    [VAULT_SESSION_STORE_KEY]?: VaultSessionStore;
-  };
-  if (!globalRecord[VAULT_SESSION_STORE_KEY]) {
-    globalRecord[VAULT_SESSION_STORE_KEY] = createVaultSessionStore();
-    if (process.env.NODE_ENV === "development") {
-      console.info("vault session module initialized");
-    }
-  }
-  return globalRecord[VAULT_SESSION_STORE_KEY]!;
-}
-
-function buildVaultSessionSnapshot(store: VaultSessionStore): VaultSessionState {
-  const hasUserVaultKey = store.sessionVaultKey !== null;
-  const unlocked = hasUserVaultKey && !store.manuallyLocked;
+function buildVaultSessionSnapshot(): VaultSessionState {
+  const hasUserVaultKey = getSessionVaultKey() !== null;
+  const unlocked = hasUnlockedVaultSession();
   return {
     status: unlocked ? "unlocked" : "locked",
     hasUserVaultKey,
-    unlockedAt: unlocked ? store.unlockedAt : undefined,
-    lastActivityAt: unlocked ? store.lastActivityAt : undefined,
-    unlockMethod: unlocked ? store.unlockMethod : undefined,
+    unlockedAt: unlocked ? unlockedAt : undefined,
+    lastActivityAt: unlocked ? Date.now() - (getVaultAutoLockRemainingMs() ?? 0) : undefined,
+    unlockMethod: unlocked ? unlockMethod : undefined,
   };
 }
 
 function notifyVaultSessionChange(): void {
-  const store = getVaultSessionStore();
-  const snapshot = buildVaultSessionSnapshot(store);
+  const snapshot = buildVaultSessionSnapshot();
   if (process.env.NODE_ENV === "development") {
     console.info(`vault session status changed: ${snapshot.status}`);
   }
-  for (const listener of store.listeners) {
+  for (const listener of sessionSnapshotListeners) {
     listener(snapshot);
   }
 }
 
+function notifyActivityChange(): void {
+  for (const listener of activityListeners) {
+    listener();
+  }
+}
+
+function clearPreLockTimer(): void {
+  if (preLockTimer) {
+    clearTimeout(preLockTimer);
+    preLockTimer = null;
+  }
+}
+
+async function runBeforeAutoLockHandlers(): Promise<void> {
+  const handlers = [...beforeAutoLockHandlers];
+  await Promise.all(handlers.map((handler) => handler()));
+}
+
+function schedulePreLockHandlers(): void {
+  clearPreLockTimer();
+  if (!hasUnlockedVaultSession() || autoLockSuspendCount > 0) return;
+  const remaining = getVaultAutoLockRemainingMs();
+  if (remaining === null) return;
+  const fireIn = Math.max(0, remaining - 50);
+  preLockTimer = setTimeout(() => {
+    void runBeforeAutoLockHandlers();
+  }, fireIn);
+}
+
+/** @internal tests and explicit timer refresh after unlock */
+export function scheduleVaultAutoLock(): void {
+  if (!hasUnlockedVaultSession() || autoLockSuspendCount > 0) return;
+  coreScheduleVaultAutoLock();
+  notifyActivityChange();
+  schedulePreLockHandlers();
+}
+
 export function getVaultSessionSnapshot(): VaultSessionState {
-  return buildVaultSessionSnapshot(getVaultSessionStore());
+  return buildVaultSessionSnapshot();
 }
 
 export function getUserVaultKey(): CryptoKey | null {
-  return getVaultSessionStore().sessionVaultKey;
+  return getSessionVaultKey();
 }
 
-export function getSessionVaultKey(): CryptoKey | null {
-  return getUserVaultKey();
-}
-
-/** Test/setup helper — does not clear manual lock. Prefer setUnlockedVaultSession for unlock flows. */
-export function setSessionVaultKey(key: CryptoKey | null): void {
-  const store = getVaultSessionStore();
-  store.sessionVaultKey = key;
+/** @deprecated Tests only — prefer unlockVaultSession / setUnlockedVaultSession. */
+export async function setSessionVaultKey(key: CryptoKey | null): Promise<void> {
   if (key === null) {
-    store.unlockedAt = 0;
-    store.unlockMethod = undefined;
+    lockVaultSession();
+    return;
   }
-  notifyVaultSessionChange();
+  await setUnlockedVaultSession({ userVaultKey: key, method: "password" });
 }
 
 export function lockVault(): void {
-  const store = getVaultSessionStore();
-  store.sessionVaultKey = null;
-  store.unlockedAt = 0;
-  store.unlockMethod = undefined;
-}
-
-export function isVaultUnlocked(): boolean {
-  return getVaultSessionStore().sessionVaultKey !== null;
+  unlockedAt = 0;
+  unlockMethod = undefined;
 }
 
 export function hasUnlockedVaultSession(): boolean {
-  const store = getVaultSessionStore();
-  return store.sessionVaultKey !== null && !store.manuallyLocked;
+  return getSessionVaultKey() !== null && !isVaultManuallyLocked();
 }
 
-export function setUnlockedVaultSession(args: {
+async function ensureNonExtractableSessionKey(key: CryptoKey): Promise<CryptoKey> {
+  try {
+    await assertUserVaultKeyNonExtractable(key);
+    return key;
+  } catch {
+    const raw = await exportUserVaultKey(key);
+    return importUserVaultKey(raw, { extractable: false });
+  }
+}
+
+export async function setUnlockedVaultSession(args: {
   userVaultKey: CryptoKey;
   method: VaultUnlockMethod;
-}): void {
-  const store = getVaultSessionStore();
-  store.manuallyLocked = false;
-  store.lockedByInactivity = false;
-  store.sessionVaultKey = args.userVaultKey;
-  store.unlockedAt = Date.now();
-  store.unlockMethod = args.method;
+}): Promise<void> {
+  lockedByInactivity = false;
+  const sessionKey = await ensureNonExtractableSessionKey(args.userVaultKey);
+  await coreUnlockVaultSession(sessionKey);
+  unlockedAt = Date.now();
+  unlockMethod = args.method;
   if (process.env.NODE_ENV === "development") {
     console.info(`vault unlock method: ${args.method}`);
   }
@@ -149,146 +180,109 @@ export function setUnlockedVaultSession(args: {
   notifyVaultSessionChange();
 }
 
-export function unlockVaultSession(
+export async function unlockVaultSession(
   vaultKey: CryptoKey,
   method: VaultUnlockMethod = "password"
-): void {
-  setUnlockedVaultSession({ userVaultKey: vaultKey, method });
+): Promise<void> {
+  await setUnlockedVaultSession({ userVaultKey: vaultKey, method });
 }
 
 export function clearVaultCoreClientState(): void {
   lockVault();
 }
 
-export function isVaultManuallyLocked(): boolean {
-  return getVaultSessionStore().manuallyLocked;
+export function wasVaultLockedByInactivity(): boolean {
+  return lockedByInactivity;
 }
 
-export function wasVaultLockedByInactivity(): boolean {
-  return getVaultSessionStore().lockedByInactivity;
+function handleCoreSessionChange(): void {
+  if (
+    !lockInProgressFromApp &&
+    !isVaultUnlocked() &&
+    unlockMethod !== undefined &&
+    !lockedByInactivity
+  ) {
+    lockedByInactivity = true;
+    clearNoteBodyCache();
+    void onAutoLockCallback?.();
+  }
+  notifyVaultSessionChange();
 }
+
+coreSubscribeVaultSession(handleCoreSessionChange);
 
 export function subscribeVaultSession(
   listener: (state: VaultSessionState) => void
 ): () => void {
-  const store = getVaultSessionStore();
-  store.listeners.add(listener);
-  return () => store.listeners.delete(listener);
+  sessionSnapshotListeners.add(listener);
+  listener(buildVaultSessionSnapshot());
+  return () => {
+    sessionSnapshotListeners.delete(listener);
+  };
 }
 
 export function configureVaultAutoLock(callback?: () => void): void {
-  getVaultSessionStore().onAutoLock = callback ?? null;
+  onAutoLockCallback = callback ?? null;
 }
 
 export function registerVaultBeforeAutoLock(handler: BeforeAutoLockHandler): () => void {
-  const store = getVaultSessionStore();
-  store.beforeAutoLockHandlers.add(handler);
-  return () => store.beforeAutoLockHandlers.delete(handler);
-}
-
-async function runBeforeAutoLockHandlers(): Promise<void> {
-  const handlers = [...getVaultSessionStore().beforeAutoLockHandlers];
-  await Promise.all(handlers.map((handler) => handler()));
-}
-
-export function clearVaultAutoLockTimer(): void {
-  const store = getVaultSessionStore();
-  if (store.inactivityTimer) {
-    clearTimeout(store.inactivityTimer);
-    store.inactivityTimer = null;
-  }
-}
-
-function notifyActivityChange(): void {
-  for (const listener of getVaultSessionStore().activityListeners) {
-    listener();
-  }
-}
-
-export function getVaultAutoLockRemainingMs(): number | null {
-  const store = getVaultSessionStore();
-  if (!hasUnlockedVaultSession() || store.lastActivityAt === 0) return null;
-  const timeoutMs = getVaultAutoLockTimeoutMs();
-  return Math.max(0, timeoutMs - (Date.now() - store.lastActivityAt));
+  beforeAutoLockHandlers.add(handler);
+  return () => beforeAutoLockHandlers.delete(handler);
 }
 
 export function subscribeVaultActivityTimer(listener: () => void): () => void {
-  const store = getVaultSessionStore();
-  store.activityListeners.add(listener);
-  return () => store.activityListeners.delete(listener);
+  activityListeners.add(listener);
+  return () => activityListeners.delete(listener);
 }
 
-function getInactivityTimeoutMs(): number {
-  return getVaultAutoLockTimeoutMs();
-}
-
-function isVaultAutoLockSuspended(): boolean {
-  return getVaultSessionStore().autoLockSuspendCount > 0;
-}
-
-/**
- * Pause the inactivity auto-lock timer while work that must not be interrupted
- * runs (e.g. on-device voice model download/dictation). Returns a release fn.
- */
 export function suspendVaultAutoLock(): () => void {
-  const store = getVaultSessionStore();
-  store.autoLockSuspendCount += 1;
+  autoLockSuspendCount += 1;
   clearVaultAutoLockTimer();
+  clearPreLockTimer();
   if (hasUnlockedVaultSession()) {
-    store.lastActivityAt = Date.now();
     notifyActivityChange();
   }
   let released = false;
   return () => {
     if (released) return;
     released = true;
-    store.autoLockSuspendCount = Math.max(0, store.autoLockSuspendCount - 1);
-    if (store.autoLockSuspendCount === 0 && hasUnlockedVaultSession()) {
+    autoLockSuspendCount = Math.max(0, autoLockSuspendCount - 1);
+    if (autoLockSuspendCount === 0 && hasUnlockedVaultSession()) {
       scheduleVaultAutoLock();
     }
   };
 }
 
-export function scheduleVaultAutoLock(): void {
-  const store = getVaultSessionStore();
-  if (!hasUnlockedVaultSession()) return;
-  clearVaultAutoLockTimer();
-  store.lastActivityAt = Date.now();
-  notifyActivityChange();
-  if (isVaultAutoLockSuspended()) return;
-  const timeoutMs = getInactivityTimeoutMs();
-  store.inactivityTimer = setTimeout(() => {
-    void (async () => {
-      await runBeforeAutoLockHandlers();
-      lockVaultSession("auto_lock");
-      store.onAutoLock?.();
-    })();
-  }, timeoutMs);
-}
-
 export function touchVaultSession(): void {
-  if (hasUnlockedVaultSession()) {
-    scheduleVaultAutoLock();
-  }
+  if (!hasUnlockedVaultSession() || autoLockSuspendCount > 0) return;
+  coreTouchVaultSession();
+  notifyActivityChange();
+  schedulePreLockHandlers();
 }
 
 export function lockVaultSession(reason: VaultLockReason = "manual"): void {
-  const store = getVaultSessionStore();
-  if (reason === "auto_lock") {
-    store.lockedByInactivity = true;
-  } else if (reason === "manual" || reason === "error") {
-    store.lockedByInactivity = false;
-  } else if (reason === "logout" || reason === "account_switch") {
-    store.lockedByInactivity = false;
-  }
+  lockInProgressFromApp = true;
+  try {
+    if (reason === "auto_lock") {
+      lockedByInactivity = true;
+      void onAutoLockCallback?.();
+    } else if (reason === "manual" || reason === "error") {
+      lockedByInactivity = false;
+    } else if (reason === "logout" || reason === "account_switch") {
+      lockedByInactivity = false;
+    }
 
-  clearVaultAutoLockTimer();
-  store.lastActivityAt = 0;
-  notifyActivityChange();
-  clearNoteBodyCache();
-  lockVault();
-  store.manuallyLocked = true;
-  notifyVaultSessionChange();
+    clearPreLockTimer();
+    clearVaultAutoLockTimer();
+    notifyActivityChange();
+    clearNoteBodyCache();
+    unlockedAt = 0;
+    unlockMethod = undefined;
+    coreLockVaultSession();
+    notifyVaultSessionChange();
+  } finally {
+    lockInProgressFromApp = false;
+  }
 }
 
 export function lockVaultSessionManually(): void {
@@ -296,37 +290,38 @@ export function lockVaultSessionManually(): void {
 }
 
 export function resetVaultSessionLockState(): void {
-  const store = getVaultSessionStore();
-  store.manuallyLocked = false;
-  store.lockedByInactivity = false;
-  clearVaultAutoLockTimer();
-  store.lastActivityAt = 0;
+  lockedByInactivity = false;
+  coreResetVaultSessionLockState();
+  clearPreLockTimer();
   notifyActivityChange();
   notifyVaultSessionChange();
 }
 
-export function registerVaultUnloadGuard(): () => void {
-  if (typeof window === "undefined") return () => undefined;
-
-  const store = getVaultSessionStore();
-  if (store.unloadGuardRegistered) {
-    return () => undefined;
-  }
-
-  const handler = () => lockVaultSession("auto_lock");
-  window.addEventListener("pagehide", handler);
-  store.unloadGuardRegistered = true;
-
-  return () => {
-    window.removeEventListener("pagehide", handler);
-    store.unloadGuardRegistered = false;
-  };
+/** Configure vault-core session from admin env + user localStorage preference. */
+export function configureSelahkeepVaultSession(): void {
+  const adminMinutes = getVaultAutoLockMinutesFromConfig();
+  configureVaultSession({
+    autoLockMinutes: adminMinutes,
+    resolveAutoLockMinutes: () =>
+      resolveVaultAutoLockMinutesPreference({
+        adminMinutes,
+        userMinutes: readUserVaultAutoLockMinutes(),
+      }),
+  });
 }
 
 /** @internal tests */
 export function resetVaultSessionStoreForTests(): void {
-  const globalRecord = globalThis as typeof globalThis & {
-    [VAULT_SESSION_STORE_KEY]?: VaultSessionStore;
-  };
-  delete globalRecord[VAULT_SESSION_STORE_KEY];
+  lockedByInactivity = false;
+  unlockedAt = 0;
+  unlockMethod = undefined;
+  autoLockSuspendCount = 0;
+  onAutoLockCallback = null;
+  beforeAutoLockHandlers.clear();
+  sessionSnapshotListeners.clear();
+  activityListeners.clear();
+  clearPreLockTimer();
+  lockVault();
+  coreResetVaultSessionLockState();
+  configureSelahkeepVaultSession();
 }

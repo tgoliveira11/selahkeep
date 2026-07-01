@@ -1,3 +1,4 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, beforeEach } from "vitest";
 import { encryptNote } from "@/lib/crypto-client/notes";
 import {
@@ -5,13 +6,12 @@ import {
   decryptNoteVersion,
   decryptNoteVersionMetadata,
 } from "@/lib/crypto-client/note-versions";
-import { normalizeNoteMetadata } from "@/lib/notes/note-metadata";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { normalizeNoteMetadata } from "@/lib/notes/note-metadata";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { USER_ID, NOTE_ID, VERSION_ID } from "@/test/helpers/fixtures";
 
 describe("note version encryption", () => {
   beforeEach(async () => {
-    setSessionVaultKey(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
   });
 
   async function makeNote() {
@@ -94,7 +94,7 @@ describe("note version encryption", () => {
 
   it("fails closed when the vault is locked", async () => {
     const note = await makeNote();
-    setSessionVaultKey(null);
+    lockVaultSession();
     await expect(
       encryptNoteVersion(
         USER_ID,

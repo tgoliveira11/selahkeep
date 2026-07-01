@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { userVaultKeysEqual } from "@tgoliveira/vault-core";
 import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import {
   wrapVaultKeyForPassword,
@@ -11,13 +12,16 @@ import {
   hasUnlockedVaultSession,
   lockVaultSessionManually,
   resetVaultSessionStoreForTests,
-  setSessionVaultKey,
   subscribeVaultSession,
+  lockVaultSession,
 } from "@/lib/crypto-client/vault-session";
-import { exportAesKey } from "@/lib/crypto-client/aes-gcm";
 
 const APPROVED_VAULT_CORE_BROWSER_IMPORTS = new Set([
+  "src/lib/crypto-client/vault-session.ts",
   "src/lib/crypto-client/vault-passkey-browser.ts",
+  "src/components/vault-providers.tsx",
+  "src/features/vault/vault-status-dock.tsx",
+  "src/app/(vault)/vault/unlock/page.tsx",
 ]);
 
 const DISALLOWED_VAULT_CORE_BROWSER_SCAN_ROOTS = [
@@ -50,7 +54,7 @@ const USER_ID = "00000000-0000-4000-8000-000000000001";
 describe("vault session single source of truth", () => {
   it("password unlock after manual lock updates the same session controller", async () => {
     resetVaultSessionStoreForTests();
-    setSessionVaultKey(null);
+    lockVaultSession();
     lockVaultSessionManually();
     expect(hasUnlockedVaultSession()).toBe(false);
 
@@ -66,9 +70,7 @@ describe("vault session single source of truth", () => {
       unlockMethod: "password",
     });
 
-    const a = new Uint8Array(await exportAesKey(vaultKey));
-    const b = new Uint8Array(await exportAesKey(unwrapped));
-    expect(a).toEqual(b);
+    expect(await userVaultKeysEqual(vaultKey, unwrapped)).toBe(true);
     expect(hasUnlockedVaultSession()).toBe(true);
     expect(getVaultSessionSnapshot().status).toBe("unlocked");
     expect(getVaultSessionSnapshot().unlockMethod).toBe("password");
@@ -76,7 +78,7 @@ describe("vault session single source of truth", () => {
 
   it("notifies subscribers when password unlock clears manual lock", async () => {
     resetVaultSessionStoreForTests();
-    setSessionVaultKey(null);
+    lockVaultSession();
     lockVaultSessionManually();
 
     const vaultKey = await generateUserVaultKey();
@@ -103,7 +105,7 @@ describe("vault session single source of truth", () => {
 
   it("applySession false does not clear manual lock or set unlocked session", async () => {
     resetVaultSessionStoreForTests();
-    setSessionVaultKey(null);
+    lockVaultSession();
     lockVaultSessionManually();
 
     const vaultKey = await generateUserVaultKey();
@@ -129,6 +131,7 @@ describe("vault session single source of truth", () => {
       const absoluteRoot = path.join(repoRoot, root);
       for (const file of listSourceFiles(absoluteRoot)) {
         const relative = path.relative(repoRoot, file).split(path.sep).join("/");
+        if (APPROVED_VAULT_CORE_BROWSER_IMPORTS.has(relative)) continue;
         const content = readFileSync(file, "utf8");
         if (content.includes("@tgoliveira/vault-core/browser")) {
           violations.push(relative);
@@ -154,16 +157,16 @@ describe("vault session single source of truth", () => {
     for (const relative of importers) {
       expect(APPROVED_VAULT_CORE_BROWSER_IMPORTS.has(relative)).toBe(true);
     }
-    expect(importers).toContain("src/lib/crypto-client/vault-passkey-browser.ts");
+    expect(importers).toContain("src/lib/crypto-client/vault-session.ts");
   });
 
-  it("keeps in-memory UVK in src/lib/crypto-client/vault-session.ts", () => {
+  it("delegates in-memory UVK to vault-core browser session via adapter", () => {
     const sessionModule = readFileSync(
       path.join(process.cwd(), "src/lib/crypto-client/vault-session.ts"),
       "utf8"
     );
-    expect(sessionModule).toContain("__selahkeepVaultSessionStore");
+    expect(sessionModule).toContain("@tgoliveira/vault-core/browser");
     expect(sessionModule).toContain("setUnlockedVaultSession");
-    expect(sessionModule).not.toContain("@tgoliveira/vault-core/browser");
+    expect(sessionModule).toContain("coreUnlockVaultSession");
   });
 });

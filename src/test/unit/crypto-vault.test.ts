@@ -1,10 +1,11 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
+import { userVaultKeysEqual } from "@tgoliveira/vault-core";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   generateUserVaultKey,
   wrapVaultKeyForRecovery,
   unwrapVaultKeyFromRecovery,
   isVaultUnlocked,
-  setSessionVaultKey,
   getSessionVaultKey,
   generateDefaultNoteTitle,
   clearVaultClientState,
@@ -14,15 +15,15 @@ import { USER_ID } from "@/test/helpers/fixtures";
 
 describe("vault key lifecycle", () => {
   beforeEach(() => {
-    setSessionVaultKey(null);
+    lockVaultSession();
   });
 
   it("tracks unlocked state in session memory", async () => {
     expect(isVaultUnlocked()).toBe(false);
     const key = await generateUserVaultKey();
-    setSessionVaultKey(key);
+    await unlockVaultSession(key);
     expect(isVaultUnlocked()).toBe(true);
-    expect(getSessionVaultKey()).toBe(key);
+    expect(await userVaultKeysEqual(getSessionVaultKey()!, key)).toBe(true);
   });
 
   it("wraps and unwraps recovery envelope", async () => {
@@ -34,7 +35,7 @@ describe("vault key lifecycle", () => {
       USER_ID,
       USER_ID
     );
-    setSessionVaultKey(null);
+    lockVaultSession();
     const restored = await unwrapVaultKeyFromRecovery(code, encryptedVaultKey, kdfMetadata);
     expect(await crypto.subtle.exportKey("raw", restored)).toEqual(
       await crypto.subtle.exportKey("raw", vaultKey)
@@ -50,7 +51,7 @@ describe("vault key lifecycle", () => {
       USER_ID,
       USER_ID
     );
-    setSessionVaultKey(null);
+    lockVaultSession();
     const restored = await unwrapVaultKeyFromRecovery(code, encryptedVaultKey, kdfMetadata, {
       applySession: false,
     });
@@ -69,7 +70,7 @@ describe("vault key lifecycle", () => {
       USER_ID,
       USER_ID
     );
-    setSessionVaultKey(null);
+    lockVaultSession();
     const { lockVaultSessionManually, hasUnlockedVaultSession } = await import(
       "@/lib/crypto-client/vault-session"
     );
@@ -82,7 +83,7 @@ describe("vault key lifecycle", () => {
 
   it("clearVaultClientState clears session vault key", async () => {
     const key = await generateUserVaultKey();
-    setSessionVaultKey(key);
+    await unlockVaultSession(key);
     await clearVaultClientState(USER_ID);
     expect(isVaultUnlocked()).toBe(false);
   });

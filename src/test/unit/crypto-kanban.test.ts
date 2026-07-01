@@ -1,3 +1,4 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, beforeEach } from "vitest";
 import { encryptNote } from "@/lib/crypto-client/notes";
 import {
@@ -10,8 +11,7 @@ import {
   unwrapContentKey,
   wrapBoardKey,
 } from "@/lib/crypto-client/kanban";
-import type { KanbanBoardPlaintext } from "@/lib/notes/kanban-types";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import type { KanbanBoardPlaintext } from "@/lib/notes/kanban-types";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { NOTE_ID, USER_ID, VERSION_ID } from "@/test/helpers/fixtures";
 
 const BOARD_ID = "550e8400-e29b-41d4-a716-446655440010";
@@ -64,7 +64,7 @@ async function makeNoteBoundWrappedKey() {
 
 describe("kanban encryption", () => {
   beforeEach(async () => {
-    setSessionVaultKey(await generateUserVaultKey());
+    await unlockVaultSession(await generateUserVaultKey());
   });
 
   it("round-trips a note-bound board under the note's existing key", async () => {
@@ -150,7 +150,7 @@ describe("kanban encryption", () => {
 
   it("fails closed when the vault is locked", async () => {
     const wrappedNoteKey = await makeNoteBoundWrappedKey();
-    setSessionVaultKey(null);
+    lockVaultSession();
 
     await expect(
       encryptKanbanBoard(USER_ID, BOARD_ID, makeBoard(), wrappedNoteKey)

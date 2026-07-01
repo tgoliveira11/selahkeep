@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPasswordEnvelope, createUserVaultKey } from "@tgoliveira/vault-core";
+import { createPasswordEnvelope, createUserVaultKey, userVaultKeysEqual } from "@tgoliveira/vault-core";
 import { SELAHKEEP_VAULT_PROFILE } from "@/modules/vault/selahkeep-profile";
 import {
   assertLegacyVaultKeyScope,
@@ -8,17 +8,11 @@ import {
   unwrapLegacyVaultKeyFromPassword,
   unwrapLegacyVaultKeyFromRecoveryPhrase,
 } from "@/modules/vault/core/envelopes/legacy-envelope-unlock";
-import {
-  hasUnlockedVaultSession,
-  lockVaultSessionManually,
-  resetVaultSessionStoreForTests,
-  setSessionVaultKey,
-} from "@/lib/crypto-client/vault-session";
+import { hasUnlockedVaultSession, lockVaultSessionManually, resetVaultSessionStoreForTests, lockVaultSession } from "@/lib/crypto-client/vault-session";
 import {
   unwrapVaultKeyFromPassword,
   wrapVaultKeyForPassword,
 } from "@/lib/crypto-client/vault-envelope";
-import { exportAesKey } from "@/lib/crypto-client/aes-gcm";
 
 const USER_ID = "00000000-0000-4000-8000-000000000001";
 
@@ -66,14 +60,12 @@ describe("legacy vault envelope unlock", () => {
       kdfMetadata,
       { userId: USER_ID, resourceId: USER_ID }
     );
-    const a = new Uint8Array(await exportAesKey(vaultKey));
-    const b = new Uint8Array(await exportAesKey(restored));
-    expect(a).toEqual(b);
+    expect(await userVaultKeysEqual(vaultKey, restored)).toBe(true);
   });
 
   it("password unlock after manual lock updates global session store", async () => {
     resetVaultSessionStoreForTests();
-    setSessionVaultKey(null);
+    lockVaultSession();
     lockVaultSessionManually();
     expect(hasUnlockedVaultSession()).toBe(false);
 
@@ -168,9 +160,7 @@ describe("legacy vault envelope unlock", () => {
       kdfMetadata,
       { userId: USER_ID, resourceId: USER_ID }
     );
-    const a = new Uint8Array(await exportAesKey(vaultKey));
-    const b = new Uint8Array(await exportAesKey(restored));
-    expect(a).toEqual(b);
+    expect(await userVaultKeysEqual(vaultKey, restored)).toBe(true);
   });
 
   it("unwraps legacy envelopes with passkey PRF output", async () => {

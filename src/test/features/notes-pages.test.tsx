@@ -1,6 +1,6 @@
 /** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import NotesPage from "@/app/(vault)/notes/page";
 
 vi.mock("next/navigation", () => ({
@@ -59,12 +59,13 @@ describe("notes pages", () => {
     });
   });
 
-  it("renders notes list with protected message when vault is locked", async () => {
+  it("redirects to /home when vault is locked", async () => {
+    const replace = vi.fn();
+    const { useRouter } = await import("next/navigation");
+    vi.mocked(useRouter).mockReturnValue({ push: vi.fn(), replace, back: vi.fn() });
+
     render(<NotesPage />);
-    // Locked screen leads with the unlock hero ("Your vault is locked"); no
-    // "Notes" header and no search bar.
-    expect(await screen.findByRole("heading", { name: /your vault is locked/i })).toBeTruthy();
-    expect(screen.getByTestId("notes-vault-protected-message")).toBeTruthy();
-    expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/home"));
+    expect(screen.queryByTestId("notes-vault-locked-state")).toBeNull();
   });
 });

@@ -47,6 +47,14 @@ export const kdfMetadataSchema = z.union([
     parallelism: z.number().int().positive(),
   }),
   z.object({
+    kdf: z.literal("argon2id"),
+    version: z.literal("kdf-v2"),
+    salt: z.string().min(1),
+    memory: z.number().int().positive(),
+    iterations: z.number().int().positive(),
+    parallelism: z.number().int().positive(),
+  }),
+  z.object({
     kdf: z.literal("pbkdf2-sha256"),
     version: z.literal("kdf-v1"),
     salt: z.string().min(1),

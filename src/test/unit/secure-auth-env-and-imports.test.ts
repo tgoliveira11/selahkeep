@@ -179,7 +179,7 @@ describe("buildSecureAuthConfigFromEnv", () => {
 
     const withDefaults = buildSecureAuthConfigFromEnv(baseEnv, defaults);
     expect(withDefaults.auth?.redirectAuthenticatedFromGuestPages).toBe(true);
-    expect(withDefaults.auth?.authenticatedRedirectPath).toBe("/notes");
+    expect(withDefaults.auth?.authenticatedRedirectPath).toBe("/home");
 
     const withCustom = buildSecureAuthConfigFromEnv(
       {

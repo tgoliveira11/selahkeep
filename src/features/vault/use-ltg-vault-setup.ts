@@ -23,7 +23,7 @@ import {
 import { setUnlockedVaultSession } from "@/lib/crypto-client/vault-session";
 import { vaultApi } from "@/lib/api-client/vault";
 import { validatePasswordSetup } from "@tgoliveira/secure-auth/client/password-policy";
-import type { PasswordPolicyConfig } from "@tgoliveira/secure-auth/client/password-policy";
+import type { VaultAdminPasswordPolicy } from "@tgoliveira/vault-core";
 
 export type VaultSetupStep =
   | "intro"
@@ -33,7 +33,7 @@ export type VaultSetupStep =
   | "phrase-confirm"
   | "saving";
 
-export function useLtgVaultSetup(vaultPasswordPolicy: PasswordPolicyConfig) {
+export function useLtgVaultSetup(vaultPasswordPolicy: VaultAdminPasswordPolicy) {
   const { data: session } = useSession();
   const [step, setStep] = useState<VaultSetupStep>("intro");
   const [vaultPassword, setVaultPassword] = useState("");

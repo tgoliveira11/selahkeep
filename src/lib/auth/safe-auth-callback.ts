@@ -6,6 +6,7 @@ const BLOCKED_AUTH_CALLBACK_PATTERNS = [
 ] as const;
 
 const ALLOWED_AUTH_CALLBACK_PATTERNS = [
+  /^\/home(?:\/|$)/,
   /^\/notes(?:\/|$)/,
   /^\/vault\/settings(?:\/|$)/,
   /^\/vault\/security(?:\/|$)/,
@@ -25,10 +26,10 @@ function sanitizeAuthCallbackPathname(pathname: string): string | null {
   return pathname;
 }
 
-/** Sanitize post-login redirect targets; defaults to `/notes` when invalid. */
+/** Sanitize post-login redirect targets; defaults to `/home` when invalid. */
 export function sanitizeAuthCallbackUrl(
   path: string | null | undefined,
-  defaultPath = "/notes"
+  defaultPath = "/home"
 ): string {
   if (!path) return defaultPath;
   const queryIndex = path.indexOf("?");

@@ -5,8 +5,7 @@ import {
   touchVaultActivity,
   useVaultActivity,
 } from "@/features/vault/use-vault-activity";
-import * as vaultSession from "@/lib/crypto-client/vault-session";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import * as vaultSession from "@/lib/crypto-client/vault-session";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 
 function ActivityProbe() {
   useVaultActivity();
@@ -17,7 +16,7 @@ describe("useVaultActivity", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vaultSession.clearVaultAutoLockTimer();
-    setSessionVaultKey(null);
+    lockVaultSession();
     vi.spyOn(vaultSession, "touchVaultSession");
   });
 

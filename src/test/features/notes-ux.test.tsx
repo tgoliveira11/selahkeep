@@ -1,3 +1,4 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 /** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, act, within } from "@testing-library/react";
@@ -8,8 +9,7 @@ import NoteDetailPage from "@/app/(vault)/notes/[id]/page";
 import { TagChipInput } from "@/features/notes/tag-chip-input";
 import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
 import { hasNoteOrganizers, NoteFilters } from "@/features/notes/note-filters";
-import { encryptNote } from "@/lib/crypto-client/notes";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+import { encryptNote } from "@/lib/crypto-client/notes";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { USER_ID, NOTE_ID } from "@/test/helpers/fixtures";
 
 const routerPush = vi.fn();
@@ -247,23 +247,18 @@ describe("notes UX", () => {
       expect(await screen.findByLabelText(/search/i)).toBeTruthy();
     });
 
-    it("shows helpful locked-vault state without decrypted content", async () => {
+    it("redirects to /home when vault is locked", async () => {
+      const replace = vi.fn();
+      const { useRouter } = await import("next/navigation");
+      vi.mocked(useRouter).mockReturnValue({ push: vi.fn(), replace, back: vi.fn() });
       const { useRequireVault } = await import("@/features/vault/use-require-vault");
       const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
       vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(false));
       vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
       render(<NotesPage />);
-      expect(await screen.findByTestId("notes-vault-locked-state")).toBeTruthy();
-      expect(screen.getByRole("heading", { name: /your vault is locked/i })).toBeTruthy();
-      expect(screen.getByText(/encrypted and waiting/i)).toBeTruthy();
-      expect(screen.getByRole("button", { name: /unlock here/i })).toBeTruthy();
-      expect(screen.getByTestId("vault-open-full-unlock-page").getAttribute("href")).toBe(
-        "/vault/unlock?returnTo=%2Fnotes"
-      );
-      expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
-      expect(screen.queryByTestId("notes-counter")).toBeNull();
-      expect(screen.queryByRole("link", { name: /new note/i })).toBeNull();
+      await waitFor(() => expect(replace).toHaveBeenCalledWith("/home"));
+      expect(screen.queryByTestId("notes-vault-locked-state")).toBeNull();
     });
 
     it("does not show page-level vault open indicator when unlocked", async () => {
@@ -481,7 +476,7 @@ describe("notes UX", () => {
 
     it("still sends encrypted payload only when saving", async () => {
       const vaultKey = await generateUserVaultKey();
-      setSessionVaultKey(vaultKey);
+      await unlockVaultSession(vaultKey);
       const encrypted = await encryptNote(USER_ID, NOTE_ID, {
         title: "Encrypted title",
         body: "Encrypted body",

@@ -1,6 +1,6 @@
 /** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import NotesPage from "@/app/(vault)/notes/page";
 import VaultSettingsPage from "@/app/(vault)/vault/settings/page";
 import VaultUnlockPage from "@/app/(vault)/vault/unlock/page";
@@ -170,14 +170,16 @@ describe("vault status UI", () => {
     expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
   });
 
-  it("notes page shows protected message when vault is locked", async () => {
+  it("notes page redirects to /home when vault is locked", async () => {
+    const replace = vi.fn();
+    const { useRouter } = await import("next/navigation");
+    vi.mocked(useRouter).mockReturnValue({ push: vi.fn(), replace, back: vi.fn() });
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
 
     render(<NotesPage />);
-    expect(await screen.findByTestId("notes-vault-protected-message")).toBeTruthy();
-    expect(screen.queryByTestId("notes-vault-indicator")).toBeNull();
-    expect(screen.queryByRole("link", { name: /unlock vault/i })).toBeNull();
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/home"));
+    expect(screen.queryByTestId("notes-vault-protected-message")).toBeNull();
   });
 
   it("notes page shows notes when vault is unlocked", async () => {
@@ -218,7 +220,7 @@ describe("vault status UI", () => {
     render(<VaultSettingsPage />);
     expect(
       screen.getByRole("link", { name: /open full unlock page/i }).getAttribute("href")
-    ).toBe("/vault/unlock?returnTo=%2Fvault%2Fsettings");
+    ).toBe("/vault/unlock?next=%2Fvault%2Fsettings");
   });
 
   it("vault settings shows unlock prompt when vault is locked", async () => {

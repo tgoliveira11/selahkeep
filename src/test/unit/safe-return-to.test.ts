@@ -34,19 +34,19 @@ describe("sanitizeVaultReturnTo", () => {
 describe("buildVaultUnlockHref", () => {
   it("includes returnTo for safe notes paths", () => {
     expect(buildVaultUnlockHref("/notes/note-1")).toBe(
-      "/vault/unlock?returnTo=%2Fnotes%2Fnote-1"
+      "/vault/unlock?next=%2Fnotes%2Fnote-1"
     );
   });
 
   it("includes returnTo for vault settings", () => {
     expect(buildVaultUnlockHref("/vault/settings")).toBe(
-      "/vault/unlock?returnTo=%2Fvault%2Fsettings"
+      "/vault/unlock?next=%2Fvault%2Fsettings"
     );
   });
 
   it("includes returnTo for notes paths with query strings", () => {
     expect(buildVaultUnlockHref("/notes/abc?view=full")).toBe(
-      "/vault/unlock?returnTo=%2Fnotes%2Fabc%3Fview%3Dfull"
+      "/vault/unlock?next=%2Fnotes%2Fabc%3Fview%3Dfull"
     );
     expect(sanitizeVaultReturnTo("/notes/abc?view=full")).toBe("/notes/abc?view=full");
   });

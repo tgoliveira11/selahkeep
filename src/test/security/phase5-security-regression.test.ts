@@ -1,18 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  configureVaultAutoLock,
-  lockVaultSession,
-  unlockVaultSession,
-  VAULT_INACTIVITY_MS,
-  clearVaultAutoLockTimer,
-} from "@/lib/crypto-client/vault-session";
+import { configureVaultAutoLock, lockVaultSession, unlockVaultSession, VAULT_INACTIVITY_MS, clearVaultAutoLockTimer } from "@/lib/crypto-client/vault-session";
 import {
   clearNoteBodyCache,
   setCachedNoteBody,
-} from "@/features/notes/eager-decrypt-notes";
-import { generateUserVaultKey, isVaultUnlocked, setSessionVaultKey } from "@/lib/crypto-client/vault";
+} from "@/features/notes/eager-decrypt-notes";import { generateUserVaultKey, isVaultUnlocked } from "@/lib/crypto-client/vault";
 import { ACCOUNT_PASSWORD_VAULT_NOTE } from "@/lib/account-auth-messages";
 
 describe("Phase 5 security regression", () => {
@@ -20,7 +13,7 @@ describe("Phase 5 security regression", () => {
     beforeEach(() => {
       vi.useFakeTimers();
       clearVaultAutoLockTimer();
-      setSessionVaultKey(null);
+      lockVaultSession();
       clearNoteBodyCache();
     });
 

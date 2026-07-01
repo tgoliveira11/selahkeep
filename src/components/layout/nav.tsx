@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/ui/cn";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
 import { VaultStatusDock } from "@/features/vault/vault-status-dock";
+import { VaultLockOverlayExclude } from "@/features/vault/vault-protected-shell";
 import { HeaderSearch } from "@/components/layout/header-search";
 
 export function Nav() {
@@ -46,6 +47,7 @@ export function Nav() {
   }
 
   return (
+    <VaultLockOverlayExclude>
     <header
       className={cn(
         // Authenticated: the top bar (search + vault dock) with a divider below,
@@ -201,5 +203,6 @@ export function Nav() {
         </div>
       ) : null}
     </header>
+    </VaultLockOverlayExclude>
   );
 }

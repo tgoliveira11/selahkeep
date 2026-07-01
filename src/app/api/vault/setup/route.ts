@@ -4,10 +4,14 @@ import { vaultSetupSchema, assertNoVaultPlaintextFields } from "@/lib/validation
 import { vaultService } from "@/server/services/vault-service";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
 import { VaultPlaintextRejectionError } from "@/lib/validation/vault";
+import { vaultApiClientKey, vaultApiRateLimitResponse } from "@/lib/vault/vault-api-guard";
 
 export async function POST(request: Request) {
   try {
     const user = await requireSessionUser();
+    const limited = vaultApiRateLimitResponse("vault-setup", vaultApiClientKey(request, user.id));
+    if (limited) return limited;
+
     const body = (await parseJsonBody(request)) as Record<string, unknown>;
     assertNoVaultPlaintextFields(body);
 

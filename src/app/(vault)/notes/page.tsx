@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { NewNoteAction } from "@/features/notes/new-note-action";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { LoadingState } from "@/components/ui/loading-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { NoteCard } from "@/components/notes/note-card";
 import { NoteListRow } from "@/components/notes/note-list-row";
@@ -21,7 +22,6 @@ import {
   type NoteFilterState,
 } from "@/features/notes/note-filters";
 import { NotesListControls } from "@/features/notes/notes-list-controls";
-import { NotesVaultProtectedMessage } from "@/features/notes/notes-vault-protected-message";
 import { useVaultIndex } from "@/features/notes/use-vault-index";
 import { useNotes } from "@/features/notes/use-notes";
 import { cn } from "@/lib/ui/cn";
@@ -111,6 +111,12 @@ export default function NotesPage() {
     vaultUnlocked,
     Boolean(vaultUnlocked && index && !filters.search.trim())
   );
+
+  useEffect(() => {
+    if (clientStatus === "locked") {
+      router.replace("/home");
+    }
+  }, [clientStatus, router]);
 
   useEffect(() => subscribeVaultSession(() => {
     setFilters(defaultNoteFilters);
@@ -299,6 +305,14 @@ export default function NotesPage() {
     );
   }
 
+  if (clientStatus === "locked") {
+    return (
+      <AuthenticatedPage width="notes">
+        <LoadingState label="Opening SelahKeep" />
+      </AuthenticatedPage>
+    );
+  }
+
   if (clientStatus && clientStatus !== "unlocked") {
     if (clientStatus === "not_configured") {
       return (
@@ -307,18 +321,9 @@ export default function NotesPage() {
         </PageLayout>
       );
     }
-    // Locked: the unlock hero + reassurance is the whole screen (no search bar,
-    // no "Notes" header — the hero is the heading). The sidebar is hidden too.
     return (
       <AuthenticatedPage width="notes">
-        {clientStatus === "locked" ? (
-          <NotesVaultProtectedMessage />
-        ) : (
-          <PageHeader
-            title="Notes"
-            description="Private encrypted notes — prayers, reflections, and journaling in one vault."
-          />
-        )}
+        <LoadingState label="Opening SelahKeep" />
       </AuthenticatedPage>
     );
   }

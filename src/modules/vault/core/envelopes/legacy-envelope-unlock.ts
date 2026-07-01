@@ -152,7 +152,10 @@ export async function unwrapLegacyVaultKeyFromRecoveryPhrase(
     throw new Error("Recovery phrase envelope requires Argon2id metadata");
   }
   assertLegacyVaultKeyScope(scope, encryptedVaultKey);
-  const derivedKey = await deriveRecoveryPhraseKeyFromMetadata(recoveryPhrase, kdfMetadata);
+  const { encryptionKey: derivedKey } = await deriveRecoveryPhraseKeyFromMetadata(
+    recoveryPhrase,
+    kdfMetadata
+  );
   try {
     const keyBytes = base64UrlToBytes(
       await decryptLegacyVaultKeyField(encryptedVaultKey, derivedKey)

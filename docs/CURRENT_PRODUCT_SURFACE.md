@@ -2,7 +2,7 @@
 
 Living inventory of what the app exposes **today**. Update this file when routes, APIs, jobs, integrations, or shipped/planned status changes.
 
-**Last reviewed:** 2026-06-30 · **Version in repo:** see `package.json`
+**Last reviewed:** 2026-07-01 · **Version in repo:** see `package.json`
 
 ---
 
@@ -28,6 +28,7 @@ Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`;
 | `/verify-email` | Guest / session | Shipped | Email verification |
 | `/check-email` | Guest | Shipped | Post-register notice |
 | `/account-deleted` | Public | Shipped | Post-deletion confirmation |
+| `/home` | Session | Shipped | Logged-in home while vault is locked (no vault unlock required) |
 | `/notes` | Session + vault | Shipped | Notes list |
 | `/notes/new` | Session + vault | Shipped | Create note |
 | `/notes/[id]` | Session + vault | Shipped | View / edit note |

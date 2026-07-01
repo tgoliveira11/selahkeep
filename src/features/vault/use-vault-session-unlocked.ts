@@ -1,20 +1,8 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { hasUnlockedVaultSession, subscribeVaultSession } from "@/lib/crypto-client/vault-session";
+import { useVaultUnlocked } from "@tgoliveira/vault-core/react";
 
-function getVaultSessionUnlockedSnapshot(): boolean {
-  return hasUnlockedVaultSession();
-}
-
-/** Subscribes to vault session changes without synchronous setState in effects. */
+/** Bridge SelahKeep hooks to vault-core session unlock state. */
 export function useVaultSessionUnlocked(): boolean {
-  return useSyncExternalStore(
-    (onStoreChange) =>
-      subscribeVaultSession(() => {
-        onStoreChange();
-      }),
-    getVaultSessionUnlockedSnapshot,
-    () => false
-  );
+  return useVaultUnlocked();
 }

@@ -1,3 +1,4 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   createEmptyVaultIndex,
@@ -5,8 +6,7 @@ import {
   addVaultTag,
   encryptVaultIndex,
   decryptVaultIndex,
-} from "@/lib/crypto-client/vault-index";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+} from "@/lib/crypto-client/vault-index";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { USER_ID } from "@/test/helpers/fixtures";
 import { SENTINEL_PHRASE } from "@/test/security/sentinel-phrase.test";
 
@@ -15,7 +15,7 @@ describe("category and tag encryption", () => {
 
   beforeEach(async () => {
     vaultKey = await generateUserVaultKey();
-    setSessionVaultKey(vaultKey);
+    await unlockVaultSession(vaultKey);
   });
 
   it("stores category and tag names only inside encrypted vault index", async () => {

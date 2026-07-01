@@ -54,7 +54,7 @@ describe("VaultLockedState normalization", () => {
     expect(screen.getByRole("heading", { name: title })).toBeTruthy();
     expect(screen.getByRole("button", { name: /unlock here/i })).toBeTruthy();
     expect(screen.getByRole("link", { name: /open full unlock page/i }).getAttribute("href")).toBe(
-      `/vault/unlock?returnTo=${encodeURIComponent(returnTo)}`
+      `/vault/unlock?next=${encodeURIComponent(returnTo)}`
     );
   });
 
@@ -106,7 +106,7 @@ describe("VaultLockedState normalization", () => {
 
     expect(
       screen.getByRole("link", { name: /unlock here/i }).getAttribute("href")
-    ).toBe("/vault/unlock?returnTo=%2Fnotes%2F1");
+    ).toBe("/vault/unlock?next=%2Fnotes%2F1");
   });
 
   it("NotesVaultProtectedMessage delegates to notes-list variant", () => {

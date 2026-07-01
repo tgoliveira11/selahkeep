@@ -1,3 +1,4 @@
+import { lockVaultSession, unlockVaultSession } from "@/lib/crypto-client/vault-session";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   encryptNote,
@@ -5,8 +6,7 @@ import {
   rotateNoteKey,
   TITLE_MAX_LENGTH,
   BODY_MAX_LENGTH,
-} from "@/lib/crypto-client/notes";
-import { generateUserVaultKey, setSessionVaultKey } from "@/lib/crypto-client/vault";
+} from "@/lib/crypto-client/notes";import { generateUserVaultKey } from "@/lib/crypto-client/vault";
 import { USER_ID, NOTE_ID } from "@/test/helpers/fixtures";
 
 describe("note encryption", () => {
@@ -14,7 +14,7 @@ describe("note encryption", () => {
 
   beforeEach(async () => {
     vaultKey = await generateUserVaultKey();
-    setSessionVaultKey(vaultKey);
+    await unlockVaultSession(vaultKey);
   });
 
   it("round-trips metadata and markdown body", async () => {
@@ -36,7 +36,7 @@ describe("note encryption", () => {
   });
 
   it("rejects when vault is locked", async () => {
-    setSessionVaultKey(null);
+    lockVaultSession();
     await expect(
       encryptNote(USER_ID, NOTE_ID, { title: "t", body: "b" })
     ).rejects.toThrow("Vault is locked");
