@@ -444,9 +444,9 @@ export default function NotesPage() {
           }
           description={
             smartFilter === "recently-viewed"
-              ? "Open a note to see it here after you unlock your vault."
+              ? "Open a note to see it here."
               : allNotes.length === 0
-                ? "Your vault is open. Write the first thing on your mind — it's encrypted before it ever leaves this device."
+                ? "Write the first thing on your mind — it's encrypted before it ever leaves this device."
                 : "Try adjusting your search or filters to find what you're looking for."
           }
           action={

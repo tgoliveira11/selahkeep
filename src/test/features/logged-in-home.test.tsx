@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import LoggedInHomePage from "@/app/(vault)/home/page";
 
 const replace = vi.fn();
@@ -12,11 +12,6 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/features/vault/use-require-vault", () => ({
   useRequireVault: vi.fn(),
-}));
-
-vi.mock("@/lib/auth/post-login-home", () => ({
-  consumePostLoginHomePending: vi.fn(() => true),
-  markPostLoginHomePending: vi.fn(),
 }));
 
 vi.mock("@/features/vault/use-vault-client-status", () => ({
@@ -67,24 +62,24 @@ describe("logged-in home (/home)", () => {
     expect(screen.getByTestId("vault-open-full-unlock-page").getAttribute("href")).toBe(
       "/vault/unlock?next=%2Fhome"
     );
+    expect(replace).not.toHaveBeenCalled();
   });
 
-  it("redirects unlocked users to /notes", async () => {
+  it("shows unlocked home content without redirecting to /notes", async () => {
     const { useRequireVault } = await import("@/features/vault/use-require-vault");
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(true));
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("unlocked"));
 
     render(<LoggedInHomePage />);
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/notes"));
+    expect(await screen.findByTestId("logged-in-home-unlocked")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /go to your notes/i }).getAttribute("href")).toBe("/notes");
+    expect(replace).not.toHaveBeenCalled();
   });
 
-  it("redirects to /notes when visit is not immediately after login", async () => {
-    const { consumePostLoginHomePending } = await import("@/lib/auth/post-login-home");
-    vi.mocked(consumePostLoginHomePending).mockReturnValue(false);
-
+  it("stays on /home when vault is locked on repeat visits", async () => {
     render(<LoggedInHomePage />);
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/notes"));
-    expect(screen.queryByTestId("notes-vault-locked-state")).toBeNull();
+    expect(await screen.findByTestId("notes-vault-locked-state")).toBeTruthy();
+    expect(replace).not.toHaveBeenCalled();
   });
 });

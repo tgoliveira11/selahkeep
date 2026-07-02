@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **Navigation and note editor UX.** Removed mobile bottom tab bar; desktop sidebar is collapsible (preference persisted). Post-login default is `/home` (vault-free landing); login/register use `AUTH_AFTER_LOGIN_PATH`. `/notes` no longer shows page-level vault-locked empty state. Note editor field order is title → body → attachments → category → tags; focus mode removed; Save appears in the top bar and after tags; dictate/upload sit beside Cancel/Discard. Tag input keeps focus after Space/Enter.
+
 - **Vault dock passkey unlock.** Upgraded `@tgoliveira/vault-core` to 1.0.1 (cancel no longer redirects; auto-start from expand via `bindAutoStartPasskey`). Dock refreshes WebAuthn options on each expand before passkey auto-start.
 
 - **Board UI.** Labels manager and board version history removed from the board screen for now; note card preview delay increased to 2 seconds to match kanban cards. Note detail no longer shows a manual Kanban re-sync control or Zen reading mode entry. Notes with a linked board no longer offer manual resolve/reopen — resolved status follows board completion. Card hover preview opens directly over the card (same size/position); card details dialog is wider; the done column is always the last column (toggle removed).

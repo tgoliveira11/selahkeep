@@ -759,36 +759,36 @@ body {
 @media (min-width: 1024px) {
   .note-editor-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 20rem;
-    column-gap: 1.75rem;
+    grid-template-columns: minmax(0, 1fr);
     row-gap: 1.25rem;
     align-items: start;
     grid-template-areas:
-      "title       rail"
-      "tags        rail"
-      "editor      rail"
-      "category    rail"
-      "attachments rail"
-      "error       rail";
+      "title"
+      "editor"
+      "attachments"
+      "category"
+      "tags"
+      "actions"
+      "error";
   }
 
   .note-editor-grid > [data-area="title"] {
     grid-area: title;
-  }
-  .note-editor-grid > [data-area="tags"] {
-    grid-area: tags;
-  }
-  .note-editor-grid > [data-area="category"] {
-    grid-area: category;
-  }
-  .note-editor-grid > [data-area="rail"] {
-    grid-area: rail;
   }
   .note-editor-grid > [data-area="editor"] {
     grid-area: editor;
   }
   .note-editor-grid > [data-area="attachments"] {
     grid-area: attachments;
+  }
+  .note-editor-grid > [data-area="category"] {
+    grid-area: category;
+  }
+  .note-editor-grid > [data-area="tags"] {
+    grid-area: tags;
+  }
+  .note-editor-grid > [data-area="actions"] {
+    grid-area: actions;
   }
   .note-editor-grid > [data-area="error"] {
     grid-area: error;

@@ -50,8 +50,8 @@ import {
   resolveTemplateCategoryId,
 } from "@/lib/notes/template-category";
 import { cn } from "@/lib/ui/cn";
-import { NoteDetailRailCard } from "@/components/notes/note-detail-rail";
-import { NoteEditorDictateRail } from "@/components/notes/note-editor-dictate-rail";
+import { AudioUploadButton } from "@/features/voice/audio-upload-button";
+import { DictateButton } from "@/features/voice/dictate-button";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { VaultLockedState } from "@/features/vault/vault-locked-state";
 import { useNoteVaultBeforeAutoLock } from "@/features/notes/use-note-vault-before-auto-lock";
@@ -61,7 +61,6 @@ import { appendTranscript } from "@/lib/voice/transcript-format";
 import { isVoiceNotesEnabled } from "@/lib/voice/voice-config";
 import { shouldDeferVoiceModelLoad } from "@/features/voice/transcription-worker-client";
 import { NoteEditorPausedForVoice } from "@/features/voice/note-editor-paused-for-voice";
-import { AudioUploadButton } from "@/features/voice/audio-upload-button";
 import { useOnlineStatus } from "@/features/notes/use-online-status";
 import { encryptAttachment } from "@/lib/crypto-client/note-attachments";
 import { noteAttachmentsApi } from "@/lib/api-client/note-attachments";
@@ -341,19 +340,49 @@ export default function NewNotePage() {
   return (
     <AuthenticatedPage width="notes">
       <div
-        className="mb-6 flex items-center justify-between gap-3"
+        className="mb-6 flex flex-wrap items-center justify-between gap-3"
         data-testid="note-editor-topbar"
       >
-        <button
-          type="button"
-          onClick={() => requestLeave(() => router.back())}
-          className="-ml-1 flex items-center gap-1.5 rounded-[var(--radius)] px-2 py-1.5 text-sm font-semibold text-[var(--fg-2)] transition-colors hover:text-[var(--foreground)]"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          Notes
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => requestLeave(() => router.back())}
+            className="-ml-1 flex items-center gap-1.5 rounded-[var(--radius)] px-2 py-1.5 text-sm font-semibold text-[var(--fg-2)] transition-colors hover:text-[var(--foreground)]"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            Notes
+          </button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => requestLeave(() => router.back())}
+            data-testid="note-editor-discard"
+          >
+            Discard
+          </Button>
+          {voiceEnabled && !voiceOpen && !uploadOpen && (
+            <>
+              <DictateButton
+                onClick={() => {
+                  touchVaultActivity();
+                  setUploadOpen(false);
+                  setVoiceOpen(true);
+                }}
+                testId="new-note-dictate"
+              />
+              <AudioUploadButton
+                onClick={() => {
+                  touchVaultActivity();
+                  setVoiceOpen(false);
+                  setUploadOpen(true);
+                }}
+                testId="new-note-upload-audio"
+              />
+            </>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           {statusLabel && (
             <span
@@ -384,14 +413,7 @@ export default function NewNotePage() {
           )}
           <Button
             type="button"
-            variant="secondary"
-            onClick={() => requestLeave(() => router.back())}
-            data-testid="note-editor-discard"
-          >
-            Discard
-          </Button>
-          <Button
-            type="button"
+            data-testid="note-editor-save-primary"
             onClick={() => void handleSubmit()}
             disabled={busy || !canSave}
             title={!trimmedTitle ? TITLE_REQUIRED_MESSAGE : undefined}
@@ -400,6 +422,30 @@ export default function NewNotePage() {
           </Button>
         </div>
       </div>
+
+      {voiceEnabled && (voiceOpen || uploadOpen) && (
+        <div className="mb-6">
+          {voiceOpen ? (
+            <VoiceCapturePanel
+              onClose={() => setVoiceOpen(false)}
+              onInsert={(text) => {
+                touchVaultActivity();
+                activateDraft("content");
+                setBody((current) => appendTranscript(current, text));
+              }}
+            />
+          ) : (
+            <AudioUploadPanel
+              onClose={() => setUploadOpen(false)}
+              onInsert={(text) => {
+                touchVaultActivity();
+                activateDraft("content");
+                setBody((current) => appendTranscript(current, text));
+              }}
+            />
+          )}
+        </div>
+      )}
 
       <div className="note-editor-surface space-y-6" data-testid="note-editor-surface">
         {draftPrompt && (
@@ -450,78 +496,6 @@ export default function NewNotePage() {
             )}
           </div>
 
-          <div data-area="tags" data-testid="new-note-tags-field">
-            <TagChipInput
-              tags={tags}
-              tagIds={tagIds}
-              onTagIdsChange={(value) => {
-                touchVaultActivity();
-                activateDraft("tags");
-                setTagIds(value);
-              }}
-              onCreateTag={createTag}
-            />
-          </div>
-
-          {/* Desktop right rail: dictate + encryption notice. */}
-          <aside data-area="rail" className="space-y-4" data-testid="new-note-rail">
-            {voiceEnabled &&
-              (voiceOpen ? (
-                <VoiceCapturePanel
-                  onClose={() => setVoiceOpen(false)}
-                  onInsert={(text) => {
-                    touchVaultActivity();
-                    activateDraft("content");
-                    setBody((current) => appendTranscript(current, text));
-                  }}
-                />
-              ) : uploadOpen ? (
-                <AudioUploadPanel
-                  onClose={() => setUploadOpen(false)}
-                  onInsert={(text) => {
-                    touchVaultActivity();
-                    activateDraft("content");
-                    setBody((current) => appendTranscript(current, text));
-                  }}
-                />
-              ) : (
-                <div className="space-y-3">
-                  <NoteEditorDictateRail
-                    onOpen={() => {
-                      touchVaultActivity();
-                      setUploadOpen(false);
-                      setVoiceOpen(true);
-                    }}
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    <AudioUploadButton
-                      onClick={() => {
-                        touchVaultActivity();
-                        setVoiceOpen(false);
-                        setUploadOpen(true);
-                      }}
-                      testId="new-note-upload-audio"
-                    />
-                  </div>
-                </div>
-              ))}
-
-            <NoteDetailRailCard
-              title="Encrypted on this device"
-              testId="new-note-encryption-notice"
-              icon={
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="5" y="11" width="14" height="9" rx="2.2" />
-                  <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-                </svg>
-              }
-            >
-              <p className="text-[12.5px] leading-relaxed text-[var(--fg-2)]">
-                Encrypted on this device before it&apos;s saved. Only you can read it.
-              </p>
-            </NoteDetailRailCard>
-          </aside>
-
           <div data-area="editor" data-testid="new-note-editor-field">
             {pauseEditorForVoice ? (
               <NoteEditorPausedForVoice testId="new-note-editor-paused" />
@@ -540,36 +514,10 @@ export default function NewNotePage() {
                 status={editorStatus}
               />
             )}
+            <p className="mt-2 text-xs text-[var(--muted)]">
+              Encrypted on this device before it&apos;s saved. Only you can read it.
+            </p>
           </div>
-
-          {(showManualCategory || showTemplateCategory) && (
-            <div
-              data-area="category"
-              className="note-editor-category-secondary"
-              data-testid="new-note-category-section"
-            >
-              {showTemplateCategory ? (
-                <NoteCategoryField
-                  categories={[]}
-                  categoryId={null}
-                  categoryLocked
-                  lockedCategoryName={lockedCategoryName}
-                  onCategoryChange={() => {}}
-                />
-              ) : (
-                <NoteCategoryField
-                  categories={userCategories}
-                  categoryId={categoryId}
-                  onCategoryChange={(value) => {
-                    touchVaultActivity();
-                    activateDraft("manualCategory");
-                    setCategoryId(value);
-                  }}
-                  onCreateCategory={createCategory}
-                />
-              )}
-            </div>
-          )}
 
           <div data-area="attachments" data-testid="new-note-attachments-field">
             <FormField
@@ -641,6 +589,59 @@ export default function NewNotePage() {
                 </ul>
               )}
             </FormField>
+          </div>
+
+          {(showManualCategory || showTemplateCategory) && (
+            <div
+              data-area="category"
+              className="note-editor-category-secondary"
+              data-testid="new-note-category-section"
+            >
+              {showTemplateCategory ? (
+                <NoteCategoryField
+                  categories={[]}
+                  categoryId={null}
+                  categoryLocked
+                  lockedCategoryName={lockedCategoryName}
+                  onCategoryChange={() => {}}
+                />
+              ) : (
+                <NoteCategoryField
+                  categories={userCategories}
+                  categoryId={categoryId}
+                  onCategoryChange={(value) => {
+                    touchVaultActivity();
+                    activateDraft("manualCategory");
+                    setCategoryId(value);
+                  }}
+                  onCreateCategory={createCategory}
+                />
+              )}
+            </div>
+          )}
+
+          <div data-area="tags" data-testid="new-note-tags-field">
+            <TagChipInput
+              tags={tags}
+              tagIds={tagIds}
+              onTagIdsChange={(value) => {
+                touchVaultActivity();
+                activateDraft("tags");
+                setTagIds(value);
+              }}
+              onCreateTag={createTag}
+            />
+          </div>
+
+          <div data-area="actions" className="flex justify-end">
+            <Button
+              type="submit"
+              data-testid="note-editor-save-secondary"
+              disabled={busy || !canSave}
+              title={!trimmedTitle ? TITLE_REQUIRED_MESSAGE : undefined}
+            >
+              {busy ? "Saving securely…" : "Save note"}
+            </Button>
           </div>
 
           {displayError && (

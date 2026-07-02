@@ -30,7 +30,7 @@ Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`;
 | `/verify-email` | Guest / session | Shipped | Email verification |
 | `/check-email` | Guest | Shipped | Post-register notice |
 | `/account-deleted` | Public | Shipped | Post-deletion confirmation |
-| `/home` | Session | Shipped | Post-login landing when vault is locked or not configured (direct visits redirect to `/notes`) |
+| `/home` | Session | Shipped | Vault-free authenticated landing (locked: unlock hero + reassurance; unlocked: welcome + link to notes; not configured: setup welcome) |
 | `/notes` | Session + vault | Shipped | Notes list |
 | `/notes/new` | Session + vault | Shipped | Create note |
 | `/notes/[id]` | Session + vault | Shipped | View / edit note |
