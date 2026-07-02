@@ -12,6 +12,7 @@ interface ToolbarButtonProps {
   hasMenu?: boolean;
   icon?: React.ReactNode;
   iconOnly?: boolean;
+  title?: string;
   onClick?: () => void;
   type?: "button" | "submit";
   ariaExpanded?: boolean;
@@ -30,6 +31,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       hasMenu = false,
       icon,
       iconOnly = false,
+      title,
       onClick,
       type = "button",
       ariaExpanded,
@@ -51,6 +53,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
           iconOnly && "toolbar-button--icon-only"
         )}
         aria-label={label}
+        title={title ?? label}
         aria-expanded={ariaExpanded}
         aria-controls={ariaControls}
         aria-haspopup={hasMenu ? "menu" : undefined}

@@ -55,13 +55,14 @@ describe("kanban-sync", () => {
     expect(result.board.cards[0].title).toBe("Keep");
   });
 
-  it("preserves in-progress column when note item stays unchecked", () => {
+  it("preserves in-progress column when note item carries the column tag", () => {
     const board = noteBoard("- [ ] Task");
     const inProgress = board.columns.find((column) => column.title === "In Progress")!;
     const moved = moveKanbanCard(board, board.cards[0].id, inProgress.id);
-    const result = syncBoardFromNoteBody(moved, "- [ ] Task");
+    const noteSync = syncNoteBodyFromBoard(moved, "- [ ] Task");
+    const result = syncBoardFromNoteBody(noteSync.board, noteSync.body);
 
-    expect(result.changed).toBe(false);
+    expect(noteSync.body).toContain("[IN PROGRESS]");
     expect(result.board.cards[0].columnId).toBe(inProgress.id);
   });
 
@@ -131,24 +132,19 @@ describe("kanban-sync", () => {
     expect(boardResult.body).toContain("- [x] Alpha");
   });
 
-  it("syncs interstitial note prose to card descriptions", () => {
-    const body = `Intro for first group
+  it("syncs per-item note descriptions to cards", () => {
+    const body = `- [ ] Task A
 
-- [ ] Task A
-- [ ] Task B
+Context for B
 
-Between groups
-
-- [ ] Task C`;
+- [ ] Task B`;
     const board = noteBoard(body);
 
-    expect(board.cards.find((card) => card.title === "Task A")?.description).toBe(
-      "Intro for first group"
-    );
-    expect(board.cards.find((card) => card.title === "Task C")?.description).toBe("Between groups");
+    expect(board.cards.find((card) => card.title === "Task A")?.description).toBe("Context for B");
+    expect(board.cards.find((card) => card.title === "Task B")?.description).toBeUndefined();
   });
 
-  it("writes card description edits back to interstitial note prose", () => {
+  it("writes card description edits back to note prose between items", () => {
     const body = `- [ ] Task A
 
 - [ ] Task B`;
@@ -157,30 +153,39 @@ Between groups
     const edited = {
       ...board,
       cards: board.cards.map((card) =>
-        card.id === taskB.id ? { ...card, description: "Updated group context" } : card
+        card.id === taskB.id ? { ...card, description: "Updated context" } : card
       ),
     };
 
     const result = syncNoteBodyFromBoard(edited, body);
 
     expect(result.changed).toBe(true);
-    expect(result.body).toContain("Updated group context");
-    expect(result.body).toMatch(/Updated group context\n\n- \[ \] Task B/);
+    expect(result.body).toContain("Updated context");
+    expect(result.body).toMatch(/- \[ \] Task B\nUpdated context/);
     expect(
       result.board.cards.find((card) => card.title === "Task B")?.description
-    ).toBe("Updated group context");
+    ).toBe("Updated context");
   });
 
-  it("updates card descriptions when interstitial note prose changes", () => {
-    const body = `Original context
+  it("updates card descriptions when per-item note prose changes", () => {
+    const body = `- [ ] Task A
 
-- [ ] Task A`;
+Original context
+
+- [ ] Task B`;
     const board = noteBoard(body);
-    const result = syncBoardFromNoteBody(board, `Revised context
+    const result = syncBoardFromNoteBody(
+      board,
+      `- [ ] Task A
 
-- [ ] Task A`);
+Revised context
+
+- [ ] Task B`
+    );
 
     expect(result.changed).toBe(true);
-    expect(result.board.cards[0].description).toBe("Revised context");
+    expect(result.board.cards.find((card) => card.title === "Task A")?.description).toBe(
+      "Revised context"
+    );
   });
 });

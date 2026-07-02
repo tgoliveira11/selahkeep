@@ -101,7 +101,7 @@ export function NoteCard({
   function openPreview() {
     if (!canPreview) return;
     if (openTimer.current) clearTimeout(openTimer.current);
-    openTimer.current = setTimeout(() => setPreviewOpen(true), 280);
+    openTimer.current = setTimeout(() => setPreviewOpen(true), 2000);
   }
 
   function closePreview() {

@@ -26,6 +26,23 @@ export interface UseKanbanBoardToNoteSyncOptions {
   encryptedWrappedKey: EncryptedPayload | null;
 }
 
+function boardFingerprint(board: KanbanBoardPlaintext): string {
+  return JSON.stringify({
+    updatedAt: board.updatedAt,
+    cards: board.cards.map((card) => ({
+      id: card.id,
+      title: card.title,
+      description: card.description,
+      columnId: card.columnId,
+      order: card.order,
+      dueDate: card.dueDate,
+      priority: card.priority,
+      source: card.source,
+      statusHistory: card.statusHistory,
+    })),
+  });
+}
+
 /** Loads note plaintext for a note-bound board and syncs board edits back to the note. */
 export function useKanbanBoardToNoteSync({
   board,
@@ -83,17 +100,7 @@ export function useKanbanBoardToNoteSync({
     };
   }, [board?.boardId, board?.noteId, board?.scope, enabled]);
 
-  const boardFingerprint = board
-    ? JSON.stringify(
-        board.cards.map((card) => ({
-          id: card.id,
-          title: card.title,
-          columnId: card.columnId,
-          order: card.order,
-          source: card.source,
-        }))
-      )
-    : null;
+  const fingerprint = board ? boardFingerprint(board) : null;
 
   const runSync = useCallback(async () => {
     if (
@@ -108,32 +115,26 @@ export function useKanbanBoardToNoteSync({
     ) {
       return;
     }
-    if (lastSyncedBoardRef.current === boardFingerprint) return;
+    if (lastSyncedBoardRef.current === fingerprint) return;
 
     const result = syncNoteAndBoardFromBoardChange(board, noteBody);
     if (!result.changed) {
-      lastSyncedBoardRef.current = boardFingerprint;
+      lastSyncedBoardRef.current = fingerprint;
       return;
     }
 
     syncingRef.current = true;
     try {
-      lastSyncedBoardRef.current = boardFingerprint;
+      lastSyncedBoardRef.current = fingerprint;
       setNoteBody(result.body);
       await updateNote(board.noteId, noteMetadata, result.body, wrappedKey);
-      const needsBoardSave = result.board.cards.some((card) => {
-        const previous = board.cards.find((item) => item.id === card.id);
-        return previous?.source?.key !== card.source?.key;
-      });
-      if (needsBoardSave) {
-        await saveBoard(result.board, encryptedWrappedKey, { appendVersion: false });
-      }
+      await saveBoard(result.board, encryptedWrappedKey, { appendVersion: true });
     } finally {
       syncingRef.current = false;
     }
   }, [
     board,
-    boardFingerprint,
+    fingerprint,
     enabled,
     encryptedWrappedKey,
     noteBody,
@@ -153,7 +154,7 @@ export function useKanbanBoardToNoteSync({
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [boardFingerprint, enabled, board, noteLoading, noteMetadata, runSync]);
+  }, [fingerprint, enabled, board, noteLoading, noteMetadata, runSync]);
 
   return { noteBody, noteLoading, runSync };
 }

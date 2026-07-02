@@ -82,6 +82,11 @@ import { ResolvedReflectionDialog } from "@/components/notes/resolved-reflection
 import { NoteNotFoundPanel } from "@/components/layout/app-not-found";
 import { GenerateFromNotePanel } from "@/features/kanban/generate-panel";
 import { getKanbanProgress } from "@/lib/notes/kanban-progress";
+import {
+  isKanbanBoardLinked,
+  isNoteResolvedByKanbanBoard,
+  shouldSyncNoteResolvedFromKanban,
+} from "@/lib/notes/kanban-note-resolution";
 import { recognizeKanbanActivities } from "@/lib/notes/kanban-from-note";
 
 function editSnapshot(metadata: NoteMetadataPlaintext, body: string): string {
@@ -131,7 +136,6 @@ export default function NoteDetailPage() {
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
-  const [zenMode, setZenMode] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [versionRefreshKey, setVersionRefreshKey] = useState(0);
@@ -162,7 +166,6 @@ export default function NoteDetailPage() {
     error: kanbanError,
     loadBoardForNote,
     createNoteBoard,
-    regenerateFromNote,
     saveBoard: saveKanbanBoard,
   } = useKanban(vaultUserId);
   useKanbanNoteToBoardSync({
@@ -194,6 +197,11 @@ export default function NoteDetailPage() {
     () => (kanbanBoard ? getKanbanProgress(kanbanBoard) : null),
     [kanbanBoard]
   );
+  const kanbanLinked = isKanbanBoardLinked(kanbanBoard);
+  const displayResolved = kanbanLinked
+    ? isNoteResolvedByKanbanBoard(kanbanBoard)
+    : Boolean(metadata?.answered);
+  const kanbanResolveSyncRef = useRef<string | null>(null);
 
   const editSnapshotValue = useMemo(
     () => (metadata ? editSnapshot(metadata, body) : ""),
@@ -307,6 +315,46 @@ export default function NoteDetailPage() {
       // Optional surface: note reading should still work if kanban is unavailable.
     });
   }, [canRead, metadata, vaultUserId, id, loadBoardForNote]);
+
+  useEffect(() => {
+    if (!metadata || !wrappedKey || !kanbanBoard) return;
+    const targetAnswered = shouldSyncNoteResolvedFromKanban(kanbanBoard, metadata.answered);
+    if (targetAnswered === null) return;
+
+    const syncKey = `${kanbanBoard.boardId}:${kanbanBoard.updatedAt}:${targetAnswered}`;
+    if (kanbanResolveSyncRef.current === syncKey) return;
+    kanbanResolveSyncRef.current = syncKey;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const updated = targetAnswered
+          ? await resolveNoteWithReflection(id, null)
+          : await toggleNoteResolved(id, false);
+        if (!cancelled) {
+          setMetadata(updated);
+          setBaseline(editSnapshot(updated, body));
+        }
+      } catch (e) {
+        kanbanResolveSyncRef.current = null;
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Failed to sync resolved status");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    body,
+    id,
+    kanbanBoard,
+    metadata,
+    resolveNoteWithReflection,
+    toggleNoteResolved,
+    wrappedKey,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -467,18 +515,8 @@ export default function NoteDetailPage() {
     }
   }
 
-  async function handleResyncKanbanBoard() {
-    touchVaultActivity();
-    setError(null);
-    try {
-      await regenerateFromNote(body);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to re-sync kanban board");
-    }
-  }
-
   async function handleMarkResolved() {
-    if (!metadata || metadata.answered) return;
+    if (!metadata || metadata.answered || kanbanLinked) return;
     setResolveDialogOpen(true);
   }
 
@@ -526,7 +564,7 @@ export default function NoteDetailPage() {
 
   async function handleReopen() {
     touchVaultActivity();
-    if (!metadata || !wrappedKey || !metadata.answered) return;
+    if (!metadata || !wrappedKey || !metadata.answered || kanbanLinked) return;
     setResolving(true);
     setError(null);
     const previous = metadata;
@@ -544,7 +582,7 @@ export default function NoteDetailPage() {
 
   async function handleToggleResolved() {
     touchVaultActivity();
-    if (!metadata || !wrappedKey) return;
+    if (!metadata || !wrappedKey || kanbanLinked) return;
     setResolving(true);
     setError(null);
     const nextAnswered = !metadata.answered;
@@ -691,33 +729,6 @@ export default function NoteDetailPage() {
     );
   }
 
-  // Zen mode: a distraction-free reading surface (no chrome, no history).
-  if (!editing && zenMode && metadata) {
-    return (
-      <NoteDetailPageShell className="note-page--focus">
-        <NoteReadingView
-          metadata={metadata}
-          body={body}
-          categories={categories}
-          tags={tags}
-          checklistSaveState={checklistSaveState}
-          onEdit={startEditing}
-          onToggleResolved={() => void handleToggleResolved()}
-          onTogglePinned={() => {}}
-          onToggleFavorite={() => {}}
-          onToggleArchived={() => {}}
-          onDuplicate={() => {}}
-          onMoveToTrash={() => {}}
-          onRestoreFromTrash={() => {}}
-          onPermanentDelete={() => {}}
-          onChecklistChange={persistChecklistToggle}
-          zen
-          onExitZen={() => setZenMode(false)}
-        />
-      </NoteDetailPageShell>
-    );
-  }
-
   const displayError = error ?? notesError;
 
   const editorStatus: EditorStatus = busy
@@ -830,17 +841,26 @@ export default function NoteDetailPage() {
               onCreateCategory={categoryLocked ? undefined : createCategory}
             />
             <label className="mt-4 flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={metadata.answered}
-                onChange={(e) => {
-                  touchVaultActivity();
-                  setMetadata({ ...metadata, answered: e.target.checked });
-                }}
-                aria-label="Mark as resolved"
-                className="h-4 w-4 rounded border-[var(--border)]"
-              />
-              Mark as resolved
+              {kanbanLinked ? (
+                <span className="text-[var(--muted)]">
+                  Resolved status follows the linked Kanban board (
+                  {kanbanProgress?.done ?? 0}/{kanbanProgress?.total ?? 0} done).
+                </span>
+              ) : (
+                <>
+                  <input
+                    type="checkbox"
+                    checked={metadata.answered}
+                    onChange={(e) => {
+                      touchVaultActivity();
+                      setMetadata({ ...metadata, answered: e.target.checked });
+                    }}
+                    aria-label="Mark as resolved"
+                    className="h-4 w-4 rounded border-[var(--border)]"
+                  />
+                  Mark as resolved
+                </>
+              )}
             </label>
           </div>
 
@@ -934,9 +954,9 @@ export default function NoteDetailPage() {
               busy={busy}
               resolving={resolving}
               onEdit={startEditing}
-              onMarkResolved={() => void handleMarkResolved()}
-              onReopen={() => void handleReopen()}
-              onEnterZen={() => setZenMode(true)}
+              kanbanLinked={kanbanLinked}
+              onMarkResolved={kanbanLinked ? undefined : () => void handleMarkResolved()}
+              onReopen={kanbanLinked ? undefined : () => void handleReopen()}
               kanbanHref={kanbanBoard ? `/kanban/${kanbanBoard.boardId}` : null}
               kanbanProgressLabel={
                 kanbanProgress ? `${kanbanProgress.done}/${kanbanProgress.total}` : null
@@ -963,10 +983,11 @@ export default function NoteDetailPage() {
               busy={busy}
               resolving={resolving}
               checklistSaveState={checklistSaveState}
+              displayResolved={displayResolved}
               onEdit={startEditing}
               onToggleResolved={() => void handleToggleResolved()}
-              onMarkResolved={() => void handleMarkResolved()}
-              onReopen={() => void handleReopen()}
+              onMarkResolved={kanbanLinked ? undefined : () => void handleMarkResolved()}
+              onReopen={kanbanLinked ? undefined : () => void handleReopen()}
               onTogglePinned={() => void toggleNotePinned(id, !metadata.pinned).then(setMetadata)}
               onToggleFavorite={() => void toggleNoteFavorite(id, !metadata.favorite).then(setMetadata)}
               onToggleArchived={() => void toggleNoteArchived(id, !metadata.archived).then(setMetadata)}
@@ -994,7 +1015,7 @@ export default function NoteDetailPage() {
                 ) : null
               }
             />
-            {!metadata.trashed && (
+            {!metadata.trashed && !kanbanBoard && (
               <div className="mt-6">
                 {(kanbanError || notesError) && (
                   <Alert variant="danger" className="mb-3">
@@ -1005,10 +1026,8 @@ export default function NoteDetailPage() {
                   noteId={id}
                   noteTitle={metadata.title}
                   body={body}
-                  existingBoard={kanbanBoard}
                   loading={kanbanLoading || kanbanSaving}
                   onCreate={handleCreateKanbanBoard}
-                  onResync={handleResyncKanbanBoard}
                 />
               </div>
             )}

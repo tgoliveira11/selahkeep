@@ -19,6 +19,7 @@ interface NoteDetailActionBarProps {
   onMarkResolved?: () => void;
   onReopen?: () => void;
   onEnterZen?: () => void;
+  kanbanLinked?: boolean;
   kanbanHref?: string | null;
   kanbanProgressLabel?: string | null;
   onGenerateKanban?: () => void;
@@ -40,6 +41,7 @@ export function NoteDetailActionBar({
   onMarkResolved,
   onReopen,
   onEnterZen,
+  kanbanLinked = false,
   kanbanHref,
   kanbanProgressLabel,
   onGenerateKanban,
@@ -56,7 +58,7 @@ export function NoteDetailActionBar({
 
   return (
     <div className="note-detail-action-bar" data-testid="note-detail-action-bar">
-      {!metadata.answered && onMarkResolved && (
+      {!kanbanLinked && !metadata.answered && onMarkResolved && (
         <ToolbarButton
           label="Mark resolved"
           testId="note-mark-resolved-button"
@@ -66,7 +68,7 @@ export function NoteDetailActionBar({
           onClick={onMarkResolved}
         />
       )}
-      {metadata.answered && onReopen && (
+      {!kanbanLinked && metadata.answered && onReopen && (
         <ToolbarButton
           label="Reopen"
           testId="note-reopen-button"

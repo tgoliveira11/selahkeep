@@ -5,7 +5,7 @@ import path from "node:path";
 import NoteDetailPage from "@/app/(vault)/notes/[id]/page";
 import { NoteReadingView } from "@/components/notes/note-reading-view";
 import { NoteCategoryLabel, NoteTagChip } from "@/components/notes/note-labels";
-import { USER_ID, NOTE_ID } from "@/test/helpers/fixtures";
+import { USER_ID, NOTE_ID, BOARD_ID } from "@/test/helpers/fixtures";
 
 const routerPush = vi.fn();
 
@@ -81,6 +81,18 @@ vi.mock("@/lib/crypto-client/note-drafts", () => ({
   listEncryptedNoteDraftKeys: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock("@/lib/notes/kanban-config", () => ({
+  isKanbanEnabled: vi.fn(() => true),
+}));
+
+vi.mock("@/features/notes/use-kanban", () => ({
+  useKanban: vi.fn(),
+}));
+
+vi.mock("@/features/notes/use-kanban-note-to-board-sync", () => ({
+  useKanbanNoteToBoardSync: vi.fn(),
+}));
+
 const categories = [{ id: "c1", name: "Pray", createdAt: "", updatedAt: "" }];
 const tags = [{ id: "t1", name: "teste", createdAt: "", updatedAt: "" }];
 
@@ -126,6 +138,7 @@ async function setupDetailMocks(metadata = baseMetadata(), body = "# Heading\n\n
   const { useNotes } = await import("@/features/notes/use-notes");
   const { useVaultIndex } = await import("@/features/notes/use-vault-index");
   const { useCategoriesTags } = await import("@/features/notes/use-categories-tags");
+  const { useKanban } = await import("@/features/notes/use-kanban");
   const { notesApi } = await import("@/lib/api-client/notes");
   const { decryptNote } = await import("@/lib/crypto-client/notes");
 
@@ -151,6 +164,7 @@ async function setupDetailMocks(metadata = baseMetadata(), body = "# Heading\n\n
     restoreNoteFromTrash: vi.fn(),
     permanentlyDeleteNote: vi.fn(),
     toggleNoteResolved: vi.fn(),
+    resolveNoteWithReflection: vi.fn(),
     toggleNotePinned: vi.fn(),
     toggleNoteFavorite: vi.fn(),
     toggleNoteArchived: vi.fn(),
@@ -175,6 +189,16 @@ async function setupDetailMocks(metadata = baseMetadata(), body = "# Heading\n\n
     updatedAt: metadata.updatedAt,
   } as never);
   vi.mocked(decryptNote).mockResolvedValue({ metadata, body });
+  vi.mocked(useKanban).mockReturnValue({
+    board: null,
+    encryptedWrappedKey: null,
+    loading: false,
+    saving: false,
+    error: null,
+    loadBoardForNote: vi.fn().mockResolvedValue(null),
+    createNoteBoard: vi.fn(),
+    saveBoard: vi.fn(),
+  } as never);
 }
 
 describe("note detail reading view", () => {
@@ -217,18 +241,6 @@ describe("note detail reading view", () => {
       expect(screen.queryByTestId("move-to-trash")).toBeNull();
     });
 
-    it("enters and exits zen reading mode", async () => {
-      render(<NoteDetailPage />);
-      fireEvent.click(await screen.findByTestId("note-zen-button"));
-
-      // Zen surface shows the title; chrome (more-actions menu) is gone.
-      expect(await screen.findByTestId("note-reading-zen")).toBeInTheDocument();
-      expect(screen.queryByTestId("note-more-actions-menu")).toBeNull();
-
-      fireEvent.click(screen.getByTestId("note-zen-exit"));
-      expect(await screen.findByTestId("note-reading-view")).toBeInTheDocument();
-    });
-
     it("exposes secondary pin and favorite inside More actions menu", async () => {
       render(<NoteDetailPage />);
       await screen.findByText("Prayed that today");
@@ -259,6 +271,88 @@ describe("note detail reading view", () => {
     it("shows Mark resolved in the detail action bar", async () => {
       render(<NoteDetailPage />);
       expect(await screen.findByTestId("note-mark-resolved-button")).toBeTruthy();
+    });
+
+    it("hides Mark resolved when the note has a linked kanban board", async () => {
+      const { useKanban } = await import("@/features/notes/use-kanban");
+      vi.mocked(useKanban).mockReturnValue({
+        board: {
+          schemaVersion: 1,
+          boardId: BOARD_ID,
+          scope: "note",
+          noteId: NOTE_ID,
+          title: "Note board",
+          columns: [
+            { id: "todo", title: "To Do", order: 0, isDoneColumn: false },
+            { id: "done", title: "Done", order: 1, isDoneColumn: true },
+          ],
+          cards: [
+            {
+              id: "card-1",
+              columnId: "todo",
+              title: "task",
+              order: 0,
+              createdAt: "2026-06-30T00:00:00.000Z",
+              updatedAt: "2026-06-30T00:00:00.000Z",
+            },
+          ],
+          labels: [],
+          createdAt: "2026-06-30T00:00:00.000Z",
+          updatedAt: "2026-06-30T00:00:00.000Z",
+        },
+        encryptedWrappedKey: {},
+        loading: false,
+        saving: false,
+        error: null,
+        loadBoardForNote: vi.fn().mockResolvedValue(null),
+        createNoteBoard: vi.fn(),
+        saveBoard: vi.fn(),
+      } as never);
+
+      render(<NoteDetailPage />);
+      await screen.findByTestId("note-detail-action-bar");
+      expect(screen.queryByTestId("note-mark-resolved-button")).toBeNull();
+      expect(screen.getByTestId("note-detail-status")).toHaveTextContent("Unresolved");
+    });
+
+    it("shows resolved status when all board cards are done", async () => {
+      const { useKanban } = await import("@/features/notes/use-kanban");
+      vi.mocked(useKanban).mockReturnValue({
+        board: {
+          schemaVersion: 1,
+          boardId: BOARD_ID,
+          scope: "note",
+          noteId: NOTE_ID,
+          title: "Note board",
+          columns: [
+            { id: "todo", title: "To Do", order: 0, isDoneColumn: false },
+            { id: "done", title: "Done", order: 1, isDoneColumn: true },
+          ],
+          cards: [
+            {
+              id: "card-1",
+              columnId: "done",
+              title: "task",
+              order: 0,
+              createdAt: "2026-06-30T00:00:00.000Z",
+              updatedAt: "2026-06-30T00:00:00.000Z",
+            },
+          ],
+          labels: [],
+          createdAt: "2026-06-30T00:00:00.000Z",
+          updatedAt: "2026-06-30T00:00:00.000Z",
+        },
+        encryptedWrappedKey: {},
+        loading: false,
+        saving: false,
+        error: null,
+        loadBoardForNote: vi.fn().mockResolvedValue(null),
+        createNoteBoard: vi.fn(),
+        saveBoard: vi.fn(),
+      } as never);
+
+      render(<NoteDetailPage />);
+      expect(await screen.findByTestId("note-detail-status")).toHaveTextContent("Resolved");
     });
 
     it("exposes pin and favorite in the more actions menu", async () => {

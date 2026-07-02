@@ -10,6 +10,11 @@ import type {
   KanbanPriority,
 } from "@/lib/notes/kanban-types";
 import { PRIORITY_LABELS } from "@/features/kanban/labels";
+import {
+  kanbanCardStatusHistoryTitle,
+  lastKanbanCardStatusChange,
+} from "@/lib/notes/kanban-card-status";
+import { formatNoteUpdatedShort } from "@/lib/notes/note-dates";
 
 interface KanbanCardDialogProps {
   card: KanbanCardPlaintext | null;
@@ -67,12 +72,20 @@ export function KanbanCardDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="kanban-card-dialog-title"
-        className="relative w-full max-w-xl rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-5 shadow-[var(--shadow-lg)]"
+        className="relative w-full max-w-3xl rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-lg)]"
         data-testid="kanban-card-dialog"
       >
-        <h2 id="kanban-card-dialog-title" className="text-lg font-semibold">
-          Card details
-        </h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 id="kanban-card-dialog-title" className="text-lg font-semibold">
+            Card details
+          </h2>
+          <span
+            className="shrink-0 text-[11px] font-normal text-[var(--muted)]"
+            title={kanbanCardStatusHistoryTitle(draft)}
+          >
+            {formatNoteUpdatedShort(lastKanbanCardStatusChange(draft))}
+          </span>
+        </div>
 
         <div className="mt-4 space-y-4">
           <FormField id="kanban-card-title" label="Title">

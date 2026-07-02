@@ -71,15 +71,11 @@ describe("kanban-progress", () => {
     });
   });
 
-  it("guards the last done column", () => {
+  it("prevents deleting the only column and allows deleting done when others remain", () => {
     const current = board();
-    expect(canDeleteKanbanColumn(current.columns, "done")).toBe(false);
-    expect(
-      canDeleteKanbanColumn(
-        [...current.columns, { id: "closed", title: "Closed", order: 2, isDoneColumn: true }],
-        "done"
-      )
-    ).toBe(true);
+    expect(canDeleteKanbanColumn([current.columns[0]], "todo")).toBe(false);
+    expect(canDeleteKanbanColumn(current.columns, "done")).toBe(true);
+    expect(canDeleteKanbanColumn(current.columns, "todo")).toBe(true);
   });
 
   it("moves cards and keeps orders contiguous", () => {

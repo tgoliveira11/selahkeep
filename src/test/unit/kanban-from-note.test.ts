@@ -21,7 +21,7 @@ describe("kanban-from-note", () => {
     expect(normalizeKanbanSourceText("- [x]  Follow up.")).toBe("- follow up");
   });
 
-  it("recognizes checklists, plain lists, headings, and ignores prose/code", () => {
+  it("recognizes checklists and bullets only, ignoring prose and code", () => {
     const activities = recognizeKanbanActivities(`
 ## Care
 - [ ] Call mom
@@ -42,12 +42,11 @@ Plain prose
     expect(activities.map((activity) => activity.title)).toEqual([
       "Call mom",
       "Book appointment",
-      "Send update",
       "Review notes",
     ]);
-    expect(activities[0]).toMatchObject({ checked: false, kind: "checklist", section: "Care" });
-    expect(activities[1]).toMatchObject({ checked: true, kind: "checklist", section: "Care" });
-    expect(activities[2]).toMatchObject({ checked: false, kind: "list", section: "Work" });
+    expect(activities[0]).toMatchObject({ checked: false, kind: "checklist" });
+    expect(activities[1]).toMatchObject({ checked: true, kind: "checklist" });
+    expect(activities[2]).toMatchObject({ checked: false, kind: "list" });
   });
 
   it("creates a note-scoped board with checked cards in the done column", () => {
@@ -84,38 +83,31 @@ Plain prose
     expect(result.board.cards[1]).toMatchObject({ id: "new-card", title: "New task" });
   });
 
-  it("maps interstitial prose before checklist groups to card descriptions", () => {
-    const body = `Some intro text
+  it("maps per-item description between list items", () => {
+    const body = `- [ ] Task A
 
-- [ ] Task A
+Context for B
+
 - [ ] Task B
-
-This paragraph is between groups
 
 - [ ] Task C`;
 
     const groups = parseKanbanNoteGroups(body);
-    expect(groups).toHaveLength(2);
-    expect(groups[0].description).toBe("Some intro text");
-    expect(groups[1].description).toBe("This paragraph is between groups");
-    expect(groups[0].items.map((item) => item.title)).toEqual(["Task A", "Task B"]);
-    expect(groups[1].items.map((item) => item.title)).toEqual(["Task C"]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].items.map((item) => item.title)).toEqual(["Task A", "Task B", "Task C"]);
+    expect(groups[0].items[0].description).toBe("Context for B");
+    expect(groups[0].items[1].description).toBeUndefined();
 
     const board = createKanbanBoardFromNote(NOTE_ID, "Grouped", body, {
       now: "2026-06-30T00:00:00.000Z",
       createId: idFactory(),
     });
 
-    const taskA = board.cards.find((card) => card.title === "Task A");
-    const taskB = board.cards.find((card) => card.title === "Task B");
-    const taskC = board.cards.find((card) => card.title === "Task C");
-
-    expect(taskA?.description).toBe("Some intro text");
-    expect(taskB?.description).toBe("Some intro text");
-    expect(taskC?.description).toBe("This paragraph is between groups");
+    expect(board.cards.find((card) => card.title === "Task A")?.description).toBe("Context for B");
+    expect(board.cards.find((card) => card.title === "Task B")?.description).toBeUndefined();
   });
 
-  it("prefers interstitial prose over section heading fallback for descriptions", () => {
+  it("ignores prose before the first list item", () => {
     const body = `Context for care tasks
 
 ## Care
@@ -126,18 +118,18 @@ This paragraph is between groups
       createId: idFactory(),
     });
 
-    expect(board.cards[0].description).toBe("Context for care tasks");
+    expect(board.cards[0].description).toBeUndefined();
   });
 
-  it("uses section heading fallback when no interstitial prose exists", () => {
-    const body = `## Care
-- [ ] Call mom`;
-
-    const board = createKanbanBoardFromNote(NOTE_ID, "Care", body, {
+  it("places cards with [IN PROGRESS] tags in the matching column", () => {
+    const body = "- [ ] [IN PROGRESS] Active task";
+    const board = createKanbanBoardFromNote(NOTE_ID, "Work", body, {
       now: "2026-06-30T00:00:00.000Z",
       createId: idFactory(),
     });
+    const inProgress = board.columns.find((column) => column.title === "In Progress")!;
 
-    expect(board.cards[0].description).toBe("Section: Care");
+    expect(board.cards[0].title).toBe("Active task");
+    expect(board.cards[0].columnId).toBe(inProgress.id);
   });
 });

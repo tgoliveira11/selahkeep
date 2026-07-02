@@ -31,6 +31,8 @@ interface NoteReadingViewProps {
   onPermanentDelete: () => void;
   onChecklistChange: (markdown: string) => void;
   searchQuery?: string;
+  /** When set, overrides metadata.answered for the status badge (e.g. Kanban-linked notes). */
+  displayResolved?: boolean;
   /** Distraction-free reading. When true, only title + body are shown. */
   zen?: boolean;
   onEnterZen?: () => void;
@@ -51,6 +53,7 @@ export function NoteReadingView({
   onPermanentDelete,
   onChecklistChange,
   searchQuery = "",
+  displayResolved,
   zen = false,
   onExitZen,
   compareSlot,
@@ -58,6 +61,7 @@ export function NoteReadingView({
   const categoryName = metadata.categoryId
     ? categories.find((category) => category.id === metadata.categoryId)?.name ?? null
     : null;
+  const resolved = displayResolved ?? metadata.answered;
 
   if (zen) {
     return (
@@ -128,12 +132,12 @@ export function NoteReadingView({
           <span
             data-testid="note-detail-status"
             className={
-              metadata.answered
+              resolved
                 ? "inline-flex items-center gap-1 rounded-md border border-[var(--success-bd)] bg-[var(--success-bg)] px-2 py-1 text-[11px] font-semibold text-[var(--success)]"
                 : "inline-flex items-center gap-1 rounded-md border border-[var(--border)] px-2 py-1 text-[11px] font-semibold text-[var(--muted)]"
             }
           >
-            {metadata.answered ? (
+            {resolved ? (
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M20 6 9 17l-5-5" />
               </svg>
@@ -143,7 +147,7 @@ export function NoteReadingView({
                 <path d="M12 7v5l3 2" />
               </svg>
             )}
-            {metadata.answered ? "Resolved" : "Unresolved"}
+            {resolved ? "Resolved" : "Unresolved"}
           </span>
           {metadata.tagIds.map((tagId) => {
             const tag = tags.find((item) => item.id === tagId);

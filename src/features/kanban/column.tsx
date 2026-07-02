@@ -6,10 +6,10 @@ import type {
   KanbanLabelPlaintext,
 } from "@/lib/notes/kanban-types";
 import { canDeleteKanbanColumn } from "@/lib/notes/kanban-progress";
+import { isLastColumn } from "@/lib/notes/kanban-columns";
 import { KanbanCard } from "@/features/kanban/card";
 import { ToolbarButton } from "@/components/ui/toolbar-button";
 import {
-  IconCheck,
   IconChevronLeft,
   IconChevronRight,
   IconPlus,
@@ -26,7 +26,6 @@ interface KanbanColumnProps {
   onOpenCard: (card: KanbanCardPlaintext) => void;
   onAddCard: (columnId: string) => void;
   onRenameColumn: (columnId: string, title: string) => void;
-  onToggleDone: (columnId: string) => void;
   onDeleteColumn: (columnId: string) => void;
   onMoveColumn: (columnId: string, direction: -1 | 1) => void;
   onMoveCard: (cardId: string, columnId: string) => void;
@@ -42,7 +41,6 @@ export function KanbanColumn({
   onOpenCard,
   onAddCard,
   onRenameColumn,
-  onToggleDone,
   onDeleteColumn,
   onMoveColumn,
   onMoveCard,
@@ -51,10 +49,11 @@ export function KanbanColumn({
   const orderedColumns = [...columns].sort((a, b) => a.order - b.order);
   const columnIndex = orderedColumns.findIndex((item) => item.id === column.id);
   const canDelete = canDeleteKanbanColumn(columns, column.id);
+  const isDoneColumn = isLastColumn(columns, column.id);
 
   return (
     <section
-      className="flex min-h-[22rem] w-[min(88vw,20rem)] shrink-0 snap-start flex-col rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card-2)] p-3 md:w-80"
+      className="flex min-h-[22rem] w-[min(88vw,26.67rem)] shrink-0 snap-start flex-col rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card-2)] p-3 md:w-[26.67rem]"
       data-testid={`kanban-column-${column.id}`}
       onDragOver={(event) => event.preventDefault()}
       onDrop={() => draggingCardId && onMoveCard(draggingCardId, column.id)}
@@ -70,12 +69,12 @@ export function KanbanColumn({
           <span
             className={cn(
               "rounded-full border px-2 py-0.5 text-[11px] font-semibold",
-              column.isDoneColumn
+              isDoneColumn
                 ? "border-[var(--success-bd)] text-[var(--success)]"
                 : "border-[var(--border)] text-[var(--muted)]"
             )}
           >
-            {column.isDoneColumn ? "Done" : `${cards.length}`}
+            {isDoneColumn ? "Done" : `${cards.length}`}
           </span>
         </div>
         <div
@@ -88,16 +87,8 @@ export function KanbanColumn({
             icon={<IconPlus />}
             iconOnly
             primary
+            title="Add a new card to this column"
             onClick={() => onAddCard(column.id)}
-          />
-          <ToolbarButton
-            label={column.isDoneColumn ? "Unmark done" : "Mark done"}
-            testId={`kanban-column-toggle-done-${column.id}`}
-            icon={<IconCheck />}
-            iconOnly
-            active={column.isDoneColumn}
-            disabled={column.isDoneColumn && !canDelete}
-            onClick={() => onToggleDone(column.id)}
           />
           <ToolbarButton
             label="Move column left"
@@ -105,6 +96,7 @@ export function KanbanColumn({
             icon={<IconChevronLeft />}
             iconOnly
             disabled={columnIndex <= 0}
+            title="Move this column one position to the left"
             onClick={() => onMoveColumn(column.id, -1)}
           />
           <ToolbarButton
@@ -113,6 +105,7 @@ export function KanbanColumn({
             icon={<IconChevronRight />}
             iconOnly
             disabled={columnIndex === orderedColumns.length - 1}
+            title="Move this column one position to the right"
             onClick={() => onMoveColumn(column.id, 1)}
           />
           <button
@@ -125,7 +118,7 @@ export function KanbanColumn({
               cards.length > 0
                 ? "Move cards before deleting this column"
                 : !canDelete
-                  ? "Keep at least one done column"
+                  ? "Keep at least one column on the board"
                   : undefined
             }
             onClick={() => onDeleteColumn(column.id)}
