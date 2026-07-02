@@ -7,6 +7,11 @@ import {
   RateLimitStoreUnavailableError,
 } from "../errors";
 
+/** ISO strings avoid Date binding failures in postgres-js prepared statements on serverless. */
+function toPgTimestamptz(date: Date): string {
+  return date.toISOString();
+}
+
 /**
  * PostgreSQL-backed rate limit store for production deployments.
  * Uses atomic upsert so limits are shared across app instances.
@@ -20,21 +25,22 @@ export class PostgresRateLimitAdapter implements RateLimitAdapter {
     const key = buildRateLimitKey(scope);
     const now = new Date();
     const resetAt = new Date(now.getTime() + windowMs);
+    const nowTs = toPgTimestamptz(now);
+    const resetAtTs = toPgTimestamptz(resetAt);
 
     const sql = getPostgresClient();
     let result: { count: number; reset_at: Date | string }[];
     try {
-      // Use postgres-js directly — drizzle's db.execute does not serialize Date params for this driver.
       result = await sql`
         INSERT INTO rate_limit_buckets (bucket_key, count, reset_at)
-        VALUES (${key}, 1, ${resetAt})
+        VALUES (${key}, 1, ${resetAtTs}::timestamptz)
         ON CONFLICT (bucket_key) DO UPDATE SET
           count = CASE
-            WHEN rate_limit_buckets.reset_at <= ${now} THEN 1
+            WHEN rate_limit_buckets.reset_at <= ${nowTs}::timestamptz THEN 1
             ELSE rate_limit_buckets.count + 1
           END,
           reset_at = CASE
-            WHEN rate_limit_buckets.reset_at <= ${now} THEN ${resetAt}
+            WHEN rate_limit_buckets.reset_at <= ${nowTs}::timestamptz THEN ${resetAtTs}::timestamptz
             ELSE rate_limit_buckets.reset_at
           END
         RETURNING count, reset_at
