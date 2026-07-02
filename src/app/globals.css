@@ -1933,14 +1933,23 @@ mark.search-highlight {
 }
 
 .prose-note input[type="checkbox"] {
-  margin-right: 0.5rem;
+  margin: 0;
   accent-color: var(--primary);
-  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .prose-note li:has(> input[type="checkbox"]) {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
   list-style: none;
-  margin-left: -1.25rem;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.prose-note li:has(> input[type="checkbox"]) > input[type="checkbox"] {
+  margin-top: 0.2rem;
 }
 
 .visual-note-editor-content {
@@ -1968,19 +1977,35 @@ mark.search-highlight {
 .visual-note-editor-content ul[data-type="taskList"] {
   list-style: none;
   padding-left: 0;
+  margin: 0.25em 0;
 }
 
-.visual-note-editor-content li[data-type="taskItem"] {
+.visual-note-editor-content li[data-type="taskItem"],
+.visual-note-editor-content li[data-checked] {
   display: flex;
+  flex-direction: row;
   align-items: flex-start;
   gap: 0.5rem;
+  list-style: none;
+  margin: 0.25em 0;
 }
 
-.visual-note-editor-content li[data-type="taskItem"] > label {
+.visual-note-editor-content li[data-type="taskItem"] > label,
+.visual-note-editor-content li[data-checked] > label {
+  display: inline-flex;
+  align-items: flex-start;
   flex: 0 0 auto;
-  margin-top: 0.2rem;
+  margin: 0;
+  padding-top: 0.15rem;
 }
 
-.visual-note-editor-content li[data-type="taskItem"] > div {
+.visual-note-editor-content li[data-type="taskItem"] > label > input[type="checkbox"],
+.visual-note-editor-content li[data-checked] > label > input[type="checkbox"] {
+  margin: 0;
+}
+
+.visual-note-editor-content li[data-type="taskItem"] > div,
+.visual-note-editor-content li[data-checked] > div {
   flex: 1 1 auto;
+  min-width: 0;
 }

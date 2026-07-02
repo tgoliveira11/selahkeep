@@ -4,11 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { ResolvedReflectionDialog, type ResolvedReflectionFields } from "@/components/notes/resolved-reflection-dialog";
 import { KanbanColumn } from "@/features/kanban/column";
 import { KanbanCardDialog } from "@/features/kanban/dialog";
-import { KanbanLabelManager } from "@/features/kanban/labels";
-import { KanbanVersionHistory } from "@/features/kanban/version-history";
 import {
   getKanbanProgress,
   moveKanbanCard,
@@ -19,28 +16,25 @@ import type {
   KanbanCardPlaintext,
   KanbanColumnPlaintext,
 } from "@/lib/notes/kanban-types";
+import { sortKanbanColumns, withDoneColumnOnLast } from "@/lib/notes/kanban-columns";
 
 interface KanbanBoardProps {
   board: KanbanBoardPlaintext;
   saving?: boolean;
-  noteResolved?: boolean;
   onChange: (board: KanbanBoardPlaintext, options?: { appendVersion?: boolean }) => void | Promise<void>;
   onRestore?: (board: KanbanBoardPlaintext) => void | Promise<void>;
-  onResolveNote?: (fields: ResolvedReflectionFields | null) => void | Promise<void>;
+  onResolveNote?: () => void | Promise<void>;
   onReopenNote?: () => void | Promise<void>;
   onBackHref?: string;
 }
 
 function normalizeColumns(columns: KanbanColumnPlaintext[]) {
-  return [...columns]
-    .sort((a, b) => a.order - b.order)
-    .map((column, order) => ({ ...column, order }));
+  return withDoneColumnOnLast(columns);
 }
 
 export function KanbanBoard({
   board,
   saving = false,
-  noteResolved = false,
   onChange,
   onRestore,
   onResolveNote,
@@ -50,9 +44,6 @@ export function KanbanBoard({
   const [draft, setDraft] = useState(board);
   const [editingCard, setEditingCard] = useState<KanbanCardPlaintext | null>(null);
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
-  const [resolveOpen, setResolveOpen] = useState(false);
-  const [reopenSuggested, setReopenSuggested] = useState(false);
-  const [suggestionDismissedFor, setSuggestionDismissedFor] = useState<string | null>(null);
   const previousComplete = useRef(getKanbanProgress(board).complete);
 
   useEffect(() => {
@@ -70,35 +61,33 @@ export function KanbanBoard({
     previousComplete.current = nextProgress.complete;
     await onChange(next, options);
 
-    if (
-      next.scope === "note" &&
-      nextProgress.complete &&
-      !wasComplete &&
-      !noteResolved &&
-      onResolveNote &&
-      suggestionDismissedFor !== next.boardId
-    ) {
-      setResolveOpen(true);
-    }
-    if (next.scope === "note" && wasComplete && !nextProgress.complete && noteResolved && onReopenNote) {
-      setReopenSuggested(true);
+    if (next.scope === "note" && nextProgress.total > 0) {
+      if (nextProgress.complete && !wasComplete) {
+        void onResolveNote?.();
+      } else if (!nextProgress.complete && wasComplete) {
+        void onReopenNote?.();
+      }
     }
   }
 
   function addColumn() {
     const now = new Date().toISOString();
+    const ordered = sortKanbanColumns(draft.columns);
+    const insertAt = Math.max(0, ordered.length - 1);
+    const nextColumns = [
+      ...ordered.slice(0, insertAt),
+      {
+        id: crypto.randomUUID(),
+        title: "New column",
+        order: insertAt,
+        isDoneColumn: false,
+      },
+      ...ordered.slice(insertAt),
+    ];
     void commit(
       {
         ...draft,
-        columns: [
-          ...orderedColumns,
-          {
-            id: crypto.randomUUID(),
-            title: "New column",
-            order: orderedColumns.length,
-            isDoneColumn: false,
-          },
-        ],
+        columns: normalizeColumns(nextColumns),
         updatedAt: now,
       },
       { appendVersion: true }
@@ -158,13 +147,51 @@ export function KanbanBoard({
   }
 
   function saveCard(card: KanbanCardPlaintext) {
+    const now = new Date().toISOString();
     const exists = draft.cards.some((item) => item.id === card.id);
+    const previous = exists ? draft.cards.find((item) => item.id === card.id) : null;
+    const column = draft.columns.find((item) => item.id === card.columnId);
+    let nextCard: KanbanCardPlaintext = {
+      ...card,
+      title: card.title.trim(),
+      updatedAt: now,
+    };
+
+    const history = nextCard.statusHistory ?? previous?.statusHistory ?? [];
+    const last = history[history.length - 1];
+    const priorityChanged =
+      previous && (previous.priority ?? null) !== (nextCard.priority ?? null);
+    const needsHistory =
+      !previous ||
+      priorityChanged ||
+      (previous && previous.columnId !== nextCard.columnId);
+    if (
+      needsHistory &&
+      column &&
+      (!last ||
+        last.columnId !== nextCard.columnId ||
+        last.priority !== (nextCard.priority ?? null))
+    ) {
+      nextCard = {
+        ...nextCard,
+        statusHistory: [
+          ...history,
+          {
+            at: now,
+            columnId: nextCard.columnId,
+            columnTitle: column.title,
+            priority: nextCard.priority ?? null,
+          },
+        ],
+      };
+    }
+
     const nextCards = exists
-      ? draft.cards.map((item) => (item.id === card.id ? card : item))
-      : [...draft.cards, card];
+      ? draft.cards.map((item) => (item.id === card.id ? nextCard : item))
+      : [...draft.cards, nextCard];
     setEditingCard(null);
     void commit(
-      { ...draft, cards: reorderKanbanCards(nextCards), updatedAt: new Date().toISOString() },
+      { ...draft, cards: reorderKanbanCards(nextCards), updatedAt: now },
       { appendVersion: true }
     );
   }
@@ -216,7 +243,7 @@ export function KanbanBoard({
               : "Standalone private board."}
           </p>
         </div>
-        <Button type="button" variant="secondary" onClick={addColumn}>
+        <Button type="button" variant="secondary" onClick={addColumn} title="Add a new workflow column to this board">
           Add column
         </Button>
       </header>
@@ -226,28 +253,6 @@ export function KanbanBoard({
           {draft.scope === "note"
             ? "All cards are in done columns."
             : "This board is 100% done."}
-        </Alert>
-      )}
-
-      {reopenSuggested && (
-        <Alert variant="info" role="status" data-testid="kanban-reopen-suggestion">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <span>A card moved out of done. Reopen the note?</span>
-            <div className="flex gap-2">
-              <Button type="button" variant="secondary" onClick={() => setReopenSuggested(false)}>
-                Dismiss
-              </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  setReopenSuggested(false);
-                  void onReopenNote?.();
-                }}
-              >
-                Reopen note
-              </Button>
-            </div>
-          </div>
         </Alert>
       )}
 
@@ -265,12 +270,6 @@ export function KanbanBoard({
             onOpenCard={setEditingCard}
             onAddCard={addCard}
             onRenameColumn={(columnId, title) => updateColumn(columnId, { title })}
-            onToggleDone={(columnId) => {
-              const columnToToggle = draft.columns.find((item) => item.id === columnId);
-              if (columnToToggle) {
-                updateColumn(columnId, { isDoneColumn: !columnToToggle.isDoneColumn });
-              }
-            }}
             onDeleteColumn={deleteColumn}
             onMoveColumn={moveColumn}
             onMoveCard={moveCard}
@@ -278,20 +277,6 @@ export function KanbanBoard({
           />
         ))}
       </div>
-
-      <KanbanLabelManager
-        labels={draft.labels}
-        onChange={(labels) =>
-          void commit({ ...draft, labels, updatedAt: new Date().toISOString() }, { appendVersion: true })
-        }
-      />
-
-      <KanbanVersionHistory
-        boardId={draft.boardId}
-        enabled={Boolean(onRestore)}
-        currentBoard={draft}
-        onRestore={(restored) => onRestore?.(restored)}
-      />
 
       <KanbanCardDialog
         key={editingCard?.id ?? "closed"}
@@ -303,22 +288,6 @@ export function KanbanBoard({
         onCancel={() => setEditingCard(null)}
       />
 
-      <ResolvedReflectionDialog
-        open={resolveOpen}
-        loading={saving}
-        onSaveAndResolve={(fields) => {
-          setResolveOpen(false);
-          void onResolveNote?.(fields);
-        }}
-        onResolveWithoutReflection={() => {
-          setResolveOpen(false);
-          void onResolveNote?.(null);
-        }}
-        onCancel={() => {
-          setSuggestionDismissedFor(draft.boardId);
-          setResolveOpen(false);
-        }}
-      />
     </div>
   );
 }

@@ -15,7 +15,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- **Kanban note ↔ board sync.** Checklist and bullet items become cards; per-item descriptions, due dates (`[yyyy-MM-dd]`), priorities (`[LOW]`/`[HIGH]`/etc.), and column tags (`[IN PROGRESS]`) sync both ways. Card hover preview (2s delay), column-change history on cards, wider columns, and toolbar tooltips on the board view.
+
 - **AI integrations (MCP).** Opt-in scoped access for Cursor, Claude Desktop, and Codex: create integrations at `/settings/integrations`, share specific notes/boards with read or write grants, and connect via local MCP server (`packages/selahkeep-mcp`) or localhost bridge (`tools/selahkeep-bridge`). Server stores token hashes and encrypted grants only; IEK and plaintext stay client-side. Gated by `INTEGRATIONS_ENABLED=true`. See `docs/TDR_AI_Integrations.md` and `docs/ADR-007_Integration_Grants_MCP.md`.
+
+### Changed
+
+- **Board UI.** Labels manager and board version history removed from the board screen for now; note card preview delay increased to 2 seconds to match kanban cards. Note detail no longer shows a manual Kanban re-sync control or Zen reading mode entry. Notes with a linked board no longer offer manual resolve/reopen — resolved status follows board completion. Card hover preview opens directly over the card (same size/position); card details dialog is wider; the done column is always the last column (toggle removed).
+
+### Fixed
+
+- **Note editor checklists.** Kanban note→board sync no longer rewrites the note body while typing (fixes cursor jumping to the end). Checklist rows keep the checkbox and text on the same line in visual and preview modes. Bracket tags such as `[IN PROGRESS]` are no longer escaped as `\[IN PROGRESS\]` when saving from the visual editor.
 
 ## [0.3.3] - 2026-07-02
 

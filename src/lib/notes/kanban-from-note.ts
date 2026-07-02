@@ -3,7 +3,15 @@ import {
   type KanbanBoardPlaintext,
   type KanbanCardPlaintext,
   type KanbanColumnPlaintext,
+  type KanbanPriority,
 } from "@/lib/notes/kanban-types";
+import {
+  formatDescriptionWithMetadata,
+  parseDescriptionMetadata,
+  parseTitleTags,
+  resolveColumnIdForItem,
+} from "@/lib/notes/kanban-card-text";
+import { firstKanbanColumn } from "@/lib/notes/kanban-columns";
 
 export interface KanbanFromNoteOptions {
   includePlainListItems?: boolean;
@@ -16,37 +24,37 @@ export interface RecognizedActivity {
   title: string;
   checked: boolean;
   kind: "checklist" | "list";
-  section?: string;
-  /** Shared description for all cards in the same contiguous checklist/list group. */
   description?: string;
-  /** Zero-based index of the checklist group within the note body. */
-  groupIndex: number;
+  dueDate?: string | null;
+  priority?: KanbanPriority | null;
+  columnTag?: string;
   key: string;
+  titleLine: number;
+  descriptionEndLine: number;
+  linePrefix: string;
 }
 
+/** @deprecated Use per-item descriptions via parseKanbanNoteItems */
 export interface KanbanChecklistGroup {
   groupIndex: number;
   section?: string;
   description?: string;
-  /** Inclusive line index in the original body where interstitial description starts. */
   descriptionStartLine?: number;
-  /** Inclusive line index where interstitial description ends. */
   descriptionEndLine?: number;
-  /** Inclusive line index of the first checklist/list item in this group. */
   firstItemLine: number;
-  /** Inclusive line index of the last checklist/list item in this group. */
   lastItemLine: number;
   items: RecognizedActivity[];
 }
 
 const CHECKLIST_RE = /^(\s*[-*+]\s+)\[([ xX])\]\s*(.*)$/;
-const BULLET_RE = /^\s*[-*+]\s+(?!\[[ xX]\]\s*)(.+)$/i;
-const NUMBERED_RE = /^\s*\d+[.)]\s+(.+)$/;
-const HEADING_RE = /^\s{0,3}(#{2,3})\s+(.+?)\s*#*\s*$/;
+const BULLET_RE = /^(\s*[-*+]\s+)(?!\[[ xX]\]\s*)(.+)$/i;
 
 export function normalizeKanbanSourceText(text: string): string {
   return text
+    .replace(/\[[A-Z][A-Z0-9 ]*\]/g, "")
     .replace(/\[[ xX]\]/g, "")
+    .replace(/\[\d{4}-\d{2}-\d{2}\]/g, "")
+    .replace(/\[(LOW|MEDIUM|HIGH|URGENT)\]/gi, "")
     .replace(/\s+/g, " ")
     .trim()
     .replace(/[.!?;:]+$/g, "")
@@ -62,207 +70,170 @@ export function hashKanbanSourceBody(body: string): string {
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
+type RawItemLine = {
+  lineIndex: number;
+  kind: "checklist" | "list";
+  checked: boolean;
+  rawTitle: string;
+  linePrefix: string;
+};
+
+function isItemLine(line: string, includePlainListItems: boolean): RawItemLine | null {
+  const checklist = line.match(CHECKLIST_RE);
+  if (checklist) {
+    const rawTitle = checklist[3].trim();
+    if (!rawTitle) return null;
+    return {
+      lineIndex: 0,
+      kind: "checklist",
+      checked: checklist[2].toLowerCase() === "x",
+      rawTitle,
+      linePrefix: checklist[1],
+    };
+  }
+
+  if (!includePlainListItems) return null;
+
+  const bullet = line.match(BULLET_RE);
+  if (bullet) {
+    const rawTitle = bullet[2].trim();
+    if (!rawTitle) return null;
+    return {
+      lineIndex: 0,
+      kind: "list",
+      checked: false,
+      rawTitle,
+      linePrefix: bullet[1],
+    };
+  }
+
+  return null;
+}
+
 function joinDescriptionLines(lines: string[]): string | undefined {
   const text = lines
-    .reduce<string[]>((acc, line) => {
-      if (line.trim() === "") {
-        if (acc.length > 0 && acc[acc.length - 1] !== "") acc.push("");
-        return acc;
-      }
-      acc.push(line.trim());
-      return acc;
-    }, [])
     .join("\n")
+    .replace(/^\n+/, "")
+    .replace(/\n+$/, "")
     .trim();
   return text || undefined;
 }
 
-function cardDescriptionFromActivity(activity: Pick<RecognizedActivity, "description" | "section">): string | undefined {
-  if (activity.description) return activity.description;
-  if (activity.section) return `Section: ${activity.section}`;
-  return undefined;
-}
-
-type LineKind =
-  | { type: "checklist"; title: string; checked: boolean }
-  | { type: "list"; title: string }
-  | { type: "prose" }
-  | { type: "blank" }
-  | { type: "skip" };
-
-function classifyKanbanLine(
-  line: string,
-  includePlainListItems: boolean
-): LineKind {
-  const checklist = line.match(CHECKLIST_RE);
-  if (checklist) {
-    const title = checklist[3].trim();
-    if (!title) return { type: "skip" };
-    return {
-      type: "checklist",
-      title,
-      checked: checklist[2].toLowerCase() === "x",
-    };
-  }
-
-  if (includePlainListItems) {
-    const bullet = line.match(BULLET_RE);
-    const numbered = line.match(NUMBERED_RE);
-    const title = (bullet?.[1] ?? numbered?.[1])?.trim();
-    if (title) return { type: "list", title };
-  }
-
-  if (line.trim() === "") return { type: "blank" };
-  return { type: "prose" };
-}
-
 /**
- * Parses note body into checklist groups. Prose immediately before a contiguous
- * run of checklist/list items becomes that group's description (including text
- * above the first group). Blank lines end a checklist run; subsequent prose
- * becomes the description for the next group.
+ * Parses checklist and bullet items. Description is prose between one item line
+ * and the next item line (not shared across groups).
  */
-export function parseKanbanNoteGroups(
+export function parseKanbanNoteItems(
   body: string,
-  options: Pick<KanbanFromNoteOptions, "includePlainListItems"> = {}
-): KanbanChecklistGroup[] {
+  options: Pick<KanbanFromNoteOptions, "includePlainListItems"> = {},
+  columns: KanbanColumnPlaintext[] = createDefaultKanbanColumns()
+): RecognizedActivity[] {
   const includePlainListItems = options.includePlainListItems ?? true;
   const lines = body.split(/\r?\n/);
-  const groups: KanbanChecklistGroup[] = [];
+  const rawItems: Array<RawItemLine & { lineIndex: number }> = [];
   const seen = new Set<string>();
 
   let inCodeBlock = false;
-  let section: string | undefined;
-  let inChecklistRun = false;
-  let groupIndex = -1;
-  let pendingDescriptionLines: string[] = [];
-  let pendingDescriptionStartLine: number | undefined;
-  let currentGroup: KanbanChecklistGroup | null = null;
-
-  function flushPendingDescription(): string | undefined {
-    const description = joinDescriptionLines(pendingDescriptionLines);
-    pendingDescriptionLines = [];
-    pendingDescriptionStartLine = undefined;
-    return description;
-  }
-
-  function startGroup(itemLine: number) {
-    const descriptionStartLine = pendingDescriptionStartLine;
-    const description = flushPendingDescription();
-    groupIndex += 1;
-    currentGroup = {
-      groupIndex,
-      section,
-      description,
-      descriptionStartLine: description ? descriptionStartLine : undefined,
-      descriptionEndLine: description ? itemLine - 1 : undefined,
-      firstItemLine: itemLine,
-      lastItemLine: itemLine,
-      items: [],
-    };
-    groups.push(currentGroup);
-    inChecklistRun = true;
-  }
-
-  function finishChecklistRun() {
-    inChecklistRun = false;
-    currentGroup = null;
-  }
-
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex].trimEnd();
     if (/^\s*```/.test(line)) {
       inCodeBlock = !inCodeBlock;
-      if (inChecklistRun) finishChecklistRun();
-      pendingDescriptionLines = [];
-      pendingDescriptionStartLine = undefined;
       continue;
     }
-    if (inCodeBlock || /^\s*>/.test(line)) {
-      if (inChecklistRun) finishChecklistRun();
-      pendingDescriptionLines = [];
-      pendingDescriptionStartLine = undefined;
-      continue;
-    }
+    if (inCodeBlock || /^\s*>/.test(line)) continue;
 
-    const heading = line.match(HEADING_RE);
-    if (heading) {
-      section = heading[2].trim();
-      if (inChecklistRun) finishChecklistRun();
-      continue;
-    }
+    const parsed = isItemLine(line, includePlainListItems);
+    if (!parsed) continue;
 
-    const kind = classifyKanbanLine(line, includePlainListItems);
-    if (kind.type === "skip") continue;
+    const { displayTitle, columnTag } = parseTitleTags(parsed.rawTitle, columns);
+    const key = normalizeKanbanSourceText(displayTitle);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
 
-    if (kind.type === "checklist" || kind.type === "list") {
-      const key = normalizeKanbanSourceText(kind.title);
-      if (!key || seen.has(key)) continue;
-
-      if (!inChecklistRun) {
-        startGroup(lineIndex);
-      }
-
-      seen.add(key);
-      currentGroup!.lastItemLine = lineIndex;
-      currentGroup!.items.push({
-        title: kind.title,
-        checked: kind.type === "checklist" ? kind.checked : false,
-        kind: kind.type === "checklist" ? "checklist" : "list",
-        section,
-        description: currentGroup!.description,
-        groupIndex: currentGroup!.groupIndex,
-        key,
-      });
-      continue;
-    }
-
-    if (kind.type === "blank") {
-      if (inChecklistRun) finishChecklistRun();
-      continue;
-    }
-
-    // Prose between checklist groups (or before the first group).
-    if (inChecklistRun) finishChecklistRun();
-    if (pendingDescriptionStartLine === undefined) pendingDescriptionStartLine = lineIndex;
-    pendingDescriptionLines.push(line);
+    rawItems.push({ ...parsed, lineIndex });
   }
 
-  return groups;
+  return rawItems.map((item, index) => {
+    const nextItemLine = rawItems[index + 1]?.lineIndex ?? lines.length;
+    const descriptionLines = lines.slice(item.lineIndex + 1, nextItemLine);
+    const rawDescription = joinDescriptionLines(descriptionLines);
+    const meta = rawDescription ? parseDescriptionMetadata(rawDescription) : null;
+    const { displayTitle, columnTag } = parseTitleTags(item.rawTitle, columns);
+    const key = normalizeKanbanSourceText(displayTitle);
+
+    return {
+      title: displayTitle,
+      checked: item.checked,
+      kind: item.kind,
+      description: meta?.body || rawDescription,
+      dueDate: meta?.dueDate ?? null,
+      priority: meta?.priority ?? null,
+      columnTag,
+      key,
+      titleLine: item.lineIndex,
+      descriptionEndLine: Math.max(item.lineIndex, nextItemLine - 1),
+      linePrefix: item.linePrefix,
+    };
+  });
+}
+
+/** @deprecated Prefer parseKanbanNoteItems */
+export function parseKanbanNoteGroups(
+  body: string,
+  options: Pick<KanbanFromNoteOptions, "includePlainListItems"> = {}
+): KanbanChecklistGroup[] {
+  const items = parseKanbanNoteItems(body, options);
+  if (items.length === 0) return [];
+  return [
+    {
+      groupIndex: 0,
+      firstItemLine: items[0].titleLine,
+      lastItemLine: items[items.length - 1].descriptionEndLine,
+      items,
+    },
+  ];
 }
 
 export function recognizeKanbanActivities(
   body: string,
-  options: Pick<KanbanFromNoteOptions, "includePlainListItems"> = {}
+  options: Pick<KanbanFromNoteOptions, "includePlainListItems"> = {},
+  columns?: KanbanColumnPlaintext[]
 ): RecognizedActivity[] {
-  return parseKanbanNoteGroups(body, options).flatMap((group) => group.items);
-}
-
-function columnByTitle(columns: KanbanColumnPlaintext[], title: string): KanbanColumnPlaintext {
-  const column = columns.find((item) => item.title.toLowerCase() === title.toLowerCase());
-  if (!column) throw new Error(`Missing ${title} column`);
-  return column;
+  return parseKanbanNoteItems(body, options, columns);
 }
 
 function activityToCard(
   activity: RecognizedActivity,
-  columnId: string,
+  columns: KanbanColumnPlaintext[],
   order: number,
   now: string,
   createId: () => string
 ): KanbanCardPlaintext {
+  const columnId = resolveColumnIdForItem(columns, activity.checked, activity.columnTag);
   return {
     id: createId(),
     columnId,
     title: activity.title,
-    description: cardDescriptionFromActivity(activity),
+    description: formatDescriptionWithMetadata(
+      activity.description,
+      activity.dueDate,
+      activity.priority
+    ),
     order,
     labelIds: [],
-    priority: null,
-    dueDate: null,
+    priority: activity.priority ?? null,
+    dueDate: activity.dueDate ?? null,
     createdAt: now,
     updatedAt: now,
     source: { kind: activity.kind, key: activity.key },
+    statusHistory: [
+      {
+        at: now,
+        columnId,
+        columnTitle: columns.find((column) => column.id === columnId)?.title ?? "",
+        priority: activity.priority ?? null,
+      },
+    ],
   };
 }
 
@@ -275,20 +246,16 @@ export function createKanbanBoardFromNote(
   const now = options.now ?? new Date().toISOString();
   const createId = options.createId ?? (() => crypto.randomUUID());
   const columns = createDefaultKanbanColumns();
-  const todo = columnByTitle(columns, "To Do");
-  const done = columnByTitle(columns, "Done");
-  const activities = recognizeKanbanActivities(body, options);
-  const openActivities = activities.filter((activity) => !activity.checked);
-  const doneActivities = activities.filter((activity) => activity.checked);
+  const activities = parseKanbanNoteItems(body, options, columns);
 
-  const cards = [
-    ...openActivities.map((activity, order) =>
-      activityToCard(activity, todo.id, order, now, createId)
-    ),
-    ...doneActivities.map((activity, order) =>
-      activityToCard(activity, done.id, order, now, createId)
-    ),
-  ];
+  const cards = activities.map((activity, order) => {
+    const columnId = resolveColumnIdForItem(columns, activity.checked, activity.columnTag);
+    const columnCardsBefore = activities
+      .slice(0, order)
+      .filter((item) => resolveColumnIdForItem(columns, item.checked, item.columnTag) === columnId)
+      .length;
+    return activityToCard(activity, columns, columnCardsBefore, now, createId);
+  });
 
   return {
     schemaVersion: 1,
@@ -339,12 +306,12 @@ export function mergeKanbanBoardFromNote(
   const existingKeys = new Set(
     board.cards.map((card) => card.source?.key).filter((key): key is string => Boolean(key))
   );
-  const todo = columnByTitle(board.columns, "To Do");
-  const todoOrderStart = board.cards.filter((card) => card.columnId === todo.id).length;
-  const additions = recognizeKanbanActivities(body, options)
+  const first = firstKanbanColumn(board.columns);
+  const todoOrderStart = board.cards.filter((card) => card.columnId === first.id).length;
+  const additions = parseKanbanNoteItems(body, options, board.columns)
     .filter((activity) => !existingKeys.has(activity.key))
     .map((activity, index) =>
-      activityToCard(activity, todo.id, todoOrderStart + index, now, createId)
+      activityToCard(activity, board.columns, todoOrderStart + index, now, createId)
     );
 
   if (additions.length === 0) {

@@ -14,7 +14,6 @@ import { useKanban } from "@/features/notes/use-kanban";
 import { useKanbanBoardToNoteSync } from "@/features/notes/use-kanban-board-to-note-sync";
 import { useNotes } from "@/features/notes/use-notes";
 import { KanbanBoard } from "@/features/kanban/board";
-import type { ResolvedReflectionFields } from "@/components/notes/resolved-reflection-dialog";
 import { isKanbanEnabled } from "@/lib/notes/kanban-config";
 
 export default function KanbanBoardPage() {
@@ -38,7 +37,6 @@ export default function KanbanBoardPage() {
     updateNote,
     encryptedWrappedKey,
   });
-  const [noteResolved, setNoteResolved] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -87,7 +85,6 @@ export default function KanbanBoardPage() {
       <KanbanBoard
         board={board}
         saving={saving || busy}
-        noteResolved={noteResolved}
         onBackHref={board.scope === "note" && board.noteId ? `/notes/${board.noteId}` : "/kanban"}
         onChange={async (next, options) => {
           await saveBoard(next, undefined, options);
@@ -95,12 +92,11 @@ export default function KanbanBoardPage() {
         onRestore={async (restored) => {
           await saveBoard(restored, undefined, { appendVersion: true });
         }}
-        onResolveNote={async (fields: ResolvedReflectionFields | null) => {
+        onResolveNote={async () => {
           if (!board.noteId) return;
           setActionError(null);
           try {
-            await resolveNoteWithReflection(board.noteId, fields);
-            setNoteResolved(true);
+            await resolveNoteWithReflection(board.noteId, null);
           } catch (error) {
             setActionError(error instanceof Error ? error.message : "Failed to resolve note");
           }
@@ -110,7 +106,6 @@ export default function KanbanBoardPage() {
           setActionError(null);
           try {
             await toggleNoteResolved(board.noteId, false);
-            setNoteResolved(false);
           } catch (error) {
             setActionError(error instanceof Error ? error.message : "Failed to reopen note");
           }

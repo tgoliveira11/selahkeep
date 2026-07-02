@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import { sanitizeEditorPasteHtml } from "@/lib/notes/editor-paste";
 import { isModKey } from "@/lib/notes/markdown-actions";
+import { normalizeMarkdownForCompare } from "@/lib/notes/markdown-roundtrip";
+import { unescapeMarkdownBracketTags } from "@/lib/notes/markdown-brackets";
 import { createNoteEditorExtensions } from "@/features/notes/note-editor-extensions";
 
 interface VisualNoteEditorProps {
@@ -17,7 +19,7 @@ interface VisualNoteEditorProps {
 }
 
 function getEditorMarkdown(editor: Editor): string {
-  return editor.storage.markdown.getMarkdown();
+  return unescapeMarkdownBracketTags(editor.storage.markdown.getMarkdown());
 }
 
 export function VisualNoteEditor({
@@ -89,15 +91,26 @@ export function VisualNoteEditor({
     if (value === lastEmitted.current) return;
 
     const current = getEditorMarkdown(editor);
-    if (current === value) {
+    if (normalizeMarkdownForCompare(current) === normalizeMarkdownForCompare(value)) {
       lastEmitted.current = value;
       return;
     }
 
+    const { from, to } = editor.state.selection;
+    const wasFocused = editor.isFocused;
+
     suppressUpdate.current = true;
-    editor.commands.setContent(value);
+    editor.commands.setContent(unescapeMarkdownBracketTags(value), { emitUpdate: false });
     suppressUpdate.current = false;
     lastEmitted.current = value;
+
+    if (wasFocused) {
+      const maxPos = editor.state.doc.content.size;
+      const nextFrom = Math.min(from, maxPos);
+      const nextTo = Math.min(to, maxPos);
+      editor.commands.setTextSelection({ from: nextFrom, to: nextTo });
+      editor.commands.focus();
+    }
   }, [editor, value]);
 
   return (

@@ -1,8 +1,10 @@
 import type {
   KanbanBoardPlaintext,
   KanbanCardPlaintext,
+  KanbanCardStatusEvent,
   KanbanColumnPlaintext,
 } from "@/lib/notes/kanban-types";
+import { sortKanbanColumns } from "@/lib/notes/kanban-columns";
 
 export interface KanbanProgress {
   total: number;
@@ -38,10 +40,8 @@ export function canDeleteKanbanColumn(
   columns: KanbanColumnPlaintext[],
   columnId: string
 ): boolean {
-  const target = columns.find((column) => column.id === columnId);
-  if (!target) return false;
-  if (!target.isDoneColumn) return true;
-  return columns.filter((column) => column.isDoneColumn).length > 1;
+  if (sortKanbanColumns(columns).length <= 1) return false;
+  return columns.some((column) => column.id === columnId);
 }
 
 export function reorderKanbanCards(cards: KanbanCardPlaintext[]): KanbanCardPlaintext[] {
@@ -75,11 +75,28 @@ export function moveKanbanCard(
     .filter((card) => card.columnId === columnId)
     .sort((a, b) => a.order - b.order);
   const insertAt = Math.max(0, Math.min(order ?? targetCards.length, targetCards.length));
+
+  const history = movingCard.statusHistory ?? [];
+  const last = history[history.length - 1];
+  const nextHistory: KanbanCardStatusEvent[] =
+    last && last.columnId === columnId && last.priority === (movingCard.priority ?? null)
+      ? history
+      : [
+          ...history,
+          {
+            at: now,
+            columnId,
+            columnTitle: targetColumn.title,
+            priority: movingCard.priority ?? null,
+          },
+        ];
+
   targetCards.splice(insertAt, 0, {
     ...movingCard,
     columnId,
     order: insertAt,
     updatedAt: now,
+    statusHistory: nextHistory,
   });
 
   const nextCards = [

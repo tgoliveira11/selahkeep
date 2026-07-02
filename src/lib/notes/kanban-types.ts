@@ -1,6 +1,13 @@
 export type KanbanPriority = "low" | "medium" | "high" | "urgent";
 export type KanbanBoardScope = "note" | "standalone";
 
+export interface KanbanCardStatusEvent {
+  at: string;
+  columnId: string;
+  columnTitle: string;
+  priority?: KanbanPriority | null;
+}
+
 export interface KanbanColumnPlaintext {
   id: string;
   title: string;
@@ -30,6 +37,7 @@ export interface KanbanCardPlaintext {
     kind: "checklist" | "list" | "heading" | "manual";
     key?: string;
   };
+  statusHistory?: KanbanCardStatusEvent[];
 }
 
 export interface KanbanBoardPlaintext {

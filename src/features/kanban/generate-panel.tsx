@@ -7,26 +7,21 @@ import {
   createKanbanBoardFromNote,
   recognizeKanbanActivities,
 } from "@/lib/notes/kanban-from-note";
-import type { KanbanBoardPlaintext } from "@/lib/notes/kanban-types";
 
 interface GenerateFromNotePanelProps {
   noteId: string;
   noteTitle: string;
   body: string;
-  existingBoard?: KanbanBoardPlaintext | null;
   loading?: boolean;
   onCreate: () => void | Promise<void>;
-  onResync?: () => void | Promise<void>;
 }
 
 export function GenerateFromNotePanel({
   noteId,
   noteTitle,
   body,
-  existingBoard,
   loading = false,
   onCreate,
-  onResync,
 }: GenerateFromNotePanelProps) {
   const [includePlainListItems, setIncludePlainListItems] = useState(true);
   const activities = useMemo(
@@ -42,24 +37,6 @@ export function GenerateFromNotePanel({
       }),
     [body, includePlainListItems, noteId, noteTitle]
   );
-
-  if (existingBoard) {
-    return (
-      <Alert variant="info" data-testid="kanban-existing-panel">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span>
-            This note stays in sync with its Kanban board. Use re-sync to force a reconcile from the
-            note if something looks out of date.
-          </span>
-          {onResync && (
-            <Button type="button" variant="secondary" disabled={loading} onClick={() => void onResync()}>
-              Re-sync from note
-            </Button>
-          )}
-        </div>
-      </Alert>
-    );
-  }
 
   if (activities.length === 0) {
     return (

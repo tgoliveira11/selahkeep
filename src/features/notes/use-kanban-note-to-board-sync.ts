@@ -19,7 +19,7 @@ export interface UseKanbanNoteToBoardSyncOptions {
   ) => Promise<KanbanBoardPlaintext>;
 }
 
-/** Debounced note → board sync for the note detail page. */
+/** Debounced note → board sync for the note detail page. Never rewrites note body. */
 export function useKanbanNoteToBoardSync({
   body,
   board,
@@ -53,7 +53,7 @@ export function useKanbanNoteToBoardSync({
     try {
       lastSyncedBodyRef.current = body;
       await saveBoard(result.board, encryptedWrappedKey, {
-        appendVersion: result.added > 0 || result.removed > 0,
+        appendVersion: true,
       });
     } finally {
       syncingRef.current = false;

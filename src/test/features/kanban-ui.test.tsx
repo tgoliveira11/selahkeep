@@ -82,7 +82,7 @@ describe("kanban UI", () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it("moves a card to done and opens the resolve reflection dialog", async () => {
+  it("resolves the linked note when a card moves to done", async () => {
     const onChange = vi.fn();
     const onResolveNote = vi.fn();
     render(
@@ -90,19 +90,17 @@ describe("kanban UI", () => {
         board={sampleBoard()}
         onChange={onChange}
         onResolveNote={onResolveNote}
-        noteResolved={false}
       />
     );
 
     fireEvent.change(screen.getByLabelText("Move Call mom"), { target: { value: "done" } });
 
     await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
-    expect(await screen.findByTestId("resolved-reflection-dialog")).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("resolve-without-reflection"));
-    expect(onResolveNote).toHaveBeenCalledWith(null);
+    await waitFor(() => expect(onResolveNote).toHaveBeenCalledTimes(1));
+    expect(screen.queryByTestId("resolved-reflection-dialog")).toBeNull();
   });
 
-  it("offers to reopen a resolved note when a done card moves out", async () => {
+  it("reopens the linked note when a done card moves out", async () => {
     const board = sampleBoard();
     const doneBoard = {
       ...board,
@@ -114,14 +112,12 @@ describe("kanban UI", () => {
         board={doneBoard}
         onChange={vi.fn()}
         onReopenNote={onReopenNote}
-        noteResolved
       />
     );
 
     fireEvent.change(screen.getByLabelText("Move Call mom"), { target: { value: "todo" } });
-    expect(await screen.findByTestId("kanban-reopen-suggestion")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /reopen note/i }));
-    expect(onReopenNote).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onReopenNote).toHaveBeenCalledTimes(1));
+    expect(screen.queryByTestId("kanban-reopen-suggestion")).toBeNull();
   });
 
   it("restores a board version and renders semantic diff", async () => {
@@ -214,16 +210,13 @@ describe("kanban UI", () => {
       const toolbar = screen.getByTestId(`kanban-column-toolbar-${columnId}`);
       expect(toolbar.className).toContain("flex-nowrap");
       expect(toolbar.className).not.toContain("flex-wrap");
-      expect(toolbar.children).toHaveLength(5);
+      expect(toolbar.children).toHaveLength(4);
 
       expect(screen.getByTestId(`kanban-column-add-card-${columnId}`)).toBeInTheDocument();
-      expect(screen.getByTestId(`kanban-column-toggle-done-${columnId}`)).toBeInTheDocument();
       expect(screen.getByTestId(`kanban-column-move-left-${columnId}`)).toBeInTheDocument();
       expect(screen.getByTestId(`kanban-column-move-right-${columnId}`)).toBeInTheDocument();
       expect(screen.getByTestId(`kanban-column-delete-${columnId}`)).toBeInTheDocument();
+      expect(screen.queryByTestId(`kanban-column-toggle-done-${columnId}`)).toBeNull();
     }
-
-    expect(screen.getByTestId("kanban-column-toggle-done-todo")).toHaveAttribute("aria-label", "Mark done");
-    expect(screen.getByTestId("kanban-column-toggle-done-done")).toHaveAttribute("aria-label", "Unmark done");
   });
 });
