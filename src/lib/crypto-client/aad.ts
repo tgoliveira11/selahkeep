@@ -3,11 +3,15 @@ import { stringToBytes } from "./encoding";
 
 /** Stable key order for AAD — must match at encrypt and decrypt time. */
 export function canonicalAadString(aad: EncryptedPayload["aad"]): string {
-  return JSON.stringify({
+  const base: Record<string, string> = {
     field: aad.field,
     resourceId: aad.resourceId,
     userId: aad.userId,
-  });
+  };
+  if (aad.field === "integration_grant" && aad.integrationId) {
+    base.integrationId = aad.integrationId;
+  }
+  return JSON.stringify(base);
 }
 
 /** Try every AAD byte sequence that may have been used (legacy + DB key reordering). */

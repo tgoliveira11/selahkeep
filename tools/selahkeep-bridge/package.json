@@ -1,0 +1,10 @@
+{
+  "name": "selahkeep-bridge",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local handoff listener for SelahKeep MCP credentials",
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs"
+  }
+}

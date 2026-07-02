@@ -58,6 +58,18 @@ export function apiError(error: unknown, endpoint: string) {
     if (named.name === "AdminForbiddenError") {
       return NextResponse.json({ error: named.message }, { status: 403 });
     }
+    if (named.name === "IntegrationsDisabledError") {
+      return NextResponse.json({ error: named.message }, { status: 404 });
+    }
+    if (named.name === "UnauthorizedIntegrationError") {
+      return NextResponse.json({ error: named.message }, { status: 401 });
+    }
+    if (named.name === "ForbiddenError") {
+      return NextResponse.json({ error: named.message }, { status: 403 });
+    }
+    if (named.name === "IntegrationPlaintextRejectionError") {
+      return NextResponse.json({ error: named.message }, { status: 400 });
+    }
   }
   safeLogger.error("API error", { endpoint, error: error instanceof Error ? error.message : "unknown" });
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });

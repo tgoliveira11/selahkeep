@@ -11,7 +11,12 @@ type AadField = EncryptedPayload["aad"]["field"];
 
 export function verifyPayloadAad(
   payload: EncryptedPayload,
-  expected: { userId: string; resourceId: string; field: AadField }
+  expected: {
+    userId: string;
+    resourceId: string;
+    field: AadField;
+    integrationId?: string;
+  }
 ): void {
   if (payload.aad.userId !== expected.userId) {
     throw new ClientAadMismatchError("Encrypted payload user binding mismatch");
@@ -21,5 +26,8 @@ export function verifyPayloadAad(
   }
   if (payload.aad.field !== expected.field) {
     throw new ClientAadMismatchError("Encrypted payload field binding mismatch");
+  }
+  if (expected.integrationId && payload.aad.integrationId !== expected.integrationId) {
+    throw new ClientAadMismatchError("Encrypted payload integration binding mismatch");
   }
 }

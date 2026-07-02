@@ -36,7 +36,7 @@ export async function exportAesKey(key: CryptoKey): Promise<Uint8Array> {
 export async function encryptField(
   plaintext: string,
   key: CryptoKey,
-  aad: { userId: string; resourceId: string; field: EncryptedPayload["aad"]["field"] }
+  aad: EncryptedPayload["aad"]
 ): Promise<EncryptedPayload> {
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
   const aadBytes = stringToBytes(canonicalAadString(aad));

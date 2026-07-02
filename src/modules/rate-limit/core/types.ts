@@ -21,7 +21,8 @@ export type RateLimitOperation =
   | "account.session_revoke_all"
   | "notes.mutate"
   | "kanban.mutate"
-  | "attachments.mutate";
+  | "attachments.mutate"
+  | "integrations.mcp";
 
 export interface RateLimitScope {
   operation: RateLimitOperation;
@@ -73,6 +74,7 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitOperation, RateLimitPolicy> = 
   "notes.mutate": { maxAttempts: 120, windowMs: 60 * 1000 },
   "kanban.mutate": { maxAttempts: 120, windowMs: 60 * 1000 },
   "attachments.mutate": { maxAttempts: 60, windowMs: 60 * 1000 },
+  "integrations.mcp": { maxAttempts: 120, windowMs: 60 * 1000 },
 };
 
 /** Builds a scoped bucket key — never use operation-only keys that could lock out all users. */

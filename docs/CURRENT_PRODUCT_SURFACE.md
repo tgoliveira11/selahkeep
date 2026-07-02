@@ -2,7 +2,7 @@
 
 Living inventory of what the app exposes **today**. Update this file when routes, APIs, jobs, integrations, or shipped/planned status changes.
 
-**Last reviewed:** 2026-07-01 · **Version in repo:** see `package.json`
+**Last reviewed:** 2026-07-03 · **Version in repo:** see `package.json`
 
 ---
 
@@ -45,6 +45,7 @@ Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`;
 | `/vault/recovery` | Session | Shipped | Recovery phrase unlock |
 | `/settings/account` | Session | Shipped | Profile, delete account |
 | `/settings/security` | Session | Shipped | 2FA, sessions, passkeys |
+| `/settings/integrations` | Session + vault | Shipped (when `INTEGRATIONS_ENABLED`) | MCP integrations: create/revoke, share notes/boards, handoff |
 | `/admin` | Session + admin role | Shipped (when `AUTH_ADMIN_ENABLED`) | Secure-auth admin overview |
 | `/admin/users` | Session + admin role | Shipped | User management |
 | `/admin/waitlist` | Session + admin role | Shipped | Pending registrations |
@@ -85,6 +86,7 @@ Grouped by domain. Full tables: [`API_REFERENCE.md`](./API_REFERENCE.md), OpenAP
 | **Note versions** | `/api/notes/[id]/versions/*` | Encrypted version history |
 | **Attachments** | `/api/notes/[id]/attachments/*` | Encrypted attachments |
 | **Kanban boards** | `/api/kanban`, `/api/kanban/[boardId]/versions/*` | Encrypted board CRUD + version history; React UI under `/kanban` |
+| **Integrations** | `/api/integrations`, `/api/integrations/mcp/*` | User MCP integrations (session mgmt); Bearer token for scoped note/board ciphertext (when `INTEGRATIONS_ENABLED`) |
 | **Recovery (legacy)** | `/api/recovery-code` | Legacy recovery codes only |
 | **Admin** | `/api/admin/users/[id]` | User admin; no note plaintext |
 | **Meta** | `/api/openapi`, `/api/auth/package-health` | Spec + health |
@@ -104,6 +106,7 @@ Grouped by domain. Full tables: [`API_REFERENCE.md`](./API_REFERENCE.md), OpenAP
 | Passkey PRF vault unlock | Shipped | Separate from account passkeys |
 | Note Kanban generation | Shipped | Deterministic on-device parsing of decrypted note markdown; no LLM/plaintext egress |
 | Note ↔ Kanban bidirectional sync | Shipped | Note-bound boards sync checklist/list structure and card state client-side (debounced); encryption unchanged |
+| MCP AI integrations | Shipped (when `INTEGRATIONS_ENABLED`) | Local MCP server + optional bridge; scoped read/write on shared notes/boards only |
 
 ---
 
@@ -124,6 +127,7 @@ Grouped by domain. Full tables: [`API_REFERENCE.md`](./API_REFERENCE.md), OpenAP
 | SMTP / email provider | Verification, reset | `EMAIL_*`, `SMTP_*` |
 | OAuth providers | Google, Apple, GitHub, Microsoft | `AUTH_*` / provider secrets |
 | Hugging Face CDN (optional) | Voice model weights | Default or `NEXT_PUBLIC_VOICE_MODEL_HOST` |
+| MCP clients (Cursor, Claude, Codex) | Scoped note/board access via local stdio server | `packages/selahkeep-mcp`; credentials from `/settings/integrations` |
 | Vercel (typical hosting) | Deploy | Dashboard; not in release workflow |
 
 ---
@@ -134,6 +138,7 @@ Grouped by domain. Full tables: [`API_REFERENCE.md`](./API_REFERENCE.md), OpenAP
 |----------|--------|
 | `NEXT_PUBLIC_VOICE_NOTES_ENABLED=false` | Hides dictation |
 | `ENABLE_API_DOCS=true` | Swagger in production |
+| `INTEGRATIONS_ENABLED=true` | Enables `/settings/integrations` and `/api/integrations*` |
 | `EMAIL_PROVIDER=console` | Dev-only email (blocked in prod) |
 
 ---

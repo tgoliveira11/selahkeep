@@ -127,6 +127,26 @@ Responses include masked IP and coarse browser/platform metadata only — never 
 
 **Email delivery:** transactional messages use `sendEmail()` with `EMAIL_PROVIDER=console` (dev debug), `smtp` (Mailpit locally or Brevo/staging), or future providers. Emails contain account-auth links only — never private letter content. See `README.md` for Mailpit and Brevo SMTP configuration.
 
+### AI integrations (MCP)
+
+User-scoped MCP access for Cursor, Claude Desktop, and Codex. Requires `INTEGRATIONS_ENABLED=true`. Session routes manage integrations; MCP routes use Bearer `sk_int_...` tokens. Server stores token hashes and encrypted grant blobs only — never IEK or plaintext note/board content.
+
+| Method | Path | Auth |
+|--------|------|------|
+| `GET` | `/api/integrations` | Session |
+| `POST` | `/api/integrations` | Session — returns one-time token |
+| `DELETE` | `/api/integrations/:id` | Session |
+| `GET` | `/api/integrations/:id/grants` | Session |
+| `PUT` | `/api/integrations/:id/grants` | Session + vault unlocked (client sends encrypted grants) |
+| `GET` | `/api/integrations/mcp/notes` | Bearer integration token |
+| `GET` | `/api/integrations/mcp/notes/:id` | Bearer |
+| `PUT` | `/api/integrations/mcp/notes/:id` | Bearer + write grant |
+| `GET` | `/api/integrations/mcp/kanban` | Bearer |
+| `GET` | `/api/integrations/mcp/kanban/:boardId` | Bearer |
+| `PUT` | `/api/integrations/mcp/kanban/:boardId` | Bearer + write grant |
+
+See `docs/TDR_AI_Integrations.md` and `docs/ADR-007_Integration_Grants_MCP.md`.
+
 ### Encrypted Kanban boards
 
 Kanban board APIs store and return encrypted blobs only. Note-bound boards reuse the note wrapped key; standalone boards use a wrapped Kanban board key. No card titles, descriptions, labels, due dates, priorities, or columns are accepted in plaintext.

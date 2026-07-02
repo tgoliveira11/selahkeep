@@ -272,6 +272,23 @@ Primary UI: **`/notes`**, **`/notes/new`**, **`/notes/:id`**, **`/notes/remembra
 - **API:** `POST/GET /api/notes`, `GET/PUT/DELETE /api/notes/:id`, `GET/POST /api/notes/:id/versions`, `GET /api/notes/:id/versions/:versionId` — encrypted payloads only
 - **Removed (Phase 3):** `/letters`, `/api/letters`, `letters` table
 
+## AI integrations (Cursor, Claude, Codex)
+
+Opt-in MCP access to **selected** notes and Kanban boards (never the whole vault by default). Requires `INTEGRATIONS_ENABLED=true` and migration `0018_integrations.sql`.
+
+1. Unlock your vault and open **`/settings/integrations`**.
+2. Create an integration (e.g. "Cursor MacBook") — copy the **one-time** token and integration key.
+3. Choose notes/boards and read or read+write permissions.
+4. Connect:
+   - **Local handoff:** run `node tools/selahkeep-bridge/index.mjs`, then use **Connect locally** in the UI (writes `~/.selahkeep/mcp-credentials.json`).
+   - **Manual:** copy the generated `mcp.json` snippet into Cursor / Claude Desktop config.
+
+MCP server package: `packages/selahkeep-mcp` (`npm install && npm run build` in that directory). Env vars: `SELAHKEEP_API_URL`, `SELAHKEEP_INTEGRATION_TOKEN`, `SELAHKEEP_INTEGRATION_KEY`.
+
+**Privacy:** the server stays zero-knowledge; decrypted content is available only to tools you connect. AI providers may process plaintext once an agent reads a shared note.
+
+See [`docs/TDR_AI_Integrations.md`](./docs/TDR_AI_Integrations.md) and [`docs/ADR-007_Integration_Grants_MCP.md`](./docs/ADR-007_Integration_Grants_MCP.md).
+
 ## Deploy (Vercel)
 
 See [`docs/VERCEL_ENVIRONMENT_VARIABLES.md`](./docs/VERCEL_ENVIRONMENT_VARIABLES.md) and [`docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md`](./docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md).
@@ -283,6 +300,7 @@ See [`docs/VERCEL_ENVIRONMENT_VARIABLES.md`](./docs/VERCEL_ENVIRONMENT_VARIABLES
 - OAuth callback URLs: `{APP_BASE_URL}/api/auth/callback/{provider}`
 - Run `npm run db:migrate` after pulling Kanban schema updates (`0016_note_kanban.sql`). Verify with `npm run db:check-kanban` if `/kanban` or `GET /api/kanban` returns 503 ("Kanban boards are not available yet").
 - Run `npm run db:migrate` after pulling vault admin schema updates (`0017_vault_admin_platform.sql`). Verify with `npm run db:check-vault-admin` if `/admin/vault/config` or `GET /api/vault/admin/config` fails on missing table.
+- Run `npm run db:migrate` after pulling integrations schema updates (`0018_integrations.sql`). Set `INTEGRATIONS_ENABLED=true` to enable `/settings/integrations`.
 - Run `npm run db:migrate` before serving traffic
 - MVP acceptance: [`docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md`](./docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md)
 
