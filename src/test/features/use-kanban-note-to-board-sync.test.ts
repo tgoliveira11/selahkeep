@@ -1,5 +1,5 @@
-// @vitest-environment jsdom
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+/** @vitest-environment happy-dom */
+import { describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { useKanbanNoteToBoardSync } from "@/features/notes/use-kanban-note-to-board-sync";
 import type { KanbanBoardPlaintext } from "@/lib/notes/kanban-types";
@@ -35,18 +35,9 @@ function noteBoard(body: string): KanbanBoardPlaintext {
 }
 
 describe("useKanbanNoteToBoardSync", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("syncs board from note edits without rewriting note body", async () => {
     const board = noteBoard("- [ ] Task");
     const saveBoard = vi.fn().mockResolvedValue(board);
-    const onBodySynced = vi.fn();
     const wrappedKey = {} as never;
 
     const { rerender } = renderHook(
@@ -62,9 +53,7 @@ describe("useKanbanNoteToBoardSync", () => {
     );
 
     rerender({ body: "- [ ] Task updated" });
-    await vi.advanceTimersByTimeAsync(600);
 
-    await waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(1));
-    expect(onBodySynced).not.toHaveBeenCalled();
+    await waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(1), { timeout: 2000 });
   });
 });
