@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
+import { NoteAttachmentsField } from "@/features/notes/note-attachments-field";
+import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import type {
   KanbanCardPlaintext,
   KanbanLabelPlaintext,
@@ -29,6 +31,10 @@ interface KanbanCardDialogProps {
   onSave: (card: KanbanCardPlaintext) => void;
   onDelete?: (cardId: string) => void;
   onCancel: () => void;
+  boardId: string;
+  userId: string | null;
+  wrappedKey: EncryptedPayload | null;
+  attachmentsEnabled?: boolean;
 }
 
 export function KanbanCardDialog({
@@ -39,6 +45,10 @@ export function KanbanCardDialog({
   onSave,
   onDelete,
   onCancel,
+  boardId,
+  userId,
+  wrappedKey,
+  attachmentsEnabled = true,
 }: KanbanCardDialogProps) {
   const cancelRef = useRef<HTMLButtonElement>(null);
   const [draft, setDraft] = useState<KanbanCardPlaintext | null>(card);
@@ -126,7 +136,6 @@ export function KanbanCardDialog({
                 onChange={(description) => update({ description: description || undefined })}
                 placeholder="Add context for this card…"
                 maxLength={4000}
-                checklistsDisabled
               />
             </div>
           </FormField>
@@ -139,6 +148,23 @@ export function KanbanCardDialog({
               suggestions={tagSuggestions}
             />
           </FormField>
+
+          <NoteAttachmentsField
+            owner={{ kind: "board", id: boardId }}
+            userId={userId}
+            wrappedKey={wrappedKey}
+            enabled={attachmentsEnabled}
+            testId="kanban-card-attachments-field"
+            filterIds={draft.attachmentIds ?? []}
+            onUploaded={(attachmentId) =>
+              update({ attachmentIds: [...(draft.attachmentIds ?? []), attachmentId] })
+            }
+            onRemoved={(attachmentId) =>
+              update({
+                attachmentIds: (draft.attachmentIds ?? []).filter((id) => id !== attachmentId),
+              })
+            }
+          />
 
           <div className="grid gap-3 sm:grid-cols-2">
             <FormField id="kanban-card-due" label="Due date">

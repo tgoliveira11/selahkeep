@@ -409,7 +409,8 @@ describe("note detail reading view", () => {
 
     it("sanitizes unsafe html", async () => {
       render(<NoteDetailPage />);
-      const preview = await screen.findByTestId("markdown-preview");
+      const surface = await screen.findByTestId("note-reading-surface");
+      const preview = within(surface).getByTestId("markdown-preview");
       expect(preview.innerHTML).not.toContain("<script");
     });
 

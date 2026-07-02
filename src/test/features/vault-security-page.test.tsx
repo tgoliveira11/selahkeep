@@ -4,7 +4,7 @@ import VaultSecurityPage from "@/app/(vault)/vault/security/page";
 import VaultSettingsPage from "@/app/(vault)/vault/settings/page";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
-import { requestVaultDockExpand } from "@/features/vault/vault-status-dock-events";
+import { requestVaultDockExpand } from "@tgoliveira/vault-core/react";
 
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() })),
@@ -29,9 +29,10 @@ vi.mock("@/features/vault/vault-security-review", () => ({
   VaultSecurityReview: () => <div data-testid="vault-security-review" />,
 }));
 
-vi.mock("@/features/vault/vault-status-dock-events", () => ({
-  requestVaultDockExpand: vi.fn(),
-}));
+vi.mock("@tgoliveira/vault-core/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tgoliveira/vault-core/react")>();
+  return { ...actual, requestVaultDockExpand: vi.fn() };
+});
 
 vi.mock("@/features/passkey/passkey-vault-unlock-setup", () => ({
   PasskeyVaultUnlockSetup: () => <div data-testid="passkey-vault-unlock-setup" />,

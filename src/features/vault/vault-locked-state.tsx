@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { buildVaultUnlockHref } from "@/lib/notes/safe-return-to";
-import { requestVaultDockExpand } from "@/features/vault/vault-status-dock-events";
+import { requestVaultDockExpand } from "@tgoliveira/vault-core/react";
 import { VaultStatusIcon } from "@/features/vault/vault-status-dock-icons";
 
 export type VaultLockedStateVariant =
@@ -126,22 +126,11 @@ export function VaultLockedState({
             : "flex flex-col gap-2 sm:flex-row sm:flex-wrap"
         }
       >
-        {/* Desktop: unlock inline via the header dock. */}
-        <Button
-          type="button"
-          className="hidden w-full sm:w-auto md:inline-flex"
-          onClick={() => requestVaultDockExpand()}
-        >
+        {/* The header vault dock is reachable at every viewport width now,
+            so unlocking inline works the same on mobile and desktop. */}
+        <Button type="button" className="w-full sm:w-auto" onClick={() => requestVaultDockExpand()}>
           Unlock here
         </Button>
-        {/* Mobile: the dock is hidden on small screens, so go straight to the
-            dedicated unlock page — every mobile unlock happens at /vault/unlock. */}
-        <Link
-          href={fullUnlockHref}
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius)] bg-[var(--primary-solid)] px-4 py-2.5 text-sm font-semibold text-[var(--on-primary)] transition-colors hover:bg-[var(--primary-hover)] sm:w-auto md:hidden"
-        >
-          Unlock here
-        </Link>
         <Link
           href={fullUnlockHref}
           className={

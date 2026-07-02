@@ -28,6 +28,7 @@ interface NoteDetailActionBarProps {
   onToggleArchived: () => void;
   onDuplicate: () => void;
   onMoveToTrash: () => void;
+  onExportPdf?: () => void;
   /** When true, duplicate/archive/trash live in the right rail (mockup). */
   railLifecycleActions?: boolean;
 }
@@ -50,6 +51,7 @@ export function NoteDetailActionBar({
   onToggleArchived,
   onDuplicate,
   onMoveToTrash,
+  onExportPdf,
   railLifecycleActions = true,
 }: NoteDetailActionBarProps) {
   if (metadata.trashed) return null;
@@ -119,6 +121,7 @@ export function NoteDetailActionBar({
         onToggleArchived={onToggleArchived}
         onDuplicate={onDuplicate}
         onMoveToTrash={onMoveToTrash}
+        onExportPdf={onExportPdf}
         hideLifecycleActions={railLifecycleActions}
       />
     </div>

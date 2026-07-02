@@ -168,13 +168,28 @@ export const kanbanService = {
       throw new Error("Unsupported encryption version");
     }
 
-    assertKanbanBoardAad(userId, boardId, existing.noteId, input);
+    let claimedNoteId: string | undefined;
+    if (input.claimNoteId) {
+      if (existing.noteId) {
+        throw new ConflictError("Kanban board is already linked to a note");
+      }
+      await requireNoteInVault(input.claimNoteId, vault.id);
+      const existingBoardForNote = await kanbanRepository.findByNoteId(input.claimNoteId, vault.id);
+      if (existingBoardForNote) throw new ConflictError("Kanban board already exists for note");
+      claimedNoteId = input.claimNoteId;
+    }
+
+    // The client re-encrypts the board under the note's key before claiming it,
+    // so AAD validation must check against the note being claimed, not the
+    // board's current (pre-claim) noteId.
+    assertKanbanBoardAad(userId, boardId, claimedNoteId ?? existing.noteId, input);
 
     const updated = await withKanbanTable("PUT /api/kanban/:boardId", () =>
       kanbanRepository.update(boardId, vault.id, {
         encryptedBoard: input.encryptedBoard,
         encryptedWrappedKey: input.encryptedWrappedKey,
         boardEncryptionVersion: input.boardEncryptionVersion,
+        ...(claimedNoteId ? { noteId: claimedNoteId } : {}),
       })
     );
     if (!updated) throw new NotFoundError("Kanban board not found");

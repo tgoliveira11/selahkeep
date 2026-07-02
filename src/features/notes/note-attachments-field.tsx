@@ -6,6 +6,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Alert } from "@/components/ui/alert";
 import { AttachmentPreview } from "@/components/notes/attachment-preview";
 import { useNoteAttachments, type AttachmentListItem } from "@/features/notes/use-note-attachments";
+import type { AttachmentOwnerRef } from "@/lib/api-client/note-attachments";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import {
   getMaxAttachmentSizeMb,
@@ -15,7 +16,7 @@ import { canPreviewAttachment } from "@/lib/notes/attachment-preview";
 import type { DecryptedAttachment } from "@/lib/crypto-client/note-attachments";
 
 interface NoteAttachmentsFieldProps {
-  noteId: string | null;
+  owner: AttachmentOwnerRef | null;
   userId: string | null;
   wrappedKey: EncryptedPayload | null;
   enabled: boolean;
@@ -24,6 +25,12 @@ interface NoteAttachmentsFieldProps {
   readOnly?: boolean;
   /** When true (default), previewable attachments show an inline preview on the note detail page. */
   showPreviews?: boolean;
+  /** Restricts the visible list to these ids (e.g. one kanban card's attachments within a board). */
+  filterIds?: string[] | null;
+  /** Fires with the new attachment's id right after a successful upload. */
+  onUploaded?: (attachmentId: string) => void;
+  /** Fires with the attachment's id right after removal is requested. */
+  onRemoved?: (attachmentId: string) => void;
 }
 
 function formatFileSize(bytes: number): string {
@@ -122,7 +129,7 @@ function AttachmentRow({
 }
 
 export function NoteAttachmentsField({
-  noteId,
+  owner,
   userId,
   wrappedKey,
   enabled,
@@ -130,6 +137,9 @@ export function NoteAttachmentsField({
   testId = "note-attachments-field",
   readOnly = false,
   showPreviews = true,
+  filterIds,
+  onUploaded,
+  onRemoved,
 }: NoteAttachmentsFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const {
@@ -143,18 +153,20 @@ export function NoteAttachmentsField({
     getPendingFile,
     canUpload,
   } = useNoteAttachments({
-    noteId,
+    owner,
     userId,
     wrappedKey,
     enabled,
     onAttachmentsChange,
+    filterIds,
   });
 
   async function handleFilesSelected(fileList: FileList | null) {
     if (!fileList?.length) return;
       for (const file of Array.from(fileList)) {
         try {
-          await uploadFile(file);
+          const attachmentId = await uploadFile(file);
+          onUploaded?.(attachmentId);
         } catch {
           // Individual upload errors are surfaced on the next interaction.
         }
@@ -171,7 +183,7 @@ export function NoteAttachmentsField({
       >
         {!readOnly && !canUpload && (
           <p className="mb-2 text-sm text-[var(--muted)]">
-            Save your note first to add encrypted attachments.
+            Save first to add encrypted attachments.
           </p>
         )}
         {!readOnly && (
@@ -218,7 +230,10 @@ export function NoteAttachmentsField({
               <AttachmentRow
                 key={item.id}
                 item={item}
-                onRemove={() => void removeAttachment(item.id)}
+                onRemove={() => {
+                  void removeAttachment(item.id);
+                  onRemoved?.(item.id);
+                }}
                 onDownload={() => void downloadAttachment(item.id)}
                 removing={false}
                 readOnly={readOnly}

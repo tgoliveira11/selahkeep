@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createKanbanBoardFromNote } from "@/lib/notes/kanban-from-note";
 import {
+  buildNoteBodyFromBoard,
   syncBoardFromNoteBody,
   syncNoteAndBoardFromBoardChange,
   syncNoteAndBoardFromNoteChange,
@@ -187,5 +188,22 @@ Revised context
     expect(result.board.cards.find((card) => card.title === "Task A")?.description).toBe(
       "Revised context"
     );
+  });
+
+  it("builds a fresh note body from a standalone board's cards", () => {
+    const board = noteBoard("- [ ] Buy milk\n- [ ] Call mom\n- [x] Done thing");
+    const standalone = { ...board, scope: "standalone" as const, noteId: null };
+
+    const body = buildNoteBodyFromBoard(standalone);
+
+    expect(body).toBe("- [ ] Buy milk\n- [ ] Call mom\n- [x] Done thing");
+  });
+
+  it("round-trips a board built from scratch through the note parser", () => {
+    const board = noteBoard("- [ ] Buy milk\n- [ ] Call mom");
+    const body = buildNoteBodyFromBoard({ ...board, scope: "standalone" as const, noteId: null });
+    const reparsed = noteBoard(body);
+
+    expect(reparsed.cards.map((card) => card.title)).toEqual(["Buy milk", "Call mom"]);
   });
 });

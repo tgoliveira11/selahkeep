@@ -257,12 +257,11 @@ export default function NewNotePage() {
           const attachmentId = crypto.randomUUID();
           const encrypted = await encryptAttachment(
             userId,
-            note.id,
             attachmentId,
             file,
             noteRecord.encryptedWrappedNoteKey
           );
-          await noteAttachmentsApi.create(note.id, encrypted);
+          await noteAttachmentsApi.create({ kind: "note", id: note.id }, encrypted);
         }
       }
 

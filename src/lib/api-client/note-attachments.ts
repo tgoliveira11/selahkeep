@@ -2,9 +2,12 @@ import { apiClient } from "./client";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import type { CreateAttachmentInput } from "@/lib/validation/note-attachments";
 
+export type AttachmentOwnerRef = { kind: "note" | "board"; id: string };
+
 export interface NoteAttachmentRecord {
   id: string;
-  noteId: string;
+  noteId: string | null;
+  boardId: string | null;
   vaultId: string;
   encryptedMetadata: EncryptedPayload;
   encryptedBlob: EncryptedPayload;
@@ -21,21 +24,25 @@ export interface StorageUsageResponse {
   partial: boolean;
 }
 
+function ownerBasePath(owner: AttachmentOwnerRef): string {
+  return owner.kind === "note" ? `/api/notes/${owner.id}` : `/api/kanban/${owner.id}`;
+}
+
 export const noteAttachmentsApi = {
-  list(noteId: string): Promise<{ attachments: NoteAttachmentRecord[] }> {
-    return apiClient.get(`/api/notes/${noteId}/attachments`);
+  list(owner: AttachmentOwnerRef): Promise<{ attachments: NoteAttachmentRecord[] }> {
+    return apiClient.get(`${ownerBasePath(owner)}/attachments`);
   },
 
-  create(noteId: string, input: CreateAttachmentInput): Promise<NoteAttachmentRecord> {
-    return apiClient.post(`/api/notes/${noteId}/attachments`, input);
+  create(owner: AttachmentOwnerRef, input: CreateAttachmentInput): Promise<NoteAttachmentRecord> {
+    return apiClient.post(`${ownerBasePath(owner)}/attachments`, input);
   },
 
-  get(noteId: string, attachmentId: string): Promise<NoteAttachmentRecord> {
-    return apiClient.get(`/api/notes/${noteId}/attachments/${attachmentId}`);
+  get(owner: AttachmentOwnerRef, attachmentId: string): Promise<NoteAttachmentRecord> {
+    return apiClient.get(`${ownerBasePath(owner)}/attachments/${attachmentId}`);
   },
 
-  delete(noteId: string, attachmentId: string): Promise<{ success: boolean }> {
-    return apiClient.delete(`/api/notes/${noteId}/attachments/${attachmentId}`);
+  delete(owner: AttachmentOwnerRef, attachmentId: string): Promise<{ success: boolean }> {
+    return apiClient.delete(`${ownerBasePath(owner)}/attachments/${attachmentId}`);
   },
 };
 

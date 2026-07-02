@@ -73,6 +73,19 @@ describe("MarkdownEditor", () => {
     expect(onSave).toHaveBeenCalled();
   });
 
+  it("toggles a checklist item from the markdown preview when checklists are not disabled", () => {
+    // Kanban card descriptions stopped passing `checklistsDisabled` so they get
+    // the same interactive checklist as notes — this guards that default.
+    const onChange = vi.fn();
+    render(<MarkdownEditor value="- [ ] task" onChange={onChange} id="test-md-checklist" />);
+    switchToMarkdownMode();
+    fireEvent.click(screen.getByText("Preview"));
+    const checkbox = screen.getByTestId("markdown-expert-editor").querySelector("input[type=checkbox]");
+    expect(checkbox).toBeTruthy();
+    fireEvent.click(checkbox as HTMLInputElement);
+    expect(onChange).toHaveBeenCalledWith("- [x] task");
+  });
+
   it("renders grouped toolbar actions with accessible labels", () => {
     render(<MarkdownEditor value="" onChange={vi.fn()} />);
     for (const label of ["Bold", "Italic", "H1", "H2", "Quote", "List", "Checklist", "Link", "Code"]) {

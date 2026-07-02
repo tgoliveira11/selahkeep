@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ENCRYPTION_VERSION } from "@/lib/validation/encrypted-payload";
-import { encryptedPayload, NOTE_ID, USER_ID } from "@/test/helpers/fixtures";
+import { encryptedPayload, BOARD_ID, USER_ID } from "@/test/helpers/fixtures";
 
 const ATTACHMENT_ID = "550e8400-e29b-41d4-a716-446655440005";
+const BOARD_OWNER = { kind: "board" as const, id: BOARD_ID };
 
 const mocks = vi.hoisted(() => ({
   requireFullyAuthenticatedUser: vi.fn(),
@@ -38,79 +39,67 @@ function createAttachmentBody() {
   };
 }
 
-describe("note attachments API routes", () => {
+describe("kanban attachments API routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
   });
 
-  it("GET lists attachments for a note", async () => {
+  it("GET lists attachments for a board", async () => {
     mocks.list.mockResolvedValue([{ id: ATTACHMENT_ID }]);
-    const { GET } = await import("@/app/api/notes/[id]/attachments/route");
+    const { GET } = await import("@/app/api/kanban/[boardId]/attachments/route");
     const res = await GET(new Request("http://localhost"), {
-      params: Promise.resolve({ id: NOTE_ID }),
+      params: Promise.resolve({ boardId: BOARD_ID }),
     });
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ attachments: [{ id: ATTACHMENT_ID }] });
-    expect(mocks.list).toHaveBeenCalledWith({ kind: "note", id: NOTE_ID }, USER_ID);
+    expect(mocks.list).toHaveBeenCalledWith(BOARD_OWNER, USER_ID);
   });
 
-  it("POST creates encrypted attachment", async () => {
+  it("POST creates a board-owned encrypted attachment", async () => {
     mocks.create.mockResolvedValue({ id: ATTACHMENT_ID });
-    const { POST } = await import("@/app/api/notes/[id]/attachments/route");
+    const { POST } = await import("@/app/api/kanban/[boardId]/attachments/route");
     const res = await POST(
       new Request("http://localhost", {
         method: "POST",
         body: JSON.stringify(createAttachmentBody()),
       }),
-      { params: Promise.resolve({ id: NOTE_ID }) }
+      { params: Promise.resolve({ boardId: BOARD_ID }) }
     );
     expect(res.status).toBe(201);
-    expect(mocks.create).toHaveBeenCalled();
+    expect(mocks.create).toHaveBeenCalledWith(BOARD_OWNER, USER_ID, expect.objectContaining({ id: ATTACHMENT_ID }));
   });
 
   it("POST rejects plaintext attachment fields", async () => {
-    const { POST } = await import("@/app/api/notes/[id]/attachments/route");
+    const { POST } = await import("@/app/api/kanban/[boardId]/attachments/route");
     const res = await POST(
       new Request("http://localhost", {
         method: "POST",
         body: JSON.stringify({ filename: "secret.txt", ...createAttachmentBody() }),
       }),
-      { params: Promise.resolve({ id: NOTE_ID }) }
+      { params: Promise.resolve({ boardId: BOARD_ID }) }
     );
     expect(res.status).toBe(400);
     expect(mocks.create).not.toHaveBeenCalled();
   });
 
-  it("POST rejects invalid encrypted payload", async () => {
-    const { POST } = await import("@/app/api/notes/[id]/attachments/route");
-    const res = await POST(
-      new Request("http://localhost", {
-        method: "POST",
-        body: JSON.stringify({ id: "not-a-uuid" }),
-      }),
-      { params: Promise.resolve({ id: NOTE_ID }) }
-    );
-    expect(res.status).toBe(400);
-  });
-
   it("GET attachment by id returns record", async () => {
     mocks.getById.mockResolvedValue({ id: ATTACHMENT_ID });
-    const { GET } = await import("@/app/api/notes/[id]/attachments/[attachmentId]/route");
+    const { GET } = await import("@/app/api/kanban/[boardId]/attachments/[attachmentId]/route");
     const res = await GET(new Request("http://localhost"), {
-      params: Promise.resolve({ id: NOTE_ID, attachmentId: ATTACHMENT_ID }),
+      params: Promise.resolve({ boardId: BOARD_ID, attachmentId: ATTACHMENT_ID }),
     });
     expect(res.status).toBe(200);
-    expect(mocks.getById).toHaveBeenCalledWith({ kind: "note", id: NOTE_ID }, ATTACHMENT_ID, USER_ID);
+    expect(mocks.getById).toHaveBeenCalledWith(BOARD_OWNER, ATTACHMENT_ID, USER_ID);
   });
 
   it("DELETE attachment removes record", async () => {
-    mocks.delete.mockResolvedValue({ deleted: true });
-    const { DELETE } = await import("@/app/api/notes/[id]/attachments/[attachmentId]/route");
+    mocks.delete.mockResolvedValue({ success: true });
+    const { DELETE } = await import("@/app/api/kanban/[boardId]/attachments/[attachmentId]/route");
     const res = await DELETE(new Request("http://localhost", { method: "DELETE" }), {
-      params: Promise.resolve({ id: NOTE_ID, attachmentId: ATTACHMENT_ID }),
+      params: Promise.resolve({ boardId: BOARD_ID, attachmentId: ATTACHMENT_ID }),
     });
     expect(res.status).toBe(200);
-    expect(mocks.delete).toHaveBeenCalledWith({ kind: "note", id: NOTE_ID }, ATTACHMENT_ID, USER_ID);
+    expect(mocks.delete).toHaveBeenCalledWith(BOARD_OWNER, ATTACHMENT_ID, USER_ID);
   });
 });

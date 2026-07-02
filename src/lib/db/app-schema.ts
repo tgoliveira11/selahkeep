@@ -8,6 +8,7 @@ import {
   jsonb,
   index,
   uniqueIndex,
+  check,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { users } from "@tgoliveira/secure-auth/drizzle/schema";
@@ -107,30 +108,6 @@ export const noteVersions = pgTable(
   ]
 );
 
-/** Encrypted file attachments — blob + metadata ciphertext only (see docs/ENCRYPTED_ATTACHMENTS.md). */
-export const noteAttachments = pgTable(
-  "note_attachments",
-  {
-    id: uuid("id").primaryKey(),
-    noteId: uuid("note_id")
-      .notNull()
-      .references(() => notes.id, { onDelete: "cascade" }),
-    vaultId: uuid("vault_id")
-      .notNull()
-      .references(() => userVaults.id, { onDelete: "cascade" }),
-    encryptedMetadata: jsonb("encrypted_metadata").notNull(),
-    encryptedBlob: jsonb("encrypted_blob").notNull(),
-    blobEncryptionVersion: text("blob_encryption_version").notNull(),
-    /** Combined ciphertext byte size for storage usage (not plaintext). */
-    ciphertextBytes: integer("ciphertext_bytes").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [
-    index("idx_note_attachments_note_id").on(table.noteId),
-    index("idx_note_attachments_vault_id").on(table.vaultId),
-  ]
-);
-
 /**
  * Current encrypted kanban board state. A board may be note-bound or standalone;
  * all columns/cards/labels remain inside `encryptedBoard`.
@@ -155,6 +132,39 @@ export const noteKanbanBoards = pgTable(
     uniqueIndex("idx_note_kanban_boards_note_id")
       .on(table.noteId)
       .where(sql`${table.noteId} IS NOT NULL`),
+  ]
+);
+
+/**
+ * Encrypted file attachments — blob + metadata ciphertext only (see docs/ENCRYPTED_ATTACHMENTS.md).
+ * Owned by exactly one of a note or a standalone kanban board; which card (if
+ * any) within a board owns an attachment is tracked client-side only, inside
+ * the board's own encrypted payload.
+ */
+export const noteAttachments = pgTable(
+  "note_attachments",
+  {
+    id: uuid("id").primaryKey(),
+    noteId: uuid("note_id").references(() => notes.id, { onDelete: "cascade" }),
+    boardId: uuid("board_id").references(() => noteKanbanBoards.id, { onDelete: "cascade" }),
+    vaultId: uuid("vault_id")
+      .notNull()
+      .references(() => userVaults.id, { onDelete: "cascade" }),
+    encryptedMetadata: jsonb("encrypted_metadata").notNull(),
+    encryptedBlob: jsonb("encrypted_blob").notNull(),
+    blobEncryptionVersion: text("blob_encryption_version").notNull(),
+    /** Combined ciphertext byte size for storage usage (not plaintext). */
+    ciphertextBytes: integer("ciphertext_bytes").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_note_attachments_note_id").on(table.noteId),
+    index("idx_note_attachments_board_id").on(table.boardId),
+    index("idx_note_attachments_vault_id").on(table.vaultId),
+    check(
+      "chk_note_attachments_owner",
+      sql`num_nonnulls(${table.noteId}, ${table.boardId}) = 1`
+    ),
   ]
 );
 

@@ -8,6 +8,7 @@ import {
 } from "@/server/services/kanban-service";
 import {
   createKanbanBoardInput,
+  updateKanbanBoardInput,
   KANBAN_BOARD_ID,
   NOTE_ID,
   USER_ID,
@@ -129,6 +130,44 @@ describe("kanban service", () => {
       id: KANBAN_BOARD_ID,
       versionNumber: 1,
     });
+  });
+
+  it("claims a standalone board for a note", async () => {
+    const input = { ...updateKanbanBoardInput(), claimNoteId: NOTE_ID };
+    mocks.findByIdForVault.mockResolvedValue({ id: KANBAN_BOARD_ID, noteId: null });
+    mocks.update.mockResolvedValue({ id: KANBAN_BOARD_ID, noteId: NOTE_ID, versionNumber: 1 });
+
+    const result = await kanbanService.update(KANBAN_BOARD_ID, USER_ID, input);
+
+    expect(mocks.findNoteByIdForVault).toHaveBeenCalledWith(NOTE_ID, "vault-1");
+    expect(mocks.findByNoteId).toHaveBeenCalledWith(NOTE_ID, "vault-1");
+    expect(mocks.update).toHaveBeenCalledWith(
+      KANBAN_BOARD_ID,
+      "vault-1",
+      expect.objectContaining({ noteId: NOTE_ID })
+    );
+    expect(result).toEqual({ id: KANBAN_BOARD_ID, noteId: NOTE_ID, versionNumber: 1 });
+  });
+
+  it("rejects claiming a note for a board that is already note-bound", async () => {
+    const input = { ...updateKanbanBoardInput(), claimNoteId: NOTE_ID };
+    mocks.findByIdForVault.mockResolvedValue({ id: KANBAN_BOARD_ID, noteId: NOTE_ID });
+
+    await expect(kanbanService.update(KANBAN_BOARD_ID, USER_ID, input)).rejects.toBeInstanceOf(
+      ConflictError
+    );
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects claiming a note that already has a different board", async () => {
+    const input = { ...updateKanbanBoardInput(), claimNoteId: NOTE_ID };
+    mocks.findByIdForVault.mockResolvedValue({ id: KANBAN_BOARD_ID, noteId: null });
+    mocks.findByNoteId.mockResolvedValue({ id: "other-board" });
+
+    await expect(kanbanService.update(KANBAN_BOARD_ID, USER_ID, input)).rejects.toBeInstanceOf(
+      ConflictError
+    );
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 
   it("throws NotFoundError for a missing board", async () => {

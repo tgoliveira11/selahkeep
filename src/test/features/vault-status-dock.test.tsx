@@ -262,7 +262,9 @@ describe("VaultStatusDock", () => {
       </SiteShell>
     );
     const header = screen.getByRole("banner");
-    expect(within(header).getByTestId("core-vault-status-dock")).toBeTruthy();
+    // The dock renders once in the desktop toolbar and once in the mobile
+    // header row.
+    expect(within(header).getAllByTestId("core-vault-status-dock").length).toBeGreaterThan(0);
   });
 
   it("stores only UI collapse preference", () => {

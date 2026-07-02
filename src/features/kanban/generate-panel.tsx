@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { MarkdownPreview } from "@/components/notes/markdown-preview";
 import {
   createKanbanBoardFromNote,
   recognizeKanbanActivities,
@@ -80,7 +81,10 @@ export function GenerateFromNotePanel({
           >
             <p className="text-sm font-semibold">{card.title}</p>
             {card.description && (
-              <p className="mt-1 text-xs text-[var(--muted)]">{card.description}</p>
+              <MarkdownPreview
+                markdown={card.description}
+                className="mt-1 text-xs text-[var(--muted)]"
+              />
             )}
           </div>
         ))}

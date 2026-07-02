@@ -73,6 +73,7 @@ export const kanbanRepository = {
       encryptedWrappedKey: EncryptedPayload;
       boardEncryptionVersion: string;
       versionNumber: number;
+      noteId: string;
     }>,
     client: DbClient = db
   ) {
@@ -100,3 +101,28 @@ export const kanbanRepository = {
     return rows.length;
   },
 };
+
+/**
+ * Standalone boards' own encrypted content, for vault storage quota — mirrors
+ * `sumNoteCiphertextBytesByVaultId`. Note-bound boards aren't counted here
+ * since their cards are already the note's own content.
+ */
+export async function sumStandaloneBoardCiphertextBytesByVaultId(
+  vaultId: string,
+  client: DbClient = db
+): Promise<number> {
+  const rows = await client
+    .select({
+      encryptedBoard: noteKanbanBoards.encryptedBoard,
+      encryptedWrappedKey: noteKanbanBoards.encryptedWrappedKey,
+    })
+    .from(noteKanbanBoards)
+    .where(and(eq(noteKanbanBoards.vaultId, vaultId), isNull(noteKanbanBoards.noteId)));
+
+  let total = 0;
+  for (const row of rows) {
+    total += JSON.stringify(row.encryptedBoard).length;
+    total += JSON.stringify(row.encryptedWrappedKey).length;
+  }
+  return total;
+}

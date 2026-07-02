@@ -11,7 +11,7 @@ import {
   resolveColumnIdForCard,
   resolveColumnIdForItem,
 } from "@/lib/notes/kanban-card-text";
-import { firstKanbanColumn } from "@/lib/notes/kanban-columns";
+import { firstKanbanColumn, sortKanbanColumns } from "@/lib/notes/kanban-columns";
 import { reorderKanbanCards } from "@/lib/notes/kanban-progress";
 import type {
   KanbanBoardPlaintext,
@@ -263,7 +263,7 @@ function cardKeysInBoard(board: KanbanBoardPlaintext): Set<string> {
   );
 }
 
-function buildNoteLinesForCard(
+export function buildNoteLinesForCard(
   card: KanbanCardPlaintext,
   columns: KanbanColumnPlaintext[],
   originalLine?: string
@@ -288,6 +288,24 @@ function buildNoteLinesForCard(
   );
   if (!description) return [itemLine];
   return [itemLine, ...description.split("\n"), ""];
+}
+
+/**
+ * Builds a fresh note body from a board's current cards — for turning a
+ * standalone board into a note-bound one. Column order determines section
+ * order; within a column, cards keep their board order.
+ */
+export function buildNoteBodyFromBoard(board: KanbanBoardPlaintext): string {
+  const lines: string[] = [];
+  for (const column of sortKanbanColumns(board.columns)) {
+    const cardsInColumn = board.cards
+      .filter((card) => card.columnId === column.id)
+      .sort((a, b) => a.order - b.order);
+    for (const card of cardsInColumn) {
+      lines.push(...buildNoteLinesForCard(card, board.columns));
+    }
+  }
+  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 /**

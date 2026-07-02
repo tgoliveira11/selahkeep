@@ -392,6 +392,51 @@ export function useKanban(userId: string | null) {
     [saveBoard, state.board, state.encryptedWrappedKey]
   );
 
+  const claimBoardForNote = useCallback(
+    async (
+      board: KanbanBoardPlaintext,
+      noteId: string,
+      encryptedWrappedNoteKey: EncryptedPayload
+    ) => {
+      if (!userId) throw new Error("Not authenticated");
+      setState((current) => ({ ...current, saving: true, error: null }));
+      try {
+        const nextBoard: KanbanBoardPlaintext = { ...board, scope: "note", noteId };
+        const payload = await encryptKanbanBoard(userId, board.boardId, nextBoard, encryptedWrappedNoteKey);
+        const row = await kanbanApi.update(board.boardId, { ...payload, claimNoteId: noteId });
+        await appendKanbanVersionSnapshot(userId, nextBoard, encryptedWrappedNoteKey);
+        await syncVaultIndex(userId, (index) =>
+          updateVaultIndexEntry(
+            removeStandaloneKanbanBoardIndexEntry(index, board.boardId),
+            noteId,
+            indexPatchForBoard(nextBoard)
+          )
+        );
+        setState((current) => ({
+          ...current,
+          board: nextBoard,
+          encryptedWrappedKey: encryptedWrappedNoteKey,
+          response: row,
+          standaloneBoards: current.standaloneBoards.filter((item) => item.boardId !== board.boardId),
+          noteBoundBoards: [
+            nextBoard,
+            ...current.noteBoundBoards.filter((item) => item.boardId !== board.boardId),
+          ],
+        }));
+        return nextBoard;
+      } catch (error) {
+        setState((current) => ({
+          ...current,
+          error: error instanceof Error ? error.message : "Failed to link board to note",
+        }));
+        throw error;
+      } finally {
+        setState((current) => ({ ...current, saving: false }));
+      }
+    },
+    [userId]
+  );
+
   const deleteBoard = useCallback(
     async (board: KanbanBoardPlaintext) => {
       if (!userId) throw new Error("Not authenticated");
@@ -420,6 +465,7 @@ export function useKanban(userId: string | null) {
     createStandaloneBoard,
     saveBoard,
     regenerateFromNote,
+    claimBoardForNote,
     deleteBoard,
   };
 }

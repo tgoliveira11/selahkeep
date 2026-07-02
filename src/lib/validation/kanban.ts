@@ -9,7 +9,10 @@ export const createKanbanBoardSchema = z.object({
   boardEncryptionVersion: z.literal(ENCRYPTION_VERSION),
 });
 
-export const updateKanbanBoardSchema = createKanbanBoardSchema.omit({ noteId: true });
+export const updateKanbanBoardSchema = createKanbanBoardSchema.omit({ noteId: true }).extend({
+  /** One-way claim: links a standalone board to a note it wasn't created with. */
+  claimNoteId: z.string().uuid().optional(),
+});
 
 export const createKanbanVersionSchema = z.object({
   id: z.string().uuid(),

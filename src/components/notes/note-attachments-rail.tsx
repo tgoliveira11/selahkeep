@@ -104,7 +104,7 @@ export function NoteAttachmentsRail({
   enabled,
 }: NoteAttachmentsRailProps) {
   const { items, loading, error, downloadAttachment, getDecryptedAttachment } = useNoteAttachments({
-    noteId,
+    owner: { kind: "note", id: noteId },
     userId,
     wrappedKey,
     enabled,

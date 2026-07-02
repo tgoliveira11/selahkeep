@@ -39,6 +39,8 @@ export interface KanbanCardPlaintext {
     key?: string;
   };
   statusHistory?: KanbanCardStatusEvent[];
+  /** Ids of attachments owned by the board that belong to this card. */
+  attachmentIds?: string[];
 }
 
 export interface KanbanBoardPlaintext {
