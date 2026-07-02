@@ -4,9 +4,10 @@ function readPublic(value: string | undefined): string | undefined {
   return trimmed === "" ? undefined : trimmed;
 }
 
-/** Enabled unless NEXT_PUBLIC_KANBAN_ENABLED is explicitly "false". */
-export function isKanbanEnabled(
-  value: string | undefined = process.env.NEXT_PUBLIC_KANBAN_ENABLED
-): boolean {
-  return readPublic(value) !== "false";
+/** Enabled unless KANBAN_ENABLED or NEXT_PUBLIC_KANBAN_ENABLED is explicitly "false". */
+export function isKanbanEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  const serverFlag = readPublic(env.KANBAN_ENABLED);
+  const publicFlag = readPublic(env.NEXT_PUBLIC_KANBAN_ENABLED);
+  const value = serverFlag ?? publicFlag;
+  return value !== "false";
 }

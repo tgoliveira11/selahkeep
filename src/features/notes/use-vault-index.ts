@@ -34,7 +34,7 @@ export function useVaultIndex(userId: string | null, vaultUnlocked: boolean) {
           return;
         }
         const decrypted = encryptedVaultIndex
-          ? await decryptVaultIndex(encryptedVaultIndex, vaultKey)
+          ? await decryptVaultIndex(encryptedVaultIndex, userId!, vaultKey)
           : createEmptyVaultIndex();
         if (!cancelled) setIndex(decrypted);
       } catch (e) {
@@ -77,7 +77,7 @@ export function useVaultIndex(userId: string | null, vaultUnlocked: boolean) {
 
       const { encryptedVaultIndex } = await vaultApi.getIndex();
       const current = encryptedVaultIndex
-        ? await decryptVaultIndex(encryptedVaultIndex, vaultKey)
+        ? await decryptVaultIndex(encryptedVaultIndex, userId!, vaultKey)
         : createEmptyVaultIndex();
       const next = mutate(current);
       await persistIndex(next);

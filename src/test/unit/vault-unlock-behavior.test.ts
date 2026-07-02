@@ -23,7 +23,7 @@ describe("vault unlock behavior settings", () => {
   it("round-trips decrypt_all in encrypted vault settings", async () => {
     const settings = { ...defaultVaultSettings(), unlockBehavior: "decrypt_all" as const };
     const encrypted = await encryptVaultSettings(settings, USER_ID, vaultKey);
-    const decrypted = await decryptVaultSettings(encrypted, vaultKey);
+    const decrypted = await decryptVaultSettings(encrypted, USER_ID, vaultKey);
     expect(decrypted.unlockBehavior).toBe("decrypt_all");
   });
 

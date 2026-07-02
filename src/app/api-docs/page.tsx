@@ -1,12 +1,10 @@
 import { notFound } from "next/navigation";
 import { MAIN_CONTENT_ID } from "@/lib/ui/main-content";
+import { isApiDocsEnabled } from "@/lib/api-docs-access";
 import { SwaggerUi } from "./swagger-ui";
 
 export default function ApiDocsPage() {
-  const enabled =
-    process.env.NODE_ENV !== "production" || process.env.ENABLE_API_DOCS === "true";
-
-  if (!enabled) {
+  if (!isApiDocsEnabled()) {
     notFound();
   }
 

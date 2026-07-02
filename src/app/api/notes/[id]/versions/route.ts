@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
-import { requireSessionUser } from "@/lib/auth/session";
+import { requireFullyAuthenticatedUser } from "@/lib/auth/session";
 import { assertNoPlaintextNoteFields } from "@/modules/security/policies/note-plaintext-rejection";
 import { createNoteVersionSchema } from "@/lib/validation/note-versions";
 import { noteVersionService } from "@/server/services/note-version-service";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
+import { enforceProductMutationRateLimit } from "@/lib/api-helpers/product-mutation-rate-limit";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
   try {
-    const user = await requireSessionUser();
+    const user = await requireFullyAuthenticatedUser();
     const { id } = await params;
     const versions = await noteVersionService.list(id, user.id);
     return NextResponse.json(versions);
@@ -20,7 +21,8 @@ export async function GET(_request: Request, { params }: Params) {
 
 export async function POST(request: Request, { params }: Params) {
   try {
-    const user = await requireSessionUser();
+    const user = await requireFullyAuthenticatedUser();
+    await enforceProductMutationRateLimit(request, user.id, "notes.mutate");
     const { id } = await params;
     const body = await parseJsonBody(request);
     assertNoPlaintextNoteFields(body);

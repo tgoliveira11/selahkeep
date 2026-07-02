@@ -190,6 +190,9 @@ export const vaultService = {
     if (!vault) throw new NotFoundError("Vault not initialized");
 
     assertVaultKeyAad(userId, input.encryptedVaultKey);
+    if (input.kdfMetadata.kdf !== "argon2id") {
+      throw new Error("Recovery code envelope requires Argon2id KDF metadata");
+    }
 
     return runInTransaction(async (tx) => {
       const existing = await vaultRepository.findActiveEnvelopeByMethod(userId, "recovery_code");

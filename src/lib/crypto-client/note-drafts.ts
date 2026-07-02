@@ -1,5 +1,6 @@
 import { openDB, type IDBPDatabase } from "idb";
 import { encryptField, decryptField } from "./aes-gcm";
+import { verifyPayloadAad, ClientAadMismatchError } from "./aad-verify";
 import { getSessionVaultKey } from "./vault";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
@@ -90,6 +91,15 @@ export async function loadEncryptedNoteDraft(
   const db = await openDraftDb();
   const record = (await db.get(DRAFT_STORE, [userId, draftKey])) as DraftRecord | undefined;
   if (!record?.payload) return null;
+  if (record.userId !== userId) {
+    throw new ClientAadMismatchError("Encrypted draft user binding mismatch");
+  }
+
+  verifyPayloadAad(record.payload, {
+    userId,
+    resourceId: draftResourceId(userId, draftKey),
+    field: "note_draft",
+  });
 
   const json = await decryptField(record.payload, vaultKey);
   return JSON.parse(json) as NoteDraftPlaintext;

@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  requireSessionUser: vi.fn(),
+  requireFullyAuthenticatedUser: vi.fn(),
   getVaultUnlockStatus: vi.fn(),
   getManageVaultUnlockAuthOptions: vi.fn(),
   disableVaultUnlockWithProof: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: mocks.requireSessionUser,
+  requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
 }));
 
 vi.mock("@/server/services/passkey-vault-envelope-service", () => ({
@@ -22,7 +22,7 @@ vi.mock("@/server/services/passkey-vault-envelope-service", () => ({
 describe("passkey vault unlock status route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireSessionUser.mockResolvedValue({ id: "user-1" });
+    mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: "user-1" });
     mocks.getVaultUnlockStatus.mockResolvedValue({
       signInEnabled: true,
       vaultUnlockEnabled: true,

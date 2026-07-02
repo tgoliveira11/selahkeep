@@ -243,6 +243,34 @@ describe("buildSecureAuthConfigFromEnv", () => {
     );
   });
 
+  it("maps secure-auth 0.5.0 security and feature flags from env", () => {
+    const config = buildSecureAuthConfigFromEnv(
+      {
+        ...baseEnv,
+        NODE_ENV: "test",
+        AUTH_TRUST_FORWARDED_HEADERS: "true",
+        AUTH_MAGIC_LINK_ENABLED: "true",
+        AUTH_PROFILE_ENABLED: "true",
+        AUTH_PASSWORD_HIBP_ENABLED: "false",
+      },
+      { appName: "Test", appSlug: "test", baseUrl: "http://localhost:3001" }
+    );
+
+    expect(config.security?.trustForwardedHeaders).toBe(true);
+    expect(config.auth?.magicLink?.enabled).toBe(true);
+    expect(config.profile?.enabled).toBe(true);
+    expect(config.passwordPolicy?.checkBreachedPasswords).toBe(false);
+    expect(config.server?.environment).toBe("test");
+
+    const ui = buildSecureAuthUiPublicConfigFromEnv(baseEnv, {
+      appName: "SelahKeep",
+      appSlug: "letters-to-god",
+      baseUrl: "http://localhost:3001",
+    });
+    expect(ui.paths.loginTwoFactorOauthComplete).toBe("/login/2fa/complete");
+    expect(ui.paths.magicLinkVerify).toBe("/login/magic-link");
+  });
+
   it("maps admin platform config from env (0.4.1+)", () => {
     const config = buildSecureAuthConfigFromEnv(
       {

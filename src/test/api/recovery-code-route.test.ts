@@ -3,12 +3,12 @@ import { POST } from "@/app/api/recovery-code/route";
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
-  requireSessionUser: vi.fn(),
+  requireFullyAuthenticatedUser: vi.fn(),
   storeRecoveryCode: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: mocks.requireSessionUser,
+  requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
 }));
 
 vi.mock("@/server/services/vault-service", () => ({
@@ -23,7 +23,7 @@ vi.mock("@/server/services/vault-service", () => ({
 describe("recovery code API route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireSessionUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
+    mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
   });
 
   it("stores recovery envelope", async () => {

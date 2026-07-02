@@ -29,7 +29,7 @@ describe("category and tag encryption", () => {
     expect(blob).not.toContain(SENTINEL_PHRASE);
     expect(blob).not.toContain("prayer");
 
-    const decrypted = await decryptVaultIndex(encrypted, vaultKey);
+    const decrypted = await decryptVaultIndex(encrypted, USER_ID, vaultKey);
     expect(decrypted.categories[0]?.name).toBe(SENTINEL_PHRASE);
     expect(decrypted.tags[0]?.name).toBe("prayer");
   });

@@ -31,7 +31,7 @@ export async function requireFullyAuthenticatedUser() {
     throw new UnauthorizedError("Authentication required");
   }
   if (!isFullyAuthenticatedSession(session)) {
-    throw new UnauthorizedError("Two-factor verification required");
+    throw new UnauthorizedError("Complete account authentication required");
   }
   return {
     id: session.user.id,

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSessionUser } from "@/lib/auth/session";
+import { requireFullyAuthenticatedUser } from "@/lib/auth/session";
 import {
   vaultUnlockEnvelopeRequestSchema,
   assertNoVaultPlaintextFields,
@@ -13,7 +13,7 @@ import { vaultApiClientKey, vaultApiRateLimitResponse } from "@/lib/vault/vault-
 
 export async function POST(request: Request) {
   try {
-    const user = await requireSessionUser();
+    const user = await requireFullyAuthenticatedUser();
     const limited = vaultApiRateLimitResponse(
       "vault-unlock-envelope",
       vaultApiClientKey(request, user.id)

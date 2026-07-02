@@ -4,7 +4,7 @@ import { POST as authenticatePost } from "@/app/api/passkeys/authenticate/route"
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
-  requireSessionUser: vi.fn(),
+  requireFullyAuthenticatedUser: vi.fn(),
   getRegistrationOptions: vi.fn(),
   verifyRegistration: vi.fn(),
   getAuthenticationOptions: vi.fn(),
@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: mocks.requireSessionUser,
+  requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
 }));
 
 vi.mock("@/server/services/passkey-service", () => ({
@@ -30,7 +30,7 @@ vi.mock("@/server/services/passkey-service", () => ({
 describe("passkey API routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireSessionUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
+    mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
   });
 
   it("register options returns WebAuthn options", async () => {

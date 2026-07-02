@@ -21,7 +21,9 @@ Private encrypted notes vault (web). Account auth via `@tgoliveira/secure-auth`;
 | `/` | Public | Shipped | Marketing / landing |
 | `/register` | Guest | Shipped | Account registration |
 | `/login` | Guest | Shipped | Sign in |
-| `/login/2fa` | Partial session | Shipped | TOTP step |
+| `/login/2fa` | Partial session | Shipped | TOTP step (secure-auth `LoginTwoFactorPage`) |
+| `/login/2fa/complete` | Partial session | Shipped | OAuth 2FA completion (secure-auth 0.5.0+) |
+| `/login/magic-link` | Guest | Shipped (when `AUTH_MAGIC_LINK_ENABLED`) | Magic-link verify landing |
 | `/login/complete` | Session | Shipped | Post-login handoff |
 | `/forgot-password` | Guest | Shipped | Password reset request |
 | `/reset-password` | Guest | Shipped | Password reset confirm |
@@ -72,7 +74,7 @@ Grouped by domain. Full tables: [`API_REFERENCE.md`](./API_REFERENCE.md), OpenAP
 
 | Domain | Prefix / examples | Notes |
 |--------|-------------------|--------|
-| **Auth (secure-auth)** | `/api/auth/*`, NextAuth catch-all | Register, login, OAuth, 2FA, passkey login, email verify, password reset |
+| **Auth (secure-auth)** | `/api/auth/*`, NextAuth catch-all | Register, login, OAuth, 2FA, OAuth 2FA complete, magic link, passkey login, email verify, password reset |
 | **Auth admin (secure-auth)** | `/api/auth/admin/*` | Users, waitlist, invites, locks, API keys, config (admin role; when `AUTH_ADMIN_ENABLED`) |
 | **Outpost admin** | `/api/outpost/admin/*` | Email queue, worker send, config, observability (platform admin; when `OUTPOST_ADMIN_ENABLED`) |
 | **Vault admin** | `/api/vault/admin/config` | Runtime vault config overrides (platform admin; requires `vault_admin_config_overrides` table) |

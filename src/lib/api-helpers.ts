@@ -46,6 +46,15 @@ export function apiError(error: unknown, endpoint: string) {
     if (named.name === "KanbanVersionsUnavailableError") {
       return NextResponse.json({ error: named.message }, { status: 503 });
     }
+    if (named.name === "KanbanDisabledError") {
+      return NextResponse.json({ error: named.message }, { status: 404 });
+    }
+    if (named.name === "VaultPlaintextRejectionError") {
+      return NextResponse.json({ error: named.message }, { status: 400 });
+    }
+    if (named.name === "AdminForbiddenError") {
+      return NextResponse.json({ error: named.message }, { status: 403 });
+    }
   }
   safeLogger.error("API error", { endpoint, error: error instanceof Error ? error.message : "unknown" });
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });

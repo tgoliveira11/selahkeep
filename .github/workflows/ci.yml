@@ -17,6 +17,8 @@ env:
   TWO_FACTOR_SECRET_ENCRYPTION_KEY: ci-test-2fa-encryption-key-actions-only
   APP_BASE_URL: http://localhost:3001
   NEXTAUTH_URL: http://localhost:3001
+  AUTH_RATE_LIMIT_STORE: postgres
+  RATE_LIMIT_STORE: postgres
 
 jobs:
   branch-name:

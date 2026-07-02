@@ -12,7 +12,7 @@ Web-first responsive MVP for private encrypted notes in a personal vault.
 
 - Next.js + TypeScript + React
 - PostgreSQL + Drizzle ORM
-- **Account authentication:** [`@tgoliveira/secure-auth@0.4.1`](https://www.npmjs.com/package/@tgoliveira/secure-auth) (experimental — security review before production)
+- **Account authentication:** [`@tgoliveira/secure-auth@0.5.0`](https://www.npmjs.com/package/@tgoliveira/secure-auth) (experimental — security review before production)
 - Web Crypto API (AES-GCM) + Argon2id recovery KDF
 - WebAuthn passkeys (@simplewebauthn) — vault unlock via PRF is app-specific; account sign-in passkeys are provided by secure-auth
 
@@ -24,7 +24,7 @@ curl http://localhost:3001/api/auth/package-health
 
 Migration history: [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md).
 
-**Admin platform (0.4.1+):** set `AUTH_ADMIN_ENABLED=true` and `ADMIN_BOOTSTRAP_EMAIL` in `.env.local`, then run `npm run db:migrate` for `0014_secure_auth_admin_platform.sql`. Open `/admin` when signed in as an admin user.
+**Admin platform (0.4.1+) and secure-auth 0.5.0:** set `AUTH_ADMIN_ENABLED=true` and `ADMIN_BOOTSTRAP_EMAIL` in `.env.local`, then run `npm run db:migrate` for `0014_secure_auth_admin_platform.sql`. In **production**, set `AUTH_RATE_LIMIT_STORE=postgres` and `RATE_LIMIT_STORE=postgres`; on Vercel, set `AUTH_TRUST_FORWARDED_HEADERS=true`. Open `/admin` when signed in as an admin user.
 
 Documentation index: [`docs/README.md`](./docs/README.md).
 

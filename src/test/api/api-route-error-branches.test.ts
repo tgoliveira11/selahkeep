@@ -6,7 +6,7 @@ import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 const sessionUser = { id: USER_ID, email: "user@example.com" };
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: vi.fn(async () => sessionUser),
+  requireFullyAuthenticatedUser: vi.fn(async () => sessionUser),
   requireFullyAuthenticatedUser: vi.fn(async () => sessionUser),
   getSessionUser: vi.fn(async () => sessionUser),
   UnauthorizedError: class UnauthorizedError extends Error {

@@ -15,6 +15,10 @@ function resolveAdapter(): RateLimitAdapter {
   if (adapter) return adapter;
 
   const store = process.env.RATE_LIMIT_STORE ?? "memory";
+  if (process.env.NODE_ENV === "production" && store !== "postgres") {
+    throw new Error("RATE_LIMIT_STORE=postgres is required in production");
+  }
+
   if (store === "postgres") {
     adapter = new PostgresRateLimitAdapter();
   } else {

@@ -45,7 +45,7 @@ async function syncVaultIndex(
 
   const { encryptedVaultIndex } = await vaultApi.getIndex();
   const current = encryptedVaultIndex
-    ? await decryptVaultIndex(encryptedVaultIndex, vaultKey)
+    ? await decryptVaultIndex(encryptedVaultIndex, userId, vaultKey)
     : createEmptyVaultIndex();
 
   const next = mutate(current);

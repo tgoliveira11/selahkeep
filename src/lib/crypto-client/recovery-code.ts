@@ -117,44 +117,12 @@ export async function deriveRecoveryKey(
         parallelism: 1,
       },
     };
-  } catch {
-    // PBKDF2-SHA-256 fallback per ADR-001 when Argon2id is unavailable in the browser.
-    const keyMaterial = await crypto.subtle.importKey(
-      "raw",
-      toBufferSource(password),
-      "PBKDF2",
-      false,
-      ["deriveBits"]
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? `Recovery code key derivation failed: ${error.message}`
+        : "Recovery code key derivation failed"
     );
-
-    const derived = await crypto.subtle.deriveBits(
-      {
-        name: "PBKDF2",
-        salt: toBufferSource(saltBytes),
-        iterations: 600_000,
-        hash: "SHA-256",
-      },
-      keyMaterial,
-      256
-    );
-
-    const key = await crypto.subtle.importKey(
-      "raw",
-      toBufferSource(new Uint8Array(derived)),
-      { name: "AES-GCM", length: 256 },
-      false,
-      ["encrypt", "decrypt"]
-    );
-
-    return {
-      key,
-      metadata: {
-        kdf: "pbkdf2-sha256",
-        version: "kdf-v1",
-        salt: bytesToBase64Url(saltBytes),
-        iterations: 600_000,
-      },
-    };
   }
 }
 

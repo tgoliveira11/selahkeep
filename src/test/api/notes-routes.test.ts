@@ -3,13 +3,13 @@ import { GET, POST } from "@/app/api/notes/route";
 import { createNoteInput, USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
-  requireSessionUser: vi.fn(),
+  requireFullyAuthenticatedUser: vi.fn(),
   list: vi.fn(),
   create: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: mocks.requireSessionUser,
+  requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
   UnauthorizedError: class UnauthorizedError extends Error {
     name = "UnauthorizedError";
   },
@@ -28,7 +28,7 @@ vi.mock("@/server/services/note-service", () => ({
 describe("notes API route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireSessionUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
+    mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
   });
 
   it("GET returns user notes", async () => {
@@ -40,7 +40,7 @@ describe("notes API route", () => {
 
   it("GET requires authentication", async () => {
     const { UnauthorizedError } = await import("@/lib/auth/session");
-    mocks.requireSessionUser.mockRejectedValue(new UnauthorizedError("Authentication required"));
+    mocks.requireFullyAuthenticatedUser.mockRejectedValue(new UnauthorizedError("Authentication required"));
     const res = await GET();
     expect(res.status).toBe(401);
   });

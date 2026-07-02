@@ -3,6 +3,7 @@ import {
   consumeVaultApiRateLimit,
 } from "@tgoliveira/vault-core";
 import { getVaultApiRateLimiter } from "@/lib/vault/vault-rate-limit";
+import { getClientIp } from "@/modules/security/ip/request-ip";
 
 export function vaultApiRateLimitResponse(
   namespace: string,
@@ -18,5 +19,5 @@ export function vaultApiRateLimitResponse(
 }
 
 export function vaultApiClientKey(request: Request, userId?: string): string {
-  return userId ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
+  return userId ?? getClientIp(request);
 }

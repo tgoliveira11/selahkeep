@@ -19,5 +19,11 @@ export function isFullyAuthenticatedSession(session: SessionLike): boolean {
   if (!session?.user?.id) return false;
   if (session.twoFactorPending === true) return false;
   if (session.twoFactorVerified === false) return false;
+  if (
+    "emailVerificationRequired" in session &&
+    (session as { emailVerificationRequired?: boolean }).emailVerificationRequired === true
+  ) {
+    return false;
+  }
   return true;
 }

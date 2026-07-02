@@ -12,6 +12,7 @@ import {
   getMaxTotalStorageBytes,
 } from "@/lib/config/attachment-policy";
 import { assertAttachmentCreateAad, AadValidationError } from "@/modules/security/policies/aad-validation";
+import { sumEncryptedPayloadCiphertextBytes } from "@/modules/security/encrypted-payload-size";
 import { NotFoundError } from "@/modules/notes/services/note-service";
 import { safeLogger } from "@/lib/logger";
 
@@ -91,8 +92,13 @@ export const noteAttachmentService = {
     validateAttachmentPayloadSize(input.encryptedBlob);
     assertAttachmentCreateAad(userId, input.id, input);
 
+    const serverCiphertextBytes = sumEncryptedPayloadCiphertextBytes([
+      input.encryptedMetadata,
+      input.encryptedBlob,
+    ]);
+
     const maxFileBytes = getMaxAttachmentSizeBytes();
-    if (input.ciphertextBytes > maxFileBytes * 1.5) {
+    if (serverCiphertextBytes > maxFileBytes * 1.5) {
       throw new Error("Attachment exceeds size limit");
     }
 
@@ -105,7 +111,7 @@ export const noteAttachmentService = {
       const noteBytes = await sumNoteCiphertextBytesByVaultId(vault.id);
       const attachmentBytes = await noteAttachmentRepository.sumCiphertextBytesByVaultId(vault.id);
       const maxTotal = getMaxTotalStorageBytes();
-      if (noteBytes + attachmentBytes + input.ciphertextBytes > maxTotal) {
+      if (noteBytes + attachmentBytes + serverCiphertextBytes > maxTotal) {
         throw new Error("Vault storage limit reached");
       }
 
@@ -116,7 +122,7 @@ export const noteAttachmentService = {
         encryptedMetadata: input.encryptedMetadata,
         encryptedBlob: input.encryptedBlob,
         blobEncryptionVersion: input.blobEncryptionVersion,
-        ciphertextBytes: input.ciphertextBytes,
+        ciphertextBytes: serverCiphertextBytes,
       });
     } catch (error) {
       if (isMissingAttachmentsTable(error)) {

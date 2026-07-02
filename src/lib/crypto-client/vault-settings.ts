@@ -49,14 +49,15 @@ export async function encryptVaultSettings(
 
 export async function decryptVaultSettings(
   encryptedVaultSettings: EncryptedPayload,
+  expectedUserId: string,
   vaultKey?: CryptoKey
 ): Promise<VaultSettingsPlaintext> {
   const key = vaultKey ?? getSessionVaultKey();
   if (!key) throw new Error("Vault is locked");
 
   verifyPayloadAad(encryptedVaultSettings, {
-    userId: encryptedVaultSettings.aad.userId,
-    resourceId: encryptedVaultSettings.aad.userId,
+    userId: expectedUserId,
+    resourceId: expectedUserId,
     field: "vault_settings",
   });
 

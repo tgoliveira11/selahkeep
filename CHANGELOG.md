@@ -13,6 +13,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Security
+
+- **OpenAPI spec gated in production.** `GET /api/openapi` returns 404 unless `ENABLE_API_DOCS=true` (same policy as `/api-docs`).
+- **Product API auth hardened.** Sensitive `/api/*` routes require `requireFullyAuthenticatedUser()` (2FA-complete and email-verified sessions), not session-only checks.
+- **Admin UI role gate in proxy.** `/admin` redirects non-admin users; login-only gate was insufficient.
+- **Production rate limits require Postgres.** `RATE_LIMIT_STORE=postgres` is enforced at startup; forwarded IPs are trusted only when `AUTH_TRUST_FORWARDED_HEADERS=true`.
+- **Vault init deprecated.** `POST /api/vault/init` returns 410 — use `POST /api/vault/setup` (Argon2id + plaintext rejection).
+- **Recovery code Argon2id-only.** Client PBKDF2 fallback removed; server rejects non-Argon2id recovery-code envelopes.
+- **Client AAD binding.** Note drafts, vault index, and vault settings decrypt paths verify AAD against the session user id.
+- **Kanban server kill switch.** `KANBAN_ENABLED=false` disables `/api/kanban/*` even when the client flag is on.
+- **Attachment quota integrity.** Server recalculates ciphertext bytes from encrypted payloads instead of trusting client-reported sizes.
+- **Mutation rate limits.** Per-user limits on notes, kanban, and attachment write APIs.
+- **CSP tightened.** Removed production `style-src 'unsafe-inline'` (nonce-only).
+
+### Changed
+
+- **`@tgoliveira/secure-auth@0.5.0`.** Security hardening (admin APIs require full auth, production postgres rate limits, forwarded-header trust opt-in), password-manager-friendly 2FA forms, magic-link routes, OAuth 2FA completion page, and HIBP breach check wiring.
+
 ## [0.3.0] - 2026-07-01
 
 ### Added
