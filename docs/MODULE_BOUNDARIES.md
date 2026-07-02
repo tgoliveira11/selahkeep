@@ -14,6 +14,7 @@ This project uses a **modular monolith** under `src/modules/`. See also `docs/UT
 | `audit` | Audit events, persistence, sanitization |
 | `rate-limit` | Rate limit adapters and policies |
 | `security` | Logger/redaction, plaintext rejection, AAD policies |
+| `integrations` | User MCP integrations, scoped grants, Bearer token auth for `/api/integrations/mcp/*` |
 | `ui` | Domain-neutral primitives only |
 
 **Account authentication** (login, register, OAuth, 2FA, sessions, account passkeys, password flows) is **not** a local module — see `src/lib/secure-auth.ts` and [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./AUTH_RESET_TO_SECURE_AUTH.md).

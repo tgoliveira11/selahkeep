@@ -48,7 +48,9 @@ export function isLoggedInNavLinkActive(pathname: string, href: string): boolean
       pathname === "/settings/account" ||
       pathname.startsWith("/settings/account/") ||
       pathname === "/settings/security" ||
-      pathname.startsWith("/settings/security/")
+      pathname.startsWith("/settings/security/") ||
+      pathname === "/settings/integrations" ||
+      pathname.startsWith("/settings/integrations/")
     );
   }
   return pathname === href || pathname.startsWith(`${href}/`);

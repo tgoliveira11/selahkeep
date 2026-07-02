@@ -24,6 +24,7 @@ tags:
   - name: Passkeys
   - name: Recovery
   - name: Account
+  - name: Integrations
   - name: Admin
 components:
   securitySchemes:
@@ -33,6 +34,13 @@ components:
       name: next-auth.session-token
       description: |
         NextAuth JWT session cookie. Name may be `__Secure-next-auth.session-token` in production HTTPS.
+    integrationBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: sk_int
+      description: |
+        User integration token (`sk_int_...`) for MCP routes. Created once at POST /api/integrations.
+        Requires INTEGRATIONS_ENABLED=true.
   schemas:
     ErrorResponse:
       type: object
@@ -870,6 +878,153 @@ paths:
           description: Encrypted Kanban version
         '404':
           description: Version not found
+  /api/integrations:
+    get:
+      tags: [Integrations]
+      summary: List user integrations (no secrets)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Integration list
+        '503':
+          description: Integrations disabled
+    post:
+      tags: [Integrations]
+      summary: Create MCP integration (returns token once)
+      security:
+        - sessionCookie: []
+      responses:
+        '201':
+          description: Integration created with one-time token
+        '400':
+          description: Plaintext rejected
+        '503':
+          description: Integrations disabled
+  /api/integrations/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      tags: [Integrations]
+      summary: Revoke integration and grants
+      security:
+        - sessionCookie: []
+      responses:
+        '204':
+          description: Revoked
+        '404':
+          description: Not found
+  /api/integrations/{id}/grants:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Integrations]
+      summary: List grant resource IDs and permissions (no keys)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Grant list
+    put:
+      tags: [Integrations]
+      summary: Upsert encrypted integration grants (client-wrapped keys)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Grants updated
+        '400':
+          description: Plaintext rejected
+  /api/integrations/mcp/notes:
+    get:
+      tags: [Integrations]
+      summary: List notes with read grant (ciphertext)
+      security:
+        - integrationBearer: []
+      responses:
+        '200':
+          description: Encrypted notes
+        '401':
+          description: Invalid or revoked token
+  /api/integrations/mcp/notes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Integrations]
+      summary: Get note with read grant (ciphertext)
+      security:
+        - integrationBearer: []
+      responses:
+        '200':
+          description: Encrypted note
+        '404':
+          description: Not found or no grant
+    put:
+      tags: [Integrations]
+      summary: Update note with write grant (ciphertext only)
+      security:
+        - integrationBearer: []
+      responses:
+        '200':
+          description: Updated
+        '400':
+          description: Plaintext rejected
+        '403':
+          description: Write grant required
+  /api/integrations/mcp/kanban:
+    get:
+      tags: [Integrations]
+      summary: List kanban boards with read grant (ciphertext)
+      security:
+        - integrationBearer: []
+      responses:
+        '200':
+          description: Encrypted boards
+  /api/integrations/mcp/kanban/{boardId}:
+    parameters:
+      - name: boardId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Integrations]
+      summary: Get board with read grant (ciphertext)
+      security:
+        - integrationBearer: []
+      responses:
+        '200':
+          description: Encrypted board
+        '404':
+          description: Not found or no grant
+    put:
+      tags: [Integrations]
+      summary: Update board with write grant (ciphertext only)
+      security:
+        - integrationBearer: []
+      responses:
+        '200':
+          description: Updated
+        '400':
+          description: Plaintext rejected
+        '403':
+          description: Write grant required
   /api/vault/index:
     get:
       tags: [Vault]

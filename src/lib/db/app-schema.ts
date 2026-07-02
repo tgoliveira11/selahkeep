@@ -192,6 +192,59 @@ export const vaultAdminConfigOverrides = pgTable("vault_admin_config_overrides",
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const integrations = pgTable(
+  "integrations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    type: text("type").notNull().default("mcp"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (table) => [index("idx_integrations_user_id").on(table.userId)]
+);
+
+export const integrationTokens = pgTable(
+  "integration_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    integrationId: uuid("integration_id")
+      .notNull()
+      .references(() => integrations.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    tokenPrefix: text("token_prefix").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (table) => [index("idx_integration_tokens_integration_id").on(table.integrationId)]
+);
+
+export const integrationGrants = pgTable(
+  "integration_grants",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    integrationId: uuid("integration_id")
+      .notNull()
+      .references(() => integrations.id, { onDelete: "cascade" }),
+    resourceType: text("resource_type").notNull(),
+    resourceId: uuid("resource_id").notNull(),
+    encryptedWrappedKey: jsonb("encrypted_wrapped_key").notNull(),
+    permissions: text("permissions").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("idx_integration_grants_active_unique")
+      .on(table.integrationId, table.resourceType, table.resourceId)
+      .where(sql`${table.revokedAt} IS NULL`),
+  ]
+);
+
 export type Note = typeof notes.$inferSelect;
 export type NoteVersion = typeof noteVersions.$inferSelect;
 export type NoteAttachment = typeof noteAttachments.$inferSelect;

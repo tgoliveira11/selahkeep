@@ -3,6 +3,7 @@ import { notesApi } from "@/lib/api-client/notes";
 import { noteVersionsApi } from "@/lib/api-client/note-versions";
 import { vaultApi } from "@/lib/api-client/vault";
 import { passkeysApi } from "@/lib/api-client/passkeys";
+import { integrationsApi } from "@/lib/api-client/integrations";
 import {
   createNoteInput,
   createNoteVersionInput,
@@ -75,6 +76,28 @@ describe("typed API client modules", () => {
         }
         if (url === `/api/notes/${NOTE_ID}/versions/${VERSION_ID}`) {
           return new Response(JSON.stringify({ id: VERSION_ID }), { status: 200 });
+        }
+        if (url === "/api/integrations" && !init?.method) {
+          return new Response(JSON.stringify([{ id: "int-1", name: "Cursor" }]), { status: 200 });
+        }
+        if (url === "/api/integrations" && init?.method === "POST") {
+          return new Response(
+            JSON.stringify({
+              integration: { id: "int-1", name: "Cursor", type: "mcp" },
+              token: "sk_int_test",
+              integrationId: "int-1",
+            }),
+            { status: 201 }
+          );
+        }
+        if (url === "/api/integrations/int-1" && init?.method === "DELETE") {
+          return new Response(JSON.stringify({ ok: true }), { status: 200 });
+        }
+        if (url === "/api/integrations/int-1/grants" && !init?.method) {
+          return new Response(JSON.stringify([]), { status: 200 });
+        }
+        if (url === "/api/integrations/int-1/grants" && init?.method === "PUT") {
+          return new Response(JSON.stringify([]), { status: 200 });
         }
         return new Response("{}", { status: 404 });
       })
@@ -151,5 +174,27 @@ describe("typed API client modules", () => {
     await expect(
       noteVersionsApi.create(NOTE_ID, { id: VERSION_ID, ...version })
     ).resolves.toEqual({ id: VERSION_ID, versionNumber: 1 });
+  });
+
+  it("integrationsApi covers integration management endpoints", async () => {
+    await expect(integrationsApi.list()).resolves.toEqual([{ id: "int-1", name: "Cursor" }]);
+    await expect(integrationsApi.create("Cursor")).resolves.toMatchObject({
+      token: "sk_int_test",
+      integrationId: "int-1",
+    });
+    await expect(integrationsApi.revoke("int-1")).resolves.toEqual({ ok: true });
+    await expect(integrationsApi.listGrants("int-1")).resolves.toEqual([]);
+    await expect(
+      integrationsApi.upsertGrants("int-1", {
+        grants: [
+          {
+            resourceType: "note",
+            resourceId: NOTE_ID,
+            permissions: "read",
+            encryptedWrappedKey: encryptedPayload("integration_grant", NOTE_ID),
+          },
+        ],
+      })
+    ).resolves.toEqual([]);
   });
 });

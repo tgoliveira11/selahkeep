@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **AI integrations (MCP).** Opt-in scoped access for Cursor, Claude Desktop, and Codex: create integrations at `/settings/integrations`, share specific notes/boards with read or write grants, and connect via local MCP server (`packages/selahkeep-mcp`) or localhost bridge (`tools/selahkeep-bridge`). Server stores token hashes and encrypted grants only; IEK and plaintext stay client-side. Gated by `INTEGRATIONS_ENABLED=true`. See `docs/TDR_AI_Integrations.md` and `docs/ADR-007_Integration_Grants_MCP.md`.
+
 ## [0.3.3] - 2026-07-02
 
 ### Fixed

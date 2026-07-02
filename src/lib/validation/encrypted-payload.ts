@@ -24,7 +24,9 @@ const aadSchema = z.object({
     "note_kanban_board",
     "note_kanban_version",
     "note_kanban_key",
+    "integration_grant",
   ]),
+  integrationId: z.string().uuid().optional(),
 });
 
 export const encryptedPayloadSchema = z.object({

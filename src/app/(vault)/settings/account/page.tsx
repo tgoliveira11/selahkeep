@@ -60,6 +60,22 @@ export default function AccountSettingsPageWrapper() {
         <SettingsSection>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
+              <h2 className="font-medium text-[var(--foreground)]">AI integrations</h2>
+              <p className="text-sm text-[var(--muted)]">
+                Connect Cursor, Claude Desktop, or Codex to selected notes and boards via MCP.
+              </p>
+            </div>
+            <Link href="/settings/integrations" className="shrink-0">
+              <Button variant="secondary" className="w-full sm:w-auto">
+                Manage integrations
+              </Button>
+            </Link>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
               <h2 className="font-medium text-[var(--foreground)]">Vault protection</h2>
               <p className="text-sm text-[var(--muted)]">
                 Passkey vault unlock, recovery phrase, and unlock behavior are managed separately
