@@ -8,6 +8,7 @@ import {
   readEnvWithLegacy,
   readIntEnv,
 } from "@/lib/env/parse";
+import { resolveRateLimitStore } from "@/lib/env/rate-limit-store";
 import { resolveWebAuthnSettings } from "@/lib/env/webauthn-from-env";
 
 export type SecureAuthEnvSlice = Pick<
@@ -440,12 +441,7 @@ export function buildSecureAuthConfigFromEnv(
       revocationPollIntervalSeconds,
     },
     rateLimit: {
-      store: readEnumEnv(
-        env,
-        "AUTH_RATE_LIMIT_STORE",
-        ["memory", "postgres"] as const,
-        readEnumEnv(env, "RATE_LIMIT_STORE", ["memory", "postgres"] as const, "memory")
-      ),
+      store: resolveRateLimitStore(env),
     },
     server: {
       cookieSecure,

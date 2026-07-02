@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- **Production auth 503 on `/api/auth/session`.** Default `AUTH_RATE_LIMIT_STORE` / `RATE_LIMIT_STORE` to `postgres` when `NODE_ENV=production` and vars are unset (required by secure-auth 0.5.0).
+
 ## [0.3.1] - 2026-07-02
 
 ### Security
