@@ -8,13 +8,14 @@ import type {
 import { RATE_LIMIT_POLICIES } from "./core/types";
 import { InMemoryRateLimitAdapter } from "./adapters/in-memory-adapter";
 import { PostgresRateLimitAdapter } from "./adapters/postgres-adapter";
+import { resolveRateLimitStore } from "@/lib/env/rate-limit-store";
 
 let adapter: RateLimitAdapter | null = null;
 
 function resolveAdapter(): RateLimitAdapter {
   if (adapter) return adapter;
 
-  const store = process.env.RATE_LIMIT_STORE ?? "memory";
+  const store = resolveRateLimitStore(process.env);
   if (process.env.NODE_ENV === "production" && store !== "postgres") {
     throw new Error("RATE_LIMIT_STORE=postgres is required in production");
   }
