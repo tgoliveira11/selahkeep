@@ -13,10 +13,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-07-02
+
 ### Fixed
 
 - **Production auth 503 on `/api/auth/session`.** Default `AUTH_RATE_LIMIT_STORE` / `RATE_LIMIT_STORE` to `postgres` when `NODE_ENV=production` and vars are unset (required by secure-auth 0.5.0).
 - **Vault unlock 500 when product rate limits use Postgres.** Map missing `rate_limit_buckets` table to 503 with migration hint instead of opaque 500.
+- **Product rate limit 500 on passkey/vault APIs.** Postgres rate-limit upsert now uses `postgres-js` directly; Drizzle `db.execute` failed to bind `Date` parameters (`ERR_INVALID_ARG_TYPE`).
 
 ## [0.3.1] - 2026-07-02
 
