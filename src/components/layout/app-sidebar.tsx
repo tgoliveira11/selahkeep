@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { AppMark } from "@/components/ui/app-mark";
-import { signOutAccount } from "@/lib/auth/sign-out-client";
+import { signOutAccount, signOutWithRedirect } from "@/lib/auth/sign-out-client";
 import { isFullyAuthenticatedSession } from "@/lib/auth/session-state";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { clearVaultClientState } from "@/lib/crypto-client/vault";
@@ -121,7 +121,6 @@ export function AppSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const vaultClient = useVaultClientStatus();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -151,7 +150,7 @@ export function AppSidebar() {
       }
     }
     await signOutAccount();
-    router.push("/");
+    signOutWithRedirect("/");
   }
 
   const onNotes = pathname === "/notes";

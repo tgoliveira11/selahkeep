@@ -31,6 +31,7 @@ interface KanbanCardProps {
   onOpen: (card: KanbanCardPlaintext) => void;
   onMove: (cardId: string, columnId: string) => void;
   onDragStart: (cardId: string) => void;
+  onDragEnd?: () => void;
 }
 
 export function KanbanCard({
@@ -39,6 +40,7 @@ export function KanbanCard({
   onOpen,
   onMove,
   onDragStart,
+  onDragEnd,
 }: KanbanCardProps) {
   const draggedRef = useRef(false);
   const tagNames = card.tagNames ?? extractCardTagsFromDescription(card.description);
@@ -64,6 +66,7 @@ export function KanbanCard({
           window.setTimeout(() => {
             draggedRef.current = false;
           }, 0);
+          onDragEnd?.();
         }}
         onClick={handleOpen}
         onKeyDown={(event) => {

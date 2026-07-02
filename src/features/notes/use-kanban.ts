@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { kanbanApi, type KanbanBoardResponse, type KanbanBoardVersionResponse } from "@/lib/api-client/kanban";
 import { vaultApi } from "@/lib/api-client/vault";
+import { createCoalescedTaskQueue } from "@/lib/async/coalesced-task-queue";
 import {
   decryptKanbanBoard,
   decryptKanbanVersion,
@@ -98,6 +99,74 @@ export function useKanban(userId: string | null) {
     saving: false,
     error: null,
   });
+  const encryptedWrappedKeyRef = useRef<EncryptedPayload | null>(null);
+  encryptedWrappedKeyRef.current = state.encryptedWrappedKey;
+
+  const persistBoardRef = useRef<
+    (job: {
+      board: KanbanBoardPlaintext;
+      encryptedWrappedKey: EncryptedPayload;
+      options: { appendVersion?: boolean };
+    }) => Promise<void>
+  >(() => Promise.resolve());
+
+  persistBoardRef.current = async ({ board, encryptedWrappedKey, options }) => {
+    if (!userId) throw new Error("Not authenticated");
+    setState((current) => ({ ...current, saving: true, error: null }));
+    try {
+      const payload = await encryptKanbanBoard(userId, board.boardId, board, encryptedWrappedKey);
+      const row = await kanbanApi.update(board.boardId, payload);
+      if (options.appendVersion) {
+        await appendKanbanVersionSnapshot(userId, board, encryptedWrappedKey);
+      }
+      if (board.scope === "note" && board.noteId) {
+        await syncVaultIndex(userId, (index) =>
+          updateVaultIndexEntry(index, board.noteId!, indexPatchForBoard(board))
+        );
+      } else {
+        const progress = getKanbanProgress(board);
+        await syncVaultIndex(userId, (index) =>
+          upsertStandaloneKanbanBoardIndexEntry(index, {
+            id: board.boardId,
+            title: board.title,
+            total: progress.total,
+            done: progress.done,
+            updatedAt: board.updatedAt,
+          })
+        );
+      }
+      setState((current) => ({
+        ...current,
+        board,
+        encryptedWrappedKey,
+        response: row,
+        standaloneBoards:
+          board.scope === "standalone"
+            ? [board, ...current.standaloneBoards.filter((item) => item.boardId !== board.boardId)]
+            : current.standaloneBoards,
+        noteBoundBoards:
+          board.scope === "note"
+            ? [board, ...current.noteBoundBoards.filter((item) => item.boardId !== board.boardId)]
+            : current.noteBoundBoards,
+      }));
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        error: error instanceof Error ? error.message : "Failed to save board",
+      }));
+      throw error;
+    } finally {
+      setState((current) => ({ ...current, saving: false }));
+    }
+  };
+
+  const enqueueBoardSaveRef = useRef(
+    createCoalescedTaskQueue<{
+      board: KanbanBoardPlaintext;
+      encryptedWrappedKey: EncryptedPayload;
+      options: { appendVersion?: boolean };
+    }>((job) => persistBoardRef.current(job))
+  );
 
   useEffect(
     () =>
@@ -211,65 +280,19 @@ export function useKanban(userId: string | null) {
   const saveBoard = useCallback(
     async (
       board: KanbanBoardPlaintext,
-      encryptedWrappedKey = state.encryptedWrappedKey,
+      encryptedWrappedKey = encryptedWrappedKeyRef.current,
       options: { appendVersion?: boolean } = {}
     ) => {
       if (!userId) throw new Error("Not authenticated");
       if (!encryptedWrappedKey) throw new Error("Board key is unavailable");
-      setState((current) => ({ ...current, saving: true, error: null }));
-      try {
-        const payload = await encryptKanbanBoard(
-          userId,
-          board.boardId,
-          board,
-          encryptedWrappedKey
-        );
-        const row = await kanbanApi.update(board.boardId, payload);
-        if (options.appendVersion) {
-          await appendKanbanVersionSnapshot(userId, board, encryptedWrappedKey);
-        }
-        if (board.scope === "note" && board.noteId) {
-          await syncVaultIndex(userId, (index) =>
-            updateVaultIndexEntry(index, board.noteId!, indexPatchForBoard(board))
-          );
-        } else {
-          const progress = getKanbanProgress(board);
-          await syncVaultIndex(userId, (index) =>
-            upsertStandaloneKanbanBoardIndexEntry(index, {
-              id: board.boardId,
-              title: board.title,
-              total: progress.total,
-              done: progress.done,
-              updatedAt: board.updatedAt,
-            })
-          );
-        }
-        setState((current) => ({
-          ...current,
-          board,
-          encryptedWrappedKey,
-          response: row,
-          standaloneBoards:
-            board.scope === "standalone"
-              ? [board, ...current.standaloneBoards.filter((item) => item.boardId !== board.boardId)]
-              : current.standaloneBoards,
-          noteBoundBoards:
-            board.scope === "note"
-              ? [board, ...current.noteBoundBoards.filter((item) => item.boardId !== board.boardId)]
-              : current.noteBoundBoards,
-        }));
-        return board;
-      } catch (error) {
-        setState((current) => ({
-          ...current,
-          error: error instanceof Error ? error.message : "Failed to save board",
-        }));
-        throw error;
-      } finally {
-        setState((current) => ({ ...current, saving: false }));
-      }
+      await enqueueBoardSaveRef.current({
+        board,
+        encryptedWrappedKey,
+        options,
+      });
+      return board;
     },
-    [state.encryptedWrappedKey, userId]
+    [userId]
   );
 
   const createNoteBoard = useCallback(

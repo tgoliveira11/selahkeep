@@ -6,6 +6,12 @@ import { createPortal } from "react-dom";
 const OPEN_DELAY_MS = 280;
 const CLOSE_DELAY_MS = 150;
 
+// Popover card is `px-3 py-2.5` with a 1px border, so its cloned avatar
+// (the first flex child) sits this far from the card's fixed top/left.
+// Subtracting it lines the clone up exactly over the collapsed sidebar avatar.
+const AVATAR_LEFT_OFFSET = 13;
+const AVATAR_TOP_OFFSET = 11;
+
 interface SidebarAccountPopoverProps {
   email: string;
   initial: string;
@@ -40,9 +46,8 @@ export function SidebarAccountPopover({
     const anchor = anchorRef.current;
     if (!anchor) return;
     const rect = anchor.getBoundingClientRect();
-    const width = 280;
-    const left = rect.right + 10;
-    const top = rect.top + rect.height / 2 - 22;
+    const left = rect.left - AVATAR_LEFT_OFFSET;
+    const top = rect.top - AVATAR_TOP_OFFSET;
     setPosition({ top: Math.max(12, top), left });
   }, []);
 
@@ -88,7 +93,10 @@ export function SidebarAccountPopover({
   const popover =
     open && mounted ? (
       <div
-        className="fixed z-[var(--z-toolbar-popover)] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 shadow-[var(--shadow-md)]"
+        // Sidebar chrome renders inside `.vc-vault-lock-overlay-exclude` (z-index 55,
+        // vault-core) so it stays above the vault-lock overlay. This popover must sit
+        // above that sidebar, so it needs more than the default --z-toolbar-popover (40).
+        className="fixed z-[56] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 shadow-[var(--shadow-md)]"
         style={{ top: position.top, left: position.left, width: 280 }}
         data-testid="sidebar-account-popover"
         onMouseEnter={keepOpen}

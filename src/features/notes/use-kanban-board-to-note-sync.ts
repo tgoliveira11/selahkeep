@@ -37,6 +37,7 @@ function boardFingerprint(board: KanbanBoardPlaintext): string {
       order: card.order,
       dueDate: card.dueDate,
       priority: card.priority,
+      tagNames: card.tagNames,
       source: card.source,
       statusHistory: card.statusHistory,
     })),

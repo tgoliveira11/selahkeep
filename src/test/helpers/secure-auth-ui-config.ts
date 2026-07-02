@@ -38,6 +38,7 @@ export const testSecureAuthUiConfig: SecureAuthUIPublicConfig = {
     loginComplete: "/login/complete",
     magicLinkVerify: "/login/magic-link",
     afterLogin: "/home",
+    afterLogout: "/login",
     accountDeleted: "/account-deleted",
     accountSettings: "/settings/account",
     securitySettings: "/settings/account",

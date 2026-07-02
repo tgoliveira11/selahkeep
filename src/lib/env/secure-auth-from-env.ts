@@ -299,6 +299,7 @@ export function buildSecureAuthUiPublicConfigFromEnv(
     paths: {
       ...parsed.uiPaths,
       afterLogin: parsed.afterLoginPath,
+      afterLogout: parsed.afterLogoutPath,
     },
     messages: { ...authPageMessages },
     passwordPolicy: parsed.passwordPolicy,

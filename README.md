@@ -12,7 +12,7 @@ Web-first responsive MVP for private encrypted notes in a personal vault.
 
 - Next.js + TypeScript + React
 - PostgreSQL + Drizzle ORM
-- **Account authentication:** [`@tgoliveira/secure-auth@0.5.0`](https://www.npmjs.com/package/@tgoliveira/secure-auth) (experimental — security review before production)
+- **Account authentication:** [`@tgoliveira/secure-auth@0.5.1`](https://www.npmjs.com/package/@tgoliveira/secure-auth) (experimental — security review before production)
 - Web Crypto API (AES-GCM) + Argon2id recovery KDF
 - WebAuthn passkeys (@simplewebauthn) — vault unlock via PRF is app-specific; account sign-in passkeys are provided by secure-auth
 

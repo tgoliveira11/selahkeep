@@ -21,6 +21,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **`@tgoliveira/secure-auth@0.5.1`.** Dependency pin update.
+
+- **Kanban board saves.** Rapid card moves coalesce into a serial save queue so optimistic UI is not overwritten by stale in-flight saves.
+- **Kanban card ordering.** Drop anywhere in a column appends to the end; hover a between-card gap for 2 seconds to insert at that position (within-column reorder uses the same rule).
+
 - **Logged-in `/home`.** Hero area is fixed-height and varies only by vault state (locked unlock CTA vs unlocked welcome); features and privacy marketing always show below, including Kanban and MCP integrations.
 - **Vault auto-lock banner.** Disabled the sticky `role="status"` toaster; vault status remains in the header dock.
 - **Collapsed sidebar.** Account hover popover on the avatar shows email, signed-in status, and sign out.
