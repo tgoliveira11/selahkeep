@@ -1,6 +1,5 @@
 import "server-only";
-import { sql } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { getPostgresClient } from "@/lib/db/postgres-client";
 import type { RateLimitAdapter, RateLimitResult, RateLimitScope } from "../core/types";
 import { buildRateLimitKey } from "../core/types";
 import {
@@ -22,9 +21,11 @@ export class PostgresRateLimitAdapter implements RateLimitAdapter {
     const now = new Date();
     const resetAt = new Date(now.getTime() + windowMs);
 
-    let result: { count: number; reset_at: Date }[];
+    const sql = getPostgresClient();
+    let result: { count: number; reset_at: Date | string }[];
     try {
-      result = await db.execute<{ count: number; reset_at: Date }>(sql`
+      // Use postgres-js directly — drizzle's db.execute does not serialize Date params for this driver.
+      result = await sql`
         INSERT INTO rate_limit_buckets (bucket_key, count, reset_at)
         VALUES (${key}, 1, ${resetAt})
         ON CONFLICT (bucket_key) DO UPDATE SET
@@ -37,7 +38,7 @@ export class PostgresRateLimitAdapter implements RateLimitAdapter {
             ELSE rate_limit_buckets.reset_at
           END
         RETURNING count, reset_at
-      `);
+      `;
     } catch (error) {
       if (isMissingRateLimitTableError(error)) {
         throw new RateLimitStoreUnavailableError(
@@ -62,6 +63,7 @@ export class PostgresRateLimitAdapter implements RateLimitAdapter {
 
   async reset(scope: RateLimitScope): Promise<void> {
     const key = buildRateLimitKey(scope);
-    await db.execute(sql`DELETE FROM rate_limit_buckets WHERE bucket_key = ${key}`);
+    const sql = getPostgresClient();
+    await sql`DELETE FROM rate_limit_buckets WHERE bucket_key = ${key}`;
   }
 }
