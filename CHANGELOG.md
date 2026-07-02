@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **Vault dock passkey unlock.** Upgraded `@tgoliveira/vault-core` to 1.0.1 (cancel no longer redirects; auto-start from expand via `bindAutoStartPasskey`). Dock refreshes WebAuthn options on each expand before passkey auto-start.
+
 - **Board UI.** Labels manager and board version history removed from the board screen for now; note card preview delay increased to 2 seconds to match kanban cards. Note detail no longer shows a manual Kanban re-sync control or Zen reading mode entry. Notes with a linked board no longer offer manual resolve/reopen — resolved status follows board completion. Card hover preview opens directly over the card (same size/position); card details dialog is wider; the done column is always the last column (toggle removed).
 
 ### Fixed

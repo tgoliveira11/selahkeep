@@ -6,8 +6,13 @@ const unlockFromVaultPassword = vi.fn();
 const unlockFromPasskey = vi.fn();
 const fetchSpy = vi.fn();
 
+const refreshPasskeyOptions = vi.fn();
+
 vi.mock("@/features/passkey/use-vault-passkey-unlock-prefetch", () => ({
-  useVaultPasskeyUnlockPrefetch: vi.fn(() => ({ options: null })),
+  useVaultPasskeyUnlockPrefetch: vi.fn(() => ({
+    options: null,
+    refresh: refreshPasskeyOptions,
+  })),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -137,6 +142,10 @@ describe("vault status dock inline unlock security", () => {
     vi.stubGlobal("fetch", fetchSpy);
     unlockFromVaultPassword.mockResolvedValue(undefined);
     unlockFromPasskey.mockResolvedValue(undefined);
+    refreshPasskeyOptions.mockResolvedValue({
+      challenge: "abc",
+      allowCredentials: [{ id: "cred-1", type: "public-key" }],
+    });
   });
 
   afterEach(() => {
@@ -217,10 +226,38 @@ describe("vault status dock inline unlock security", () => {
     expect(dock.textContent?.toLowerCase()).not.toContain("letter");
   });
 
-  it("redirects to /vault/unlock when dock passkey unlock fails", async () => {
+  it("does not redirect when dock passkey unlock is cancelled", async () => {
     const { hasUnlockedVaultSession } = await import("@/lib/crypto-client/vault");
     vi.mocked(hasUnlockedVaultSession).mockReturnValue(false);
     unlockFromPasskey.mockRejectedValue(new Error("Passkey unlock was cancelled."));
+    const { useRouter } = await import("next/navigation");
+    const push = vi.fn();
+    vi.mocked(useRouter).mockReturnValue({ push, replace: vi.fn(), back: vi.fn() });
+
+    const { isPrfExtensionSupported } = await import("@tgoliveira/vault-core/browser");
+    if (!isPrfExtensionSupported()) {
+      return;
+    }
+
+    await renderExpandedDock({
+      passkey: true,
+      pathname: "/vault/settings",
+      passkeyAvailability: {
+        hasEnvelope: true,
+        showPasskey: true,
+        prfExplicitlyUnsupported: false,
+      },
+    });
+
+    await waitFor(() => expect(refreshPasskeyOptions).toHaveBeenCalled());
+    await waitFor(() => expect(unlockFromPasskey).toHaveBeenCalled());
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("redirects to /vault/unlock when dock passkey unlock fails with a fatal error", async () => {
+    const { hasUnlockedVaultSession } = await import("@/lib/crypto-client/vault");
+    vi.mocked(hasUnlockedVaultSession).mockReturnValue(false);
+    unlockFromPasskey.mockRejectedValue(new Error("Passkey PRF is not supported in this browser."));
     const { useRouter } = await import("next/navigation");
     const push = vi.fn();
     vi.mocked(useRouter).mockReturnValue({ push, replace: vi.fn(), back: vi.fn() });
