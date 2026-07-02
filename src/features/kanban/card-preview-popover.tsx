@@ -81,6 +81,17 @@ export function KanbanCardPreviewPopover({
     onOpen();
   }, [clearTimers, onOpen]);
 
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, updatePosition]);
+
   useEffect(() => () => clearTimers(), [clearTimers]);
 
   return (

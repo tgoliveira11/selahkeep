@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { signOutAccount } from "@/lib/auth/sign-out-client";
+import { signOutAccount, signOutWithRedirect } from "@/lib/auth/sign-out-client";
 import { isFullyAuthenticatedSession } from "@/lib/auth/session-state";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,6 @@ import { HeaderSearch } from "@/components/layout/header-search";
 export function Nav() {
   const { data: session } = useSession();
   const authenticated = isFullyAuthenticatedSession(session);
-  const router = useRouter();
   const pathname = usePathname();
   const menuId = useId();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -42,7 +41,7 @@ export function Nav() {
       }
     }
     await signOutAccount();
-    router.push("/");
+    signOutWithRedirect("/");
   }
 
   return (

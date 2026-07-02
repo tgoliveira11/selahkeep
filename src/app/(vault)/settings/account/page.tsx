@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { AccountSettingsPage, SecuritySettingsPage } from "@tgoliveira/secure-auth/react";
-import { defaultSignOutAccount } from "@tgoliveira/secure-auth/react/client";
+import { defaultSignOutAccount, signOutWithRedirect } from "@tgoliveira/secure-auth/react/client";
 import { Button } from "@/components/ui/button";
 import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { PageHeader } from "@/components/ui/page-header";
@@ -45,6 +45,7 @@ export default function AccountSettingsPageWrapper() {
                 }
               }
               await defaultSignOutAccount();
+              signOutWithRedirect("/");
             }}
           />
         </SettingsSection>
