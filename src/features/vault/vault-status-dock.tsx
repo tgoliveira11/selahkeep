@@ -5,14 +5,13 @@ import { useCallback, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  VaultDockQuickUnlock,
   VaultStatusDock as CoreVaultStatusDock,
   createVaultFullUnlockPageMatcher,
 } from "@tgoliveira/vault-core/react";
 import { isPrfExtensionSupported } from "@tgoliveira/vault-core/browser";
-import { Alert } from "@/components/ui/alert";
 import { useVault } from "@/features/vault/use-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
+import { VaultDockQuickUnlockSlot } from "@/features/vault/vault-dock-quick-unlock-slot";
 import { useVaultPasskeyUnlockPrefetch } from "@/features/passkey/use-vault-passkey-unlock-prefetch";
 import { useVaultDockPasskeyAvailable } from "@/features/vault/use-vault-dock-passkey-available";
 import { hasUnlockedVaultSession } from "@/lib/crypto-client/vault";
@@ -21,6 +20,7 @@ import { getVaultUnlockRateLimiter } from "@/lib/vault/vault-rate-limit";
 import { toVaultServerStatusSnapshot } from "@/lib/vault/vault-server-snapshot";
 import { isVaultFullUnlockPage } from "@/features/vault/vault-status-dock-routes";
 import { lockVaultSessionManually, touchVaultSession } from "@/lib/crypto-client/vault-session";
+import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 
 const UNLOCK_PATH = "/vault/unlock";
 const DOCK_COLLAPSED_KEY = "selahkeep:vault-status-dock:collapsed";
@@ -39,22 +39,27 @@ export function VaultStatusDock() {
   } = useVault();
   const serverStatus = vaultClient.status === "ready" ? vaultClient.serverStatus : null;
   const passkeyAvailability = useVaultDockPasskeyAvailable(serverStatus);
-  const { options: prefetchedOptions } = useVaultPasskeyUnlockPrefetch(passkeyAvailability.showPasskey);
+  const { refresh: refreshPasskeyOptions } = useVaultPasskeyUnlockPrefetch(
+    passkeyAvailability.showPasskey
+  );
   /** Survives VaultDockQuickUnlock remounts (e.g. React Strict Mode, page re-render on unlock). */
   const passkeyUnlockInFlightRef = useRef(false);
 
   const runDockPasskeyUnlock = useCallback(
-    async (collapse: () => void) => {
+    async (
+      collapse: () => void,
+      options: PublicKeyCredentialRequestOptionsJSON | null
+    ) => {
       if (!passkeyAvailability.showPasskey || passkeyUnlockInFlightRef.current) return;
       passkeyUnlockInFlightRef.current = true;
       try {
-        await unlockFromPasskey(prefetchedOptions ?? undefined);
+        await unlockFromPasskey(options ?? undefined);
         collapse();
       } finally {
         passkeyUnlockInFlightRef.current = false;
       }
     },
-    [passkeyAvailability.showPasskey, prefetchedOptions, unlockFromPasskey]
+    [passkeyAvailability.showPasskey, unlockFromPasskey]
   );
 
   const handleDockPasskeyUnlockFailed = useCallback(
@@ -85,7 +90,6 @@ export function VaultStatusDock() {
       buildUnlockHref={(path) => buildVaultUnlockHref(path ?? returnPath)}
       isFullUnlockPage={createVaultFullUnlockPageMatcher(UNLOCK_PATH)}
       quickUnlockEnabled={clientStatus !== "not_configured" && clientStatus !== "setup_incomplete"}
-      redirectOnPasskeyUnlockFailure
       loading={loading}
       unlockError={error}
       collapsedPreferenceKey={DOCK_COLLAPSED_KEY}
@@ -98,31 +102,27 @@ export function VaultStatusDock() {
         error: dockError,
         collapse,
         onPasskeyUnlockFailed,
+        onPasskeyUnlockCancelled,
+        bindAutoStartPasskey,
       }) => (
-        <VaultDockQuickUnlock
+        <VaultDockQuickUnlockSlot
           loading={dockLoading}
           error={dockError}
           serverStatus={snapshot}
           passkeyReady={passkeyAvailability.showPasskey}
           unlockRateLimiter={rateLimiter}
           rateLimitScopeKey={rateLimitScopeKey}
-          onPasskeyUnlockFailed={(error) =>
-            handleDockPasskeyUnlockFailed(error, onPasskeyUnlockFailed)
+          refreshPasskeyOptions={refreshPasskeyOptions}
+          onPasskeyUnlockCancelled={onPasskeyUnlockCancelled}
+          onPasskeyUnlockFailed={(passkeyError) =>
+            handleDockPasskeyUnlockFailed(passkeyError, onPasskeyUnlockFailed)
           }
+          bindAutoStartPasskey={bindAutoStartPasskey}
           onUnlockPassword={async (password) => {
             await unlockFromVaultPassword(password);
             collapse();
           }}
-          onUnlockPasskey={
-            passkeyAvailability.showPasskey
-              ? () => runDockPasskeyUnlock(collapse)
-              : undefined
-          }
-          renderError={(message) => (
-            <Alert variant="danger" title="Unlock failed">
-              {message}
-            </Alert>
-          )}
+          onUnlockPasskey={(options) => runDockPasskeyUnlock(collapse, options)}
         />
       )}
     />

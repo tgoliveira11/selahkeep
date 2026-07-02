@@ -61,7 +61,10 @@ vi.mock("@/features/vault/use-vault-dock-passkey-available", () => ({
 }));
 
 vi.mock("@/features/passkey/use-vault-passkey-unlock-prefetch", () => ({
-  useVaultPasskeyUnlockPrefetch: vi.fn(() => ({ options: null })),
+  useVaultPasskeyUnlockPrefetch: vi.fn(() => ({
+    options: null,
+    refresh: vi.fn().mockResolvedValue(null),
+  })),
 }));
 
 vi.mock("@/features/vault/use-vault-client-status", () => ({
@@ -201,7 +204,6 @@ describe("VaultStatusDock", () => {
         visible: true,
         unlockPath: "/vault/unlock",
         quickUnlockEnabled: true,
-        redirectOnPasskeyUnlockFailure: true,
       })
     );
   });
