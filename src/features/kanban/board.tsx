@@ -17,7 +17,6 @@ import type {
   KanbanColumnPlaintext,
 } from "@/lib/notes/kanban-types";
 import { sortKanbanColumns, withDoneColumnOnLast } from "@/lib/notes/kanban-columns";
-import { cardMatchesSearch } from "@/lib/notes/kanban-card-tags";
 import { formatDescriptionWithMetadata } from "@/lib/notes/kanban-card-text";
 
 interface KanbanBoardProps {
@@ -48,18 +47,17 @@ export function KanbanBoard({
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
   const [cardSearch, setCardSearch] = useState("");
   const previousComplete = useRef(getKanbanProgress(board).complete);
+  const loadedBoardIdRef = useRef(board.boardId);
 
   useEffect(() => {
+    if (board.boardId === loadedBoardIdRef.current) return;
+    loadedBoardIdRef.current = board.boardId;
     setDraft(board);
     previousComplete.current = getKanbanProgress(board).complete;
   }, [board]);
 
   const progress = useMemo(() => getKanbanProgress(draft), [draft]);
   const orderedColumns = useMemo(() => normalizeColumns(draft.columns), [draft.columns]);
-  const visibleCards = useMemo(
-    () => draft.cards.filter((card) => cardMatchesSearch(card, cardSearch)),
-    [draft.cards, cardSearch]
-  );
   const tagSuggestions = useMemo(() => {
     const names = new Set<string>();
     for (const card of draft.cards) {
@@ -73,7 +71,7 @@ export function KanbanBoard({
     const wasComplete = previousComplete.current;
     const nextProgress = getKanbanProgress(next);
     previousComplete.current = nextProgress.complete;
-    await onChange(next, options);
+    void onChange(next, options);
 
     if (next.scope === "note" && nextProgress.total > 0) {
       if (nextProgress.complete && !wasComplete) {
@@ -229,8 +227,8 @@ export function KanbanBoard({
     );
   }
 
-  function moveCard(cardId: string, columnId: string) {
-    void commit(moveKanbanCard(draft, cardId, columnId), { appendVersion: true });
+  function moveCard(cardId: string, columnId: string, insertIndex?: number) {
+    void commit(moveKanbanCard(draft, cardId, columnId, insertIndex), { appendVersion: true });
   }
 
   return (
@@ -298,11 +296,11 @@ export function KanbanBoard({
             key={column.id}
             column={column}
             columns={orderedColumns}
-            cards={visibleCards
-              .filter((card) => card.columnId === column.id)
-              .sort((a, b) => a.order - b.order)}
+            cards={draft.cards
+              .filter((card) => card.columnId === column.id)}
             labels={draft.labels}
             draggingCardId={draggingCardId}
+            searchQuery={cardSearch}
             onOpenCard={setEditingCard}
             onAddCard={addCard}
             onRenameColumn={(columnId, title) => updateColumn(columnId, { title })}
@@ -310,6 +308,7 @@ export function KanbanBoard({
             onMoveColumn={moveColumn}
             onMoveCard={moveCard}
             onDragStart={setDraggingCardId}
+            onDragEnd={() => setDraggingCardId(null)}
           />
         ))}
       </div>
