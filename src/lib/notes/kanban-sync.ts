@@ -85,10 +85,12 @@ function activityToCard(
     description: formatDescriptionWithMetadata(
       activity.description,
       activity.dueDate,
-      activity.priority
+      activity.priority,
+      activity.tagNames
     ),
     order,
     labelIds: [],
+    tagNames: activity.tagNames ?? [],
     priority: activity.priority ?? null,
     dueDate: activity.dueDate ?? null,
     createdAt: now,
@@ -152,10 +154,21 @@ export function syncBoardFromNoteBody(
     const nextDescription = formatDescriptionWithMetadata(
       activity.description,
       activity.dueDate,
-      activity.priority
+      activity.priority,
+      activity.tagNames
     );
     if ((card.description ?? "") !== (nextDescription ?? "")) {
       nextCard = { ...nextCard, description: nextDescription, updatedAt: now };
+      cardChanged = true;
+    }
+
+    const nextTagNames = activity.tagNames ?? [];
+    const currentTagNames = card.tagNames ?? [];
+    if (
+      nextTagNames.length !== currentTagNames.length ||
+      nextTagNames.some((tag, index) => tag !== currentTagNames[index])
+    ) {
+      nextCard = { ...nextCard, tagNames: nextTagNames, updatedAt: now };
       cardChanged = true;
     }
 
@@ -270,7 +283,8 @@ function buildNoteLinesForCard(
   const description = formatDescriptionWithMetadata(
     card.description,
     card.dueDate,
-    card.priority
+    card.priority,
+    card.tagNames
   );
   if (!description) return [itemLine];
   return [itemLine, ...description.split("\n"), ""];

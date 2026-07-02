@@ -10,6 +10,11 @@ import type {
   KanbanPriority,
 } from "@/lib/notes/kanban-types";
 import { PRIORITY_LABELS } from "@/features/kanban/labels";
+import { KanbanCardTagNamesInput } from "@/features/kanban/card-tag-names-input";
+import {
+  formatDescriptionWithMetadata,
+  parseDescriptionMetadata,
+} from "@/lib/notes/kanban-card-text";
 import {
   kanbanCardStatusHistoryTitle,
   lastKanbanCardStatusChange,
@@ -19,6 +24,7 @@ import { formatNoteUpdatedShort } from "@/lib/notes/note-dates";
 interface KanbanCardDialogProps {
   card: KanbanCardPlaintext | null;
   labels: KanbanLabelPlaintext[];
+  tagSuggestions?: string[];
   open: boolean;
   onSave: (card: KanbanCardPlaintext) => void;
   onDelete?: (cardId: string) => void;
@@ -28,6 +34,7 @@ interface KanbanCardDialogProps {
 export function KanbanCardDialog({
   card,
   labels,
+  tagSuggestions = [],
   open,
   onSave,
   onDelete,
@@ -35,6 +42,19 @@ export function KanbanCardDialog({
 }: KanbanCardDialogProps) {
   const cancelRef = useRef<HTMLButtonElement>(null);
   const [draft, setDraft] = useState<KanbanCardPlaintext | null>(card);
+
+  useEffect(() => {
+    if (!card) {
+      setDraft(null);
+      return;
+    }
+    const meta = parseDescriptionMetadata(card.description ?? "");
+    setDraft({
+      ...card,
+      tagNames: card.tagNames ?? meta.tagNames,
+      description: meta.body || undefined,
+    });
+  }, [card]);
 
   useEffect(() => {
     if (!open) return;
@@ -111,6 +131,15 @@ export function KanbanCardDialog({
             </div>
           </FormField>
 
+          <FormField id="kanban-card-tags" label="Tags">
+            <KanbanCardTagNamesInput
+              id="kanban-card-tags"
+              tagNames={draft.tagNames ?? []}
+              onTagNamesChange={(tagNames) => update({ tagNames })}
+              suggestions={tagSuggestions}
+            />
+          </FormField>
+
           <div className="grid gap-3 sm:grid-cols-2">
             <FormField id="kanban-card-due" label="Due date">
               <input
@@ -179,7 +208,19 @@ export function KanbanCardDialog({
           <Button
             type="button"
             disabled={!draft.title.trim()}
-            onClick={() => onSave({ ...draft, title: draft.title.trim(), updatedAt: new Date().toISOString() })}
+            onClick={() =>
+              onSave({
+                ...draft,
+                title: draft.title.trim(),
+                updatedAt: new Date().toISOString(),
+                description: formatDescriptionWithMetadata(
+                  draft.description,
+                  draft.dueDate,
+                  draft.priority,
+                  draft.tagNames
+                ),
+              })
+            }
           >
             Save card
           </Button>

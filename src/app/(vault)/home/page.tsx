@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { AuthenticatedPage } from "@/components/layout/authenticated-page";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { VaultLockedHomeContent } from "@/features/vault/vault-locked-home-content";
-import { VaultUnlockedHomeContent } from "@/features/vault/vault-unlocked-home-content";
+import { LoggedInHomeShell } from "@/features/vault/logged-in-home-shell";
+import { LoggedInHomeLockedHero } from "@/features/vault/logged-in-home-locked-hero";
+import { LoggedInHomeUnlockedHero } from "@/features/vault/logged-in-home-unlocked-hero";
 import { NotesWelcome } from "@/features/vault/notes-welcome";
 import { useRequireVault } from "@/features/vault/use-require-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
@@ -65,17 +66,13 @@ export default function LoggedInHomePage() {
     );
   }
 
-  if (clientStatus === "unlocked") {
-    return (
-      <AuthenticatedPage width="notes">
-        <VaultUnlockedHomeContent />
-      </AuthenticatedPage>
-    );
-  }
-
   return (
     <AuthenticatedPage width="notes">
-      <VaultLockedHomeContent />
+      <LoggedInHomeShell
+        hero={
+          clientStatus === "unlocked" ? <LoggedInHomeUnlockedHero /> : <LoggedInHomeLockedHero />
+        }
+      />
     </AuthenticatedPage>
   );
 }

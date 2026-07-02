@@ -9,6 +9,12 @@ import {
   sortKanbanColumns,
 } from "@/lib/notes/kanban-columns";
 import { unescapeMarkdownBracketTags } from "@/lib/notes/markdown-brackets";
+import {
+  extractCardTagsFromDescription,
+  formatCardTagMarkers,
+  mergeDescriptionWithCardTags,
+  stripCardTagMarkers,
+} from "@/lib/notes/kanban-card-tags";
 
 const BRACKET_TAG_RE = /\[([A-Z][A-Z0-9 ]*)\]/g;
 const DUE_DATE_RE = /\[(\d{4}-\d{2}-\d{2})\]/g;
@@ -58,8 +64,11 @@ export function parseDescriptionMetadata(description: string): {
   body: string;
   dueDate: string | null;
   priority: KanbanPriority | null;
+  tagNames: string[];
 } {
   let body = unescapeMarkdownBracketTags(description);
+  const tagNames = extractCardTagsFromDescription(body);
+  body = stripCardTagMarkers(body);
   let dueDate: string | null = null;
   let priority: KanbanPriority | null = null;
 
@@ -75,16 +84,19 @@ export function parseDescriptionMetadata(description: string): {
     body = body.replace(priorityMatch[0], "");
   }
 
-  return { body: body.replace(/\n{3,}/g, "\n\n").trim(), dueDate, priority };
+  return { body: body.replace(/\n{3,}/g, "\n\n").trim(), dueDate, priority, tagNames };
 }
 
 export function formatDescriptionWithMetadata(
   description: string | undefined | null,
   dueDate: string | null | undefined,
-  priority: KanbanPriority | null | undefined
+  priority: KanbanPriority | null | undefined,
+  tagNames?: string[] | null
 ): string | undefined {
   let body = description?.trim() ?? "";
-  body = parseDescriptionMetadata(body).body;
+  const parsed = parseDescriptionMetadata(body);
+  body = parsed.body;
+  const tags = tagNames ?? parsed.tagNames;
 
   if (priority) {
     body = body ? `${body}\n[${priority.toUpperCase()}]` : `[${priority.toUpperCase()}]`;
@@ -93,8 +105,7 @@ export function formatDescriptionWithMetadata(
     body = body ? `${body}\n[${dueDate}]` : `[${dueDate}]`;
   }
 
-  const trimmed = body.trim();
-  return trimmed || undefined;
+  return mergeDescriptionWithCardTags(body, tags);
 }
 
 export function resolveColumnIdForItem(

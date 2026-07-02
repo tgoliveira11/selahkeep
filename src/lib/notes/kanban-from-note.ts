@@ -28,6 +28,7 @@ export interface RecognizedActivity {
   dueDate?: string | null;
   priority?: KanbanPriority | null;
   columnTag?: string;
+  tagNames?: string[];
   key: string;
   titleLine: number;
   descriptionEndLine: number;
@@ -169,6 +170,7 @@ export function parseKanbanNoteItems(
       dueDate: meta?.dueDate ?? null,
       priority: meta?.priority ?? null,
       columnTag,
+      tagNames: meta?.tagNames ?? [],
       key,
       titleLine: item.lineIndex,
       descriptionEndLine: Math.max(item.lineIndex, nextItemLine - 1),
@@ -217,10 +219,12 @@ function activityToCard(
     description: formatDescriptionWithMetadata(
       activity.description,
       activity.dueDate,
-      activity.priority
+      activity.priority,
+      activity.tagNames
     ),
     order,
     labelIds: [],
+    tagNames: activity.tagNames ?? [],
     priority: activity.priority ?? null,
     dueDate: activity.dueDate ?? null,
     createdAt: now,
