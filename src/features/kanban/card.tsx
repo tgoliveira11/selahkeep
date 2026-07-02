@@ -8,6 +8,8 @@ import type {
 } from "@/lib/notes/kanban-types";
 import { KanbanCardPreviewPopover } from "@/features/kanban/card-preview-popover";
 import { KanbanPriorityChip } from "@/features/kanban/labels";
+import { NoteTagChip } from "@/components/notes/note-labels";
+import { extractCardTagsFromDescription } from "@/lib/notes/kanban-card-tags";
 import { KanbanMoveMenu } from "@/features/kanban/move-menu";
 import {
   kanbanCardStatusHistoryTitle,
@@ -39,6 +41,7 @@ export function KanbanCard({
   onDragStart,
 }: KanbanCardProps) {
   const draggedRef = useRef(false);
+  const tagNames = card.tagNames ?? extractCardTagsFromDescription(card.description);
 
   function handleOpen() {
     if (draggedRef.current) return;
@@ -71,6 +74,14 @@ export function KanbanCard({
         }}
       >
         <h3 className="text-sm font-semibold tracking-[-0.01em]">{card.title}</h3>
+
+        {tagNames.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {tagNames.map((name) => (
+              <NoteTagChip key={name} name={name} />
+            ))}
+          </div>
+        )}
 
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           {card.dueDate && (

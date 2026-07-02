@@ -17,6 +17,8 @@ import type {
   KanbanColumnPlaintext,
 } from "@/lib/notes/kanban-types";
 import { sortKanbanColumns, withDoneColumnOnLast } from "@/lib/notes/kanban-columns";
+import { cardMatchesSearch } from "@/lib/notes/kanban-card-tags";
+import { formatDescriptionWithMetadata } from "@/lib/notes/kanban-card-text";
 
 interface KanbanBoardProps {
   board: KanbanBoardPlaintext;
@@ -44,6 +46,7 @@ export function KanbanBoard({
   const [draft, setDraft] = useState(board);
   const [editingCard, setEditingCard] = useState<KanbanCardPlaintext | null>(null);
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
+  const [cardSearch, setCardSearch] = useState("");
   const previousComplete = useRef(getKanbanProgress(board).complete);
 
   useEffect(() => {
@@ -53,6 +56,17 @@ export function KanbanBoard({
 
   const progress = useMemo(() => getKanbanProgress(draft), [draft]);
   const orderedColumns = useMemo(() => normalizeColumns(draft.columns), [draft.columns]);
+  const visibleCards = useMemo(
+    () => draft.cards.filter((card) => cardMatchesSearch(card, cardSearch)),
+    [draft.cards, cardSearch]
+  );
+  const tagSuggestions = useMemo(() => {
+    const names = new Set<string>();
+    for (const card of draft.cards) {
+      for (const tag of card.tagNames ?? []) names.add(tag);
+    }
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }, [draft.cards]);
 
   async function commit(next: KanbanBoardPlaintext, options?: { appendVersion?: boolean }) {
     setDraft(next);
@@ -140,6 +154,7 @@ export function KanbanBoard({
       dueDate: null,
       priority: null,
       labelIds: [],
+      tagNames: [],
       createdAt: now,
       updatedAt: now,
       source: { kind: "manual" },
@@ -155,6 +170,12 @@ export function KanbanBoard({
       ...card,
       title: card.title.trim(),
       updatedAt: now,
+      description: formatDescriptionWithMetadata(
+        card.description,
+        card.dueDate,
+        card.priority,
+        card.tagNames
+      ),
     };
 
     const history = nextCard.statusHistory ?? previous?.statusHistory ?? [];
@@ -214,38 +235,53 @@ export function KanbanBoard({
 
   return (
     <div className="space-y-5" data-testid="kanban-board">
-      <header className="flex flex-col gap-3 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          {onBackHref && (
-            <Link href={onBackHref} className="text-sm font-medium text-[var(--primary)]">
-              Back
-            </Link>
-          )}
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <input
-              aria-label="Board title"
-              className="max-w-full rounded-md border border-transparent bg-transparent px-1 text-2xl font-semibold tracking-[-0.03em] focus:border-[var(--border)]"
-              value={draft.title}
-              readOnly={draft.scope === "note"}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, title: event.target.value }))
-              }
-              onBlur={() => void commit({ ...draft, updatedAt: new Date().toISOString() }, { appendVersion: true })}
-            />
-            <span className="rounded-full border border-[var(--border-2)] px-2 py-1 text-xs font-semibold text-[var(--primary)]">
-              {progress.done}/{progress.total} done
-            </span>
-            {saving && <span className="text-xs text-[var(--muted)]">Saving...</span>}
+      <header className="space-y-3 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            {onBackHref && (
+              <Link href={onBackHref} className="text-sm font-medium text-[var(--primary)]">
+                Back
+              </Link>
+            )}
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <input
+                aria-label="Board title"
+                className="max-w-full rounded-md border border-transparent bg-transparent px-1 text-2xl font-semibold tracking-[-0.03em] focus:border-[var(--border)]"
+                value={draft.title}
+                readOnly={draft.scope === "note"}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, title: event.target.value }))
+                }
+                onBlur={() => void commit({ ...draft, updatedAt: new Date().toISOString() }, { appendVersion: true })}
+              />
+              <span className="rounded-full border border-[var(--border-2)] px-2 py-1 text-xs font-semibold text-[var(--primary)]">
+                {progress.done}/{progress.total} done
+              </span>
+              {saving && <span className="text-xs text-[var(--muted)]">Saving...</span>}
+            </div>
           </div>
-          <p className="mt-1 text-sm text-[var(--muted)]">
-            {draft.scope === "note"
-              ? "Linked to the source note — checklist and card changes sync both ways."
-              : "Standalone private board."}
-          </p>
+          <Button type="button" variant="secondary" onClick={addColumn} title="Add a new workflow column to this board">
+            Add column
+          </Button>
         </div>
-        <Button type="button" variant="secondary" onClick={addColumn} title="Add a new workflow column to this board">
-          Add column
-        </Button>
+
+        <label className="block">
+          <span className="sr-only">Search cards</span>
+          <input
+            type="search"
+            value={cardSearch}
+            onChange={(event) => setCardSearch(event.target.value)}
+            placeholder="Search cards by title, description, or tags"
+            className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            data-testid="kanban-card-search"
+          />
+        </label>
+
+        <p className="text-sm text-[var(--muted)]">
+          {draft.scope === "note"
+            ? "Linked to the source note — checklist and card changes sync both ways."
+            : "Standalone private board."}
+        </p>
       </header>
 
       {progress.complete && (
@@ -262,7 +298,7 @@ export function KanbanBoard({
             key={column.id}
             column={column}
             columns={orderedColumns}
-            cards={draft.cards
+            cards={visibleCards
               .filter((card) => card.columnId === column.id)
               .sort((a, b) => a.order - b.order)}
             labels={draft.labels}
@@ -282,6 +318,7 @@ export function KanbanBoard({
         key={editingCard?.id ?? "closed"}
         card={editingCard}
         labels={draft.labels}
+        tagSuggestions={tagSuggestions}
         open={Boolean(editingCard)}
         onSave={saveCard}
         onDelete={deleteCard}

@@ -17,6 +17,7 @@ import {
   writeSidebarCollapsedPreference,
 } from "@/lib/navigation/sidebar-preference";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { SidebarAccountPopover } from "@/components/layout/sidebar-account-popover";
 import { cn } from "@/lib/ui/cn";
 import { VaultLockOverlayExclude } from "@/features/vault/vault-protected-shell";
 
@@ -293,14 +294,24 @@ export function AppSidebar() {
             collapsed ? "justify-center" : "gap-2.5"
           )}
         >
-          <span
-            className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-[linear-gradient(150deg,var(--accent),var(--primary-solid))] text-xs font-semibold text-white"
-            title={collapsed ? (session?.user?.email ?? "Account") : undefined}
-          >
-            {initial}
-          </span>
-          {!collapsed && (
+          {collapsed ? (
+            <SidebarAccountPopover
+              email={session?.user?.email ?? "Account"}
+              initial={initial}
+              onSignOut={handleSignOut}
+            >
+              <span
+                className="flex h-[30px] w-[30px] flex-none cursor-default items-center justify-center rounded-full bg-[linear-gradient(150deg,var(--accent),var(--primary-solid))] text-xs font-semibold text-white"
+                data-testid="sidebar-account-avatar"
+              >
+                {initial}
+              </span>
+            </SidebarAccountPopover>
+          ) : (
             <>
+              <span className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-[linear-gradient(150deg,var(--accent),var(--primary-solid))] text-xs font-semibold text-white">
+                {initial}
+              </span>
               <div className="min-w-0 flex-1 text-[12.5px]">
                 <div className="truncate font-medium text-[var(--fg-2)]">
                   {session?.user?.email ?? "Account"}

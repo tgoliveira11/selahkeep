@@ -54,18 +54,16 @@ describe("logged-in home (/home)", () => {
     vi.mocked(useVaultClientStatus).mockReturnValue(mockClientStatus("locked"));
   });
 
-  it("shows the vault locked hero and reassurance when vault is locked", async () => {
+  it("shows locked hero and shared features section when vault is locked", async () => {
     render(<LoggedInHomePage />);
     expect(await screen.findByTestId("notes-vault-locked-state")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /your vault is locked/i })).toBeTruthy();
-    expect(screen.getByText(/encrypted and waiting/i)).toBeTruthy();
-    expect(screen.getByTestId("vault-open-full-unlock-page").getAttribute("href")).toBe(
-      "/vault/unlock?next=%2Fhome"
-    );
+    expect(screen.getByTestId("logged-in-home-features")).toBeTruthy();
+    expect(screen.getByText(/organize with kanban boards/i)).toBeTruthy();
+    expect(screen.getByText(/connect ai tools/i)).toBeTruthy();
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("shows unlocked home content without redirecting to /notes", async () => {
+  it("shows unlocked hero and the same features section when vault is unlocked", async () => {
     const { useRequireVault } = await import("@/features/vault/use-require-vault");
     const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
     vi.mocked(useRequireVault).mockReturnValue(mockVaultReady(true));
@@ -73,13 +71,13 @@ describe("logged-in home (/home)", () => {
 
     render(<LoggedInHomePage />);
     expect(await screen.findByTestId("logged-in-home-unlocked")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /go to your notes/i }).getAttribute("href")).toBe("/notes");
+    expect(screen.getByTestId("logged-in-home-features")).toBeTruthy();
+    expect(screen.getByText(/your privacy, in plain language/i)).toBeTruthy();
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("stays on /home when vault is locked on repeat visits", async () => {
+  it("uses a fixed-height hero region for both states", async () => {
     render(<LoggedInHomePage />);
-    expect(await screen.findByTestId("notes-vault-locked-state")).toBeTruthy();
-    expect(replace).not.toHaveBeenCalled();
+    expect(await screen.findByTestId("logged-in-home-hero")).toHaveClass("logged-in-home-hero");
   });
 });

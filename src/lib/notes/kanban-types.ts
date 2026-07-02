@@ -31,6 +31,7 @@ export interface KanbanCardPlaintext {
   dueDate?: string | null;
   priority?: KanbanPriority | null;
   labelIds?: string[];
+  tagNames?: string[];
   createdAt: string;
   updatedAt: string;
   source?: {

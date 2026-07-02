@@ -21,6 +21,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **Logged-in `/home`.** Hero area is fixed-height and varies only by vault state (locked unlock CTA vs unlocked welcome); features and privacy marketing always show below, including Kanban and MCP integrations.
+- **Vault auto-lock banner.** Disabled the sticky `role="status"` toaster; vault status remains in the header dock.
+- **Collapsed sidebar.** Account hover popover on the avatar shows email, signed-in status, and sign out.
+- **Kanban boards.** Card search filters by title, description, and `{tag}` markers; card dialog adds a tags field that syncs to linked notes as `{tag}` markers.
+
 - **Navigation and note editor UX.** Removed mobile bottom tab bar; desktop sidebar is collapsible (preference persisted). Post-login default is `/home` (vault-free landing); login/register use `AUTH_AFTER_LOGIN_PATH`. `/notes` no longer shows page-level vault-locked empty state. Note editor field order is title → body → attachments → category → tags; focus mode removed; Save appears in the top bar and after tags; dictate/upload sit beside Cancel/Discard. Tag input keeps focus after Space/Enter.
 
 - **Vault dock passkey unlock.** Upgraded `@tgoliveira/vault-core` to 1.0.1 (cancel no longer redirects; auto-start from expand via `bindAutoStartPasskey`). Dock refreshes WebAuthn options on each expand before passkey auto-start.
