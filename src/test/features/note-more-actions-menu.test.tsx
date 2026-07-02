@@ -36,4 +36,28 @@ describe("NoteMoreActionsMenu", () => {
 
     expect(screen.queryByTestId("export-note-pdf")).toBeNull();
   });
+
+  it("shows an Exporting state and disables the item while a PDF export is running", () => {
+    const onExportPdf = vi.fn();
+    render(
+      <NoteMoreActionsMenu
+        pinned={false}
+        favorite={false}
+        archived={false}
+        onTogglePinned={vi.fn()}
+        onToggleFavorite={vi.fn()}
+        onToggleArchived={vi.fn()}
+        onDuplicate={vi.fn()}
+        onMoveToTrash={vi.fn()}
+        onExportPdf={onExportPdf}
+        exportingPdf
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("note-more-actions-menu"));
+    const item = screen.getByTestId("export-note-pdf");
+
+    expect(item.textContent).toMatch(/exporting/i);
+    expect(item).toBeDisabled();
+  });
 });

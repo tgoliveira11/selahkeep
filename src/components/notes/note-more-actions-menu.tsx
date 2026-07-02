@@ -15,6 +15,7 @@ interface NoteMoreActionsMenuProps {
   onDuplicate: () => void;
   onMoveToTrash: () => void;
   onExportPdf?: () => void;
+  exportingPdf?: boolean;
   /** Hide duplicate, archive, and trash when those actions live in the detail rail. */
   hideLifecycleActions?: boolean;
 }
@@ -63,6 +64,7 @@ export function NoteMoreActionsMenu({
   onDuplicate,
   onMoveToTrash,
   onExportPdf,
+  exportingPdf = false,
   hideLifecycleActions = false,
 }: NoteMoreActionsMenuProps) {
   return (
@@ -89,8 +91,8 @@ export function NoteMoreActionsMenu({
         {onExportPdf && (
           <MenuItem
             testId="export-note-pdf"
-            label="Export as PDF"
-            disabled={busy}
+            label={exportingPdf ? "Exporting…" : "Export as PDF"}
+            disabled={busy || exportingPdf}
             onClick={onExportPdf}
           />
         )}

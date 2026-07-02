@@ -128,6 +128,7 @@ export default function NoteDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [permanentDeleteOpen, setPermanentDeleteOpen] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState<NoteDraftPlaintext | null>(null);
   const [baseline, setBaseline] = useState("");
   const [checklistSaveState, setChecklistSaveState] = useState<
@@ -650,13 +651,16 @@ export default function NoteDetailPage() {
   }
 
   async function handleExportPdf() {
-    if (!metadata) return;
+    if (!metadata || exportingPdf) return;
     setError(null);
+    setExportingPdf(true);
     try {
       const { exportNoteToPdf } = await import("@/lib/notes/export-note-pdf");
       await exportNoteToPdf(metadata.title, renderSanitizedMarkdown(body));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to export note as PDF");
+    } finally {
+      setExportingPdf(false);
     }
   }
 
@@ -995,6 +999,7 @@ export default function NoteDetailPage() {
               onDuplicate={() => void handleDuplicate()}
               onMoveToTrash={() => setDeleteOpen(true)}
               onExportPdf={() => void handleExportPdf()}
+              exportingPdf={exportingPdf}
             />
           </div>
         <div className="lg:flex lg:items-start lg:gap-10">

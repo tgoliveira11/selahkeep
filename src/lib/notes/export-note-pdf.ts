@@ -50,7 +50,9 @@ export async function exportNoteToPdf(title: string, bodyHtml: string): Promise<
   document.body.appendChild(container);
 
   try {
-    const canvas = await html2canvas(container, { backgroundColor: "#ffffff", scale: 2 });
+    // scale 1.5 is plenty sharp for print/reading and keeps the captured
+    // canvas (and therefore the embedded page images) reasonably sized.
+    const canvas = await html2canvas(container, { backgroundColor: "#ffffff", scale: 1.5 });
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const contentWidthMm = A4_WIDTH_MM - MARGIN_MM * 2;
     const contentHeightMm = A4_HEIGHT_MM - MARGIN_MM * 2;
@@ -65,6 +67,10 @@ export async function exportNoteToPdf(title: string, bodyHtml: string): Promise<
       pageCanvas.height = sliceHeightPx;
       const ctx = pageCanvas.getContext("2d");
       if (!ctx) break;
+      // Flatten onto white first: JPEG has no alpha channel, and the source
+      // canvas can have transparent gaps past the note's actual content.
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
       ctx.drawImage(
         canvas,
         0,
@@ -79,9 +85,12 @@ export async function exportNoteToPdf(title: string, bodyHtml: string): Promise<
 
       if (!firstPage) doc.addPage();
       const sliceHeightMm = (sliceHeightPx * contentWidthMm) / canvas.width;
+      // JPEG compresses this rasterized text/background content far better
+      // than lossless PNG — this is the difference between a multi-hundred-MB
+      // and a few-hundred-KB file for a typical note.
       doc.addImage(
-        pageCanvas.toDataURL("image/png"),
-        "PNG",
+        pageCanvas.toDataURL("image/jpeg", 0.82),
+        "JPEG",
         MARGIN_MM,
         MARGIN_MM,
         contentWidthMm,
