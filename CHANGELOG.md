@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-07-02
+
 ### Security
 
 - **OpenAPI spec gated in production.** `GET /api/openapi` returns 404 unless `ENABLE_API_DOCS=true` (same policy as `/api-docs`).
