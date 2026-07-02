@@ -75,12 +75,14 @@ export function TagChipInput({
         setInput("");
         if (keepFocus) {
           skipBlurCommitRef.current = true;
-          inputRef.current?.focus();
         }
       } catch {
         setError("Could not save tag. Try again.");
       } finally {
         setBusy(false);
+        if (keepFocus) {
+          queueMicrotask(() => inputRef.current?.focus());
+        }
       }
     },
     [addTagIds, onCreateTag, tags]
@@ -130,7 +132,6 @@ export function TagChipInput({
           id={id}
           type="text"
           value={input}
-          disabled={busy}
           aria-label="Add tags"
           aria-describedby={error ? `${id}-error` : undefined}
           placeholder={selectedTags.length === 0 ? "Type a tag and press Space" : ""}

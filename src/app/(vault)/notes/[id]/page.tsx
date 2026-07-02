@@ -14,7 +14,6 @@ import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
 import type { EditorStatus } from "@/components/notes/editor-status-bar";
-import { NoteFocusModeToggle } from "@/features/notes/note-focus-mode-toggle";
 import { NoteReadingView } from "@/components/notes/note-reading-view";
 import { NoteCategoryField } from "@/features/notes/category-tag-fields";
 import { TagChipInput } from "@/features/notes/tag-chip-input";
@@ -135,7 +134,6 @@ export default function NoteDetailPage() {
   >("idle");
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [resolving, setResolving] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [versionRefreshKey, setVersionRefreshKey] = useState(0);
@@ -761,7 +759,7 @@ export default function NoteDetailPage() {
                 : null;
 
   return (
-    <NoteDetailPageShell className={cn(editing && focusMode && "note-page--focus")}>
+    <NoteDetailPageShell>
       {draftPrompt && !editing && (
         <Alert variant="info" role="status" className="mb-4">
           <p className="font-medium">Unsaved draft found</p>
@@ -780,111 +778,17 @@ export default function NoteDetailPage() {
       {editing ? (
         <>
           <div className="mb-6">{backLink}</div>
-        <Card className="space-y-5">
-          <div
-            className="flex flex-wrap items-center justify-between gap-3"
-            data-testid="note-editor-topbar"
-          >
-            <Button variant="secondary" onClick={() => requestLeave(cancelEditing)}>
-              Cancel
-            </Button>
-            <div className="flex items-center gap-3">
-              {editStatusLabel && (
-                <span
-                  className={cn(
-                    "text-[13px] font-medium tabular-nums",
-                    editorStatus === "save-failed"
-                      ? "text-[var(--danger)]"
-                      : editorStatus === "saved" || editorStatus === "draft-saved"
-                        ? "text-[var(--success)]"
-                        : "text-[var(--muted)]"
-                  )}
-                  role="status"
-                  data-testid="note-editor-topbar-status"
-                >
-                  {editStatusLabel}
-                </span>
-              )}
-              <NoteFocusModeToggle active={focusMode} onToggle={() => setFocusMode((v) => !v)} />
-              <Button onClick={() => void handleSave()} disabled={busy}>
-                {busy ? "Saving…" : "Save changes"}
-              </Button>
-            </div>
-          </div>
-          <div>
-            <input
-              id="edit-title"
-              aria-label="Title"
-              value={metadata.title}
-              onChange={(e) => {
-                touchVaultActivity();
-                setMetadata({ ...metadata, title: e.target.value });
-              }}
-              maxLength={200}
-              className="w-full border-0 bg-transparent px-0 py-1 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none"
-            />
-          </div>
-
-          <div
-            className={cn(focusMode && "note-focus-hide")}
-            data-testid="edit-note-category-section"
-          >
-            <NoteCategoryField
-              categories={categoryLocked ? [] : userCategories}
-              categoryId={metadata.categoryId}
-              categoryLocked={categoryLocked}
-              lockedCategoryName={lockedCategoryName}
-              onCategoryChange={(categoryId) => {
-                touchVaultActivity();
-                setMetadata({ ...metadata, categoryId });
-              }}
-              onCreateCategory={categoryLocked ? undefined : createCategory}
-            />
-            <label className="mt-4 flex items-center gap-2 text-sm">
-              {kanbanLinked ? (
-                <span className="text-[var(--muted)]">
-                  Resolved status follows the linked Kanban board (
-                  {kanbanProgress?.done ?? 0}/{kanbanProgress?.total ?? 0} done).
-                </span>
-              ) : (
-                <>
-                  <input
-                    type="checkbox"
-                    checked={metadata.answered}
-                    onChange={(e) => {
-                      touchVaultActivity();
-                      setMetadata({ ...metadata, answered: e.target.checked });
-                    }}
-                    aria-label="Mark as resolved"
-                    className="h-4 w-4 rounded border-[var(--border)]"
-                  />
-                  Mark as resolved
-                </>
-              )}
-            </label>
-          </div>
-
-          <FormField id="edit-body" label="Your note">
-            {voiceEnabled && (
-              <div className={cn("mb-3", focusMode && "note-focus-hide")}>
-                {voiceOpen ? (
-                  <VoiceCapturePanel
-                    onClose={() => setVoiceOpen(false)}
-                    onInsert={(text) => {
-                      touchVaultActivity();
-                      setBody((current) => appendTranscript(current, text));
-                    }}
-                  />
-                ) : uploadOpen ? (
-                  <AudioUploadPanel
-                    onClose={() => setUploadOpen(false)}
-                    onInsert={(text) => {
-                      touchVaultActivity();
-                      setBody((current) => appendTranscript(current, text));
-                    }}
-                  />
-                ) : (
-                  <div className="flex flex-wrap gap-2">
+          <Card className="space-y-5">
+            <div
+              className="flex flex-wrap items-center justify-between gap-3"
+              data-testid="note-editor-topbar"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="secondary" onClick={() => requestLeave(cancelEditing)}>
+                  Cancel
+                </Button>
+                {voiceEnabled && !voiceOpen && !uploadOpen && (
+                  <>
                     <DictateButton
                       onClick={() => {
                         setUploadOpen(false);
@@ -899,48 +803,155 @@ export default function NoteDetailPage() {
                       }}
                       testId="edit-note-upload-audio"
                     />
-                  </div>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {editStatusLabel && (
+                  <span
+                    className={cn(
+                      "text-[13px] font-medium tabular-nums",
+                      editorStatus === "save-failed"
+                        ? "text-[var(--danger)]"
+                        : editorStatus === "saved" || editorStatus === "draft-saved"
+                          ? "text-[var(--success)]"
+                          : "text-[var(--muted)]"
+                    )}
+                    role="status"
+                    data-testid="note-editor-topbar-status"
+                  >
+                    {editStatusLabel}
+                  </span>
+                )}
+                <Button
+                  data-testid="note-editor-save-primary"
+                  onClick={() => void handleSave()}
+                  disabled={busy}
+                >
+                  {busy ? "Saving…" : "Save changes"}
+                </Button>
+              </div>
+            </div>
+
+            {voiceEnabled && (voiceOpen || uploadOpen) && (
+              <div>
+                {voiceOpen ? (
+                  <VoiceCapturePanel
+                    onClose={() => setVoiceOpen(false)}
+                    onInsert={(text) => {
+                      touchVaultActivity();
+                      setBody((current) => appendTranscript(current, text));
+                    }}
+                  />
+                ) : (
+                  <AudioUploadPanel
+                    onClose={() => setUploadOpen(false)}
+                    onInsert={(text) => {
+                      touchVaultActivity();
+                      setBody((current) => appendTranscript(current, text));
+                    }}
+                  />
                 )}
               </div>
             )}
-            {pauseEditorForVoice ? (
-              <NoteEditorPausedForVoice testId="edit-note-editor-paused" />
-            ) : (
-              <MarkdownEditor
-                value={body}
-                onChange={setBody}
-                id="edit-note-markdown"
-                onSave={() => void handleSave()}
-                checklistsDisabled={busy}
-                status={editorStatus}
-              />
-            )}
-          </FormField>
 
-          <div className={cn(focusMode && "note-focus-hide")} data-testid="edit-note-attachments-field">
-            <NoteAttachmentsField
-              noteId={id}
-              userId={vaultUserId}
-              wrappedKey={wrappedKey}
-              enabled={canRead}
-              onAttachmentsChange={() => touchVaultActivity()}
-            />
-          </div>
+            <form className="note-editor-grid space-y-5 lg:space-y-0" onSubmit={(e) => { e.preventDefault(); void handleSave(); }}>
+              <div data-area="title">
+                <input
+                  id="edit-title"
+                  aria-label="Title"
+                  value={metadata.title}
+                  onChange={(e) => {
+                    touchVaultActivity();
+                    setMetadata({ ...metadata, title: e.target.value });
+                  }}
+                  maxLength={200}
+                  className="w-full border-0 bg-transparent px-0 py-1 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none"
+                />
+              </div>
 
-          <div data-testid="edit-note-tags-field">
-            <FormField id="edit-tags" label="Tags">
-              <TagChipInput
-                tags={tags}
-                tagIds={metadata.tagIds}
-                onTagIdsChange={(tagIds) => {
-                  touchVaultActivity();
-                  setMetadata({ ...metadata, tagIds });
-                }}
-                onCreateTag={createTag}
-              />
-            </FormField>
-          </div>
-        </Card>
+              <div data-area="editor">
+                {pauseEditorForVoice ? (
+                  <NoteEditorPausedForVoice testId="edit-note-editor-paused" />
+                ) : (
+                  <MarkdownEditor
+                    value={body}
+                    onChange={setBody}
+                    id="edit-note-markdown"
+                    onSave={() => void handleSave()}
+                    checklistsDisabled={busy}
+                    status={editorStatus}
+                  />
+                )}
+              </div>
+
+              <div data-area="attachments" data-testid="edit-note-attachments-field">
+                <NoteAttachmentsField
+                  noteId={id}
+                  userId={vaultUserId}
+                  wrappedKey={wrappedKey}
+                  enabled={canRead}
+                  onAttachmentsChange={() => touchVaultActivity()}
+                />
+              </div>
+
+              <div data-area="category" data-testid="edit-note-category-section">
+                <NoteCategoryField
+                  categories={categoryLocked ? [] : userCategories}
+                  categoryId={metadata.categoryId}
+                  categoryLocked={categoryLocked}
+                  lockedCategoryName={lockedCategoryName}
+                  onCategoryChange={(categoryId) => {
+                    touchVaultActivity();
+                    setMetadata({ ...metadata, categoryId });
+                  }}
+                  onCreateCategory={categoryLocked ? undefined : createCategory}
+                />
+                <label className="mt-4 flex items-center gap-2 text-sm">
+                  {kanbanLinked ? (
+                    <span className="text-[var(--muted)]">
+                      Resolved status follows the linked Kanban board (
+                      {kanbanProgress?.done ?? 0}/{kanbanProgress?.total ?? 0} done).
+                    </span>
+                  ) : (
+                    <>
+                      <input
+                        type="checkbox"
+                        checked={metadata.answered}
+                        onChange={(e) => {
+                          touchVaultActivity();
+                          setMetadata({ ...metadata, answered: e.target.checked });
+                        }}
+                        aria-label="Mark as resolved"
+                        className="h-4 w-4 rounded border-[var(--border)]"
+                      />
+                      Mark as resolved
+                    </>
+                  )}
+                </label>
+              </div>
+
+              <div data-area="tags" data-testid="edit-note-tags-field">
+                <FormField id="edit-tags" label="Tags">
+                  <TagChipInput
+                    tags={tags}
+                    tagIds={metadata.tagIds}
+                    onTagIdsChange={(tagIds) => {
+                      touchVaultActivity();
+                      setMetadata({ ...metadata, tagIds });
+                    }}
+                    onCreateTag={createTag}
+                  />
+                </FormField>
+              </div>
+
+              <div data-area="actions" className="flex justify-end">
+                <Button type="submit" data-testid="note-editor-save-secondary" disabled={busy}>
+                  {busy ? "Saving…" : "Save changes"}
+                </Button>
+              </div>
+            </form>
+          </Card>
         </>
       ) : (
         <>

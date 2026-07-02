@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { AppMark } from "@/components/ui/app-mark";
 import { signOutAccount } from "@/lib/auth/sign-out-client";
 import { isFullyAuthenticatedSession } from "@/lib/auth/session-state";
@@ -11,6 +12,10 @@ import { clearVaultClientState } from "@/lib/crypto-client/vault";
 import { lockVaultSession } from "@/lib/crypto-client/vault-session";
 import { PRODUCT_NAME } from "@/lib/marketing/brand";
 import { isKanbanEnabled } from "@/lib/notes/kanban-config";
+import {
+  readSidebarCollapsedPreference,
+  writeSidebarCollapsedPreference,
+} from "@/lib/navigation/sidebar-preference";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/ui/cn";
 import { VaultLockOverlayExclude } from "@/features/vault/vault-protected-shell";
@@ -72,6 +77,38 @@ const LIBRARY: { href: string; view: string | null; label: string; icon: React.R
   },
 ];
 
+function NavItem({
+  href,
+  active,
+  label,
+  icon,
+  collapsed,
+}: {
+  href: string;
+  active: boolean;
+  label: string;
+  icon: React.ReactNode;
+  collapsed: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      title={collapsed ? label : undefined}
+      className={cn(
+        "flex items-center rounded-lg py-2 text-[13.5px] transition-colors",
+        collapsed ? "justify-center px-2" : "gap-2.5 px-2.5",
+        active
+          ? "bg-[var(--lilac)] font-semibold text-[var(--primary)]"
+          : "text-[var(--fg-2)] hover:bg-[var(--card-2)]"
+      )}
+    >
+      {icon}
+      {!collapsed && <span>{label}</span>}
+    </Link>
+  );
+}
+
 /**
  * Desktop left sidebar (Stillness design system). Replaces the horizontal
  * header nav on `md+` with a full-height rail: brand, a New note CTA, the
@@ -85,12 +122,22 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const vaultClient = useVaultClientStatus();
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(readSidebarCollapsedPreference());
+  }, []);
 
   if (!isFullyAuthenticatedSession(session)) return null;
-  // The rail stays present even while the vault is locked (brand, account access,
-  // and the user footer) — only the note-specific destinations that need an open
-  // vault are hidden until it is unlocked.
   const unlocked = vaultClient.status === "ready" && vaultClient.clientStatus === "unlocked";
+
+  function toggleCollapsed() {
+    setCollapsed((current) => {
+      const next = !current;
+      writeSidebarCollapsedPreference(next);
+      return next;
+    });
+  }
 
   async function handleSignOut() {
     const userId = session?.user?.id;
@@ -114,126 +161,165 @@ export function AppSidebar() {
     <VaultLockOverlayExclude className="hidden md:block md:flex-none">
       <aside
         data-testid="app-sidebar"
-        className="sticky top-0 flex h-screen w-[248px] flex-col border-r border-[var(--border)] bg-[var(--card)] px-4 py-5"
-      >
-      <Link
-        href="/notes"
-        className="mb-[18px] flex items-center gap-2 px-2 text-[17px] font-semibold tracking-[0.01em] text-[var(--primary)]"
-      >
-        <AppMark size={28} />
-        <span>{PRODUCT_NAME}</span>
-      </Link>
-
-      {unlocked && (
-        <Link
-          href="/notes/new"
-          className="mb-[18px] flex items-center gap-2 rounded-[9px] bg-[var(--primary-solid)] px-3 py-2.5 text-sm font-semibold text-[var(--on-primary)]"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          New note
-        </Link>
-      )}
-
-      {/* Scrollable nav region; the footer below is pinned to the bottom. */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-      {unlocked && (
-        <p className="px-2 pb-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
-          Library
-        </p>
-      )}
-      <nav aria-label="Library" className="flex flex-col gap-0.5">
-        {unlocked &&
-          LIBRARY.filter((item) => item.href !== "/kanban" || isKanbanEnabled()).map((item) => {
-          const active =
-            item.href === "/kanban"
-              ? pathname.startsWith("/kanban")
-              : onNotes && (item.view ? view === item.view : !view);
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] transition-colors",
-                active
-                  ? "bg-[var(--lilac)] font-semibold text-[var(--primary)]"
-                  : "text-[var(--fg-2)] hover:bg-[var(--card-2)]"
-              )}
-            >
-              {item.icon}
-              {item.label}
-            </Link>
-          );
-        })}
-        {/* Vault settings is the last library item (needs an open vault). */}
-        {unlocked && (
-          <Link
-            href="/vault/settings"
-            aria-current={pathname.startsWith("/vault") ? "page" : undefined}
-            className={cn(
-              "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] transition-colors",
-              pathname.startsWith("/vault")
-                ? "bg-[var(--lilac)] font-semibold text-[var(--primary)]"
-                : "text-[var(--fg-2)] hover:bg-[var(--card-2)]"
-            )}
-          >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="4" y="10" width="16" height="11" rx="2.4" />
-              <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-            </svg>
-            Vault
-          </Link>
+        data-collapsed={collapsed ? "true" : "false"}
+        className={cn(
+          "sticky top-0 flex h-screen flex-col border-r border-[var(--border)] bg-[var(--card)] py-5 transition-[width] duration-200",
+          collapsed ? "w-[4.5rem] px-2" : "w-[248px] px-4"
         )}
-        {/* Account stays reachable even while the vault is locked. */}
-        <Link
-          href="/settings/account"
-          aria-current={pathname.startsWith("/settings") ? "page" : undefined}
+      >
+        <div
           className={cn(
-            "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] transition-colors",
-            pathname.startsWith("/settings")
-              ? "bg-[var(--lilac)] font-semibold text-[var(--primary)]"
-              : "text-[var(--fg-2)] hover:bg-[var(--card-2)]"
+            "mb-[18px] flex items-center",
+            collapsed ? "justify-center" : "justify-between gap-2 px-2"
           )}
         >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
-          </svg>
-          Account
-        </Link>
-      </nav>
-      </div>
-
-      {/* Theme sits at the end of the rail, above the divider. */}
-      <div className="flex items-center justify-between pt-4">
-        <span className="text-[11px] font-medium text-[var(--muted)]">Theme</span>
-        <ThemeToggle />
-      </div>
-
-      {/* User block, below the divider: avatar + email + sign out. */}
-      <div className="mt-3 flex items-center gap-2.5 border-t border-[var(--border)] pt-3">
-        <span className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-[linear-gradient(150deg,var(--accent),var(--primary-solid))] text-xs font-semibold text-white">
-          {initial}
-        </span>
-        <div className="min-w-0 flex-1 text-[12.5px]">
-          <div className="truncate font-medium text-[var(--fg-2)]">
-            {session?.user?.email ?? "Account"}
-          </div>
-          <div className="text-[11px] text-[var(--muted)]">Signed in</div>
+          <Link
+            href="/home"
+            className={cn(
+              "flex items-center font-semibold tracking-[0.01em] text-[var(--primary)]",
+              collapsed ? "justify-center" : "gap-2 text-[17px]"
+            )}
+            title={collapsed ? PRODUCT_NAME : undefined}
+          >
+            <AppMark size={28} />
+            {!collapsed && <span>{PRODUCT_NAME}</span>}
+          </Link>
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label="Collapse sidebar"
+              className="rounded-lg p-1.5 text-[var(--muted)] transition-colors hover:bg-[var(--card-2)] hover:text-[var(--foreground)]"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                <path d="M15 18 9 12l6-6" />
+              </svg>
+            </button>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={handleSignOut}
-          aria-label="Sign out"
-          className="flex-none rounded-lg p-1.5 text-[var(--muted)] transition-colors hover:bg-[var(--card-2)] hover:text-[var(--foreground)]"
+
+        {collapsed && (
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label="Expand sidebar"
+            className="mb-3 flex justify-center rounded-lg p-2 text-[var(--muted)] transition-colors hover:bg-[var(--card-2)] hover:text-[var(--foreground)]"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+        )}
+
+        {unlocked && (
+          <Link
+            href="/notes/new"
+            title={collapsed ? "New note" : undefined}
+            className={cn(
+              "mb-[18px] flex items-center rounded-[9px] bg-[var(--primary-solid)] text-sm font-semibold text-[var(--on-primary)]",
+              collapsed ? "justify-center px-2 py-2.5" : "gap-2 px-3 py-2.5"
+            )}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            {!collapsed && "New note"}
+          </Link>
+        )}
+
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {unlocked && !collapsed && (
+            <p className="px-2 pb-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+              Library
+            </p>
+          )}
+          <nav aria-label="Library" className="flex flex-col gap-0.5">
+            {unlocked &&
+              LIBRARY.filter((item) => item.href !== "/kanban" || isKanbanEnabled()).map((item) => {
+                const active =
+                  item.href === "/kanban"
+                    ? pathname.startsWith("/kanban")
+                    : onNotes && (item.view ? view === item.view : !view);
+                return (
+                  <NavItem
+                    key={item.label}
+                    href={item.href}
+                    active={active}
+                    label={item.label}
+                    icon={item.icon}
+                    collapsed={collapsed}
+                  />
+                );
+              })}
+            {unlocked && (
+              <NavItem
+                href="/vault/settings"
+                active={pathname.startsWith("/vault")}
+                label="Vault"
+                collapsed={collapsed}
+                icon={
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="4" y="10" width="16" height="11" rx="2.4" />
+                    <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                  </svg>
+                }
+              />
+            )}
+            <NavItem
+              href="/settings/account"
+              active={pathname.startsWith("/settings")}
+              label="Account"
+              collapsed={collapsed}
+              icon={
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+                </svg>
+              }
+            />
+          </nav>
+        </div>
+
+        {!collapsed && (
+          <div className="flex items-center justify-between pt-4">
+            <span className="text-[11px] font-medium text-[var(--muted)]">Theme</span>
+            <ThemeToggle />
+          </div>
+        )}
+
+        <div
+          className={cn(
+            "mt-3 flex items-center border-t border-[var(--border)] pt-3",
+            collapsed ? "justify-center" : "gap-2.5"
+          )}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-          </svg>
-        </button>
-      </div>
+          <span
+            className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-[linear-gradient(150deg,var(--accent),var(--primary-solid))] text-xs font-semibold text-white"
+            title={collapsed ? (session?.user?.email ?? "Account") : undefined}
+          >
+            {initial}
+          </span>
+          {!collapsed && (
+            <>
+              <div className="min-w-0 flex-1 text-[12.5px]">
+                <div className="truncate font-medium text-[var(--fg-2)]">
+                  {session?.user?.email ?? "Account"}
+                </div>
+                <div className="text-[11px] text-[var(--muted)]">Signed in</div>
+              </div>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                aria-label="Sign out"
+                className="flex-none rounded-lg p-1.5 text-[var(--muted)] transition-colors hover:bg-[var(--card-2)] hover:text-[var(--foreground)]"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
       </aside>
     </VaultLockOverlayExclude>
   );

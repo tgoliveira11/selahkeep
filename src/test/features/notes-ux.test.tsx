@@ -366,7 +366,7 @@ describe("notes UX", () => {
       render(<NewNotePage />);
       fireEvent.change(screen.getByLabelText("Title"), { target: { value: "" } });
       setNoteBody("Body");
-      const saveButton = screen.getByRole("button", { name: /save note/i });
+      const saveButton = screen.getByTestId("note-editor-save-primary");
       expect(saveButton).toBeDisabled();
       expect(saveButton.getAttribute("title")).toMatch(/add a title before saving/i);
     });
@@ -375,7 +375,7 @@ describe("notes UX", () => {
       render(<NewNotePage />);
       fireEvent.change(screen.getByLabelText("Title"), { target: { value: "   " } });
       setNoteBody("Body");
-      const saveButton = screen.getByRole("button", { name: /save note/i });
+      const saveButton = screen.getByTestId("note-editor-save-primary");
       expect(saveButton).toBeDisabled();
     });
 
@@ -394,7 +394,7 @@ describe("notes UX", () => {
       render(<NewNotePage />);
       fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Morning" } });
       setNoteBody("Body");
-      fireEvent.click(screen.getByRole("button", { name: /save note/i }));
+      fireEvent.click(screen.getByTestId("note-editor-save-primary"));
 
       await waitFor(() => {
         expect(createNote).toHaveBeenCalledWith(

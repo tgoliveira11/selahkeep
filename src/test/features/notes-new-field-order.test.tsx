@@ -103,11 +103,12 @@ function sectionOrder() {
 
   return {
     titleBeforeTags: before(title, tags),
-    tagsBeforeEditor: before(tags, editor),
+    editorBeforeTags: before(editor, tags),
     editorBeforeCategory: category ? before(editor, category) : null,
     editorBeforeAttachments: before(editor, attachments),
-    categoryBeforeAttachments:
-      category ? before(category, attachments) : null,
+    attachmentsBeforeCategory:
+      category ? before(attachments, category) : null,
+    categoryBeforeTags: category ? before(category, tags) : true,
   };
 }
 
@@ -130,14 +131,15 @@ describe("SelahKeep /notes/new field order and template categories", () => {
   });
 
   describe("field order", () => {
-    it("orders title, tags, editor, category, and attachments", () => {
+    it("orders title, editor, attachments, category, and tags", () => {
       render(<NewNotePage />);
       const order = sectionOrder();
       expect(order.titleBeforeTags).toBe(true);
-      expect(order.tagsBeforeEditor).toBe(true);
+      expect(order.editorBeforeTags).toBe(true);
       expect(order.editorBeforeCategory).toBe(true);
       expect(order.editorBeforeAttachments).toBe(true);
-      expect(order.categoryBeforeAttachments).toBe(true);
+      expect(order.attachmentsBeforeCategory).toBe(true);
+      expect(order.categoryBeforeTags).toBe(true);
     });
 
     it("does not show the template picker on the page", () => {
@@ -151,11 +153,12 @@ describe("SelahKeep /notes/new field order and template categories", () => {
       expect(screen.queryByTestId("prompt-cards-new-note")).toBeNull();
     });
 
-    it("groups dictate inside the editor rail without the main editor body", () => {
+    it("places dictate and upload audio in the editor top bar", () => {
       render(<NewNotePage />);
-      const rail = screen.getByTestId("new-note-rail");
-      expect(within(rail).getByTestId("new-note-dictate")).toBeInTheDocument();
-      expect(within(rail).queryByTestId("new-note-editor-field")).toBeNull();
+      const topbar = screen.getByTestId("note-editor-topbar");
+      expect(within(topbar).getByTestId("new-note-dictate")).toBeInTheDocument();
+      expect(within(topbar).getByTestId("new-note-upload-audio")).toBeInTheDocument();
+      expect(within(topbar).queryByTestId("new-note-editor-field")).toBeNull();
     });
   });
 
@@ -172,7 +175,7 @@ describe("SelahKeep /notes/new field order and template categories", () => {
       useSearchParams.mockReturnValue(new URLSearchParams("template=prayer"));
       render(<NewNotePage />);
       setNoteBody("My prayer");
-      fireEvent.click(screen.getByRole("button", { name: /save note/i }));
+      fireEvent.click(screen.getByTestId("note-editor-save-primary"));
 
       await waitFor(() => {
         expect(createCategory).not.toHaveBeenCalled();
@@ -194,7 +197,7 @@ describe("SelahKeep /notes/new field order and template categories", () => {
       useSearchParams.mockReturnValue(new URLSearchParams("template=reflection"));
       render(<NewNotePage />);
       setNoteBody("Reflecting");
-      fireEvent.click(screen.getByRole("button", { name: /save note/i }));
+      fireEvent.click(screen.getByTestId("note-editor-save-primary"));
 
       await waitFor(() => {
         expect(createCategory).toHaveBeenCalledWith("Reflection");
