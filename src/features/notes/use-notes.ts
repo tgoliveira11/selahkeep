@@ -186,7 +186,7 @@ export function useNotes(userId: string | null) {
           )
         );
 
-        return note;
+        return { ...note, encryptedWrappedNoteKey: payload.encryptedWrappedNoteKey };
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to create note";
         setError(message);

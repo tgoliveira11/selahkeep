@@ -1,8 +1,11 @@
 import { noteRepository } from "@/modules/notes/repositories/note-repository";
+import { kanbanRepository } from "@/modules/notes/repositories/kanban-repository";
 import {
   noteAttachmentRepository,
   sumNoteCiphertextBytesByVaultId,
+  type AttachmentOwner,
 } from "@/modules/notes/repositories/note-attachment-repository";
+import { sumStandaloneBoardCiphertextBytesByVaultId } from "@/modules/notes/repositories/kanban-repository";
 import { vaultRepository } from "@/server/repositories/vault-repository";
 import type { CreateAttachmentInput } from "@/lib/validation/note-attachments";
 import { ENCRYPTION_VERSION } from "@/lib/validation/encrypted-payload";
@@ -15,6 +18,8 @@ import { assertAttachmentCreateAad, AadValidationError } from "@/modules/securit
 import { sumEncryptedPayloadCiphertextBytes } from "@/modules/security/encrypted-payload-size";
 import { NotFoundError } from "@/modules/notes/services/note-service";
 import { safeLogger } from "@/lib/logger";
+
+export type { AttachmentOwner };
 
 const MAX_ATTACHMENT_PAYLOAD_JSON = 15 * 1024 * 1024;
 
@@ -51,6 +56,16 @@ async function requireVaultForUser(userId: string) {
   return vault;
 }
 
+async function requireOwnerInVault(owner: AttachmentOwner, vaultId: string): Promise<void> {
+  if (owner.kind === "note") {
+    const note = await noteRepository.findByIdForVault(owner.id, vaultId);
+    if (!note) throw new NotFoundError("Note not found");
+    return;
+  }
+  const board = await kanbanRepository.findByIdForVault(owner.id, vaultId);
+  if (!board) throw new NotFoundError("Kanban board not found");
+}
+
 async function withAttachmentsTable<T>(
   endpoint: string,
   operation: () => Promise<T>,
@@ -68,21 +83,19 @@ async function withAttachmentsTable<T>(
 }
 
 export const noteAttachmentService = {
-  async list(noteId: string, userId: string) {
+  async list(owner: AttachmentOwner, userId: string) {
     const vault = await requireVaultForUser(userId);
-    const note = await noteRepository.findByIdForVault(noteId, vault.id);
-    if (!note) throw new NotFoundError("Note not found");
+    await requireOwnerInVault(owner, vault.id);
     return withAttachmentsTable(
       "GET /api/notes/:id/attachments",
-      () => noteAttachmentRepository.findByNoteId(noteId, vault.id),
+      () => noteAttachmentRepository.findByOwner(owner, vault.id),
       () => []
     );
   },
 
-  async create(noteId: string, userId: string, input: CreateAttachmentInput) {
+  async create(owner: AttachmentOwner, userId: string, input: CreateAttachmentInput) {
     const vault = await requireVaultForUser(userId);
-    const note = await noteRepository.findByIdForVault(noteId, vault.id);
-    if (!note) throw new NotFoundError("Note not found");
+    await requireOwnerInVault(owner, vault.id);
 
     if (input.blobEncryptionVersion !== ENCRYPTION_VERSION) {
       throw new Error("Unsupported encryption version");
@@ -103,21 +116,22 @@ export const noteAttachmentService = {
     }
 
     try {
-      const existingCount = await noteAttachmentRepository.countByNoteId(noteId, vault.id);
+      const existingCount = await noteAttachmentRepository.countByOwner(owner, vault.id);
       if (existingCount >= getMaxAttachmentsPerNote()) {
-        throw new Error("Maximum attachments per note reached");
+        throw new Error("Maximum attachments reached");
       }
 
       const noteBytes = await sumNoteCiphertextBytesByVaultId(vault.id);
+      const boardBytes = await sumStandaloneBoardCiphertextBytesByVaultId(vault.id);
       const attachmentBytes = await noteAttachmentRepository.sumCiphertextBytesByVaultId(vault.id);
       const maxTotal = getMaxTotalStorageBytes();
-      if (noteBytes + attachmentBytes + serverCiphertextBytes > maxTotal) {
+      if (noteBytes + boardBytes + attachmentBytes + serverCiphertextBytes > maxTotal) {
         throw new Error("Vault storage limit reached");
       }
 
       return await noteAttachmentRepository.create({
         id: input.id,
-        noteId,
+        owner,
         vaultId: vault.id,
         encryptedMetadata: input.encryptedMetadata,
         encryptedBlob: input.encryptedBlob,
@@ -133,17 +147,12 @@ export const noteAttachmentService = {
     }
   },
 
-  async getById(noteId: string, attachmentId: string, userId: string) {
+  async getById(owner: AttachmentOwner, attachmentId: string, userId: string) {
     const vault = await requireVaultForUser(userId);
-    const note = await noteRepository.findByIdForVault(noteId, vault.id);
-    if (!note) throw new NotFoundError("Note not found");
-    let attachment: Awaited<ReturnType<typeof noteAttachmentRepository.findByIdForNote>>;
+    await requireOwnerInVault(owner, vault.id);
+    let attachment: Awaited<ReturnType<typeof noteAttachmentRepository.findByIdForOwner>>;
     try {
-      attachment = await noteAttachmentRepository.findByIdForNote(
-        attachmentId,
-        noteId,
-        vault.id
-      );
+      attachment = await noteAttachmentRepository.findByIdForOwner(attachmentId, owner, vault.id);
     } catch (error) {
       if (isMissingAttachmentsTable(error)) {
         warnMissingAttachmentsTable("GET /api/notes/:id/attachments/:attachmentId");
@@ -155,13 +164,12 @@ export const noteAttachmentService = {
     return attachment;
   },
 
-  async delete(noteId: string, attachmentId: string, userId: string) {
+  async delete(owner: AttachmentOwner, attachmentId: string, userId: string) {
     const vault = await requireVaultForUser(userId);
-    const note = await noteRepository.findByIdForVault(noteId, vault.id);
-    if (!note) throw new NotFoundError("Note not found");
+    await requireOwnerInVault(owner, vault.id);
     let deleted: Awaited<ReturnType<typeof noteAttachmentRepository.delete>>;
     try {
-      deleted = await noteAttachmentRepository.delete(attachmentId, noteId, vault.id);
+      deleted = await noteAttachmentRepository.delete(attachmentId, owner, vault.id);
     } catch (error) {
       if (isMissingAttachmentsTable(error)) {
         warnMissingAttachmentsTable("DELETE /api/notes/:id/attachments/:attachmentId");
@@ -176,6 +184,7 @@ export const noteAttachmentService = {
   async getStorageUsage(userId: string) {
     const vault = await requireVaultForUser(userId);
     const notesBytes = await sumNoteCiphertextBytesByVaultId(vault.id);
+    const boardsBytes = await sumStandaloneBoardCiphertextBytesByVaultId(vault.id);
     const maxBytes = getMaxTotalStorageBytes();
     let attachmentsBytes = 0;
     let partial = false;
@@ -190,9 +199,9 @@ export const noteAttachmentService = {
       }
     }
     return {
-      notesCiphertextBytes: notesBytes,
+      notesCiphertextBytes: notesBytes + boardsBytes,
       attachmentsCiphertextBytes: attachmentsBytes,
-      totalCiphertextBytes: notesBytes + attachmentsBytes,
+      totalCiphertextBytes: notesBytes + boardsBytes + attachmentsBytes,
       maxBytes,
       partial,
     };

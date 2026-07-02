@@ -1,12 +1,23 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { noteAttachments, notes } from "@/lib/db/schema";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
+/** An attachment is owned by exactly one note or one standalone kanban board. */
+export type AttachmentOwner =
+  | { kind: "note"; id: string }
+  | { kind: "board"; id: string };
+
+function ownerColumnMatch(owner: AttachmentOwner): SQL {
+  return owner.kind === "note"
+    ? eq(noteAttachments.noteId, owner.id)
+    : eq(noteAttachments.boardId, owner.id);
+}
+
 export const noteAttachmentRepository = {
   async create(data: {
     id: string;
-    noteId: string;
+    owner: AttachmentOwner;
     vaultId: string;
     encryptedMetadata: EncryptedPayload;
     encryptedBlob: EncryptedPayload;
@@ -17,7 +28,8 @@ export const noteAttachmentRepository = {
       .insert(noteAttachments)
       .values({
         id: data.id,
-        noteId: data.noteId,
+        noteId: data.owner.kind === "note" ? data.owner.id : null,
+        boardId: data.owner.kind === "board" ? data.owner.id : null,
         vaultId: data.vaultId,
         encryptedMetadata: data.encryptedMetadata,
         encryptedBlob: data.encryptedBlob,
@@ -28,48 +40,40 @@ export const noteAttachmentRepository = {
     return row;
   },
 
-  async findByNoteId(noteId: string, vaultId: string) {
+  async findByOwner(owner: AttachmentOwner, vaultId: string) {
     return db
       .select()
       .from(noteAttachments)
-      .where(and(eq(noteAttachments.noteId, noteId), eq(noteAttachments.vaultId, vaultId)))
+      .where(and(ownerColumnMatch(owner), eq(noteAttachments.vaultId, vaultId)))
       .orderBy(noteAttachments.createdAt);
   },
 
-  async findByIdForNote(id: string, noteId: string, vaultId: string) {
+  async findByIdForOwner(id: string, owner: AttachmentOwner, vaultId: string) {
     const [row] = await db
       .select()
       .from(noteAttachments)
       .where(
-        and(
-          eq(noteAttachments.id, id),
-          eq(noteAttachments.noteId, noteId),
-          eq(noteAttachments.vaultId, vaultId)
-        )
+        and(eq(noteAttachments.id, id), ownerColumnMatch(owner), eq(noteAttachments.vaultId, vaultId))
       )
       .limit(1);
     return row ?? null;
   },
 
-  async delete(id: string, noteId: string, vaultId: string) {
+  async delete(id: string, owner: AttachmentOwner, vaultId: string) {
     const [row] = await db
       .delete(noteAttachments)
       .where(
-        and(
-          eq(noteAttachments.id, id),
-          eq(noteAttachments.noteId, noteId),
-          eq(noteAttachments.vaultId, vaultId)
-        )
+        and(eq(noteAttachments.id, id), ownerColumnMatch(owner), eq(noteAttachments.vaultId, vaultId))
       )
       .returning({ id: noteAttachments.id });
     return row ?? null;
   },
 
-  async countByNoteId(noteId: string, vaultId: string) {
+  async countByOwner(owner: AttachmentOwner, vaultId: string) {
     const rows = await db
       .select({ id: noteAttachments.id })
       .from(noteAttachments)
-      .where(and(eq(noteAttachments.noteId, noteId), eq(noteAttachments.vaultId, vaultId)));
+      .where(and(ownerColumnMatch(owner), eq(noteAttachments.vaultId, vaultId)));
     return rows.length;
   },
 

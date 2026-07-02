@@ -212,8 +212,10 @@ describe("logged-in navigation", () => {
     const handle = within(toolbar).getByTestId("vault-status-dock-handle");
     expect(within(header).queryByRole("link", { name: /unlock vault/i })).toBeNull();
     expect(within(handle).getByText("Vault locked")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
-    const dock = screen.getByTestId("vault-status-dock");
+    // The dock also renders in the mobile header row now, so scope the click
+    // to the desktop toolbar's copy.
+    fireEvent.click(within(toolbar).getByRole("button", { name: /expand vault status/i }));
+    const dock = within(toolbar).getByTestId("vault-status-dock");
     expect(within(dock).getByLabelText(/vault password/i)).toBeTruthy();
   });
 
@@ -251,7 +253,9 @@ describe("logged-in navigation", () => {
     expect(within(header).queryByRole("link", { name: /unlock vault/i })).toBeNull();
     expect(within(header).queryByRole("button", { name: /^lock vault$/i })).toBeNull();
     // Dock handle may show compact status copy; standalone lock/unlock controls stay out of the bar.
-    expect(within(header).getByTestId("vault-status-dock-handle")).toBeTruthy();
+    // The dock renders once in the desktop toolbar and once in the mobile
+    // header row, so this asserts on at least one, not a single unique match.
+    expect(within(header).getAllByTestId("vault-status-dock-handle").length).toBeGreaterThan(0);
     expect(within(header).queryByText(/vault unlocked/i)).toBeNull();
     expect(within(header).queryByText(/vault not set up/i)).toBeNull();
     expect(within(header).queryByText(/setup incomplete/i)).toBeNull();

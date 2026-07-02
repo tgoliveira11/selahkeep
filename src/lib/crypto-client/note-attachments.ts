@@ -2,7 +2,7 @@ import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 import { ENCRYPTION_VERSION } from "@/lib/validation/encrypted-payload";
 import { encryptBytes, decryptBytes, encryptField, decryptField, encryptedPayloadCiphertextBytes } from "./aes-gcm";
 import { verifyPayloadAad } from "./aad-verify";
-import { unwrapNoteKey } from "./note-key";
+import { unwrapContentKey } from "./kanban";
 
 export type AttachmentMetadataPlaintext = {
   filename: string;
@@ -25,13 +25,12 @@ export interface DecryptedAttachment {
 
 export async function encryptAttachment(
   userId: string,
-  noteId: string,
   attachmentId: string,
   file: File,
-  encryptedWrappedNoteKey: EncryptedPayload,
+  encryptedWrappedKey: EncryptedPayload,
   vaultKey?: CryptoKey
 ): Promise<EncryptedAttachmentPayload> {
-  const noteKey = await unwrapNoteKey(encryptedWrappedNoteKey, vaultKey);
+  const contentKey = await unwrapContentKey(encryptedWrappedKey, vaultKey);
   const bytes = new Uint8Array(await file.arrayBuffer());
 
   const metadata: AttachmentMetadataPlaintext = {
@@ -40,12 +39,12 @@ export async function encryptAttachment(
     sizeBytes: bytes.byteLength,
   };
 
-  const encryptedMetadata = await encryptField(JSON.stringify(metadata), noteKey, {
+  const encryptedMetadata = await encryptField(JSON.stringify(metadata), contentKey, {
     userId,
     resourceId: attachmentId,
     field: "note_attachment_metadata",
   });
-  const encryptedBlob = await encryptBytes(bytes, noteKey, {
+  const encryptedBlob = await encryptBytes(bytes, contentKey, {
     userId,
     resourceId: attachmentId,
     field: "note_attachment_blob",
@@ -66,11 +65,11 @@ export async function encryptAttachment(
 
 export async function decryptAttachment(
   record: EncryptedAttachmentPayload,
-  encryptedWrappedNoteKey: EncryptedPayload,
+  encryptedWrappedKey: EncryptedPayload,
   vaultKey?: CryptoKey
 ): Promise<DecryptedAttachment> {
-  const noteKey = await unwrapNoteKey(encryptedWrappedNoteKey, vaultKey);
-  const { userId, resourceId } = encryptedWrappedNoteKey.aad;
+  const contentKey = await unwrapContentKey(encryptedWrappedKey, vaultKey);
+  const { userId, resourceId } = encryptedWrappedKey.aad;
 
   verifyPayloadAad(record.encryptedMetadata, {
     userId,
@@ -83,9 +82,9 @@ export async function decryptAttachment(
     field: "note_attachment_blob",
   });
 
-  const metadataJson = await decryptField(record.encryptedMetadata, noteKey);
+  const metadataJson = await decryptField(record.encryptedMetadata, contentKey);
   const metadata = JSON.parse(metadataJson) as AttachmentMetadataPlaintext;
-  const bytes = await decryptBytes(record.encryptedBlob, noteKey);
+  const bytes = await decryptBytes(record.encryptedBlob, contentKey);
 
   return { metadata, bytes };
 }

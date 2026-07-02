@@ -18,6 +18,64 @@ describe("VisualNoteEditor", () => {
     expect(onSave).toHaveBeenCalled();
   });
 
+  it("round-trips a hard line break without leaking a literal backslash", async () => {
+    const value = "Line one\\\nLine two";
+    const onChange = vi.fn();
+    const { container } = render(
+      <VisualNoteEditor value={value} onChange={onChange} id="visual-linebreak" />
+    );
+
+    await waitFor(() => {
+      expect(container.querySelector("p br")).toBeTruthy();
+    });
+
+    const paragraph = container.querySelector("p");
+    expect(paragraph?.textContent).toBe("Line oneLine two");
+    expect(container.textContent).not.toContain("\\n");
+    expect(container.textContent).not.toContain("\\");
+  });
+
+  it("re-serializes a loaded hard line break back to the same markdown", async () => {
+    const value = "Line one\\\nLine two";
+    let editorInstance: import("@tiptap/react").Editor | null = null;
+    render(
+      <VisualNoteEditor
+        value={value}
+        onChange={vi.fn()}
+        id="visual-linebreak-roundtrip"
+        onEditorReady={(editor) => {
+          editorInstance = editor;
+        }}
+      />
+    );
+
+    await waitFor(() => expect(editorInstance).toBeTruthy());
+    const resaved: string = editorInstance!.storage.markdown.getMarkdown();
+    expect(resaved).toBe(value);
+  });
+
+  it("normalizes a bare newline (raw markdown mode's Enter) into a hard break on reload", async () => {
+    // Markdown/raw mode's plain Enter inserts a bare "\n" (no backslash) —
+    // different from the visual editor's own hardBreak serialization.
+    const value = "Line one\nLine two";
+    let editorInstance: import("@tiptap/react").Editor | null = null;
+    const { container } = render(
+      <VisualNoteEditor
+        value={value}
+        onChange={vi.fn()}
+        id="visual-bare-newline"
+        onEditorReady={(editor) => {
+          editorInstance = editor;
+        }}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector("p br")).toBeTruthy());
+    const resaved: string = editorInstance!.storage.markdown.getMarkdown();
+    expect(resaved).toBe("Line one\\\nLine two");
+    expect(container.textContent).not.toContain("\\");
+  });
+
   it("renders checklist items with label and text in the same row", async () => {
     const { container } = render(
       <VisualNoteEditor

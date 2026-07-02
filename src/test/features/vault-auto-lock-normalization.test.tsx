@@ -2,11 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { VaultLockedState } from "@/features/vault/vault-locked-state";
 import { NotesVaultProtectedMessage } from "@/features/notes/notes-vault-protected-message";
-import { requestVaultDockExpand } from "@/features/vault/vault-status-dock-events";
+import { requestVaultDockExpand } from "@tgoliveira/vault-core/react";
 
-vi.mock("@/features/vault/vault-status-dock-events", () => ({
-  requestVaultDockExpand: vi.fn(),
-}));
+vi.mock("@tgoliveira/vault-core/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tgoliveira/vault-core/react")>();
+  return { ...actual, requestVaultDockExpand: vi.fn() };
+});
 
 const VARIANTS = [
   {
@@ -96,16 +97,6 @@ describe("VaultLockedState normalization", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /unlock here/i }));
     expect(requestVaultDockExpand).toHaveBeenCalledTimes(1);
-  });
-
-  it("offers a mobile unlock link to the full unlock page", () => {
-    // On mobile the dock is hidden, so the locked state links straight to
-    // /vault/unlock instead of expanding the (absent) dock.
-    render(<VaultLockedState variant="read-note" returnTo="/notes/1" />);
-
-    expect(
-      screen.getByRole("link", { name: /unlock here/i }).getAttribute("href")
-    ).toBe("/vault/unlock?next=%2Fnotes%2F1");
   });
 
   it("NotesVaultProtectedMessage delegates to notes-list variant", () => {

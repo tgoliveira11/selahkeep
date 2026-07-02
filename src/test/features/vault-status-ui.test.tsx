@@ -402,10 +402,13 @@ describe("nav vault status dock", () => {
       </SiteShell>
     );
 
-    const handle = within(screen.getByRole("banner")).getByTestId("vault-status-dock-handle");
+    // The dock renders once in the desktop toolbar and once in the mobile
+    // header row, so scope to the toolbar's copy for a single unique match.
+    const toolbar = within(screen.getByRole("banner")).getByTestId("header-toolbar-row");
+    const handle = within(toolbar).getByTestId("vault-status-dock-handle");
     expect(handle).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
-    const dock = screen.getByTestId("vault-status-dock");
+    fireEvent.click(within(toolbar).getByRole("button", { name: /expand vault status/i }));
+    const dock = within(toolbar).getByTestId("vault-status-dock");
     expect(within(dock).getByLabelText(/vault password/i)).toBeTruthy();
     expect(within(dock).queryByRole("tab", { name: /recovery phrase/i })).toBeNull();
     expect(
@@ -437,8 +440,9 @@ describe("nav vault status dock", () => {
         </SiteShell>
       );
 
-      fireEvent.click(screen.getByRole("button", { name: /expand vault status/i }));
-      const dock = screen.getByTestId("vault-status-dock");
+      const toolbar = within(screen.getByRole("banner")).getByTestId("header-toolbar-row");
+      fireEvent.click(within(toolbar).getByRole("button", { name: /expand vault status/i }));
+      const dock = within(toolbar).getByTestId("vault-status-dock");
       expect(within(dock).getByText(/Auto-locks in/i)).toBeTruthy();
       expect(within(dock).getByRole("button", { name: /lock now/i })).toBeTruthy();
       expect(within(screen.getByRole("banner")).queryByRole("button", { name: /^lock vault$/i })).toBeNull();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { noteAttachmentsApi } from "@/lib/api-client/note-attachments";
+import { noteAttachmentsApi, type AttachmentOwnerRef } from "@/lib/api-client/note-attachments";
 import {
   decryptAttachment,
   encryptAttachment,
@@ -24,34 +24,44 @@ export interface AttachmentListItem {
 }
 
 interface UseNoteAttachmentsOptions {
-  noteId: string | null;
+  owner: AttachmentOwnerRef | null;
   userId: string | null;
   wrappedKey: EncryptedPayload | null;
   enabled: boolean;
   onAttachmentsChange?: () => void;
+  /**
+   * When the owner holds attachments for more than one thing (e.g. a kanban
+   * board's cards), restricts the visible list to these ids. Upload/delete
+   * still operate against the shared owner.
+   */
+  filterIds?: string[] | null;
 }
 
 export function useNoteAttachments({
-  noteId,
+  owner,
   userId,
   wrappedKey,
   enabled,
   onAttachmentsChange,
+  filterIds,
 }: UseNoteAttachmentsOptions) {
-  const [items, setItems] = useState<AttachmentListItem[]>([]);
+  const [allItems, setAllItems] = useState<AttachmentListItem[]>([]);
+  const items = filterIds
+    ? allItems.filter((item) => item.uploading || filterIds.includes(item.id))
+    : allItems;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pendingRef = useRef<Map<string, File>>(new Map());
 
   const reload = useCallback(async () => {
-    if (!noteId || !enabled || !wrappedKey) {
-      setItems([]);
+    if (!owner || !enabled || !wrappedKey) {
+      setAllItems([]);
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const { attachments } = await noteAttachmentsApi.list(noteId);
+      const { attachments } = await noteAttachmentsApi.list(owner);
       const decrypted = await Promise.all(
         attachments.map(async (record) => {
           const payload: EncryptedAttachmentPayload = {
@@ -65,23 +75,23 @@ export function useNoteAttachments({
           return { id: record.id, metadata };
         })
       );
-      setItems(decrypted);
+      setAllItems(decrypted);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load attachments");
-      setItems([]);
+      setAllItems([]);
     } finally {
       setLoading(false);
     }
-  }, [noteId, enabled, wrappedKey]);
+  }, [owner, enabled, wrappedKey]);
 
   useEffect(() => {
     void reload();
   }, [reload]);
 
   const uploadFile = useCallback(
-    async (file: File) => {
-      if (!noteId || !userId || !wrappedKey) {
-        throw new Error("Save the note before adding attachments");
+    async (file: File): Promise<string> => {
+      if (!owner || !userId || !wrappedKey) {
+        throw new Error("Save before adding attachments");
       }
 
       const rejection = attachmentRejectionReason(file);
@@ -92,13 +102,13 @@ export function useNoteAttachments({
         throw new Error(`File exceeds ${Math.round(maxBytes / (1024 * 1024))} MB limit`);
       }
 
-      if (items.length >= getMaxAttachmentsPerNote()) {
-        throw new Error("Maximum attachments per note reached");
+      if (allItems.length >= getMaxAttachmentsPerNote()) {
+        throw new Error("Maximum attachments reached");
       }
 
       const tempId = crypto.randomUUID();
       pendingRef.current.set(tempId, file);
-      setItems((current) => [
+      setAllItems((current) => [
         ...current,
         {
           id: tempId,
@@ -109,42 +119,43 @@ export function useNoteAttachments({
       ]);
 
       try {
-        const encrypted = await encryptAttachment(userId, noteId, tempId, file, wrappedKey);
-        setItems((current) =>
+        const encrypted = await encryptAttachment(userId, tempId, file, wrappedKey);
+        setAllItems((current) =>
           current.map((item) =>
             item.id === tempId ? { ...item, uploadProgress: 80 } : item
           )
         );
-        await noteAttachmentsApi.create(noteId, encrypted);
+        await noteAttachmentsApi.create(owner, encrypted);
         pendingRef.current.delete(tempId);
         onAttachmentsChange?.();
         await reload();
+        return tempId;
       } catch (e) {
         pendingRef.current.delete(tempId);
         const message = e instanceof Error ? e.message : "Upload failed";
-        setItems((current) => current.filter((item) => item.id !== tempId));
+        setAllItems((current) => current.filter((item) => item.id !== tempId));
         throw new Error(message);
       }
     },
-    [items.length, noteId, onAttachmentsChange, reload, userId, wrappedKey]
+    [allItems.length, owner, onAttachmentsChange, reload, userId, wrappedKey]
   );
 
   const removeAttachment = useCallback(
     async (attachmentId: string) => {
-      if (!noteId) return;
-      await noteAttachmentsApi.delete(noteId, attachmentId);
+      if (!owner) return;
+      await noteAttachmentsApi.delete(owner, attachmentId);
       onAttachmentsChange?.();
       await reload();
     },
-    [noteId, onAttachmentsChange, reload]
+    [owner, onAttachmentsChange, reload]
   );
 
   const getDecryptedAttachment = useCallback(
     async (attachmentId: string) => {
-      if (!noteId || !wrappedKey) {
+      if (!owner || !wrappedKey) {
         throw new Error("Vault must be unlocked to preview attachments");
       }
-      const record = await noteAttachmentsApi.get(noteId, attachmentId);
+      const record = await noteAttachmentsApi.get(owner, attachmentId);
       const payload: EncryptedAttachmentPayload = {
         id: record.id,
         encryptedMetadata: record.encryptedMetadata,
@@ -154,7 +165,7 @@ export function useNoteAttachments({
       };
       return decryptAttachment(payload, wrappedKey);
     },
-    [noteId, wrappedKey]
+    [owner, wrappedKey]
   );
 
   const downloadAttachment = useCallback(
@@ -185,6 +196,6 @@ export function useNoteAttachments({
     getDecryptedAttachment,
     getPendingFile,
     reload,
-    canUpload: Boolean(noteId && userId && wrappedKey),
+    canUpload: Boolean(owner && userId && wrappedKey),
   };
 }

@@ -15,6 +15,7 @@ import { useKanbanBoardToNoteSync } from "@/features/notes/use-kanban-board-to-n
 import { useNotes } from "@/features/notes/use-notes";
 import { KanbanBoard } from "@/features/kanban/board";
 import { isKanbanEnabled } from "@/lib/notes/kanban-config";
+import { buildNoteBodyFromBoard } from "@/lib/notes/kanban-sync";
 
 export default function KanbanBoardPage() {
   if (!isKanbanEnabled()) notFound();
@@ -27,9 +28,10 @@ export default function KanbanBoardPage() {
   const vaultUnlocked = vault.status === "ready" ? vault.vaultUnlocked : false;
   const clientStatus = vaultClient.status === "ready" ? vaultClient.clientStatus : null;
   const canRead = vault.status === "ready" && vaultUnlocked && clientStatus === "unlocked";
-  const { board, loading, saving, error, loadBoard, saveBoard, encryptedWrappedKey } =
+  const { board, loading, saving, error, loadBoard, saveBoard, claimBoardForNote, encryptedWrappedKey } =
     useKanban(vaultUserId);
-  const { updateNote, resolveNoteWithReflection, toggleNoteResolved, busy } = useNotes(vaultUserId);
+  const { createNote, updateNote, resolveNoteWithReflection, toggleNoteResolved, busy } =
+    useNotes(vaultUserId);
   useKanbanBoardToNoteSync({
     board,
     enabled: Boolean(board?.scope === "note"),
@@ -38,6 +40,7 @@ export default function KanbanBoardPage() {
     encryptedWrappedKey,
   });
   const [actionError, setActionError] = useState<string | null>(null);
+  const [creatingNote, setCreatingNote] = useState(false);
 
   useEffect(() => {
     if (canRead) void loadBoard(boardId);
@@ -85,6 +88,8 @@ export default function KanbanBoardPage() {
       <KanbanBoard
         board={board}
         saving={saving || busy}
+        userId={vaultUserId}
+        encryptedWrappedKey={encryptedWrappedKey}
         onBackHref={board.scope === "note" && board.noteId ? `/notes/${board.noteId}` : "/kanban"}
         onChange={async (next, options) => {
           await saveBoard(next, undefined, options);
@@ -110,6 +115,28 @@ export default function KanbanBoardPage() {
             setActionError(error instanceof Error ? error.message : "Failed to reopen note");
           }
         }}
+        onCreateNote={
+          board.scope === "standalone"
+            ? async () => {
+                setActionError(null);
+                setCreatingNote(true);
+                try {
+                  const note = await createNote({
+                    title: board.title,
+                    body: buildNoteBodyFromBoard(board),
+                  });
+                  await claimBoardForNote(board, note.id, note.encryptedWrappedNoteKey);
+                } catch (error) {
+                  setActionError(
+                    error instanceof Error ? error.message : "Failed to create note from board"
+                  );
+                } finally {
+                  setCreatingNote(false);
+                }
+              }
+            : undefined
+        }
+        creatingNote={creatingNote}
       />
     </AuthenticatedPage>
   );

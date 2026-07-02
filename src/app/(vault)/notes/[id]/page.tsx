@@ -87,6 +87,7 @@ import {
   shouldSyncNoteResolvedFromKanban,
 } from "@/lib/notes/kanban-note-resolution";
 import { recognizeKanbanActivities } from "@/lib/notes/kanban-from-note";
+import { renderSanitizedMarkdown } from "@/features/notes/sanitize-markdown";
 
 function editSnapshot(metadata: NoteMetadataPlaintext, body: string): string {
   return JSON.stringify({
@@ -648,6 +649,17 @@ export default function NoteDetailPage() {
     }
   }
 
+  async function handleExportPdf() {
+    if (!metadata) return;
+    setError(null);
+    try {
+      const { exportNoteToPdf } = await import("@/lib/notes/export-note-pdf");
+      await exportNoteToPdf(metadata.title, renderSanitizedMarkdown(body));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to export note as PDF");
+    }
+  }
+
   if (
     vault.status === "loading" ||
     vault.status === "redirecting" ||
@@ -887,7 +899,7 @@ export default function NoteDetailPage() {
 
               <div data-area="attachments" data-testid="edit-note-attachments-field">
                 <NoteAttachmentsField
-                  noteId={id}
+                  owner={{ kind: "note", id }}
                   userId={vaultUserId}
                   wrappedKey={wrappedKey}
                   enabled={canRead}
@@ -982,6 +994,7 @@ export default function NoteDetailPage() {
               onToggleArchived={() => void toggleNoteArchived(id, !metadata.archived).then(setMetadata)}
               onDuplicate={() => void handleDuplicate()}
               onMoveToTrash={() => setDeleteOpen(true)}
+              onExportPdf={() => void handleExportPdf()}
             />
           </div>
         <div className="lg:flex lg:items-start lg:gap-10">

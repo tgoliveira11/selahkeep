@@ -18,6 +18,7 @@ import type {
 } from "@/lib/notes/kanban-types";
 import { sortKanbanColumns, withDoneColumnOnLast } from "@/lib/notes/kanban-columns";
 import { formatDescriptionWithMetadata } from "@/lib/notes/kanban-card-text";
+import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
 interface KanbanBoardProps {
   board: KanbanBoardPlaintext;
@@ -27,6 +28,11 @@ interface KanbanBoardProps {
   onResolveNote?: () => void | Promise<void>;
   onReopenNote?: () => void | Promise<void>;
   onBackHref?: string;
+  /** Standalone boards only — links the board to a new note so it gets note version history. */
+  onCreateNote?: () => void | Promise<void>;
+  creatingNote?: boolean;
+  userId?: string | null;
+  encryptedWrappedKey?: EncryptedPayload | null;
 }
 
 function normalizeColumns(columns: KanbanColumnPlaintext[]) {
@@ -41,6 +47,10 @@ export function KanbanBoard({
   onResolveNote,
   onReopenNote,
   onBackHref,
+  onCreateNote,
+  creatingNote = false,
+  userId = null,
+  encryptedWrappedKey = null,
 }: KanbanBoardProps) {
   const [draft, setDraft] = useState(board);
   const [editingCard, setEditingCard] = useState<KanbanCardPlaintext | null>(null);
@@ -258,9 +268,22 @@ export function KanbanBoard({
               {saving && <span className="text-xs text-[var(--muted)]">Saving...</span>}
             </div>
           </div>
-          <Button type="button" variant="secondary" onClick={addColumn} title="Add a new workflow column to this board">
-            Add column
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {draft.scope === "standalone" && onCreateNote && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => void onCreateNote()}
+                disabled={creatingNote}
+                title="Link this board to a new note, so it gets note version history"
+              >
+                {creatingNote ? "Creating note…" : "Create note from board"}
+              </Button>
+            )}
+            <Button type="button" variant="secondary" onClick={addColumn} title="Add a new workflow column to this board">
+              Add column
+            </Button>
+          </div>
         </div>
 
         <label className="block">
@@ -322,6 +345,9 @@ export function KanbanBoard({
         onSave={saveCard}
         onDelete={deleteCard}
         onCancel={() => setEditingCard(null)}
+        boardId={draft.boardId}
+        userId={userId}
+        wrappedKey={encryptedWrappedKey}
       />
 
     </div>

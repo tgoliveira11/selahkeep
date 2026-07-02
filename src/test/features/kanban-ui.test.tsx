@@ -82,6 +82,36 @@ describe("kanban UI", () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it("renders a generated card's description as formatted markdown, not raw text", () => {
+    render(
+      <GenerateFromNotePanel
+        noteId={NOTE_ID}
+        noteTitle="Care"
+        body={"## Care\n- [ ] Call mom\nShe likes **bold** reminders"}
+        onCreate={vi.fn()}
+      />
+    );
+
+    const panel = screen.getByTestId("kanban-generate-panel");
+    expect(panel.querySelector("strong")?.textContent).toBe("bold");
+    expect(panel.textContent).not.toContain("**bold**");
+  });
+
+  it("shows Create note from board only for standalone boards", () => {
+    const board = { ...sampleBoard(), scope: "standalone" as const, noteId: null };
+    const onCreateNote = vi.fn();
+    render(<KanbanBoard board={board} onChange={vi.fn()} onCreateNote={onCreateNote} />);
+
+    const button = screen.getByRole("button", { name: /create note from board/i });
+    fireEvent.click(button);
+    expect(onCreateNote).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not show Create note from board for note-bound boards", () => {
+    render(<KanbanBoard board={sampleBoard()} onChange={vi.fn()} onCreateNote={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: /create note from board/i })).toBeNull();
+  });
+
   it("resolves the linked note when a card moves to done", async () => {
     const onChange = vi.fn();
     const onResolveNote = vi.fn();

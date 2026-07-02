@@ -89,12 +89,17 @@ export function Nav() {
         ) : null}
 
         {authenticated ? (
-          <>
+          <div className="flex items-center gap-2 md:hidden">
+            {/* Mobile: the desktop toolbar row above is hidden here, so the
+                vault dock gets its own compact spot next to the menu button. */}
+            <div className="vc-status-dock-host shrink-0">
+              <VaultStatusDock />
+            </div>
             {/* Primary nav + sign out live in the desktop sidebar (md+); on
                 mobile they are in the menu below. */}
             <button
               type="button"
-              className="inline-flex min-h-11 items-center rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium md:hidden"
+              className="inline-flex min-h-11 items-center rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium"
               aria-expanded={menuOpen}
               aria-controls={menuId}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -102,7 +107,7 @@ export function Nav() {
             >
               Menu
             </button>
-          </>
+          </div>
         ) : (
           <div className="flex items-center gap-2">
             <Link
