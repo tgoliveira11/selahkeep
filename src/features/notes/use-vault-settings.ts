@@ -35,7 +35,7 @@ export function useVaultSettings(userId: string | null, vaultUnlocked: boolean) 
           return;
         }
         const decrypted = encryptedVaultSettings
-          ? await decryptVaultSettings(encryptedVaultSettings, vaultKey)
+          ? await decryptVaultSettings(encryptedVaultSettings, userId!, vaultKey)
           : defaultVaultSettings();
         if (!cancelled) setSettings(decrypted);
       } catch (e) {

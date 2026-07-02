@@ -12,6 +12,7 @@ declare module "next-auth" {
     twoFactorPending: boolean;
     twoFactorUpgradeToken?: string;
     accountSessionId?: string;
+    emailVerificationRequired?: boolean;
   }
 }
 

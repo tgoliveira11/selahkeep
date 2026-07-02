@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireSessionUser } from "@/lib/auth/session";
+import { requireFullyAuthenticatedUser } from "@/lib/auth/session";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
+import { enforceProductMutationRateLimit } from "@/lib/api-helpers/product-mutation-rate-limit";
+import { assertKanbanApiEnabled } from "@/lib/notes/kanban-api-guard";
 import { createKanbanVersionSchema } from "@/lib/validation/kanban";
 import { kanbanVersionService } from "@/server/services/kanban-version-service";
 import { assertNoPlaintextKanbanFields } from "@/server/policies/kanban-plaintext-rejection";
@@ -9,7 +11,8 @@ type Params = { params: Promise<{ boardId: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
   try {
-    const user = await requireSessionUser();
+    assertKanbanApiEnabled();
+    const user = await requireFullyAuthenticatedUser();
     const { boardId } = await params;
     const versions = await kanbanVersionService.list(boardId, user.id);
     return NextResponse.json(versions);
@@ -20,7 +23,9 @@ export async function GET(_request: Request, { params }: Params) {
 
 export async function POST(request: Request, { params }: Params) {
   try {
-    const user = await requireSessionUser();
+    assertKanbanApiEnabled();
+    const user = await requireFullyAuthenticatedUser();
+    await enforceProductMutationRateLimit(request, user.id, "kanban.mutate");
     const { boardId } = await params;
     const body = await parseJsonBody(request);
     assertNoPlaintextKanbanFields(body);

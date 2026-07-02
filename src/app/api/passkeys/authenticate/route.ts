@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSessionUser } from "@/lib/auth/session";
+import { requireFullyAuthenticatedUser } from "@/lib/auth/session";
 import { passkeyService } from "@/server/services/passkey-service";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
 import { getClientIp } from "@/lib/request-ip";
@@ -13,7 +13,7 @@ const authSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const user = await requireSessionUser();
+    const user = await requireFullyAuthenticatedUser();
     const body = await parseJsonBody(request);
     const parsed = authSchema.safeParse(body);
 

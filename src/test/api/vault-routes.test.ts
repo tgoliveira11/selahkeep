@@ -5,14 +5,14 @@ import { POST as recoveryUnlockPost } from "@/app/api/vault/unlock-with-recovery
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
-  requireSessionUser: vi.fn(),
+  requireFullyAuthenticatedUser: vi.fn(),
   getStatus: vi.fn(),
   init: vi.fn(),
   unlockWithRecoveryCode: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: mocks.requireSessionUser,
+  requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
   UnauthorizedError: class UnauthorizedError extends Error {
     name = "UnauthorizedError";
   },
@@ -38,7 +38,7 @@ vi.mock("@/server/services/vault-service", () => ({
 describe("vault API routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireSessionUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
+    mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
   });
 
   it("GET /vault/status returns vault status", async () => {
@@ -47,31 +47,15 @@ describe("vault API routes", () => {
     expect(res.status).toBe(200);
   });
 
-  it("POST /vault/init creates vault", async () => {
-    mocks.init.mockResolvedValue({ id: "vault-1" });
+  it("POST /vault/init is deprecated", async () => {
     const res = await initPost(
       new Request("http://localhost/api/vault/init", {
         method: "POST",
-        body: JSON.stringify({
-          vaultVersion: "vault-v1",
-          envelopes: [
-            {
-              method: "recovery_code",
-              encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
-              kdfMetadata: {
-                kdf: "argon2id",
-                version: "kdf-v1",
-                salt: "c2FsdA",
-                memory: 65536,
-                iterations: 3,
-                parallelism: 1,
-              },
-            },
-          ],
-        }),
+        body: JSON.stringify({ vaultVersion: "vault-v1", envelopes: [] }),
       })
     );
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(410);
+    expect(mocks.init).not.toHaveBeenCalled();
   });
 
   it("POST /vault/unlock-with-recovery-code returns envelope", async () => {

@@ -3,12 +3,12 @@ import { POST } from "@/app/api/vault/recovery-phrase/route";
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
-  requireSessionUser: vi.fn(),
+  requireFullyAuthenticatedUser: vi.fn(),
   replaceRecoveryPhrase: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: mocks.requireSessionUser,
+  requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
 }));
 
 vi.mock("@/server/services/vault-service", () => ({
@@ -23,7 +23,7 @@ vi.mock("@/server/services/vault-service", () => ({
 describe("recovery phrase API route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireSessionUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
+    mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
   });
 
   it("replaces recovery phrase envelope", async () => {

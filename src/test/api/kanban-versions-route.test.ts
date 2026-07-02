@@ -8,13 +8,13 @@ import {
 } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
-  requireSessionUser: vi.fn(),
+  requireFullyAuthenticatedUser: vi.fn(),
   list: vi.fn(),
   create: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: mocks.requireSessionUser,
+  requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
   UnauthorizedError: class UnauthorizedError extends Error {
     name = "UnauthorizedError";
   },
@@ -40,7 +40,7 @@ function jsonRequest(body: unknown, method = "POST") {
 describe("kanban versions API route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireSessionUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
+    mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
   });
 
   it("GET lists versions", async () => {

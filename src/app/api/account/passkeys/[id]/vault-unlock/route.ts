@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
-import { requireSessionUser } from "@/lib/auth/session";
+import { requireFullyAuthenticatedUser } from "@/lib/auth/session";
 import { passkeyVaultEnvelopeService } from "@/server/services/passkey-vault-envelope-service";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
 import { getClientIp } from "@/lib/request-ip";
@@ -25,7 +25,7 @@ const deleteBodySchema = z.object({
 
 export async function GET(_request: Request, context: RouteContext) {
   try {
-    const user = await requireSessionUser();
+    const user = await requireFullyAuthenticatedUser();
     const { id } = await context.params;
     const status = await passkeyVaultEnvelopeService.getVaultUnlockStatus(user.id, id);
     return NextResponse.json(status);
@@ -36,7 +36,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
-    const user = await requireSessionUser();
+    const user = await requireFullyAuthenticatedUser();
     const { id } = await context.params;
     const body = await parseJsonBody(request);
     const plaintextError = rejectPasskeyVaultForbiddenFields(body);
@@ -72,7 +72,7 @@ export async function POST(request: Request, context: RouteContext) {
 
 export async function DELETE(request: Request, context: RouteContext) {
   try {
-    const user = await requireSessionUser();
+    const user = await requireFullyAuthenticatedUser();
     const { id } = await context.params;
     const body = await parseJsonBody(request);
     const plaintextError = rejectPasskeyVaultForbiddenFields(body);

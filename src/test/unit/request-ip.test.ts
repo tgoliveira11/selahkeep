@@ -2,18 +2,25 @@ import { describe, it, expect } from "vitest";
 import { getClientIp } from "@/modules/security/ip/request-ip";
 
 describe("getClientIp", () => {
-  it("prefers the first x-forwarded-for address", () => {
+  it("ignores forwarded headers unless trust flag is enabled", () => {
     const request = new Request("http://localhost", {
       headers: { "x-forwarded-for": "203.0.113.1, 198.51.100.2" },
     });
-    expect(getClientIp(request)).toBe("203.0.113.1");
+    expect(getClientIp(request, { AUTH_TRUST_FORWARDED_HEADERS: "false" })).toBe("unknown-ip");
   });
 
-  it("falls back to x-real-ip when forwarded header is empty", () => {
+  it("prefers the first x-forwarded-for address when trust flag is enabled", () => {
+    const request = new Request("http://localhost", {
+      headers: { "x-forwarded-for": "203.0.113.1, 198.51.100.2" },
+    });
+    expect(getClientIp(request, { AUTH_TRUST_FORWARDED_HEADERS: "true" })).toBe("203.0.113.1");
+  });
+
+  it("falls back to x-real-ip when forwarded header is empty and trust is enabled", () => {
     const request = new Request("http://localhost", {
       headers: { "x-forwarded-for": " , ", "x-real-ip": "198.51.100.9" },
     });
-    expect(getClientIp(request)).toBe("198.51.100.9");
+    expect(getClientIp(request, { AUTH_TRUST_FORWARDED_HEADERS: "true" })).toBe("198.51.100.9");
   });
 
   it("returns unknown-ip when no proxy headers are present", () => {

@@ -5,7 +5,7 @@ import { POST as registerPost } from "@/app/api/passkeys/register/route";
 const sessionUser = { id: "550e8400-e29b-41d4-a716-446655440000", email: "user@example.com" };
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: vi.fn(async () => sessionUser),
+  requireFullyAuthenticatedUser: vi.fn(async () => sessionUser),
   UnauthorizedError: class UnauthorizedError extends Error {
     name = "UnauthorizedError";
   },
@@ -28,11 +28,11 @@ vi.mock("@/server/services/passkey-service", () => ({
 describe("API validation error paths", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("rejects invalid vault init payload", async () => {
+  it("returns 410 for deprecated vault init", async () => {
     const res = await vaultInitPost(
       new Request("http://localhost", { method: "POST", body: JSON.stringify({ bad: true }) })
     );
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(410);
   });
 
   it("rejects invalid passkey register payload", async () => {

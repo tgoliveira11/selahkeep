@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireSessionUser } from "@/lib/auth/session";
+import { requireFullyAuthenticatedUser } from "@/lib/auth/session";
 import { apiError } from "@/lib/api-helpers";
 import { vaultSecurityService } from "@/server/services/vault-security-service";
 import { CLIENT_RECORDABLE_VAULT_SECURITY_EVENTS } from "@/lib/vault/vault-security-event-types";
@@ -16,7 +16,7 @@ const recordSchema = z.object({
 
 export async function GET() {
   try {
-    const user = await requireSessionUser();
+    const user = await requireFullyAuthenticatedUser();
     const events = await vaultSecurityService.listEvents(user.id);
     return NextResponse.json({ events });
   } catch (error) {
@@ -26,7 +26,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireSessionUser();
+    const user = await requireFullyAuthenticatedUser();
     const body = await request.json();
     const parsed = recordSchema.safeParse(body);
     if (!parsed.success) {

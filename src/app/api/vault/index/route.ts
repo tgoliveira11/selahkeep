@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSessionUser } from "@/lib/auth/session";
+import { requireFullyAuthenticatedUser } from "@/lib/auth/session";
 import { rejectVaultPlaintextFields } from "@/lib/validation/vault";
 import { encryptedPayloadSchema } from "@/lib/validation/encrypted-payload";
 import { vaultService } from "@/server/services/vault-service";
@@ -8,7 +8,7 @@ import { PlaintextRejectionError } from "@/modules/security/policies/plaintext-r
 
 export async function GET() {
   try {
-    const user = await requireSessionUser();
+    const user = await requireFullyAuthenticatedUser();
     const index = await vaultService.getIndex(user.id);
     return NextResponse.json(index);
   } catch (error) {
@@ -18,7 +18,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    const user = await requireSessionUser();
+    const user = await requireFullyAuthenticatedUser();
     const body = await parseJsonBody(request);
 
     const vaultPlaintextError = rejectVaultPlaintextFields(body);

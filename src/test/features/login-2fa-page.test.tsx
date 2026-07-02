@@ -1,11 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { SecureAuthUIProvider } from "@tgoliveira/secure-auth/react";
-import LoginTwoFactorPage from "@/app/(auth)/login/2fa/page";
+import { LoginTwoFactorPage, SecureAuthUIProvider } from "@tgoliveira/secure-auth/react";
 import { testSecureAuthUiConfig } from "@/test/helpers/secure-auth-ui-config";
 
 vi.mock("next-auth/react", () => ({
-  useSession: vi.fn(() => ({ data: null, status: "unauthenticated", update: vi.fn() })),
+  useSession: vi.fn(() => ({
+    data: {
+      user: { id: "user-1", email: "user@example.com" },
+      twoFactorPending: true,
+      twoFactorVerified: false,
+    },
+    status: "authenticated",
+    update: vi.fn(),
+  })),
   signIn: vi.fn(),
   getSession: vi.fn(),
 }));
@@ -19,12 +26,12 @@ vi.mock("next/navigation", () => ({
 function renderTwoFactorPage() {
   return render(
     <SecureAuthUIProvider config={testSecureAuthUiConfig}>
-      <LoginTwoFactorPage />
+      <LoginTwoFactorPage initialUsernameEmail="user@example.com" />
     </SecureAuthUIProvider>
   );
 }
 
-describe("login 2FA page (app integration)", () => {
+describe("login 2FA page (secure-auth 0.5.0)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -35,7 +42,7 @@ describe("login 2FA page (app integration)", () => {
       await screen.findByRole("heading", { name: /two-factor verification/i })
     ).toBeTruthy();
     expect(screen.getByLabelText("Authenticator code")).toBeTruthy();
-    expect(screen.getByRole("button", { name: /verify and continue/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /continue/i })).toBeTruthy();
   });
 
   it("posts the TOTP form to the 2FA page route", async () => {
@@ -46,29 +53,14 @@ describe("login 2FA page (app integration)", () => {
     expect(form?.getAttribute("method")).toBe("post");
   });
 
-  it("uses sanitized callbackUrl from search params for oauth mode", async () => {
+  it("renders oauth form with password-manager username association", async () => {
     const { useSearchParams } = await import("next/navigation");
     vi.mocked(useSearchParams).mockReturnValue(
-      new URLSearchParams(
-        "mode=oauth&callbackUrl=%2Fvault%2Fsettings"
-      ) as ReturnType<typeof useSearchParams>
+      new URLSearchParams("mode=oauth") as ReturnType<typeof useSearchParams>
     );
 
     renderTwoFactorPage();
     await screen.findByRole("heading", { name: /two-factor verification/i });
-    expect(screen.getByRole("button", { name: /verify and continue/i })).toBeTruthy();
-  });
-
-  it("rejects unsafe callbackUrl values", async () => {
-    const { useSearchParams } = await import("next/navigation");
-    vi.mocked(useSearchParams).mockReturnValue(
-      new URLSearchParams(
-        "mode=oauth&callbackUrl=https%3A%2F%2Fevil.test"
-      ) as ReturnType<typeof useSearchParams>
-    );
-
-    renderTwoFactorPage();
-    await screen.findByRole("heading", { name: /two-factor verification/i });
-    expect(screen.getByRole("button", { name: /verify and continue/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /continue/i })).toBeTruthy();
   });
 });

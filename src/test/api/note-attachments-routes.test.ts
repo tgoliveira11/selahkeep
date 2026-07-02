@@ -5,7 +5,7 @@ import { encryptedPayload, NOTE_ID, USER_ID } from "@/test/helpers/fixtures";
 const ATTACHMENT_ID = "550e8400-e29b-41d4-a716-446655440005";
 
 const mocks = vi.hoisted(() => ({
-  requireSessionUser: vi.fn(),
+  requireFullyAuthenticatedUser: vi.fn(),
   list: vi.fn(),
   create: vi.fn(),
   getById: vi.fn(),
@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: mocks.requireSessionUser,
+  requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
   UnauthorizedError: class UnauthorizedError extends Error {
     name = "UnauthorizedError";
   },
@@ -41,7 +41,7 @@ function createAttachmentBody() {
 describe("note attachments API routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireSessionUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
+    mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
   });
 
   it("GET lists attachments for a note", async () => {

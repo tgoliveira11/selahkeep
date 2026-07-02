@@ -28,6 +28,7 @@ export type SecureAuthEnvSlice = Pick<
   | "accountLockout"
   | "invites"
   | "apiKeys"
+  | "profile"
 >;
 
 function readCsvEnv(env: NodeJS.ProcessEnv, key: string): string[] {
@@ -193,6 +194,11 @@ function parseSecureAuthEnv(
       "AUTH_PASSWORD_BLOCK_COMMON_PASSWORDS",
       readBoolEnv(env, "PASSWORD_BLOCK_COMMON_PASSWORDS", true)
     ),
+    checkBreachedPasswords: readBoolEnv(
+      env,
+      "AUTH_PASSWORD_HIBP_ENABLED",
+      readBoolEnv(env, "AUTH_PASSWORD_CHECK_BREACHED", true)
+    ),
     minScore: readIntEnv(
       env,
       "AUTH_PASSWORD_MIN_SCORE",
@@ -212,7 +218,9 @@ function parseSecureAuthEnv(
     checkEmail: "/check-email",
     verifyEmail: "/verify-email",
     loginTwoFactor: "/login/2fa",
+    loginTwoFactorOauthComplete: "/login/2fa/complete",
     loginComplete: "/login/complete",
+    magicLinkVerify: "/login/magic-link",
     accountDeleted: "/account-deleted",
     accountSettings: "/settings/account",
     securitySettings: "/settings/account",
@@ -266,6 +274,14 @@ function parseSecureAuthEnv(
     invitesDefaultQuota: readIntEnv(env, "AUTH_INVITES_DEFAULT_QUOTA", 0, { min: 0 }),
     invitesCodeExpiryDays: readIntEnv(env, "AUTH_INVITES_CODE_EXPIRY_DAYS", 30, { min: 1 }),
     apiKeysEnabled: readBoolEnv(env, "AUTH_API_KEYS_ENABLED", false),
+    profileEnabled: readBoolEnv(env, "AUTH_PROFILE_ENABLED", false),
+    magicLinkEnabled: readBoolEnv(env, "AUTH_MAGIC_LINK_ENABLED", false),
+    securityNotificationsEnabled: readBoolEnv(
+      env,
+      "AUTH_SECURITY_NOTIFICATIONS_ENABLED",
+      true
+    ),
+    trustForwardedHeaders: readBoolEnv(env, "AUTH_TRUST_FORWARDED_HEADERS", false),
   };
 }
 
@@ -358,7 +374,19 @@ export function buildSecureAuthConfigFromEnv(
     invitesDefaultQuota,
     invitesCodeExpiryDays,
     apiKeysEnabled,
+    profileEnabled,
+    magicLinkEnabled,
+    securityNotificationsEnabled,
+    trustForwardedHeaders,
   } = parsed;
+
+  const nodeEnv = env.NODE_ENV;
+  const serverEnvironment =
+    nodeEnv === "production"
+      ? "production"
+      : nodeEnv === "test"
+        ? "test"
+        : "development";
 
   return {
     app: {
@@ -374,6 +402,12 @@ export function buildSecureAuthConfigFromEnv(
       twoFactorEncryptionKey,
       redirectAuthenticatedFromGuestPages,
       authenticatedRedirectPath,
+      magicLink: {
+        enabled: magicLinkEnabled,
+      },
+      securityNotifications: {
+        enabled: securityNotificationsEnabled,
+      },
     },
     accountPolicy: {
       sendVerificationOnRegister,
@@ -381,6 +415,7 @@ export function buildSecureAuthConfigFromEnv(
       requireEmailVerificationForAccountApis,
     },
     security: {
+      trustForwardedHeaders,
       sameOriginProtection: {
         enabled: sameOriginProtectionEnabled,
         allowedOrigins: sameOriginAllowedOrigins,
@@ -414,6 +449,7 @@ export function buildSecureAuthConfigFromEnv(
     },
     server: {
       cookieSecure,
+      environment: serverEnvironment,
     },
     debug: {
       authTrace,
@@ -474,6 +510,9 @@ export function buildSecureAuthConfigFromEnv(
     },
     apiKeys: {
       enabled: apiKeysEnabled,
+    },
+    profile: {
+      enabled: profileEnabled,
     },
   };
 }

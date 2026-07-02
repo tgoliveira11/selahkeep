@@ -24,7 +24,7 @@ export async function applyUnlockBehavior(userId: string): Promise<void> {
 
   const { encryptedVaultSettings } = await vaultApi.getSettings();
   const settings = encryptedVaultSettings
-    ? await decryptVaultSettings(encryptedVaultSettings, vaultKey)
+    ? await decryptVaultSettings(encryptedVaultSettings, userId, vaultKey)
     : { unlockBehavior: "metadata_only" as const };
 
   if (settings.unlockBehavior !== "decrypt_all") {

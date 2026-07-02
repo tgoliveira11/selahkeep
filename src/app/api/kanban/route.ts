@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireSessionUser } from "@/lib/auth/session";
+import { requireFullyAuthenticatedUser } from "@/lib/auth/session";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
+import { enforceProductMutationRateLimit } from "@/lib/api-helpers/product-mutation-rate-limit";
+import { assertKanbanApiEnabled } from "@/lib/notes/kanban-api-guard";
 import {
   createKanbanBoardSchema,
   listKanbanBoardsQuerySchema,
@@ -10,7 +12,8 @@ import { assertNoPlaintextKanbanFields } from "@/server/policies/kanban-plaintex
 
 export async function GET(request: Request) {
   try {
-    const user = await requireSessionUser();
+    assertKanbanApiEnabled();
+    const user = await requireFullyAuthenticatedUser();
     const url = new URL(request.url);
     const query: Record<string, string> = {};
     const noteId = url.searchParams.get("noteId");
@@ -34,7 +37,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireSessionUser();
+    assertKanbanApiEnabled();
+    const user = await requireFullyAuthenticatedUser();
+    await enforceProductMutationRateLimit(request, user.id, "kanban.mutate");
     const body = await parseJsonBody(request);
     assertNoPlaintextKanbanFields(body);
 

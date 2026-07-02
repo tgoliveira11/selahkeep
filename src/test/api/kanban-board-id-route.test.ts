@@ -3,14 +3,14 @@ import { DELETE, GET, PUT } from "@/app/api/kanban/[boardId]/route";
 import { BOARD_ID, updateKanbanBoardInput, USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
-  requireSessionUser: vi.fn(),
+  requireFullyAuthenticatedUser: vi.fn(),
   getById: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: mocks.requireSessionUser,
+  requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
   UnauthorizedError: class UnauthorizedError extends Error {
     name = "UnauthorizedError";
   },
@@ -37,7 +37,7 @@ function jsonRequest(body: unknown, method = "PUT") {
 describe("kanban board id API route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireSessionUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
+    mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
   });
 
   it("GET returns a board", async () => {

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: vi.fn(async () => ({ id: USER_ID })),
+  requireFullyAuthenticatedUser: vi.fn(async () => ({ id: USER_ID })),
 }));
 
 const getUnlockEnvelopeMock = vi.fn();

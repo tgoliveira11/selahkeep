@@ -143,14 +143,15 @@ export async function encryptVaultIndex(
 
 export async function decryptVaultIndex(
   encryptedVaultIndex: EncryptedPayload,
+  expectedUserId: string,
   vaultKey?: CryptoKey
 ): Promise<VaultIndexPlaintext> {
   const key = vaultKey ?? getSessionVaultKey();
   if (!key) throw new Error("Vault is locked");
 
   verifyPayloadAad(encryptedVaultIndex, {
-    userId: encryptedVaultIndex.aad.userId,
-    resourceId: encryptedVaultIndex.aad.userId,
+    userId: expectedUserId,
+    resourceId: expectedUserId,
     field: "vault_index",
   });
 

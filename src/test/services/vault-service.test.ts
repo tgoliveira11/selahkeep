@@ -185,6 +185,21 @@ describe("vault service", () => {
     expect(mocks.revokeEnvelope).toHaveBeenCalledWith("env-old", USER_ID, expect.anything());
   });
 
+  it("rejects recovery code envelope with non-Argon2id KDF metadata", async () => {
+    mocks.findVaultByUserId.mockResolvedValue({ id: "vault-1" });
+    await expect(
+      vaultService.storeRecoveryCode(USER_ID, {
+        encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+        kdfMetadata: {
+          kdf: "pbkdf2-sha256",
+          version: "kdf-v1",
+          salt: "c2FsdA",
+          iterations: 600_000,
+        },
+      })
+    ).rejects.toThrow(/Argon2id/);
+  });
+
   it("unlockWithRecoveryCode rate limits attempts", async () => {
     mocks.findActiveEnvelopeByMethod.mockResolvedValue({
       encryptedVaultKey: encryptedPayload("vault_key", USER_ID),

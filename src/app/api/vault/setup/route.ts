@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSessionUser } from "@/lib/auth/session";
+import { requireFullyAuthenticatedUser } from "@/lib/auth/session";
 import { vaultSetupSchema, assertNoVaultPlaintextFields } from "@/lib/validation/vault";
 import { vaultService } from "@/server/services/vault-service";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
@@ -8,7 +8,7 @@ import { vaultApiClientKey, vaultApiRateLimitResponse } from "@/lib/vault/vault-
 
 export async function POST(request: Request) {
   try {
-    const user = await requireSessionUser();
+    const user = await requireFullyAuthenticatedUser();
     const limited = vaultApiRateLimitResponse("vault-setup", vaultApiClientKey(request, user.id));
     if (limited) return limited;
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { SecureAuthUIProvider } from "@tgoliveira/secure-auth/react";
-import LoginTwoFactorPage from "@/app/(auth)/login/2fa/page";
+import { LoginTwoFactorPage } from "@tgoliveira/secure-auth/react";
 import { SiteShell } from "@/components/layout/site-shell";
 import { OAuthTwoFactorChallenge } from "@/features/auth/oauth-two-factor-challenge";
 import { testSecureAuthUiConfig } from "@/test/helpers/secure-auth-ui-config";
@@ -50,7 +50,7 @@ function renderTwoFactorPage(search = "mode=credentials") {
   return render(
     <SecureAuthUIProvider config={testSecureAuthUiConfig}>
       <SiteShell>
-        <LoginTwoFactorPage />
+        <LoginTwoFactorPage initialUsernameEmail="user@example.com" />
       </SiteShell>
     </SecureAuthUIProvider>
   );
@@ -95,7 +95,7 @@ describe("two-factor challenge page", () => {
     const codeInput = screen.getByLabelText("Authenticator code");
     expect(codeInput.getAttribute("inputMode")).toBe("numeric");
     expect(codeInput.getAttribute("autoComplete")).toBe("one-time-code");
-    expect(screen.getByRole("button", { name: /verify and continue/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /continue/i })).toBeTruthy();
   });
 
   it("posts credentials form to the 2FA page route", async () => {

@@ -3,13 +3,13 @@ import { GET, POST } from "@/app/api/vault/security-events/route";
 import { USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
-  requireSessionUser: vi.fn(),
+  requireFullyAuthenticatedUser: vi.fn(),
   listEvents: vi.fn(),
   recordClientEvent: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: mocks.requireSessionUser,
+  requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
   UnauthorizedError: class UnauthorizedError extends Error {
     name = "UnauthorizedError";
   },
@@ -25,7 +25,7 @@ vi.mock("@/server/services/vault-security-service", () => ({
 describe("vault security events API route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireSessionUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
+    mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
   });
 
   it("GET returns safe events", async () => {

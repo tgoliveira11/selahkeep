@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: vi.fn(async () => ({ id: "00000000-0000-4000-8000-000000000099" })),
+  requireFullyAuthenticatedUser: vi.fn(async () => ({ id: "00000000-0000-4000-8000-000000000099" })),
 }));
 
 const setupMock = vi.fn();

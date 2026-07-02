@@ -94,7 +94,7 @@ describe("vault index", () => {
   it("encrypts and decrypts vault index v3", async () => {
     const index = addVaultIndexEntry(createEmptyVaultIndex(), baseEntry);
     const encrypted = await encryptVaultIndex(index, USER_ID, vaultKey);
-    const decrypted = await decryptVaultIndex(encrypted, vaultKey);
+    const decrypted = await decryptVaultIndex(encrypted, USER_ID, vaultKey);
     expect(decrypted.entries[0]?.title).toBe("First");
     expect(decrypted.version).toBe(3);
   });
@@ -116,7 +116,7 @@ describe("vault index", () => {
       ],
     };
     const encrypted = await encryptVaultIndex(v1 as never, USER_ID, vaultKey);
-    const decrypted = await decryptVaultIndex(encrypted, vaultKey);
+    const decrypted = await decryptVaultIndex(encrypted, USER_ID, vaultKey);
     expect(decrypted.version).toBe(3);
     expect(decrypted.entries[0]?.trashed).toBe(true);
   });
@@ -134,7 +134,7 @@ describe("vault index", () => {
       ],
     };
     const encrypted = await encryptVaultIndex(v2 as never, USER_ID, vaultKey);
-    const decrypted = await decryptVaultIndex(encrypted, vaultKey);
+    const decrypted = await decryptVaultIndex(encrypted, USER_ID, vaultKey);
     expect(decrypted.entries[0]?.trashed).toBe(true);
     expect(decrypted.entries[0]?.trashedAt).toBe("2026-01-02T00:00:00.000Z");
   });

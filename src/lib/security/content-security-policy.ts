@@ -20,7 +20,7 @@ export function buildContentSecurityPolicy(nonce: string): string {
     isDev
       ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
       : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'`,
-    isDev ? "style-src 'self' 'unsafe-inline'" : `style-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
+    isDev ? "style-src 'self' 'unsafe-inline'" : `style-src 'self' 'nonce-${nonce}'`,
     `connect-src ${connectSrc}`,
     // Encrypted attachment previews decrypt client-side and render via blob: URLs.
     "img-src 'self' data: blob:",

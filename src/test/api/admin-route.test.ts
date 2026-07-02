@@ -3,12 +3,12 @@ import { GET } from "@/app/api/admin/users/[id]/route";
 import { USER_ID } from "@/test/helpers/fixtures";
 
 const mocks = vi.hoisted(() => ({
-  requireSessionUser: vi.fn(),
+  requireFullyAuthenticatedUser: vi.fn(),
   getUserSummary: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  requireSessionUser: mocks.requireSessionUser,
+  requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
 }));
 
 vi.mock("@/server/services/admin-service", () => ({
@@ -20,7 +20,7 @@ vi.mock("@/server/services/admin-service", () => ({
 describe("admin API route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireSessionUser.mockResolvedValue({ id: USER_ID, email: "admin@example.com" });
+    mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "admin@example.com" });
   });
 
   it("returns user summary metadata", async () => {

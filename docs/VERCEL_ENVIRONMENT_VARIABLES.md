@@ -184,8 +184,18 @@ When `true`, working SMTP (`EMAIL_PROVIDER=smtp`) is effectively required.
 
 | Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
 |----------|-----------|--------------|---------------|---------|---------|-------|
-| `AUTH_RATE_LIMIT_STORE` | **Recommended** `postgres` in prod | Production | `postgres` | secure-auth login/register/reset limits | Auth rate-limit backend | Default `memory`. Use `postgres` on multi-instance Vercel. Legacy fallback name for auth: `RATE_LIMIT_STORE` (see below). |
-| `RATE_LIMIT_STORE` | **Recommended** `postgres` in prod | Production | `postgres` | `src/modules/rate-limit` (vault/letters APIs) | Product API rate-limit backend | Default `memory`. Same env name as auth legacy fallback — set to `postgres` for both layers in production. |
+| `AUTH_RATE_LIMIT_STORE` | **Required** `postgres` in prod (0.5.0+) | Production | `postgres` | secure-auth login/register/reset limits | Auth rate-limit backend | Default `memory`. **Production startup fails** if not `postgres` (secure-auth 0.5.0+). Legacy fallback name for auth: `RATE_LIMIT_STORE` (see below). |
+| `RATE_LIMIT_STORE` | **Required** `postgres` in prod (0.5.0+) | Production | `postgres` | `src/modules/rate-limit` (vault/letters APIs) | Product API rate-limit backend | Default `memory`. Same env name as auth legacy fallback — set to `postgres` for both layers in production. |
+
+### secure-auth 0.5.0+
+
+| Variable | Required? | Environments | Example value | Used by | Purpose | Notes |
+|----------|-----------|--------------|---------------|---------|---------|-------|
+| `AUTH_TRUST_FORWARDED_HEADERS` | Optional | Production (Vercel) | `true` | secure-auth | Trust `X-Forwarded-For` / `X-Real-IP` for rate limits and audit | Default `false`. Enable only behind a trusted edge (e.g. Vercel). |
+| `AUTH_MAGIC_LINK_ENABLED` | Optional | All | `false` | secure-auth | Passwordless email sign-in | Requires delegate routes `/api/auth/magic-link/*` and page `/login/magic-link`. |
+| `AUTH_PROFILE_ENABLED` | Optional | All | `false` | secure-auth | Extended profile settings | When enabled, wire profile page per package consumer docs. |
+| `AUTH_SECURITY_NOTIFICATIONS_ENABLED` | Optional | All | `true` | secure-auth | Email on security-sensitive account events | Default `true`. |
+| `AUTH_PASSWORD_HIBP_ENABLED` | Optional | All | `true` | secure-auth | Have I Been Pwned breach check on password set/change | Default `true`. Set `false` to disable outbound HIBP lookups. |
 
 ### Password policy
 
@@ -295,11 +305,11 @@ Add OAuth variables only for providers you enable. Run database migrations again
 |-------|--------|
 | `npm install` without `--legacy-peer-deps` | Passes (`nodemailer@9.x` satisfies Outpost peer; `next-auth` uses project override) |
 | `package-lock.json` committed | Yes |
-| No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.4.1` from npm registry |
+| No `file:` or tarball auth dependency | `@tgoliveira/secure-auth@0.5.0` from npm registry |
 | Private registry | Public npm scope `@tgoliveira` — no extra `.npmrc` required for Vercel |
 | Local `npm run build` | Passes |
 | Production domain | `https://www.selahkeep.com` |
-| Package health | `GET /api/auth/package-health` → `version: 0.4.1` |
+| Package health | `GET /api/auth/package-health` → `version: 0.5.0` |
 | Production deploy validated | **Not re-run in this phase** — redeploy after env review |
 
 ---
@@ -312,7 +322,7 @@ After deploy:
 curl https://www.selahkeep.com/api/auth/package-health
 ```
 
-Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.4.1" }` when runtime secrets and DB are configured.
+Expect `{ "ok": true, "package": "@tgoliveira/secure-auth", "version": "0.5.0" }` when runtime secrets and DB are configured.
 
 ---
 

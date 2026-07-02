@@ -1,6 +1,8 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { eq } from "drizzle-orm";
+import { users } from "@tgoliveira/secure-auth/drizzle/schema";
 import {
   applyContentSecurityPolicy,
   createContentSecurityPolicyNonce,
@@ -8,6 +10,8 @@ import {
 import { sanitizeAuthCallbackUrl } from "@/lib/auth/safe-auth-callback";
 import { buildSecureAuthUiPublicConfigFromEnv } from "@/lib/env/secure-auth-from-env";
 import { readBoolEnv } from "@/lib/env/parse";
+import { isPlatformAdminUser } from "@/lib/auth/require-platform-admin";
+import { secureAuthDb } from "@/lib/secure-auth-db";
 
 const secureAuthUiConfig = buildSecureAuthUiPublicConfigFromEnv(process.env);
 const adminEnabled = readBoolEnv(process.env, "AUTH_ADMIN_ENABLED", false);
@@ -83,6 +87,24 @@ function nextWithContentSecurityPolicy(request: NextRequest): NextResponse {
   return response;
 }
 
+async function tokenIsPlatformAdmin(
+  token: Awaited<ReturnType<typeof getToken>>
+): Promise<boolean> {
+  if (!token || typeof token === "string" || !token.sub || typeof token.sub !== "string") {
+    return false;
+  }
+
+  const rows = await secureAuthDb
+    .select({ email: users.email, role: users.role })
+    .from(users)
+    .where(eq(users.id, token.sub))
+    .limit(1);
+
+  const user = rows[0];
+  if (!user) return false;
+  return isPlatformAdminUser(user, process.env);
+}
+
 export async function proxy(request: NextRequest) {
   const formRewrite = rewritePackageLoginFormPost(request);
   if (formRewrite) {
@@ -138,15 +160,24 @@ export async function proxy(request: NextRequest) {
   if (
     adminEnabled &&
     adminPath &&
-    (pathname === adminPath || pathname.startsWith(`${adminPath}/`)) &&
-    !isFullyAuthenticatedToken(token)
+    (pathname === adminPath || pathname.startsWith(`${adminPath}/`))
   ) {
-    const url = request.nextUrl.clone();
-    url.pathname = secureAuthUiConfig.paths.login;
-    url.search = "";
-    const attemptedPath = `${pathname}${request.nextUrl.search}`;
-    url.searchParams.set("callbackUrl", sanitizeAuthCallbackUrl(attemptedPath));
-    return NextResponse.redirect(url);
+    if (!isFullyAuthenticatedToken(token)) {
+      const url = request.nextUrl.clone();
+      url.pathname = secureAuthUiConfig.paths.login;
+      url.search = "";
+      const attemptedPath = `${pathname}${request.nextUrl.search}`;
+      url.searchParams.set("callbackUrl", sanitizeAuthCallbackUrl(attemptedPath));
+      return NextResponse.redirect(url);
+    }
+
+    const isAdmin = await tokenIsPlatformAdmin(token);
+    if (!isAdmin) {
+      const url = request.nextUrl.clone();
+      url.pathname = secureAuthUiConfig.auth.authenticatedRedirectPath;
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
   return nextWithContentSecurityPolicy(request);
