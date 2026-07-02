@@ -93,7 +93,10 @@ export function SidebarAccountPopover({
   const popover =
     open && mounted ? (
       <div
-        className="fixed z-[var(--z-toolbar-popover)] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 shadow-[var(--shadow-md)]"
+        // Sidebar chrome renders inside `.vc-vault-lock-overlay-exclude` (z-index 55,
+        // vault-core) so it stays above the vault-lock overlay. This popover must sit
+        // above that sidebar, so it needs more than the default --z-toolbar-popover (40).
+        className="fixed z-[56] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 shadow-[var(--shadow-md)]"
         style={{ top: position.top, left: position.left, width: 280 }}
         data-testid="sidebar-account-popover"
         onMouseEnter={keepOpen}
