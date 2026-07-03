@@ -1,6 +1,7 @@
 import {
   createRecoveryEnvelope,
   unlockWithRecoveryEnvelope,
+  deriveRecoveryPhraseKeyFromMetadata,
   type Argon2idKdfMetadata as VaultCoreArgon2idKdfMetadata,
   type EncryptedPayload as VaultCoreEncryptedPayload,
   type KdfMetadata as VaultCoreKdfMetadata,
@@ -15,6 +16,7 @@ import {
   isLegacyVaultKeyEnvelope,
   unwrapLegacyVaultKeyFromRecoveryPhrase,
 } from "./legacy-envelope-unlock";
+import { cacheVaultInnerKeyMaterialFromEnvelope } from "./vault-inner-key-material";
 
 type WrapOptions = {
   userId: string;
@@ -79,6 +81,18 @@ export async function unwrapVaultKeyFromRecoveryPhrase(
         SELAHKEEP_VAULT_PROFILE,
         { expectedWordCount: options?.expectedWordCount ?? null }
       );
+
+  if (!isLegacyVaultKeyEnvelope(encryptedVaultKey) && kdfMetadata.kdf === "argon2id") {
+    const derivedKeys = await deriveRecoveryPhraseKeyFromMetadata(
+      recoveryPhrase,
+      kdfMetadata as VaultCoreKdfMetadata & { kdf: "argon2id" }
+    );
+    await cacheVaultInnerKeyMaterialFromEnvelope(
+      encryptedVaultKey,
+      derivedKeys.encryptionKey,
+      derivedKeys.wrappingKey
+    );
+  }
 
   if (options?.applySession ?? true) {
     await setUnlockedVaultSession({
