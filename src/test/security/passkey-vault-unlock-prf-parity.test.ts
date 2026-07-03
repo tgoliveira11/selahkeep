@@ -20,7 +20,7 @@ describe("passkey vault unlock PRF ceremony parity", () => {
   it("aligns evalByCredential to eval when a single credential remains", () => {
     const source = readSource("src/lib/passkey/prepare-webauthn-options.ts");
     expect(source).toContain("alignPrfExtensionsForAllowCredentials");
-    expect(source).toMatch(/credentials\.length !== 1/);
+    expect(source).toContain("forceCredentialId");
     expect(source).toContain('prf: { eval: evalInput }');
   });
 

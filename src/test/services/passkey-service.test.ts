@@ -431,6 +431,81 @@ describe("passkey service", () => {
     );
   });
 
+  it("vault unlock options scope to envelope credential when vault_unlock_enabled is stale", async () => {
+    mocks.findByUserId.mockResolvedValue([
+      {
+        credentialId: "envelope-cred",
+        transports: ["internal", "hybrid"],
+        vaultUnlockEnabled: false,
+        signInEnabled: true,
+      },
+      {
+        credentialId: "other-vault",
+        transports: ["internal"],
+        vaultUnlockEnabled: true,
+        signInEnabled: false,
+      },
+    ]);
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue({
+      publicMetadata: { credentialId: "envelope-cred", prfRequired: true },
+    });
+
+    await passkeyService.getAuthenticationOptions(USER_ID, undefined, {
+      purpose: "vault_unlock",
+    });
+
+    expect(mocks.generateAuthenticationOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowCredentials: [{ id: "envelope-cred", transports: ["internal"] }],
+        extensions: expect.objectContaining({
+          prf: expect.objectContaining({
+            eval: expect.objectContaining({ first: expect.any(String) }),
+          }),
+        }),
+      })
+    );
+  });
+
+  it("vault unlock verify accepts active envelope when vault_unlock_enabled flag is stale", async () => {
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
+    mocks.findByCredentialId.mockResolvedValue({
+      userId: USER_ID,
+      credentialId: "envelope-cred",
+      publicKey: Buffer.from(new Uint8Array(32)).toString("base64url"),
+      counter: "0",
+      transports: ["internal"],
+      vaultUnlockEnabled: false,
+      signInEnabled: true,
+    });
+    mocks.verifyAuthenticationResponse.mockResolvedValue({
+      verified: true,
+      authenticationInfo: { newCounter: 1 },
+    });
+    mocks.findActivePasskeyEnvelopeByCredentialId.mockResolvedValue({
+      encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
+      publicMetadata: { prfRequired: true },
+    });
+
+    const clientDataJSON = Buffer.from(
+      JSON.stringify({ type: "webauthn.get", challenge: "auth-challenge", origin: "http://localhost:3001" })
+    ).toString("base64url");
+
+    const result = await passkeyService.verifyAuthentication(
+      USER_ID,
+      {
+        id: "envelope-cred",
+        rawId: "envelope-cred",
+        type: "public-key",
+        response: { clientDataJSON, authenticatorData: "aa", signature: "sig" },
+        clientExtensionResults: {},
+      },
+      { purpose: "vault_unlock" }
+    );
+
+    expect(result.verified).toBe(true);
+    expect(result.encryptedVaultKey).toBeTruthy();
+  });
+
   it("verifyAuthentication returns vault envelope", async () => {
     mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
     mocks.findByCredentialId.mockResolvedValue({
@@ -465,7 +540,7 @@ describe("passkey service", () => {
     expect(result.encryptedVaultKey).toBeTruthy();
   });
 
-  it("vault unlock verify rejects account-only credential", async () => {
+  it("vault unlock verify rejects account-only credential without envelope", async () => {
     mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
     mocks.findByCredentialId.mockResolvedValue({
       userId: USER_ID,
@@ -480,6 +555,7 @@ describe("passkey service", () => {
       verified: true,
       authenticationInfo: { newCounter: 1 },
     });
+    mocks.findActivePasskeyEnvelopeByCredentialId.mockResolvedValue(null);
 
     const clientDataJSON = Buffer.from(
       JSON.stringify({ type: "webauthn.get", challenge: "auth-challenge", origin: "http://localhost:3001" })

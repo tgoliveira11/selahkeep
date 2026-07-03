@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import { apiClient } from "@/lib/api-client/client";
 import { requestVaultUnlockAuthenticationOptions } from "@/lib/passkey/vault-unlock-authenticate";
-import { resolveSingleVaultUnlockCredentialIdFromList } from "@/lib/passkey/vault-unlock-credential";
+import { resolveActiveVaultUnlockCredentialIdFromList } from "@/lib/passkey/vault-unlock-credential";
 
 export type VaultPasskeyUnlockPrefetch = {
   options: PublicKeyCredentialRequestOptionsJSON;
@@ -27,8 +27,9 @@ export function useVaultPasskeyUnlockPrefetch(enabled: boolean) {
     try {
       const list = await apiClient.get<{
         passkeys: Array<{ credentialId: string; vaultUnlockEnabled: boolean }>;
+        activeEnvelopeCredentialId?: string | null;
       }>("/api/passkeys/vault-unlock");
-      const credentialId = resolveSingleVaultUnlockCredentialIdFromList(list.passkeys);
+      const credentialId = resolveActiveVaultUnlockCredentialIdFromList(list);
       const options = await requestVaultUnlockAuthenticationOptions(credentialId);
       const next = { options, credentialId };
       setPrefetch(next);

@@ -16,6 +16,7 @@ describe("vault unlock auth diagnostics", () => {
     expect(diagnostic).toEqual({
       purpose: "vault_unlock",
       allowCredentialsCount: 1,
+      scopedCredentialIdPrefix: "secret-i",
       transportHints: ["internal"],
       prfMode: "eval",
       authenticatorAttachmentAtRegistration: "platform",

@@ -2,24 +2,40 @@ import { apiClient } from "@/lib/api-client/client";
 
 type VaultUnlockPasskeyList = {
   passkeys: Array<{ credentialId: string; vaultUnlockEnabled: boolean }>;
+  activeEnvelopeCredentialId?: string | null;
 };
 
-/** When exactly one vault passkey is configured, return its credential id for ceremony scoping. */
-export async function resolveSingleVaultUnlockCredentialId(): Promise<string | undefined> {
+/** Resolve the credential id for vault unlock ceremonies (envelope wins over heuristics). */
+export async function resolveActiveVaultUnlockCredentialId(): Promise<string | undefined> {
   const data = await apiClient.get<VaultUnlockPasskeyList>("/api/passkeys/vault-unlock");
-  const enabled = data.passkeys.filter((passkey) => passkey.vaultUnlockEnabled);
-  if (enabled.length !== 1) {
-    return undefined;
-  }
-  return enabled[0]?.credentialId;
+  return resolveActiveVaultUnlockCredentialIdFromList(data);
 }
 
+/** @deprecated Use {@link resolveActiveVaultUnlockCredentialId}. */
+export const resolveSingleVaultUnlockCredentialId = resolveActiveVaultUnlockCredentialId;
+
+export function resolveActiveVaultUnlockCredentialIdFromList(
+  list: VaultUnlockPasskeyList
+): string | undefined {
+  if (list.activeEnvelopeCredentialId) {
+    return list.activeEnvelopeCredentialId;
+  }
+
+  const enabled = list.passkeys.filter((passkey) => passkey.vaultUnlockEnabled);
+  if (enabled.length === 1) {
+    return enabled[0]?.credentialId;
+  }
+
+  if (list.passkeys.length === 1) {
+    return list.passkeys[0]?.credentialId;
+  }
+
+  return undefined;
+}
+
+/** @deprecated Use {@link resolveActiveVaultUnlockCredentialIdFromList}. */
 export function resolveSingleVaultUnlockCredentialIdFromList(
   passkeys: Array<{ credentialId: string; vaultUnlockEnabled: boolean }>
 ): string | undefined {
-  const enabled = passkeys.filter((passkey) => passkey.vaultUnlockEnabled);
-  if (enabled.length !== 1) {
-    return undefined;
-  }
-  return enabled[0]?.credentialId;
+  return resolveActiveVaultUnlockCredentialIdFromList({ passkeys });
 }

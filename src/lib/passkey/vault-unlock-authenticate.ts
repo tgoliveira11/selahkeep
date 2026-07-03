@@ -20,9 +20,14 @@ export function filterAuthenticationOptionsForCredential(
   options: PublicKeyCredentialRequestOptionsJSON,
   credentialId?: string
 ): PublicKeyCredentialRequestOptionsJSON {
-  const scoped = credentialId ? filterToCredential(options, credentialId) : options;
+  const envelopeCredentialId =
+    credentialId ??
+    (options.allowCredentials?.length === 1 ? options.allowCredentials?.[0]?.id : undefined);
+  const scoped = envelopeCredentialId
+    ? filterToCredential(options, envelopeCredentialId)
+    : options;
   const platformScoped = preferPlatformTransportsForVaultUnlock(scoped);
-  return alignPrfExtensionsForAllowCredentials(platformScoped);
+  return alignPrfExtensionsForAllowCredentials(platformScoped, envelopeCredentialId);
 }
 
 /** Shared client prep for vault unlock auth ceremonies (setup, test, unlock). */
@@ -30,7 +35,12 @@ export function prepareVaultUnlockAuthenticationOptions(
   options: PublicKeyCredentialRequestOptionsJSON,
   credentialId?: string
 ): PublicKeyCredentialRequestOptionsJSON {
-  return prepareAuthenticationOptions(filterAuthenticationOptionsForCredential(options, credentialId));
+  const effectiveCredentialId =
+    credentialId ??
+    (options.allowCredentials?.length === 1 ? options.allowCredentials?.[0]?.id : undefined);
+  return prepareAuthenticationOptions(
+    filterAuthenticationOptionsForCredential(options, effectiveCredentialId)
+  );
 }
 
 function filterToCredential(
@@ -60,7 +70,10 @@ export async function requestVaultUnlockAuthenticationOptions(
   })) as PublicKeyCredentialRequestOptionsJSON;
 
   const filtered = filterAuthenticationOptionsForCredential(options, credentialId);
-  logVaultUnlockAuthDiagnostic(filtered);
+  logVaultUnlockAuthDiagnostic(
+    filtered,
+    credentialId ?? filtered.allowCredentials?.[0]?.id
+  );
   return filtered;
 }
 

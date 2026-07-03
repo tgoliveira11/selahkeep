@@ -29,6 +29,11 @@ export function parseAppleMobileOsMajorVersion(userAgent: string): number | null
  * True on iPhone/iPad user agents below {@link APPLE_MOBILE_PRF_MIN_MAJOR_VERSION}.
  * Used to hide vault passkey unlock where WebAuthn works but PRF does not.
  */
+export function isAppleMobileUserAgent(userAgent?: string): boolean {
+  const ua = userAgent ?? (typeof navigator !== "undefined" ? navigator.userAgent : "");
+  return /iPhone|iPod|iPad/.test(ua);
+}
+
 export function isAppleMobileBelowPrfMinimum(userAgent?: string): boolean {
   const ua = userAgent ?? (typeof navigator !== "undefined" ? navigator.userAgent : "");
   if (!ua) return false;

@@ -9,6 +9,7 @@ import {
   PASSKEY_NOT_AVAILABLE_FOR_VAULT_UNLOCK_MESSAGE,
   PASSKEY_UNLOCK_IOS_PRF_TOO_OLD_MESSAGE,
   PASSKEY_UNLOCK_PRF_MISMATCH_MESSAGE,
+  PASSKEY_UNLOCK_PRF_MISMATCH_APPLE_HINT_MESSAGE,
   PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE,
 } from "@/lib/passkey/messages";
 import {
@@ -17,8 +18,8 @@ import {
   PasskeyUnlockError,
   unlockVaultFromPasskeyEnvelope,
 } from "@/lib/crypto-client/passkey-vault";
-import { isAppleMobileBelowPrfMinimum } from "@/lib/passkey/prf-support";
-import { resolveSingleVaultUnlockCredentialId } from "@/lib/passkey/vault-unlock-credential";
+import { isAppleMobileBelowPrfMinimum, isAppleMobileUserAgent } from "@/lib/passkey/prf-support";
+import { resolveActiveVaultUnlockCredentialId } from "@/lib/passkey/vault-unlock-credential";
 import { logPasskeyVaultEvent } from "@/features/passkey/passkey-vault-audit";
 import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import {
@@ -39,7 +40,7 @@ export async function unlockVaultWithPasskey(
   prefetchedOptions?: PublicKeyCredentialRequestOptionsJSON | null
 ): Promise<CryptoKey> {
   const effectiveCredentialId =
-    credentialId ?? (await resolveSingleVaultUnlockCredentialId());
+    credentialId ?? (await resolveActiveVaultUnlockCredentialId());
 
   let assertion;
   try {
@@ -130,6 +131,9 @@ export async function unlockVaultWithPasskey(
 function resolvePasskeyVaultDecryptFailureMessage(): string {
   if (isAppleMobileBelowPrfMinimum()) {
     return PASSKEY_UNLOCK_IOS_PRF_TOO_OLD_MESSAGE;
+  }
+  if (isAppleMobileUserAgent()) {
+    return PASSKEY_UNLOCK_PRF_MISMATCH_APPLE_HINT_MESSAGE;
   }
   return PASSKEY_UNLOCK_PRF_MISMATCH_MESSAGE;
 }

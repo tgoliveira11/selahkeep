@@ -21,6 +21,7 @@ describe("useVaultPasskeyUnlockPrefetch", () => {
     vi.clearAllMocks();
     apiGet.mockResolvedValue({
       passkeys: [{ credentialId: "cred-1", vaultUnlockEnabled: true }],
+      activeEnvelopeCredentialId: "cred-1",
     });
     requestOptions.mockResolvedValue({
       challenge: "abc",

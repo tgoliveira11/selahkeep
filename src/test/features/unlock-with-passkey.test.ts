@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/passkey/vault-unlock-credential", () => ({
-  resolveSingleVaultUnlockCredentialId: vi.fn().mockResolvedValue(undefined),
+  resolveActiveVaultUnlockCredentialId: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/passkey/vault-unlock-authenticate", () => ({
