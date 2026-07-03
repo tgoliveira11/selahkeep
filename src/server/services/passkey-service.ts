@@ -20,9 +20,9 @@ import {
 } from "@/server/services/vault-passkey-device-binding-service";
 import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 import { passkeyPrfExtensions } from "@/lib/passkey/prf";
+import { scopeAuthenticationOptionsToDevice } from "@tgoliveira/vault-core";
 import {
   toAllowCredentialDescriptor,
-  toVaultUnlockAllowCredentialDescriptor,
   persistRegistrationTransports,
   vaultRegistrationExcludeCredentials,
 } from "@/lib/passkey/passkey-transports";
@@ -121,12 +121,23 @@ async function buildVaultUnlockAuthenticationOptions(
 
   const options = await generateAuthenticationOptions({
     rpID,
-    allowCredentials: activeCredentials.map((credential) =>
-      toVaultUnlockAllowCredentialDescriptor(credential)
-    ),
+    allowCredentials: activeCredentials.map((credential) => ({
+      id: credential.credentialId,
+      transports: ["internal"] as const,
+    })),
     userVerification: "required",
     extensions: passkeyPrfExtensions(userId),
   });
+
+  const scopedOptions =
+    activeCredentials.length === 1
+      ? scopeAuthenticationOptionsToDevice(
+          options as unknown as Parameters<typeof scopeAuthenticationOptionsToDevice>[0],
+          {
+            credentialId: activeCredentials[0]!.credentialId,
+          }
+        )
+      : options;
 
   await passkeyRepository.storeChallenge({
     userId,
@@ -135,7 +146,7 @@ async function buildVaultUnlockAuthenticationOptions(
     expiresAt: new Date(Date.now() + 5 * 60 * 1000),
   });
 
-  return options;
+  return scopedOptions;
 }
 
 export const passkeyService = {

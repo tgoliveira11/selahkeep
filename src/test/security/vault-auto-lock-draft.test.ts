@@ -23,7 +23,7 @@ describe("vault auto-lock draft security", () => {
 
   it("beforeAutoLock invokes encrypted draft save before inactivity lock", async () => {
     const key = await generateUserVaultKey();
-    unlockVaultSession(key);
+    await unlockVaultSession(key, "password");
 
     registerVaultBeforeAutoLock(async () => {
       await saveEncryptedNoteDraft("user-1", "new", {

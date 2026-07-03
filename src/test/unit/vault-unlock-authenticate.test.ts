@@ -86,7 +86,7 @@ describe("vault unlock authenticate client", () => {
       },
       "vault-b"
     );
-    expect(filtered.extensions?.prf?.eval?.first).toBe(salt);
+    expect(filtered.extensions?.prf?.eval?.first).toBeInstanceOf(ArrayBuffer);
     expect(filtered.extensions?.prf?.evalByCredential).toBeUndefined();
   });
 

@@ -20,7 +20,7 @@ describe("vault module boundaries", () => {
     expect(content).toContain("createPasswordEnvelope");
     expect(content).toContain("SELAHKEEP_VAULT_PROFILE");
     expect(content).toContain("setUnlockedVaultSession");
-    expect(content).not.toContain("@tgoliveira/vault-core/browser");
+    expect(content).toContain("cacheVaultInnerKeyMaterialAfterPasswordUnlock");
   });
 
   it("keeps vault session UVK in the vault-core browser adapter module", () => {

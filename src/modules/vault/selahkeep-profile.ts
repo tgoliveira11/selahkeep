@@ -5,6 +5,7 @@ export const SELAHKEEP_VAULT_PROFILE: VaultCryptoProfile = {
   cryptoVersion: "vault-v1",
   aadContextVault: "selahkeep:vault:v1",
   aadContextEnvelope: "selahkeep:vault-envelope:v1",
+  legacyVaultKeyUnlock: true,
 };
 
 /** Legacy PRF salt prefix — must not change for existing passkey vault envelopes. */

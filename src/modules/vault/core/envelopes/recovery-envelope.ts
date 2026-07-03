@@ -1,22 +1,17 @@
 import {
   createRecoveryEnvelope,
-  deriveRecoveryPhraseKeyFromMetadata,
   unlockWithRecoveryEnvelope,
   type Argon2idKdfMetadata as VaultCoreArgon2idKdfMetadata,
   type EncryptedPayload as VaultCoreEncryptedPayload,
   type KdfMetadata as VaultCoreKdfMetadata,
 } from "@tgoliveira/vault-core";
+import { cacheVaultInnerKeyMaterialAfterRecoveryUnlock } from "@tgoliveira/vault-core/browser";
 import type { EncryptedPayload, KdfMetadata } from "@/lib/validation/encrypted-payload";
 import {
   setUnlockedVaultSession,
   type VaultUnlockMethod,
 } from "@/lib/crypto-client/vault-session";
 import { SELAHKEEP_VAULT_PROFILE } from "../../selahkeep-profile";
-import {
-  isLegacyVaultKeyEnvelope,
-  unwrapLegacyVaultKeyFromRecoveryPhrase,
-} from "./legacy-envelope-unlock";
-import { cacheVaultInnerKeyMaterialFromEnvelope } from "./vault-inner-key-material";
 
 type WrapOptions = {
   userId: string;
@@ -63,37 +58,21 @@ export async function unwrapVaultKeyFromRecoveryPhrase(
   }
 ): Promise<CryptoKey> {
   const scope = envelopeScope(options?.userId ?? encryptedVaultKey.aad.userId, options?.resourceId);
-  const vaultKey = isLegacyVaultKeyEnvelope(encryptedVaultKey)
-    ? await unwrapLegacyVaultKeyFromRecoveryPhrase(
-        recoveryPhrase,
-        encryptedVaultKey,
-        kdfMetadata,
-        scope
-      )
-    : await unlockWithRecoveryEnvelope(
-        recoveryPhrase,
-        {
-          method: "recovery_phrase",
-          encryptedVaultKey: asVaultCorePayload(encryptedVaultKey),
-          kdfMetadata: kdfMetadata as VaultCoreKdfMetadata,
-        },
-        scope,
-        SELAHKEEP_VAULT_PROFILE,
-        { expectedWordCount: options?.expectedWordCount ?? null }
-      );
+  const envelope = {
+    method: "recovery_phrase" as const,
+    encryptedVaultKey: asVaultCorePayload(encryptedVaultKey),
+    kdfMetadata: kdfMetadata as VaultCoreKdfMetadata,
+  };
+  const vaultKey = await unlockWithRecoveryEnvelope(
+    recoveryPhrase,
+    envelope,
+    scope,
+    SELAHKEEP_VAULT_PROFILE,
+    { expectedWordCount: options?.expectedWordCount ?? null }
+  );
 
-  // Cache inner key material so passkey enrollment can re-wrap the (non-extractable)
-  // session UVK without the recovery phrase. Legacy raw envelopes cache at unlock instead.
-  if (!isLegacyVaultKeyEnvelope(encryptedVaultKey) && kdfMetadata.kdf === "argon2id") {
-    const derivedKeys = await deriveRecoveryPhraseKeyFromMetadata(
-      recoveryPhrase,
-      kdfMetadata as VaultCoreKdfMetadata & { kdf: "argon2id" }
-    );
-    await cacheVaultInnerKeyMaterialFromEnvelope(
-      encryptedVaultKey,
-      derivedKeys.encryptionKey,
-      derivedKeys.wrappingKey
-    );
+  if (kdfMetadata.kdf === "argon2id") {
+    await cacheVaultInnerKeyMaterialAfterRecoveryUnlock(vaultKey, envelope, recoveryPhrase);
   }
 
   if (options?.applySession ?? true) {

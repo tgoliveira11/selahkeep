@@ -22,6 +22,12 @@ const APPROVED_VAULT_CORE_BROWSER_IMPORTS = new Set([
   "src/components/vault-providers.tsx",
   "src/features/vault/vault-status-dock.tsx",
   "src/app/(vault)/vault/unlock/page.tsx",
+  "src/lib/passkey/vault-unlock-authenticate.ts",
+  "src/lib/passkey/prepare-webauthn-options.ts",
+  "src/lib/passkey/prf-support.ts",
+  "src/modules/vault/core/envelopes/password-envelope.ts",
+  "src/modules/vault/core/envelopes/recovery-envelope.ts",
+  "src/modules/vault/core/envelopes/passkey-prf-envelope.ts",
 ]);
 
 const DISALLOWED_VAULT_CORE_BROWSER_SCAN_ROOTS = [

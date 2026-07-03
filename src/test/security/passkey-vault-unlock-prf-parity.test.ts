@@ -12,26 +12,24 @@ describe("passkey vault unlock PRF ceremony parity", () => {
     const unlock = readSource("src/lib/passkey/vault-unlock-authenticate.ts");
     expect(setup).toContain("runVaultUnlockAuthenticationCeremony");
     expect(unlock).toContain("prepareVaultUnlockAuthenticationOptions");
-    expect(unlock).toContain("alignPrfExtensionsForAllowCredentials");
+    expect(unlock).toContain("@tgoliveira/vault-core/browser");
   });
 
-  it("aligns evalByCredential to eval when a single credential remains", () => {
-    const source = readSource("src/lib/passkey/prepare-webauthn-options.ts");
-    expect(source).toContain("alignPrfExtensionsForAllowCredentials");
-    expect(source).toContain("forceCredentialId");
-    expect(source).toContain('prf: { eval: evalInput }');
+  it("delegates WebAuthn PRF prep to vault-core browser helpers", () => {
+    const prepare = readSource("src/lib/passkey/prepare-webauthn-options.ts");
+    expect(prepare).toContain("prepareWebAuthnPrfExtensions");
+    expect(prepare).toContain("alignPrfExtensionsForCredential");
   });
 
-  it("prefers per-credential PRF output before results.first", () => {
-    const source = readSource("src/lib/passkey/normalize-prf-output.ts");
-    const credentialBlock = source.indexOf("if (credentialId && record[credentialId]");
-    const firstBlock = source.indexOf("if (record.first != null)");
-    expect(credentialBlock).toBeGreaterThan(-1);
-    expect(firstBlock).toBeGreaterThan(credentialBlock);
+  it("delegates PRF output extraction to vault-core", () => {
+    const browser = readSource("src/lib/crypto-client/vault-passkey-browser.ts");
+    expect(browser).toContain("extractPasskeyPrfOutputCore");
+    expect(browser).toContain("@tgoliveira/vault-core/browser");
   });
 
-  it("forces internal transport on Apple mobile for all vault unlock credentials", () => {
-    const source = readSource("src/lib/passkey/passkey-transports.ts");
-    expect(source).toMatch(/transports: \["internal"\]/);
+  it("pins internal transport for vault unlock credentials on the server", () => {
+    const service = readSource("src/server/services/passkey-service.ts");
+    expect(service).toMatch(/transports: \["internal"\]/);
+    expect(service).toContain("scopeAuthenticationOptionsToDevice");
   });
 });

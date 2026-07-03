@@ -1,25 +1,35 @@
-import { describe, it, expect, vi } from "vitest";
-import { resolveVaultDockPasskeyAvailability } from "@/features/vault/use-vault-dock-passkey-available";
-import type { VaultStatus } from "@/lib/api-client/vault";
-
-vi.mock("@/lib/passkey/prf-support", () => ({
-  isPrfExtensionSupported: vi.fn(() => true),
-}));
-
-const baseStatus: VaultStatus = {
-  initialized: true,
-  hasVault: true,
-  setupPhase: "complete",
-  setupComplete: true,
-  availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: true },
-};
+/** @vitest-environment happy-dom */
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  resolveVaultDockPasskeyAvailability,
+  toVaultServerStatusSnapshot,
+} from "@/features/vault/vault-dock-passkey-availability";
 
 describe("resolveVaultDockPasskeyAvailability", () => {
-  it("hides passkey when account has envelope but this device is not bound", () => {
+  const originalPublicKeyCredential = globalThis.PublicKeyCredential;
+
+  beforeEach(() => {
+    globalThis.PublicKeyCredential = {
+      isUserVerifyingPlatformAuthenticatorAvailable: async () => true,
+      prototype: { getClientExtensionResults: () => ({}) },
+    } as unknown as typeof PublicKeyCredential;
+  });
+
+  afterEach(() => {
+    globalThis.PublicKeyCredential = originalPublicKeyCredential;
+    vi.restoreAllMocks();
+  });
+
+  it("hides passkey when envelope exists but this browser is not bound", () => {
     expect(
       resolveVaultDockPasskeyAvailability({
-        ...baseStatus,
+        hasPasskey: true,
         passkeyUnlockAvailableOnThisDevice: false,
+        availableUnlockMethods: { passkey: true, password: true, recoveryPhrase: true },
+        initialized: true,
+        hasVault: true,
+        setupPhase: "complete",
+        setupComplete: true,
       })
     ).toEqual({
       hasEnvelope: true,
@@ -28,11 +38,16 @@ describe("resolveVaultDockPasskeyAvailability", () => {
     });
   });
 
-  it("shows passkey when envelope exists and this device is bound", () => {
+  it("shows passkey when envelope exists, PRF supported, and device is bound", () => {
     expect(
       resolveVaultDockPasskeyAvailability({
-        ...baseStatus,
+        hasPasskey: true,
         passkeyUnlockAvailableOnThisDevice: true,
+        availableUnlockMethods: { passkey: true, password: true, recoveryPhrase: true },
+        initialized: true,
+        hasVault: true,
+        setupPhase: "complete",
+        setupComplete: true,
       })
     ).toEqual({
       hasEnvelope: true,
@@ -41,17 +56,20 @@ describe("resolveVaultDockPasskeyAvailability", () => {
     });
   });
 
-  it("returns no envelope when passkey unlock is not configured on the account", () => {
+  it("maps VaultStatus to vault-core server snapshot", () => {
     expect(
-      resolveVaultDockPasskeyAvailability({
-        ...baseStatus,
-        availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: false },
+      toVaultServerStatusSnapshot({
+        hasPasskey: true,
         passkeyUnlockAvailableOnThisDevice: false,
+        initialized: true,
+        hasVault: true,
+        setupPhase: "complete",
+        setupComplete: true,
       })
     ).toEqual({
-      hasEnvelope: false,
-      showPasskey: false,
-      prfExplicitlyUnsupported: false,
+      configured: true,
+      hasPasskeyPrfEnvelope: true,
+      passkeyUnlockAvailableOnThisDevice: false,
     });
   });
 });

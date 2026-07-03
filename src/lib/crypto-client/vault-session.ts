@@ -29,9 +29,9 @@ import {
 import { getVaultAutoLockMinutesFromConfig } from "@/lib/env/vault-from-env";
 import { VAULT_INACTIVITY_MS as LEGACY_VAULT_INACTIVITY_MS } from "@/lib/vault/vault-auto-lock-config";
 import {
-  cacheLegacyRawVaultInnerKeyMaterial,
-  clearVaultInnerKeyMaterial,
-} from "@/modules/vault/core/envelopes/vault-inner-key-material";
+  cacheVaultInnerKeyMaterialFromEnvelopeDecrypt,
+  clearVaultInnerKeyMaterialCache,
+} from "@tgoliveira/vault-core/browser";
 
 export { LEGACY_VAULT_INACTIVITY_MS as VAULT_INACTIVITY_MS };
 
@@ -158,6 +158,20 @@ export function hasUnlockedVaultSession(): boolean {
   return getSessionVaultKey() !== null && !isVaultManuallyLocked();
 }
 
+async function cacheRawVaultKeyMaterialForPasskeyEnroll(
+  raw: Uint8Array,
+  sessionKey: CryptoKey
+): Promise<void> {
+  const placeholderWrappingKey = await crypto.subtle.importKey(
+    "raw",
+    crypto.getRandomValues(new Uint8Array(32)),
+    { name: "AES-KW", length: 256 },
+    false,
+    ["wrapKey", "unwrapKey"]
+  );
+  await cacheVaultInnerKeyMaterialFromEnvelopeDecrypt(raw, placeholderWrappingKey, sessionKey);
+}
+
 async function ensureNonExtractableSessionKey(key: CryptoKey): Promise<CryptoKey> {
   try {
     await assertUserVaultKeyNonExtractable(key);
@@ -167,7 +181,7 @@ async function ensureNonExtractableSessionKey(key: CryptoKey): Promise<CryptoKey
     // (in memory only) before converting to a non-extractable session key, so passkey
     // enrollment can re-wrap it without the vault password.
     const raw = await exportUserVaultKey(key);
-    cacheLegacyRawVaultInnerKeyMaterial(raw);
+    await cacheRawVaultKeyMaterialForPasskeyEnroll(raw, key);
     return importUserVaultKey(raw, { extractable: false });
   }
 }
@@ -284,7 +298,7 @@ export function lockVaultSession(reason: VaultLockReason = "manual"): void {
     clearVaultAutoLockTimer();
     notifyActivityChange();
     clearNoteBodyCache();
-    clearVaultInnerKeyMaterial();
+    clearVaultInnerKeyMaterialCache();
     unlockedAt = 0;
     unlockMethod = undefined;
     coreLockVaultSession();
@@ -330,7 +344,7 @@ export function resetVaultSessionStoreForTests(): void {
   sessionSnapshotListeners.clear();
   activityListeners.clear();
   clearPreLockTimer();
-  clearVaultInnerKeyMaterial();
+  clearVaultInnerKeyMaterialCache();
   lockVault();
   coreResetVaultSessionLockState();
   configureSelahkeepVaultSession();

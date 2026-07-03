@@ -15,7 +15,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { useVault } from "@/features/vault/use-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { useVaultPasskeyUnlockPrefetch } from "@/features/passkey/use-vault-passkey-unlock-prefetch";
-import { useVaultDockPasskeyAvailable } from "@/features/vault/use-vault-dock-passkey-available";
+import { useVaultDockPasskeyAvailable } from "@/features/vault/vault-dock-passkey-availability";
 import { VaultStatusPrompt } from "@/features/vault/vault-status-prompt";
 import { readSelahkeepVaultUnlockReturnPath } from "@/lib/notes/safe-return-to";
 import { getVaultUnlockRateLimiter } from "@/lib/vault/vault-rate-limit";
