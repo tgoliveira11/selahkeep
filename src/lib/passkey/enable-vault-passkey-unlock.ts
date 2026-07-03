@@ -1,13 +1,12 @@
 import { startAuthentication, type PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import { apiClient } from "@/lib/api-client/client";
 import { extractPasskeyPrfOutput, wrapVaultKeyForPasskey } from "@/lib/crypto-client/passkey-vault";
-import { prepareAuthenticationOptions } from "@/lib/passkey/prepare-webauthn-options";
 import {
   getPasskeyPrfDiagnosticMessage,
   resolveCeremonyDiagnosticReason,
 } from "@/lib/passkey/passkey-prf-diagnostics";
-import { preferPlatformTransportsForVaultUnlock } from "@/lib/passkey/passkey-transports";
 import { toPasskeyCeremonyErrorMessage } from "@/lib/passkey/map-passkey-crypto-error";
+import { prepareVaultUnlockAuthenticationOptions } from "@/lib/passkey/vault-unlock-authenticate";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
 /**
@@ -27,7 +26,10 @@ export async function enableVaultPasskeyUnlockWithAuthPrf(args: {
     )) as PublicKeyCredentialRequestOptionsJSON;
 
     const assertion = await startAuthentication({
-      optionsJSON: prepareAuthenticationOptions(preferPlatformTransportsForVaultUnlock(options)),
+      optionsJSON: prepareVaultUnlockAuthenticationOptions(
+        options,
+        options.allowCredentials?.[0]?.id
+      ),
     });
 
     const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);

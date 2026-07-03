@@ -135,7 +135,7 @@ describe("unlockVaultWithPasskey", () => {
       new passkeyVault.PasskeyUnlockError("Could not decrypt")
     );
     await expect(unlockVaultWithPasskey(USER_ID)).rejects.toThrow(
-      "could not derive the vault key on this device"
+      "completed vault unlock authentication"
     );
   });
 

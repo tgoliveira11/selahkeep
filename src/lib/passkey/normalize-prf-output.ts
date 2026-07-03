@@ -45,15 +45,18 @@ function pickPrfResultFirst(results: unknown, credentialId?: string): unknown {
   if (!results || typeof results !== "object") return null;
   const record = results as Record<string, unknown>;
 
-  if (record.first != null) {
-    return record.first;
-  }
-
+  // Prefer per-credential PRF when the ceremony credential is known. Safari can
+  // populate both `results.first` and evalByCredential entries; `first` may not
+  // match the credential used for vault unlock.
   if (credentialId && record[credentialId] != null) {
     const perCredential = record[credentialId];
     if (perCredential && typeof perCredential === "object" && "first" in perCredential) {
       return (perCredential as { first?: unknown }).first ?? null;
     }
+  }
+
+  if (record.first != null) {
+    return record.first;
   }
 
   for (const value of Object.values(record)) {

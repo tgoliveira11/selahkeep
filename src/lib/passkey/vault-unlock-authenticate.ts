@@ -3,7 +3,10 @@ import {
   type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
 import { apiClient } from "@/lib/api-client/client";
-import { prepareAuthenticationOptions } from "@/lib/passkey/prepare-webauthn-options";
+import {
+  alignPrfExtensionsForAllowCredentials,
+  prepareAuthenticationOptions,
+} from "@/lib/passkey/prepare-webauthn-options";
 import { preferPlatformTransportsForVaultUnlock } from "@/lib/passkey/passkey-transports";
 import { PASSKEY_NOT_AVAILABLE_FOR_VAULT_UNLOCK_MESSAGE } from "@/lib/passkey/messages";
 import { logVaultUnlockAuthDiagnostic } from "@/lib/passkey/vault-unlock-auth-diagnostics";
@@ -18,7 +21,16 @@ export function filterAuthenticationOptionsForCredential(
   credentialId?: string
 ): PublicKeyCredentialRequestOptionsJSON {
   const scoped = credentialId ? filterToCredential(options, credentialId) : options;
-  return preferPlatformTransportsForVaultUnlock(scoped);
+  const platformScoped = preferPlatformTransportsForVaultUnlock(scoped);
+  return alignPrfExtensionsForAllowCredentials(platformScoped);
+}
+
+/** Shared client prep for vault unlock auth ceremonies (setup, test, unlock). */
+export function prepareVaultUnlockAuthenticationOptions(
+  options: PublicKeyCredentialRequestOptionsJSON,
+  credentialId?: string
+): PublicKeyCredentialRequestOptionsJSON {
+  return prepareAuthenticationOptions(filterAuthenticationOptionsForCredential(options, credentialId));
 }
 
 function filterToCredential(
@@ -56,9 +68,8 @@ export async function runVaultUnlockAuthenticationCeremonyWithOptions(
   options: PublicKeyCredentialRequestOptionsJSON,
   credentialId?: string
 ): Promise<Awaited<ReturnType<typeof startAuthentication>>> {
-  const filtered = filterAuthenticationOptionsForCredential(options, credentialId);
   return startAuthentication({
-    optionsJSON: prepareAuthenticationOptions(filtered),
+    optionsJSON: prepareVaultUnlockAuthenticationOptions(options, credentialId),
   });
 }
 

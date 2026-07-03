@@ -51,6 +51,8 @@ describe("dual passkey vault unlock credential filtering", () => {
   it("filterAuthenticationOptionsForCredential preserves transports", () => {
     const helper = readSource("src/lib/passkey/vault-unlock-authenticate.ts");
     expect(helper).toContain("matchingCredential");
+    expect(helper).toContain("alignPrfExtensionsForAllowCredentials");
+    expect(helper).toContain("prepareVaultUnlockAuthenticationOptions");
     expect(helper).not.toContain("type: \"public-key\"");
     expect(helper).toContain("PASSKEY_NOT_AVAILABLE_FOR_VAULT_UNLOCK_MESSAGE");
   });

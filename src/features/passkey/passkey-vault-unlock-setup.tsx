@@ -20,10 +20,8 @@ import {
 import { enableVaultPasskeyUnlockWithAuthPrf } from "@/lib/passkey/enable-vault-passkey-unlock";
 import { toPasskeyCeremonyErrorMessage } from "@/lib/passkey/map-passkey-crypto-error";
 import { verifyPasskeyVaultUnlockRoundTrip } from "@/lib/passkey/verify-passkey-vault-round-trip";
-import {
-  prepareAuthenticationOptions,
-  prepareRegistrationOptions,
-} from "@/lib/passkey/prepare-webauthn-options";
+import { prepareVaultUnlockAuthenticationOptions } from "@/lib/passkey/vault-unlock-authenticate";
+import { prepareRegistrationOptions } from "@/lib/passkey/prepare-webauthn-options";
 import {
   getPasskeyPrfDiagnosticHeadline,
   getPasskeyPrfDiagnosticMessage,
@@ -161,7 +159,10 @@ export function PasskeyVaultUnlockSetup({
 
   async function runCeremonyWithOptions(options: PublicKeyCredentialRequestOptionsJSON) {
     const assertion = await startAuthentication({
-      optionsJSON: prepareAuthenticationOptions(options),
+      optionsJSON: prepareVaultUnlockAuthenticationOptions(
+        options,
+        options.allowCredentials?.[0]?.id
+      ),
     });
     const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);
     return { assertion, prfOutput };

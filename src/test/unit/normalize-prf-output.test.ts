@@ -69,6 +69,24 @@ describe("normalize passkey PRF output", () => {
     ).toEqual(bytes);
   });
 
+  it("prefers per-credential PRF over results.first when credentialId is known", () => {
+    const correct = new Uint8Array(32).fill(2);
+    const wrong = new Uint8Array(32).fill(8);
+    expect(
+      extractNormalizedPasskeyPrfOutput(
+        {
+          prf: {
+            results: {
+              first: wrong.buffer,
+              "cred-a": { first: correct.buffer },
+            },
+          },
+        },
+        "cred-a"
+      )
+    ).toEqual(correct);
+  });
+
   it("imports AES-256 key from normalized 64-byte PRF output", async () => {
     const prf = crypto.getRandomValues(new Uint8Array(64));
     const key = await crypto.subtle.importKey(
