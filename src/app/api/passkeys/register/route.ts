@@ -12,6 +12,7 @@ const verifySchema = z.object({
   encryptedVaultKey: encryptedPayloadSchema.optional(),
   prfVaultEnvelope: z.literal(true).optional(),
   vaultOnly: z.literal(true).optional(),
+  friendlyName: z.string().max(60).optional(),
 });
 
 export async function POST(request: Request) {
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
       {
         prfVaultEnvelope: parsed.data.prfVaultEnvelope,
         vaultOnly: parsed.data.vaultOnly,
+        friendlyName: parsed.data.friendlyName,
       }
     );
     return NextResponse.json(result);

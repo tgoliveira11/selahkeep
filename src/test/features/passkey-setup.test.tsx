@@ -127,6 +127,7 @@ describe("PasskeySetup", () => {
         action: "verify",
         response: expect.any(Object),
         vaultOnly: true,
+        friendlyName: expect.any(String),
       });
       // Step 2: create the envelope from an authentication (get) PRF via enable.
       expect(mocks.apiPost).toHaveBeenCalledWith(
