@@ -19,6 +19,8 @@ const mocks = vi.hoisted(() => ({
   startRegistration: vi.fn(),
   extractPasskeyPrfOutput: vi.fn(),
   wrapVaultKeyForPasskey: vi.fn(),
+  unlockVaultFromPasskeyEnvelope: vi.fn(),
+  userVaultKeysEqual: vi.fn(),
   probeEnvironment: vi.fn(),
 }));
 
@@ -48,7 +50,16 @@ vi.mock("@simplewebauthn/browser", () => ({
 vi.mock("@/lib/crypto-client/passkey-vault", () => ({
   extractPasskeyPrfOutput: mocks.extractPasskeyPrfOutput,
   wrapVaultKeyForPasskey: mocks.wrapVaultKeyForPasskey,
+  unlockVaultFromPasskeyEnvelope: mocks.unlockVaultFromPasskeyEnvelope,
 }));
+
+vi.mock("@tgoliveira/vault-core", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tgoliveira/vault-core")>();
+  return {
+    ...actual,
+    userVaultKeysEqual: mocks.userVaultKeysEqual,
+  };
+});
 
 vi.mock("@/lib/passkey/prepare-webauthn-options", () => ({
   prepareAuthenticationOptions: (options: unknown) => options,
@@ -115,6 +126,13 @@ describe("PasskeyVaultUnlockSetup", () => {
           ],
         };
       }
+      if (path === "/api/passkeys/authenticate" && body?.action === "verify") {
+        return {
+          verified: true,
+          encryptedVaultKey: { version: "enc-v1" },
+          prfRequired: true,
+        };
+      }
       return { challenge: "abc", extensions: { prf: { eval: {} } } };
     });
     mocks.startAuthentication.mockResolvedValue({
@@ -127,6 +145,8 @@ describe("PasskeyVaultUnlockSetup", () => {
     });
     mocks.extractPasskeyPrfOutput.mockReturnValue(new Uint8Array(32));
     mocks.wrapVaultKeyForPasskey.mockResolvedValue({ version: "enc-v1" });
+    mocks.unlockVaultFromPasskeyEnvelope.mockResolvedValue({} as CryptoKey);
+    mocks.userVaultKeysEqual.mockResolvedValue(true);
   });
 
   it("1. does not render Set up account passkey first", async () => {
@@ -252,7 +272,7 @@ describe("PasskeyVaultUnlockSetup", () => {
     fireEvent.click(await screen.findByRole("button", { name: /set up passkey vault unlock/i }));
     expect(
       await screen.findByText(
-        /Authentication completed, but your passkey or browser did not return PRF output/i
+        /Authentication completed, but your passkey provider did not return PRF output/i
       )
     ).toBeTruthy();
     expect(mocks.wrapVaultKeyForPasskey).not.toHaveBeenCalled();

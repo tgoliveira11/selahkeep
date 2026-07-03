@@ -6,6 +6,7 @@ import {
   collectPasskeyTransportHints,
   inferAuthenticatorAttachmentFromTransports,
   vaultRegistrationExcludeCredentials,
+  preferPlatformTransportsForVaultUnlock,
   toAllowCredentialDescriptor,
 } from "@/lib/passkey/passkey-transports";
 
@@ -102,4 +103,28 @@ describe("passkey transports", () => {
     expect(storedPasskeyTransports([])).toBeUndefined();
   });
 
+  it("prefers internal transport on Apple mobile when hybrid is also stored", () => {
+    const iphoneUa =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15";
+    const options = {
+      challenge: "abc",
+      allowCredentials: [{ id: "vault-cred", type: "public-key", transports: ["hybrid", "internal"] }],
+    };
+    expect(preferPlatformTransportsForVaultUnlock(options, iphoneUa).allowCredentials).toEqual([
+      { id: "vault-cred", type: "public-key", transports: ["internal"] },
+    ]);
+  });
+
+  it("leaves transports unchanged on desktop", () => {
+    const options = {
+      challenge: "abc",
+      allowCredentials: [{ id: "vault-cred", type: "public-key", transports: ["hybrid", "internal"] }],
+    };
+    expect(
+      preferPlatformTransportsForVaultUnlock(
+        options,
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
+      ).allowCredentials
+    ).toEqual(options.allowCredentials);
+  });
 });

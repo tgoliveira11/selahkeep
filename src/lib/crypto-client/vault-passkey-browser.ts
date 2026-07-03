@@ -1,6 +1,7 @@
 import type { AuthenticationExtensionsClientInputs } from "@simplewebauthn/browser";
 import type { AuthenticationExtensionsClientOutputs } from "@simplewebauthn/browser";
 import { SELAHKEEP_PRF_SALT_PREFIX } from "@/modules/vault/selahkeep-profile";
+import { isAppleMobileBelowPrfMinimum } from "@/lib/passkey/prf-support";
 import {
   buildPrfSaltBytes,
   isPasskeySupported as isPasskeySupportedCore,
@@ -35,6 +36,9 @@ export function isPasskeySupported(): boolean {
 }
 
 export function isPrfExtensionSupported(): boolean {
+  if (isAppleMobileBelowPrfMinimum()) {
+    return false;
+  }
   if (!isPasskeySupported()) return false;
   if (isPrfExtensionSupportedCore()) return true;
   return (

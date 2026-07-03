@@ -6,7 +6,7 @@ import {
   VaultUnlockPanel,
   useVaultUnlockPageNavigation,
 } from "@tgoliveira/vault-core/react";
-import { isPrfExtensionSupported } from "@tgoliveira/vault-core/browser";
+import { isPrfExtensionSupported } from "@/lib/passkey/prf-support";
 import { Alert } from "@/components/ui/alert";
 import { PageLayout } from "@/components/layout/page-layout";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -39,7 +39,7 @@ export default function VaultUnlockPage() {
   } = useVault();
   const serverStatusForPasskey = vaultClient.status === "ready" ? vaultClient.serverStatus : null;
   const passkeyAvailability = useVaultDockPasskeyAvailable(serverStatusForPasskey);
-  const { options: prefetchedOptions } = useVaultPasskeyUnlockPrefetch(
+  const { prefetch, refresh } = useVaultPasskeyUnlockPrefetch(
     authStatus === "authenticated" && passkeyAvailability.showPasskey
   );
   const rateLimitScopeKey = session?.user?.id ?? "vault";
@@ -114,7 +114,8 @@ export default function VaultUnlockPage() {
           onUnlockPasskey={
             passkeyAvailability.showPasskey
               ? async () => {
-                  await unlockFromPasskey(prefetchedOptions ?? undefined);
+                  const latest = (await refresh()) ?? prefetch;
+                  await unlockFromPasskey(latest?.options, latest?.credentialId);
                   router.push(afterUnlockPath);
                 }
               : undefined

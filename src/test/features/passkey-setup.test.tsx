@@ -144,7 +144,7 @@ describe("PasskeySetup", () => {
     expect(mocks.wrapVaultKeyForPasskey).not.toHaveBeenCalled();
     expect(mocks.apiPost).toHaveBeenCalledTimes(1);
     expect(
-      await screen.findByText(/Authentication completed, but your passkey or browser did not return PRF output/i)
+      await screen.findByText(/Authentication completed, but your passkey provider did not return PRF output/i)
     ).toBeTruthy();
     expect(screen.getByText(PASSKEY_ORPHAN_CREDENTIAL_NOTE)).toBeTruthy();
     expect(screen.queryByText(PASSKEY_VAULT_REGISTERED_MESSAGE)).toBeNull();

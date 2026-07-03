@@ -122,3 +122,32 @@ export function vaultRegistrationExcludeCredentials(
     .filter((credential) => credential.vaultUnlockEnabled)
     .map((credential) => toAllowCredentialDescriptor(credential));
 }
+
+function isAppleMobileUserAgent(userAgent: string): boolean {
+  return /iPhone|iPod|iPad/.test(userAgent);
+}
+
+/**
+ * On iPhone/iPad, prefer the on-device platform authenticator for vault unlock.
+ * Hybrid transport can complete WebAuthn via cross-device auth but return PRF bytes
+ * that do not unwrap the local envelope (auth still verifies server-side).
+ */
+export function preferPlatformTransportsForVaultUnlock<
+  T extends { allowCredentials?: Array<{ transports?: AuthenticatorTransportFuture[]; id: string; type?: string }> },
+>(options: T, userAgent?: string): T {
+  const ua = userAgent ?? (typeof navigator !== "undefined" ? navigator.userAgent : "");
+  if (!isAppleMobileUserAgent(ua) || !options.allowCredentials?.length) {
+    return options;
+  }
+
+  return {
+    ...options,
+    allowCredentials: options.allowCredentials.map((credential) => {
+      const transports = credential.transports;
+      if (!transports?.includes("internal")) {
+        return credential;
+      }
+      return { ...credential, transports: ["internal"] };
+    }),
+  };
+}

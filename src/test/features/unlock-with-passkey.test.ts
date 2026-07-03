@@ -13,6 +13,10 @@ const mocks = vi.hoisted(() => ({
   verifyAuth: vi.fn(),
 }));
 
+vi.mock("@/lib/passkey/vault-unlock-credential", () => ({
+  resolveSingleVaultUnlockCredentialId: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/lib/passkey/vault-unlock-authenticate", () => ({
   runVaultUnlockAuthenticationCeremony: mocks.runCeremony,
   runVaultUnlockAuthenticationCeremonyWithOptions: mocks.runCeremonyWithOptions,
@@ -23,14 +27,22 @@ vi.mock("@/lib/crypto-client/passkey-vault", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/crypto-client/passkey-vault")>();
   return {
     ...actual,
+    extractPasskeyPrfOutput: vi.fn(() => new Uint8Array(32).fill(9)),
     unlockVaultFromPasskeyEnvelope: vi.fn(async () => generateUserVaultKey()),
   };
 });
 
 describe("unlockVaultWithPasskey", () => {
   beforeEach(async () => {
-    vi.clearAllMocks();
+    mocks.runCeremony.mockClear();
+    mocks.runCeremonyWithOptions.mockClear();
+    mocks.verifyAuth.mockClear();
     lockVaultSession();
+    const passkeyVault = await import("@/lib/crypto-client/passkey-vault");
+    vi.mocked(passkeyVault.extractPasskeyPrfOutput).mockReturnValue(new Uint8Array(32).fill(9));
+    vi.mocked(passkeyVault.unlockVaultFromPasskeyEnvelope).mockImplementation(async () =>
+      generateUserVaultKey()
+    );
     mocks.runCeremony.mockResolvedValue({
       id: "vault-cred",
       clientExtensionResults: {
@@ -107,11 +119,7 @@ describe("unlockVaultWithPasskey", () => {
 
   it("fails on new browsers without PRF output", async () => {
     const passkeyVault = await import("@/lib/crypto-client/passkey-vault");
-    vi.spyOn(passkeyVault, "extractPasskeyPrfOutput").mockReturnValue(null);
-    const prfError = new passkeyVault.PasskeyPrfRequiredError(
-      "This passkey requires browser PRF support to unlock your vault."
-    );
-    vi.mocked(passkeyVault.unlockVaultFromPasskeyEnvelope).mockRejectedValueOnce(prfError);
+    vi.mocked(passkeyVault.extractPasskeyPrfOutput).mockReturnValue(null);
     mocks.verifyAuth.mockResolvedValue({
       verified: true,
       encryptedVaultKey: { version: "enc-v1" },
@@ -122,12 +130,25 @@ describe("unlockVaultWithPasskey", () => {
 
   it("fails when decrypting the passkey envelope fails", async () => {
     const passkeyVault = await import("@/lib/crypto-client/passkey-vault");
-    vi.spyOn(passkeyVault, "extractPasskeyPrfOutput").mockReturnValue(new Uint8Array(32).fill(9));
+    vi.mocked(passkeyVault.extractPasskeyPrfOutput).mockReturnValue(new Uint8Array(32).fill(9));
     vi.mocked(passkeyVault.unlockVaultFromPasskeyEnvelope).mockRejectedValueOnce(
-      new Error("decrypt failed")
+      new passkeyVault.PasskeyUnlockError("Could not decrypt")
     );
     await expect(unlockVaultWithPasskey(USER_ID)).rejects.toThrow(
-      "Could not decrypt your vault with this passkey"
+      "could not derive the vault key on this device"
     );
+  });
+
+  it("uses an iOS version message when decrypt fails on iPhone iOS before 18", async () => {
+    vi.stubGlobal("navigator", {
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.7 Mobile/15E148 Safari/604.1",
+    });
+    const passkeyVault = await import("@/lib/crypto-client/passkey-vault");
+    vi.mocked(passkeyVault.unlockVaultFromPasskeyEnvelope).mockRejectedValueOnce(
+      new passkeyVault.PasskeyUnlockError("Could not decrypt")
+    );
+    await expect(unlockVaultWithPasskey(USER_ID)).rejects.toThrow("iOS or iPadOS 18 or later");
+    vi.unstubAllGlobals();
   });
 });
