@@ -12,9 +12,9 @@ const mocks = vi.hoisted(() => ({
   probeEnvironment: vi.fn(),
   apiPost: vi.fn(),
   startRegistration: vi.fn(),
+  startAuthentication: vi.fn(),
   extractPasskeyPrfOutput: vi.fn(),
-  enableVaultPasskeyUnlockWithAuthPrf: vi.fn(),
-  verifyPasskeyVaultUnlockRoundTrip: vi.fn(),
+  wrapVaultKeyForPasskey: vi.fn(),
   removeAll: vi.fn(),
 }));
 
@@ -48,22 +48,17 @@ vi.mock("@/lib/api-client/passkeys", () => ({
 
 vi.mock("@simplewebauthn/browser", () => ({
   startRegistration: mocks.startRegistration,
+  startAuthentication: mocks.startAuthentication,
 }));
 
 vi.mock("@/lib/crypto-client/passkey-vault", () => ({
   extractPasskeyPrfOutput: mocks.extractPasskeyPrfOutput,
-}));
-
-vi.mock("@/lib/passkey/enable-vault-passkey-unlock", () => ({
-  enableVaultPasskeyUnlockWithAuthPrf: mocks.enableVaultPasskeyUnlockWithAuthPrf,
-}));
-
-vi.mock("@/lib/passkey/verify-passkey-vault-round-trip", () => ({
-  verifyPasskeyVaultUnlockRoundTrip: mocks.verifyPasskeyVaultUnlockRoundTrip,
+  wrapVaultKeyForPasskey: mocks.wrapVaultKeyForPasskey,
 }));
 
 vi.mock("@/lib/passkey/prepare-webauthn-options", () => ({
   prepareRegistrationOptions: (options: unknown) => options,
+  prepareAuthenticationOptions: (options: unknown) => options,
 }));
 
 function mockEnvironment(overrides: Record<string, unknown> = {}) {
@@ -84,19 +79,35 @@ describe("PasskeySetup", () => {
     vi.clearAllMocks();
     mocks.getSessionVaultKey.mockReturnValue({} as CryptoKey);
     mocks.probeEnvironment.mockResolvedValue(mockEnvironment());
-    mocks.apiPost
-      .mockResolvedValueOnce({ challenge: "reg-challenge" })
-      .mockResolvedValueOnce({ verified: true, credentialId: "cred-id", passkeyId: "pk-id" });
+    mocks.apiPost.mockImplementation(async (path: string, body?: Record<string, unknown>) => {
+      if (path === "/api/passkeys/register" && body?.action === "options") {
+        return { challenge: "reg-challenge" };
+      }
+      if (path === "/api/passkeys/register" && body?.action === "verify") {
+        return { verified: true, credentialId: "cred-id", credentialDbId: "pk-new" };
+      }
+      if (path.endsWith("/enable-vault-unlock") && body?.action === "options") {
+        return {
+          challenge: "auth-challenge",
+          extensions: { prf: { eval: {} } },
+          allowCredentials: [{ id: "cred-id", type: "public-key", transports: ["internal"] }],
+        };
+      }
+      if (path.endsWith("/enable-vault-unlock") && body?.action === "verify") {
+        return { success: true };
+      }
+      return {};
+    });
     mocks.startRegistration.mockResolvedValue({
+      id: "cred-id",
+      clientExtensionResults: { prf: { enabled: true } },
+    });
+    mocks.startAuthentication.mockResolvedValue({
       id: "cred-id",
       clientExtensionResults: { prf: { results: { first: new ArrayBuffer(32) } } },
     });
     mocks.extractPasskeyPrfOutput.mockReturnValue(new Uint8Array(32));
-    mocks.enableVaultPasskeyUnlockWithAuthPrf.mockResolvedValue({
-      prfOutput: new Uint8Array(32),
-      encryptedVaultKey: { version: "enc-v1" },
-    });
-    mocks.verifyPasskeyVaultUnlockRoundTrip.mockResolvedValue(undefined);
+    mocks.wrapVaultKeyForPasskey.mockResolvedValue({ version: "enc-v1" });
     window.confirm = vi.fn(() => true);
   });
 
@@ -107,6 +118,7 @@ describe("PasskeySetup", () => {
     fireEvent.click(screen.getByRole("button", { name: /set up passkey/i }));
 
     await waitFor(() => {
+      // Step 1: register vault-only credential WITHOUT an envelope.
       expect(mocks.apiPost).toHaveBeenCalledWith("/api/passkeys/register", {
         action: "options",
         vaultOnly: true,
@@ -116,19 +128,19 @@ describe("PasskeySetup", () => {
         response: expect.any(Object),
         vaultOnly: true,
       });
-      expect(mocks.enableVaultPasskeyUnlockWithAuthPrf).toHaveBeenCalledWith({
-        passkeyDbId: "pk-id",
-        userId: USER_ID,
-        vaultKey: expect.any(Object),
-      });
-      expect(mocks.verifyPasskeyVaultUnlockRoundTrip).toHaveBeenCalledWith({
-        userId: USER_ID,
-        sessionVaultKey: expect.any(Object),
-        knownUnlock: expect.objectContaining({
-          prfOutput: expect.any(Uint8Array),
-          encryptedVaultKey: expect.objectContaining({ version: "enc-v1" }),
-        }),
-      });
+      // Step 2: create the envelope from an authentication (get) PRF via enable.
+      expect(mocks.apiPost).toHaveBeenCalledWith(
+        "/api/account/passkeys/pk-new/enable-vault-unlock",
+        { action: "options" }
+      );
+      expect(mocks.apiPost).toHaveBeenCalledWith(
+        "/api/account/passkeys/pk-new/enable-vault-unlock",
+        expect.objectContaining({
+          action: "verify",
+          encryptedVaultKey: { version: "enc-v1" },
+          prfVaultEnvelope: true,
+        })
+      );
     });
     expect(await screen.findByText(PASSKEY_VAULT_REGISTERED_MESSAGE)).toBeTruthy();
     expect(onStatusChange).toHaveBeenCalled();
@@ -155,19 +167,22 @@ describe("PasskeySetup", () => {
     await waitFor(() => expect(mocks.startRegistration).toHaveBeenCalled());
   });
 
-  it("does not send vault envelope when PRF output is missing after registration", async () => {
+  it("does not send vault envelope when the authentication PRF output is missing", async () => {
     mocks.extractPasskeyPrfOutput.mockReturnValue(null);
 
     render(<PasskeySetup userId={USER_ID} hasPasskey={false} onStatusChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /set up passkey/i }));
 
     await waitFor(() => {
-      expect(mocks.startRegistration).toHaveBeenCalled();
+      expect(mocks.startAuthentication).toHaveBeenCalled();
     });
-    expect(mocks.enableVaultPasskeyUnlockWithAuthPrf).not.toHaveBeenCalled();
-    expect(mocks.apiPost).toHaveBeenCalledTimes(1);
+    // Envelope is never wrapped without an auth-ceremony PRF. The credential is
+    // registered (reg options + reg verify) and the enable options are requested,
+    // but the enable verify (which carries the envelope) is never sent.
+    expect(mocks.wrapVaultKeyForPasskey).not.toHaveBeenCalled();
+    expect(mocks.apiPost).toHaveBeenCalledTimes(3);
     expect(
-      await screen.findByText(/Authentication completed, but your passkey provider did not return PRF output/i)
+      await screen.findByText(/Authentication completed, but your passkey or browser did not return PRF output/i)
     ).toBeTruthy();
     expect(screen.getByText(PASSKEY_ORPHAN_CREDENTIAL_NOTE)).toBeTruthy();
     expect(screen.queryByText(PASSKEY_VAULT_REGISTERED_MESSAGE)).toBeNull();
@@ -197,6 +212,6 @@ describe("PasskeySetup", () => {
 
     expect(await screen.findByText(/WebAuthn not available/i)).toBeTruthy();
     expect(mocks.startRegistration).not.toHaveBeenCalled();
-    expect(mocks.enableVaultPasskeyUnlockWithAuthPrf).not.toHaveBeenCalled();
+    expect(mocks.wrapVaultKeyForPasskey).not.toHaveBeenCalled();
   });
 });

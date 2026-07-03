@@ -15,7 +15,7 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 | [`TDR_Local_Voice_Notes.md`](./TDR_Local_Voice_Notes.md) | On-device voice-to-text note creation (EN/PT/ES) |
 | [`LTG_VAULT_IMPLEMENTATION_PLAN.md`](./LTG_VAULT_IMPLEMENTATION_PLAN.md) | Phased engineering plan (completed) |
 | [`ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md`](./ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md) | Vault crypto, note keys, recovery phrase |
-| [`ADR-006_LTG_Vault_Passkey_PRF_Unlock.md`](./ADR-006_LTG_Vault_Passkey_PRF_Unlock.md) | Passkey PRF vault unlock |
+| `@tgoliveira/vault-core` package docs | **Single source of truth for vault + passkey PRF unlock** — `README.md`, `docs/IMPLEMENTATION_GUIDE.md`, `PASSKEY_PRF_ENVELOPES.md` |
 | [`LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md`](./LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md) | MVP acceptance traceability |
 | [`UI_UX_DIRECTION.md`](./UI_UX_DIRECTION.md) | Purple SelahKeep UI tone & direction |
 | [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md) | Visual design system ("Stillness") — tokens, type, components, dark mode (source specs in `design/`) |
@@ -29,9 +29,6 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 
 | Document | Purpose |
 |----------|---------|
-| [`PASSKEY_LOGIN_VAULT_UNLOCK.md`](./PASSKEY_LOGIN_VAULT_UNLOCK.md) | Passkey login vs vault unlock integration |
-| [`PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`](./PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md) | PRF diagnostics, capability vs ceremony |
-| [`PASSKEY_VAULT_SETUP_AVAILABILITY_AUDIT.md`](./PASSKEY_VAULT_SETUP_AVAILABILITY_AUDIT.md) | Vault settings availability vs account passkey |
 | [`VAULT_AUTO_LOCK_NORMALIZATION.md`](./VAULT_AUTO_LOCK_NORMALIZATION.md) | Auto-lock config, activity, draft hooks |
 | [`NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md`](./NOTES_AUTOSAVE_AND_TEMPLATE_SWITCHING.md) | Encrypted drafts, autosave, templates (legacy) |
 | [`NOTE_CREATE_EDIT_UX.md`](./NOTE_CREATE_EDIT_UX.md) | Field order, template categories, attachments placement |
@@ -63,4 +60,17 @@ Phases 0–5 of the MVP are **complete**. The active implementation domain is **
 | [`../ARCHITECTURE.md`](../ARCHITECTURE.md) | Layers, data flow |
 | [`../AGENTS.md`](../AGENTS.md) | Agent workflow rules |
 
-Superseded letters-era ADRs, migration reports, and one-off implementation audits were removed from the repo; use ADR-005/006 and the TDR above for current guidance.
+## Passkey vault unlock
+
+Passkey PRF vault-unlock behavior is owned by the `@tgoliveira/vault-core` package
+(`README.md`, `docs/IMPLEMENTATION_GUIDE.md`, `PASSKEY_PRF_ENVELOPES.md`). The
+app-side passkey docs (ADR-006 and the PASSKEY_* audits/fix records) were archived
+under [`archive/`](./archive/) on 2026-07-03 because they described a ceremony layer
+that diverged from vault-core; see [`archive/README.md`](./archive/README.md).
+
+## Archived / superseded
+
+Superseded letters-era ADRs, migration reports, and one-off implementation audits
+were removed from or archived in the repo. Use ADR-005, the TDR above, and the
+vault-core package docs for current vault + passkey guidance. Historical passkey
+docs live under [`docs/archive/`](./archive/).

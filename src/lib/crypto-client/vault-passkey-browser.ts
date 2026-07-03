@@ -1,12 +1,11 @@
 import type { AuthenticationExtensionsClientInputs } from "@simplewebauthn/browser";
 import type { AuthenticationExtensionsClientOutputs } from "@simplewebauthn/browser";
 import { SELAHKEEP_PRF_SALT_PREFIX } from "@/modules/vault/selahkeep-profile";
-import { isAppleMobileBelowPrfMinimum } from "@/lib/passkey/prf-support";
-import { extractNormalizedPasskeyPrfOutput } from "@/lib/passkey/normalize-prf-output";
 import {
   buildPrfSaltBytes,
   isPasskeySupported as isPasskeySupportedCore,
   isPrfExtensionSupported as isPrfExtensionSupportedCore,
+  extractPasskeyPrfOutput as extractPasskeyPrfOutputCore,
 } from "@tgoliveira/vault-core/browser";
 
 export async function passkeyPrfSaltBytes(userId: string): Promise<ArrayBuffer> {
@@ -36,9 +35,6 @@ export function isPasskeySupported(): boolean {
 }
 
 export function isPrfExtensionSupported(): boolean {
-  if (isAppleMobileBelowPrfMinimum()) {
-    return false;
-  }
   if (!isPasskeySupported()) return false;
   if (isPrfExtensionSupportedCore()) return true;
   return (
@@ -48,11 +44,7 @@ export function isPrfExtensionSupported(): boolean {
 }
 
 export function extractPasskeyPrfOutput(
-  clientExtensionResults: AuthenticationExtensionsClientOutputs | Record<string, unknown>,
-  credentialId?: string
+  clientExtensionResults: AuthenticationExtensionsClientOutputs | Record<string, unknown>
 ): Uint8Array | null {
-  return extractNormalizedPasskeyPrfOutput(
-    clientExtensionResults as Record<string, unknown>,
-    credentialId
-  );
+  return extractPasskeyPrfOutputCore(clientExtensionResults as Record<string, unknown>);
 }

@@ -4,13 +4,6 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { useVaultPasskeyUnlockPrefetch } from "@/features/passkey/use-vault-passkey-unlock-prefetch";
 
 const requestOptions = vi.fn();
-const apiGet = vi.fn();
-
-vi.mock("@/lib/api-client/client", () => ({
-  apiClient: {
-    get: (...args: unknown[]) => apiGet(...args),
-  },
-}));
 
 vi.mock("@/lib/passkey/vault-unlock-authenticate", () => ({
   requestVaultUnlockAuthenticationOptions: (...args: unknown[]) => requestOptions(...args),
@@ -19,10 +12,6 @@ vi.mock("@/lib/passkey/vault-unlock-authenticate", () => ({
 describe("useVaultPasskeyUnlockPrefetch", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    apiGet.mockResolvedValue({
-      passkeys: [{ credentialId: "cred-1", vaultUnlockEnabled: true }],
-      activeEnvelopeCredentialId: "cred-1",
-    });
     requestOptions.mockResolvedValue({
       challenge: "abc",
       allowCredentials: [{ id: "cred-1", type: "public-key", transports: ["internal"] }],
@@ -34,8 +23,7 @@ describe("useVaultPasskeyUnlockPrefetch", () => {
     await waitFor(() => {
       expect(result.current.options?.challenge).toBe("abc");
     });
-    expect(requestOptions).toHaveBeenCalledWith("cred-1");
-    expect(result.current.credentialId).toBe("cred-1");
+    expect(requestOptions).toHaveBeenCalledTimes(1);
   });
 
   it("does not prefetch when disabled", async () => {

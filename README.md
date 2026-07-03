@@ -94,7 +94,7 @@ Production hides `/api-docs` unless `ENABLE_API_DOCS=true` in `.env.local`.
 - **`/vault/security`** — vault security review: health summary, protection status, recovery phrase drill (local-only), passkey compatibility, and recent safe vault security events (entry from Vault settings)
 - **`/vault/recovery`** — recovery phrase management; optional link to vault settings for passkey vault unlock
 - **Passkey sign-in** authenticates the account only. Opening the vault is always a separate explicit action from `/vault/unlock` or the vault dock.
-- Details: [`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`](docs/PASSKEY_LOGIN_VAULT_UNLOCK.md)
+- Details: [`docs/archive/PASSKEY_LOGIN_VAULT_UNLOCK.md`](docs/archive/PASSKEY_LOGIN_VAULT_UNLOCK.md)
 
 Run `npm run db:migrate` after pulling passkey account-auth schema updates (`0005_passkey_account_authentication.sql`).
 
@@ -334,15 +334,15 @@ All tests run through **Vitest** (`src/test/`). Browser E2E (Playwright) was int
 
 Recent passkey-related coverage includes:
 
-- Touch ID vs QR vault unlock transport preservation and platform registration (`docs/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md`, `passkey-transports.test.ts`, `vault-unlock-authenticate.test.ts`)
-- Vault passkey lifecycle disable/re-register (`docs/PASSKEY_VAULT_LIFECYCLE.md`, `passkey-vault-lifecycle.test.ts`)
+- Touch ID vs QR vault unlock transport preservation and platform registration (`docs/archive/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md`, `passkey-transports.test.ts`, `vault-unlock-authenticate.test.ts`)
+- Vault passkey lifecycle disable/re-register (`docs/archive/PASSKEY_VAULT_LIFECYCLE.md`, `passkey-vault-lifecycle.test.ts`)
 - Dual account + vault passkey unlock filtering (`CHANGELOG.md`, `src/test/security/dual-passkey-vault-unlock.test.ts`)
-- Passkey account-login / vault-unlock separation (`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`, `src/test/security/passkey-login-vault-unlock.test.ts`)
+- Passkey account-login / vault-unlock separation (`docs/archive/PASSKEY_LOGIN_VAULT_UNLOCK.md`, `src/test/security/passkey-login-vault-unlock.test.ts`)
 - PRF salt derivation (`src/test/security/passkey-prf.test.ts`)
 - PRF support pre-check (`src/test/unit/prf-support.test.ts`)
 - Passkey setup UX when PRF unavailable (`src/test/features/passkey-setup.test.tsx`)
 - Passkey vault unlock settings (`src/test/features/passkey-vault-unlock-settings.test.tsx`)
-- PRF diagnostics (`src/test/unit/passkey-prf-diagnostics.test.ts`, `docs/PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`)
+- PRF diagnostics (`src/test/unit/passkey-prf-diagnostics.test.ts`, `docs/archive/PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`)
 - WebAuthn JSON → `ArrayBuffer` conversion for PRF extensions (`src/test/unit/prepare-webauthn-options.test.ts`)
 - Passkey registration/authentication services and routes
 - Passkey removal (`DELETE /api/passkeys`)
@@ -378,7 +378,7 @@ See [`docs/README.md`](./docs/README.md) for the full index. Active source of tr
 
 - [TDR — SelahKeep MVP](./docs/TDR_LTG_Vault_MVP.md)
 - [ADR-005 — Vault crypto & note keys](./docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md)
-- [ADR-006 — Passkey PRF unlock](./docs/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md)
+- [ADR-006 — Passkey PRF unlock](./docs/archive/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md)
 - [MVP acceptance checklist](./docs/LTG_VAULT_MVP_ACCEPTANCE_CHECKLIST.md)
 - [API Reference (Swagger / OpenAPI)](./docs/API_REFERENCE.md)
 

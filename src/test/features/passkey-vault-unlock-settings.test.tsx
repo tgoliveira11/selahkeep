@@ -19,9 +19,6 @@ const mocks = vi.hoisted(() => ({
   startRegistration: vi.fn(),
   extractPasskeyPrfOutput: vi.fn(),
   wrapVaultKeyForPasskey: vi.fn(),
-  unlockVaultFromPasskeyEnvelope: vi.fn(),
-  verifyPasskeyVaultUnlockRoundTrip: vi.fn(),
-  userVaultKeysEqual: vi.fn(),
   probeEnvironment: vi.fn(),
 }));
 
@@ -51,29 +48,12 @@ vi.mock("@simplewebauthn/browser", () => ({
 vi.mock("@/lib/crypto-client/passkey-vault", () => ({
   extractPasskeyPrfOutput: mocks.extractPasskeyPrfOutput,
   wrapVaultKeyForPasskey: mocks.wrapVaultKeyForPasskey,
-  unlockVaultFromPasskeyEnvelope: mocks.unlockVaultFromPasskeyEnvelope,
 }));
 
-vi.mock("@/lib/passkey/verify-passkey-vault-round-trip", () => ({
-  verifyPasskeyVaultUnlockRoundTrip: mocks.verifyPasskeyVaultUnlockRoundTrip,
+vi.mock("@/lib/passkey/prepare-webauthn-options", () => ({
+  prepareAuthenticationOptions: (options: unknown) => options,
+  prepareRegistrationOptions: (options: unknown) => options,
 }));
-
-vi.mock("@tgoliveira/vault-core", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tgoliveira/vault-core")>();
-  return {
-    ...actual,
-    userVaultKeysEqual: mocks.userVaultKeysEqual,
-  };
-});
-
-vi.mock("@/lib/passkey/prepare-webauthn-options", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/passkey/prepare-webauthn-options")>();
-  return {
-    ...actual,
-    prepareAuthenticationOptions: (options: unknown) => options,
-    prepareRegistrationOptions: (options: unknown) => options,
-  };
-});
 
 vi.mock("@/lib/passkey/passkey-prf-diagnostics", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/passkey/passkey-prf-diagnostics")>();
@@ -126,44 +106,21 @@ describe("PasskeyVaultUnlockSetup", () => {
     mockVaultUnlockList([]);
     mocks.probeEnvironment.mockResolvedValue(mockEnvironment());
     mocks.apiPost.mockImplementation(async (path: string, body?: Record<string, unknown>) => {
-      if (path === "/api/passkeys/register" && body?.action === "options") {
-        return {
-          challenge: "abc",
-          extensions: { prf: { eval: {} } },
-          allowCredentials: [
-            { id: "cred-1", type: "public-key", transports: ["internal"] },
-          ],
-        };
-      }
+      // Vault-only setup step 1: register credential without envelope.
       if (path === "/api/passkeys/register" && body?.action === "verify") {
-        return { verified: true, passkeyId: "pk-new", credentialId: "cred-new" };
+        return { verified: true, credentialDbId: "pk-new" };
       }
-      if (path.endsWith("/enable-vault-unlock")) {
-        if (body?.action === "options") {
-          return {
-            challenge: "abc",
-            extensions: { prf: { eval: {} } },
-            allowCredentials: [{ id: "cred-new", type: "public-key", transports: ["internal"] }],
-          };
-        }
-        if (body?.action === "verify") {
-          return { verified: true };
-        }
-      }
-      if (path === "/api/passkeys/authenticate" && body?.action === "options") {
+      // Vault-only setup step 2 + unlock/test: single-credential auth (get) options.
+      if (
+        (path === "/api/passkeys/authenticate" || path.endsWith("/enable-vault-unlock")) &&
+        body?.action === "options"
+      ) {
         return {
           challenge: "abc",
           extensions: { prf: { eval: {} } },
           allowCredentials: [
             { id: "cred-1", type: "public-key", transports: ["internal"] },
           ],
-        };
-      }
-      if (path === "/api/passkeys/authenticate" && body?.action === "verify") {
-        return {
-          verified: true,
-          encryptedVaultKey: { version: "enc-v1" },
-          prfRequired: true,
         };
       }
       return { challenge: "abc", extensions: { prf: { eval: {} } } };
@@ -178,9 +135,6 @@ describe("PasskeyVaultUnlockSetup", () => {
     });
     mocks.extractPasskeyPrfOutput.mockReturnValue(new Uint8Array(32));
     mocks.wrapVaultKeyForPasskey.mockResolvedValue({ version: "enc-v1" });
-    mocks.unlockVaultFromPasskeyEnvelope.mockResolvedValue({} as CryptoKey);
-    mocks.verifyPasskeyVaultUnlockRoundTrip.mockResolvedValue(undefined);
-    mocks.userVaultKeysEqual.mockResolvedValue(true);
   });
 
   it("1. does not render Set up account passkey first", async () => {
@@ -248,6 +202,7 @@ describe("PasskeyVaultUnlockSetup", () => {
     fireEvent.click(await screen.findByRole("button", { name: /set up passkey vault unlock/i }));
 
     await waitFor(() => {
+      // Step 1: register vault-only credential WITHOUT an envelope.
       expect(mocks.apiPost).toHaveBeenCalledWith("/api/passkeys/register", {
         action: "options",
         vaultOnly: true,
@@ -255,16 +210,21 @@ describe("PasskeyVaultUnlockSetup", () => {
       expect(mocks.startRegistration).toHaveBeenCalled();
       expect(mocks.apiPost).toHaveBeenCalledWith(
         "/api/passkeys/register",
-        expect.objectContaining({
-          action: "verify",
-          vaultOnly: true,
-        })
+        expect.objectContaining({ action: "verify", vaultOnly: true })
+      );
+      // Step 2: create the envelope from an authentication (get) PRF via enable.
+      expect(mocks.apiPost).toHaveBeenCalledWith(
+        "/api/account/passkeys/pk-new/enable-vault-unlock",
+        { action: "options" }
       );
       expect(mocks.apiPost).toHaveBeenCalledWith(
         "/api/account/passkeys/pk-new/enable-vault-unlock",
-        expect.objectContaining({ action: "verify", prfVaultEnvelope: true })
+        expect.objectContaining({
+          action: "verify",
+          prfVaultEnvelope: true,
+          encryptedVaultKey: expect.anything(),
+        })
       );
-      expect(mocks.startAuthentication).toHaveBeenCalled();
     });
     expect(await screen.findByText(PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE)).toBeTruthy();
   });
@@ -310,7 +270,7 @@ describe("PasskeyVaultUnlockSetup", () => {
     fireEvent.click(await screen.findByRole("button", { name: /set up passkey vault unlock/i }));
     expect(
       await screen.findByText(
-        /Authentication completed, but your passkey provider did not return PRF output/i
+        /Authentication completed, but your passkey or browser did not return PRF output/i
       )
     ).toBeTruthy();
     expect(mocks.wrapVaultKeyForPasskey).not.toHaveBeenCalled();
@@ -383,10 +343,9 @@ describe("PasskeyVaultUnlockSetup", () => {
     fireEvent.click(await screen.findByRole("button", { name: /^test$/i }));
 
     await waitFor(() => {
-      expect(mocks.verifyPasskeyVaultUnlockRoundTrip).toHaveBeenCalledWith({
-        userId: USER_ID,
-        sessionVaultKey: expect.any(Object),
-        credentialId: "cred-1",
+      expect(mocks.apiPost).toHaveBeenCalledWith("/api/passkeys/authenticate", {
+        action: "options",
+        purpose: "vault_unlock",
       });
     });
     expect(await screen.findByText(PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE)).toBeTruthy();
@@ -398,7 +357,7 @@ describe("passkey vault setup documentation guard", () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
     const root = join(import.meta.dirname, "../../..");
-    const audit = readFileSync(join(root, "docs/PASSKEY_VAULT_SETUP_AVAILABILITY_AUDIT.md"), "utf8");
+    const audit = readFileSync(join(root, "docs/archive/PASSKEY_VAULT_SETUP_AVAILABILITY_AUDIT.md"), "utf8");
     expect(audit.toLowerCase()).not.toContain("set up account passkey first");
     expect(audit.toLowerCase()).not.toMatch(/account passkey is required before vault passkey/);
     expect(audit).toMatch(/independent/i);

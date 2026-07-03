@@ -9,7 +9,7 @@ Read and follow these documents before implementing:
 - `docs/TDR_LTG_Vault_MVP.md` — **SelahKeep product/architecture (primary)**
 - `docs/LTG_VAULT_IMPLEMENTATION_PLAN.md` — phased plan (Phases 0–5 complete)
 - `docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md` — vault crypto, note keys, recovery phrase
-- `docs/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md` — passkey PRF vault unlock
+- `docs/archive/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md` — passkey PRF vault unlock
 - `docs/MODULE_BOUNDARIES.md`
 - `docs/AUTH_RESET_TO_SECURE_AUTH.md` — auth boundary (`@tgoliveira/secure-auth`)
 - `docs/README.md` — documentation index

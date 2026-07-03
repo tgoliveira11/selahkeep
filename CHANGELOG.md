@@ -13,14 +13,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-### Fixed
-
-- **Passkey vault unlock envelope credential (production follow-up).** Unlock prefetch and ceremonies now always resolve the active envelope `credentialId` from `GET /api/passkeys/vault-unlock` (not only when exactly one `vault_unlock_enabled` row exists). Client-side PRF alignment forces `eval` for that id even when prefetched options still carry `evalByCredential`. Server unlock options and verify treat the active envelope credential as source of truth when the `vault_unlock_enabled` flag is stale. iPhone/iPad decrypt failures suggest trying iCloud Keychain over third-party passkey apps.
-
-- **Passkey vault unlock (production).** Vault unlock authentication options now scope to the single active passkey envelope credential (not every `vault_unlock_enabled` row), always request PRF `eval` for that credential, and advertise `internal` transport so hybrid hints cannot route unlock to cross-device PRF bytes that fail envelope decrypt after setup succeeded.
-
-- **Passkey vault setup (iOS).** Registration now uses two WebAuthn prompts (create + enable auth) instead of three; post-setup round-trip reuses the enable-step PRF output instead of a redundant third authentication that could fail with PRF mismatch on iPhone while the envelope was already saved.
-
 ### Added
 
 - **Kanban note ↔ board sync.** Checklist and bullet items become cards; per-item descriptions, due dates (`[yyyy-MM-dd]`), priorities (`[LOW]`/`[HIGH]`/etc.), and column tags (`[IN PROGRESS]`) sync both ways. Card hover preview (2s delay), column-change history on cards, wider columns, and toolbar tooltips on the board view.
@@ -46,20 +38,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Board UI.** Labels manager and board version history removed from the board screen for now; note card preview delay increased to 2 seconds to match kanban cards. Note detail no longer shows a manual Kanban re-sync control or Zen reading mode entry. Notes with a linked board no longer offer manual resolve/reopen — resolved status follows board completion. Card hover preview opens directly over the card (same size/position); card details dialog is wider; the done column is always the last column (toggle removed).
 
 ### Fixed
-
-- **Passkey vault unlock PRF parity on iOS.** Vault unlock setup (`enable-vault-unlock`) always used PRF `eval`, but unlock could receive server `evalByCredential` when multiple vault passkeys were listed (including stale rows) or when prefetched options were scoped to one credential without realigning extensions — Safari can return different PRF bytes for `eval` vs `evalByCredential`. Unlock, setup, test, and disable now share `prepareVaultUnlockAuthenticationOptions` (align `eval`, force `internal` transport on iPhone/iPad, dedicated salt `ArrayBuffer`s). PRF result parsing prefers the asserted credential over `results.first`. Clearer decrypt-failure copy (no “signed you in”).
-
-- **Passkey vault setup after new vault creation (Mac).** Converting the session UVK to non-extractable now caches in-memory inner key material so passkey envelope creation works immediately after vault setup without a password re-unlock.
-
-- **Recovery passkey setup ceremony.** `/vault/recovery` passkey registration now links vault unlock with an authentication PRF envelope (same as settings), runs a post-enable decrypt self-test, and maps Web Crypto failures to actionable copy instead of raw `OperationError` text.
-
-- **Passkey vault unlock re-registration.** Vault passkey setup now re-wraps the UVK from cached inner envelope material after password/recovery/passkey unlock, so non-extractable session keys (vault-core 1.0+) can create a new PRF envelope without exporting the UVK. Clearer error when setup runs without a fresh unlock on this device.
-
-- **Passkey vault PRF import on iOS.** PRF extension output is now normalized to exactly 32 bytes before `importKey` (handles `ArrayBuffer`, `ArrayBufferView`, base64url, and `evalByCredential` result shapes). Fixes settings **Test** failing with “AES key data must be 128 or 256 bits” when Safari returned PRF bytes in a non–`ArrayBuffer` shape or when `byteLength` was missing on the value.
-
-- **Passkey vault envelope on iOS.** Vault passkey setup now creates the PRF envelope from an **authentication** ceremony (same path as Test/unlock), not registration PRF — mobile authenticators can return different PRF bytes on create vs get, which caused “could not decrypt your vault with this passkey” immediately after setup.
-
-- **Vault passkey unlock vs account passkey (mobile / Enpass).** Account passkey sign-in and vault passkey unlock are separate WebAuthn ceremonies; sign-in does not require PRF. Vault unlock now scopes to the single configured vault credential, refreshes WebAuthn options on tap, prefers `internal` transport on iPhone/iPad (avoids hybrid PRF mismatch), and the settings **Test** runs verify + decrypt — not PRF presence alone. Clearer errors when PRF is missing or does not match the stored envelope. Hide passkey unlock on iOS/iPadOS versions before 18 where WebAuthn PRF is unavailable.
 
 - **Note editor checklists.** Kanban note→board sync no longer rewrites the note body while typing (fixes cursor jumping to the end). Checklist rows keep the checkbox and text on the same line in visual and preview modes. Bracket tags such as `[IN PROGRESS]` are no longer escaped as `\[IN PROGRESS\]` when saving from the visual editor.
 
@@ -351,5 +329,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reinforced the separation between account passkeys and vault passkeys. Account passkeys authenticate the account; vault passkeys unlock the vault using WebAuthn PRF. Account passkey sign-in still never unlocks the vault by itself. Vault unlock verify rejects account-only credentials and never returns a successful verify with a null envelope for vault unlock purpose.
 - Reinforced account passkey and vault passkey separation. Vault unlock continues to require WebAuthn PRF and fails closed if the selected credential is not linked to vault unlock.
-- Documented vault passkey lifecycle (registration, disable, re-registration) in `docs/PASSKEY_VAULT_LIFECYCLE.md`.
+- Documented vault passkey lifecycle (registration, disable, re-registration) in `docs/archive/PASSKEY_VAULT_LIFECYCLE.md`.
 - Reinforced recovery phrase handling by keeping phrase download and confirmation fully client-side and by requiring randomized word-position confirmation before completing setup.

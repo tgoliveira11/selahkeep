@@ -1,9 +1,5 @@
 import { isPasskeySupported } from "@/lib/crypto-client/passkey-vault";
-import {
-  detectPasskeyPrfSupport,
-  isAppleMobileBelowPrfMinimum,
-  type PasskeyPrfSupport,
-} from "@/lib/passkey/prf-support";
+import { detectPasskeyPrfSupport, type PasskeyPrfSupport } from "@/lib/passkey/prf-support";
 
 export type PasskeyPrfDiagnosticReason =
   | "supported"
@@ -130,9 +126,6 @@ export function resolvePreCeremonyDiagnosticReason(
   if (!environment.webauthnAvailable || !environment.credentialsApiAvailable) {
     return "webauthn_unavailable";
   }
-  if (isAppleMobileBelowPrfMinimum(environment.userAgent)) {
-    return "unsupported";
-  }
   if (environment.capabilityProbe === "unsupported") {
     return "unsupported";
   }
@@ -202,11 +195,11 @@ export function getPasskeyPrfDiagnosticMessage(reason: PasskeyPrfDiagnosticReaso
     case "unknown":
       return "This browser does not report PRF capability before setup. You can still try — vault unlock is only enabled when your passkey returns PRF output during the ceremony.";
     case "unsupported":
-      return "This browser reports that the WebAuthn PRF extension is not supported, so SelahKeep cannot unlock your vault with a passkey here. On iPhone and iPad, vault passkey unlock requires iOS or iPadOS 18 or later. Use your vault password or recovery phrase, or try a PRF-capable browser.";
+      return "This browser reports that the WebAuthn PRF extension is not supported, so SelahKeep cannot create a passkey vault unlock envelope here. Use your vault password or recovery phrase, or try a PRF-capable browser.";
     case "ceremony_cancelled":
       return "The passkey prompt was dismissed or timed out. No changes were made.";
     case "prf_not_returned":
-      return "Authentication completed, but your passkey provider did not return PRF output for vault unlock. Account passkey sign-in (including Enpass or iCloud Keychain) can work without PRF; unlocking your vault cannot. Use your vault password or recovery phrase, or enable vault passkey unlock again from /vault/settings on this browser while your vault is open.";
+      return "Authentication completed, but your passkey or browser did not return PRF output. SelahKeep only enables vault unlock when PRF is returned. Try another browser or passkey provider, or use your vault password or recovery phrase.";
     case "secure_context_required":
       return "Passkey vault unlock requires HTTPS or localhost. Open SelahKeep over a secure connection and try again.";
     case "webauthn_unavailable":

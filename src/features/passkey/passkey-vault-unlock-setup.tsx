@@ -16,12 +16,15 @@ import { vaultApi } from "@/lib/api-client/vault";
 import { getSessionVaultKey } from "@/lib/crypto-client/vault";
 import {
   extractPasskeyPrfOutput,
+  wrapVaultKeyForPasskey,
 } from "@/lib/crypto-client/passkey-vault";
-import { enableVaultPasskeyUnlockWithAuthPrf } from "@/lib/passkey/enable-vault-passkey-unlock";
-import { toPasskeyCeremonyErrorMessage } from "@/lib/passkey/map-passkey-crypto-error";
-import { verifyPasskeyVaultUnlockRoundTrip } from "@/lib/passkey/verify-passkey-vault-round-trip";
-import { prepareVaultUnlockAuthenticationOptions } from "@/lib/passkey/vault-unlock-authenticate";
-import { prepareRegistrationOptions } from "@/lib/passkey/prepare-webauthn-options";
+import {
+  runVaultUnlockAuthenticationCeremony,
+} from "@/lib/passkey/vault-unlock-authenticate";
+import {
+  prepareAuthenticationOptions,
+  prepareRegistrationOptions,
+} from "@/lib/passkey/prepare-webauthn-options";
 import {
   getPasskeyPrfDiagnosticHeadline,
   getPasskeyPrfDiagnosticMessage,
@@ -159,12 +162,9 @@ export function PasskeyVaultUnlockSetup({
 
   async function runCeremonyWithOptions(options: PublicKeyCredentialRequestOptionsJSON) {
     const assertion = await startAuthentication({
-      optionsJSON: prepareVaultUnlockAuthenticationOptions(
-        options,
-        options.allowCredentials?.[0]?.id
-      ),
+      optionsJSON: prepareAuthenticationOptions(options),
     });
-    const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);
+    const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults);
     return { assertion, prfOutput };
   }
 
@@ -190,6 +190,7 @@ export function PasskeyVaultUnlockSetup({
         return;
       }
 
+      // Step 1: register the vault-only credential WITHOUT an envelope.
       const options = (await apiClient.post("/api/passkeys/register", {
         action: "options",
         vaultOnly: true,
@@ -199,7 +200,26 @@ export function PasskeyVaultUnlockSetup({
         optionsJSON: prepareRegistrationOptions(options),
       });
 
-      const prfOutput = extractPasskeyPrfOutput(attestation.clientExtensionResults, attestation.id);
+      const registration = (await apiClient.post("/api/passkeys/register", {
+        action: "verify",
+        response: attestation,
+        vaultOnly: true,
+      })) as { credentialDbId?: string };
+
+      const credentialDbId = registration.credentialDbId;
+      if (!credentialDbId) {
+        throw new Error("Could not set up passkey vault unlock.");
+      }
+
+      // Step 2: create the envelope from an AUTHENTICATION-ceremony PRF (`get`),
+      // matching the unlock ceremony. Registration (`create`) PRF is unreliable on
+      // iOS (create vs get can return different bytes), so it is never used to wrap.
+      const enablePath = `/api/account/passkeys/${credentialDbId}/enable-vault-unlock`;
+      const enableOptions = (await apiClient.post(enablePath, {
+        action: "options",
+      })) as PublicKeyCredentialRequestOptionsJSON;
+
+      const { assertion, prfOutput } = await runCeremonyWithOptions(enableOptions);
       if (!prfOutput) {
         const reason = resolveCeremonyDiagnosticReason({ prfOutputPresent: false });
         setDiagnosticReason(reason);
@@ -207,26 +227,19 @@ export function PasskeyVaultUnlockSetup({
         return;
       }
 
-      const registration = (await apiClient.post("/api/passkeys/register", {
-        action: "verify",
-        response: attestation,
-        vaultOnly: true,
-      })) as { verified: boolean; passkeyId?: string };
-
-      if (!registration.passkeyId) {
-        throw new Error("Passkey registration succeeded but could not link vault unlock.");
-      }
-
-      const enableResult = await enableVaultPasskeyUnlockWithAuthPrf({
-        passkeyDbId: registration.passkeyId,
-        userId,
+      const encryptedVaultKey: EncryptedPayload = await wrapVaultKeyForPasskey(
         vaultKey,
-      });
-
-      await verifyPasskeyVaultUnlockRoundTrip({
+        prfOutput,
         userId,
-        sessionVaultKey: vaultKey,
-        knownUnlock: enableResult,
+        userId
+      );
+
+      await apiClient.post(enablePath, {
+        action: "verify",
+        response: assertion,
+        encryptedVaultKey,
+        prfVaultEnvelope: true,
+        prfSupported: true,
       });
 
       setMessage(PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE);
@@ -244,12 +257,7 @@ export function PasskeyVaultUnlockSetup({
         return;
       }
       const registrationMessage = toPasskeyRegistrationErrorMessage(e);
-      setError(
-        toPasskeyCeremonyErrorMessage(
-          e,
-          registrationMessage ?? (e instanceof Error ? e.message : "Could not set up passkey vault unlock.")
-        )
-      );
+      setError(registrationMessage ?? (e instanceof Error ? e.message : "Could not set up passkey vault unlock."));
     } finally {
       setLoadingId(null);
     }
@@ -273,16 +281,15 @@ export function PasskeyVaultUnlockSetup({
         return;
       }
 
-      const sessionKey = getSessionVaultKey();
-      if (!sessionKey) {
-        throw new Error("Unlock your vault before testing passkey vault unlock.");
-      }
+      const assertion = await runVaultUnlockAuthenticationCeremony(passkey?.credentialId);
+      const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults);
 
-      await verifyPasskeyVaultUnlockRoundTrip({
-        userId,
-        sessionVaultKey: sessionKey,
-        credentialId: passkey?.credentialId,
-      });
+      if (!prfOutput) {
+        const reason = resolveCeremonyDiagnosticReason({ prfOutputPresent: false });
+        setDiagnosticReason(reason);
+        setError(getPasskeyPrfDiagnosticMessage(reason));
+        return;
+      }
 
       setMessage(PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE);
       setDiagnosticReason("supported");
@@ -292,9 +299,7 @@ export function PasskeyVaultUnlockSetup({
         setError(getPasskeyPrfDiagnosticMessage("ceremony_cancelled"));
         return;
       }
-      setError(
-        toPasskeyCeremonyErrorMessage(e, e instanceof Error ? e.message : "Passkey test failed.")
-      );
+      setError(e instanceof Error ? e.message : "Passkey test failed.");
     } finally {
       setLoadingId(null);
     }

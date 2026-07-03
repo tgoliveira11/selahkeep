@@ -43,16 +43,13 @@ export function useVault() {
   }, []);
 
   const unlockFromPasskey = useCallback(
-    async (
-      prefetchedOptions?: PublicKeyCredentialRequestOptionsJSON | null,
-      credentialId?: string
-    ) => {
+    async (prefetchedOptions?: PublicKeyCredentialRequestOptionsJSON | null) => {
       if (!userId) throw new Error("Not authenticated");
       setLoading(true);
       setError(null);
       try {
         const key = await withVaultUnlockRateLimit(unlockLimiter, userId, "passkey_prf", async () =>
-          unlockVaultWithPasskey(userId, credentialId, prefetchedOptions)
+          unlockVaultWithPasskey(userId, undefined, prefetchedOptions)
         );
         void recordVaultSecurityEvent("vault_unlocked", { method: "passkey_prf" });
         return key;

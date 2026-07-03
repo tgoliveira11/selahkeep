@@ -1,6 +1,6 @@
 # Security — SelahKeep MVP
 
-> **Product:** SelahKeep (former working name: LTG Vault). **Source of truth:** [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md), [`docs/ADR-005_*`](./docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md), [`docs/ADR-006_*`](./docs/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md). Phases 0–5 complete.
+> **Product:** SelahKeep (former working name: LTG Vault). **Source of truth:** [`docs/TDR_LTG_Vault_MVP.md`](./docs/TDR_LTG_Vault_MVP.md), [`docs/ADR-005_*`](./docs/ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md), [`docs/ADR-006_*`](./docs/archive/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md). Phases 0–5 complete.
 
 ## Privacy Promise
 
@@ -46,7 +46,7 @@ Account passkeys and vault passkeys are **independent**.
 - Users may configure vault passkey unlock without first configuring account passkey sign-in (vault must be unlocked; browser/provider must support PRF).
 - Signing in with an account passkey never unlocks the vault by itself.
 - Vault-only setup: `POST /api/passkeys/register` with `vaultOnly: true` creates `signInEnabled: false`, `vaultUnlockEnabled: true` credentials. Vault-only registration prefers `authenticatorAttachment: "platform"`.
-- Vault unlock WebAuthn: `POST /api/passkeys/authenticate` with `purpose: "vault_unlock"` — `allowCredentials` includes **only** `vaultUnlockEnabled` credentials; account-only passkeys are excluded. Stored transports are replayed. Vault-only registration uses a separate opaque WebAuthn user handle so Apple password managers do not overwrite it when an account passkey is added. Vault-only disable revokes credential rows; dual-purpose disable clears vault flag only. See `docs/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md` and `docs/PASSKEY_VAULT_LIFECYCLE.md`.
+- Vault unlock WebAuthn: `POST /api/passkeys/authenticate` with `purpose: "vault_unlock"` — `allowCredentials` includes **only** `vaultUnlockEnabled` credentials; account-only passkeys are excluded. Stored transports are replayed. Vault-only registration uses a separate opaque WebAuthn user handle so Apple password managers do not overwrite it when an account passkey is added. Vault-only disable revokes credential rows; dual-purpose disable clears vault flag only. See `docs/archive/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md` and `docs/archive/PASSKEY_VAULT_LIFECYCLE.md`.
 
 - Passkeys must not be used as raw encryption keys
 - Account session alone never unlocks the vault
@@ -286,14 +286,14 @@ Safe audit events only (no plaintext letters, recovery codes, keys, or ciphertex
 ## Passkey vault unlock (PRF)
 
 - Vault unlock authenticate purpose filters to `vaultUnlockEnabled` credentials only; dual-passkey users (account + vault) are supported
-- Vault unlock replays stored WebAuthn `transports` and keeps the matching credential descriptor intact; credential separation is provided by the vault-specific user handle, not by forcing an inaccurate transport (see `docs/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md`)
+- Vault unlock replays stored WebAuthn `transports` and keeps the matching credential descriptor intact; credential separation is provided by the vault-specific user handle, not by forcing an inaccurate transport (see `docs/archive/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md`)
 - Shared client helper: `src/lib/passkey/vault-unlock-authenticate.ts` (settings Test, dock unlock, `/vault/unlock`)
 
 - Passkey **authentication** is separate from vault **decryption**
 - Vault envelopes use WebAuthn **PRF** output as key-wrapping key (not raw signature bytes)
 - PRF required for passkey envelopes; **no registration fallback** to device-secret wrapping
 - If PRF is unavailable at registration, passkey vault envelope is **not** created and existing passkey envelopes are **not** revoked
-- PRF diagnostics: `src/lib/passkey/passkey-prf-diagnostics.ts`; audits `docs/PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`, `docs/PASSKEY_VAULT_SETUP_AVAILABILITY_AUDIT.md`
+- PRF diagnostics: `src/lib/passkey/passkey-prf-diagnostics.ts`; audits `docs/archive/PASSKEY_VAULT_UNLOCK_DIAGNOSTIC_AUDIT.md`, `docs/archive/PASSKEY_VAULT_SETUP_AVAILABILITY_AUDIT.md`
 - Availability state: `src/lib/passkey/vault-passkey-availability.ts` — missing account passkey is never reported as browser unsupported; configured envelopes stay read-only in PRF-incompatible browsers
 - Primary UX: `/vault/settings` (not `/vault/recovery`) for enable/test/replace/disable; PRF-unsupported browsers see read-only status and cannot disable/replace without a PRF ceremony proof
 - Vault unlock `returnTo` query param is sanitized (`sanitizeVaultReturnTo`) to internal paths only (`/notes`, `/vault/settings`, `/vault/security`, `/vault/recovery`, `/settings/account`); disabling passkey vault unlock requires DELETE/POST with verified WebAuthn assertion including PRF client extension results

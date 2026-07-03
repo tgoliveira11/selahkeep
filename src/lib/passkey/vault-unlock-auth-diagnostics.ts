@@ -8,7 +8,6 @@ import {
 export type VaultUnlockAuthDiagnostic = {
   purpose: "vault_unlock";
   allowCredentialsCount: number;
-  scopedCredentialIdPrefix: string | null;
   transportHints: string[];
   prfMode: "eval" | "evalByCredential" | "none";
   authenticatorAttachmentAtRegistration: PasskeyAuthenticatorAttachmentHint;
@@ -26,17 +25,11 @@ function resolvePrfMode(
 }
 
 export function buildVaultUnlockAuthDiagnostic(
-  options: PublicKeyCredentialRequestOptionsJSON,
-  scopedCredentialId?: string
+  options: PublicKeyCredentialRequestOptionsJSON
 ): VaultUnlockAuthDiagnostic {
-  const credentialId =
-    scopedCredentialId ??
-    (options.allowCredentials?.length === 1 ? options.allowCredentials[0]?.id : undefined);
-
   return {
     purpose: "vault_unlock",
     allowCredentialsCount: options.allowCredentials?.length ?? 0,
-    scopedCredentialIdPrefix: credentialId ? credentialId.slice(0, 8) : null,
     transportHints: collectPasskeyTransportHints(options.allowCredentials),
     prfMode: resolvePrfMode(options.extensions),
     authenticatorAttachmentAtRegistration: inferAuthenticatorAttachmentFromTransports(
@@ -47,13 +40,10 @@ export function buildVaultUnlockAuthDiagnostic(
 }
 
 /** Dev-only logging for vault unlock WebAuthn option shaping (no secrets). */
-export function logVaultUnlockAuthDiagnostic(
-  options: PublicKeyCredentialRequestOptionsJSON,
-  scopedCredentialId?: string
-): void {
+export function logVaultUnlockAuthDiagnostic(options: PublicKeyCredentialRequestOptionsJSON): void {
   if (process.env.NODE_ENV !== "development") {
     return;
   }
-  const diagnostic = buildVaultUnlockAuthDiagnostic(options, scopedCredentialId);
+  const diagnostic = buildVaultUnlockAuthDiagnostic(options);
   console.info("vault passkey unlock options", diagnostic);
 }

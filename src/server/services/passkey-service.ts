@@ -14,7 +14,7 @@ import { passkeyRepository } from "@/server/repositories/passkey-repository";
 import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
 import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
-import { passkeyPrfExtensions, passkeyPrfAuthExtensions } from "@/lib/passkey/prf";
+import { passkeyPrfExtensions } from "@/lib/passkey/prf";
 import {
   toAllowCredentialDescriptor,
   toVaultUnlockAllowCredentialDescriptor,
@@ -57,6 +57,56 @@ export function vaultPasskeyUserHandle(userId: string): Uint8Array<ArrayBuffer> 
   const userHandle = new Uint8Array(new ArrayBuffer(digest.byteLength));
   userHandle.set(digest);
   return userHandle;
+}
+
+/**
+ * Builds vault-unlock authentication options scoped to the active passkey envelope's
+ * credential only. The active `passkey_authorized_device` envelope is the source of
+ * truth for which credential can unlock the vault; its `publicMetadata.credentialId`
+ * selects the single `allowCredentials` entry.
+ */
+async function buildVaultUnlockAuthenticationOptions(userId?: string) {
+  if (!userId) {
+    throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
+  }
+
+  const envelope = await vaultRepository.findActiveEnvelopeByMethod(
+    userId,
+    "passkey_authorized_device"
+  );
+  const envelopeCredentialId = (
+    envelope?.publicMetadata as { credentialId?: string } | null
+  )?.credentialId;
+
+  if (!envelope || !envelopeCredentialId) {
+    throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
+  }
+
+  const credentials = await passkeyRepository.findByUserId(userId);
+  const activeCredential = credentials.find(
+    (credential) =>
+      credential.credentialId === envelopeCredentialId && credential.vaultUnlockEnabled
+  );
+
+  if (!activeCredential) {
+    throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
+  }
+
+  const options = await generateAuthenticationOptions({
+    rpID,
+    allowCredentials: [toVaultUnlockAllowCredentialDescriptor(activeCredential)],
+    userVerification: "required",
+    extensions: passkeyPrfExtensions(userId),
+  });
+
+  await passkeyRepository.storeChallenge({
+    userId,
+    challenge: options.challenge,
+    type: "authentication",
+    expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+  });
+
+  return options;
 }
 
 export const passkeyService = {
@@ -157,11 +207,16 @@ export const passkeyService = {
       assertVaultKeyAad(userId, encryptedVaultKey);
     }
 
+    // Vault-only passkeys may register WITHOUT an envelope: the canonical flow
+    // registers the credential first, then creates the envelope from an
+    // authentication-ceremony PRF (POST /api/account/passkeys/:id/enable-vault-unlock),
+    // so the wrap PRF matches the unlock `get` ceremony. Registration-PRF wrapping
+    // is unreliable on iOS (create vs get can differ).
     const vaultOnly = Boolean(options?.vaultOnly);
 
-    let passkeyId: string | undefined;
+    let createdCredentialDbId = "";
     await runInTransaction(async (tx) => {
-      const created = await passkeyRepository.createCredential(
+      const createdCredential = await passkeyRepository.createCredential(
         {
           userId,
           credentialId: credential.id,
@@ -175,7 +230,7 @@ export const passkeyService = {
         },
         tx
       );
-      passkeyId = created.id;
+      createdCredentialDbId = createdCredential.id;
 
       if (encryptedVaultKey && options?.prfVaultEnvelope) {
         await vaultRepository.createEnvelope(
@@ -195,7 +250,7 @@ export const passkeyService = {
     return {
       verified: true,
       credentialId: credential.id,
-      passkeyId,
+      credentialDbId: createdCredentialDbId,
       deviceType: credentialDeviceType,
       backedUp: credentialBackedUp,
     };
@@ -214,57 +269,26 @@ export const passkeyService = {
     });
 
     const purpose = authOptions?.purpose;
-    let credentials = userId ? await passkeyRepository.findByUserId(userId) : [];
 
+    // Vault unlock follows the vault-core canonical contract: scope the ceremony to
+    // the single credential bound to the active passkey envelope, request PRF `eval`
+    // (never evalByCredential), and pin `internal` transport. This keeps the PRF
+    // output identical to setup/enable and avoids iOS hybrid routing.
     if (purpose === "vault_unlock") {
-      if (!userId) {
-        throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
-      }
-
-      const envelope = await vaultRepository.findActiveEnvelopeByMethod(
-        userId,
-        "passkey_authorized_device"
-      );
-      const envelopeCredentialId = (
-        envelope?.publicMetadata as { credentialId?: string } | null
-      )?.credentialId;
-
-      // Active envelope credential is the source of truth for unlock scoping.
-      if (envelopeCredentialId) {
-        credentials = credentials.filter(
-          (credential) => credential.credentialId === envelopeCredentialId
-        );
-      } else {
-        credentials = credentials.filter((credential) => credential.vaultUnlockEnabled);
-      }
-
-      if (credentials.length === 0) {
-        throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
-      }
+      return buildVaultUnlockAuthenticationOptions(userId);
     }
 
+    const credentials = userId ? await passkeyRepository.findByUserId(userId) : [];
     const allowCredentials =
       userId && credentials.length > 0
-        ? purpose === "vault_unlock"
-          ? credentials.map((credential) => toVaultUnlockAllowCredentialDescriptor(credential))
-          : credentials.map((credential) => toAllowCredentialDescriptor(credential))
+        ? credentials.map((credential) => toAllowCredentialDescriptor(credential))
         : undefined;
-
-    const vaultCredentialIds = credentials.map((credential) => credential.credentialId);
-    const extensions =
-      userId && purpose === "vault_unlock"
-        ? passkeyPrfAuthExtensions(
-            userId,
-            vaultCredentialIds.length === 1 ? [vaultCredentialIds[0]!] : vaultCredentialIds
-          )
-        : userId
-          ? passkeyPrfExtensions(userId)
-          : undefined;
+    const extensions = userId ? passkeyPrfExtensions(userId) : undefined;
 
     const options = await generateAuthenticationOptions({
       rpID,
       allowCredentials,
-      userVerification: purpose === "vault_unlock" ? "required" : "preferred",
+      userVerification: "preferred",
       extensions,
     });
 
@@ -340,6 +364,11 @@ export const passkeyService = {
     const purpose = authOptions?.purpose;
 
     if (purpose === "vault_unlock") {
+      if (!credential.vaultUnlockEnabled) {
+        await auditRepository.record("failed_unlock_attempt", userId, { method: "passkey" });
+        throw new ChallengeError(PASSKEY_ACCOUNT_ONLY_FOR_SIGN_IN_MESSAGE);
+      }
+
       const envelope = await vaultRepository.findActivePasskeyEnvelopeByCredentialId(
         userId,
         credential.credentialId
@@ -347,9 +376,6 @@ export const passkeyService = {
 
       if (!envelope?.encryptedVaultKey) {
         await auditRepository.record("failed_unlock_attempt", userId, { method: "passkey" });
-        if (!credential.vaultUnlockEnabled) {
-          throw new ChallengeError(PASSKEY_ACCOUNT_ONLY_FOR_SIGN_IN_MESSAGE);
-        }
         throw new ChallengeError(PASSKEY_NOT_LINKED_TO_VAULT_UNLOCK_MESSAGE);
       }
 
@@ -382,39 +408,20 @@ export const passkeyService = {
       userId,
       "passkey_authorized_device"
     );
-    const activeEnvelopeCredentialId = (
-      envelope?.publicMetadata as { credentialId?: string } | null
-    )?.credentialId;
 
     const vaultCredentials = credentials.filter((credential) => credential.vaultUnlockEnabled);
 
     if (vaultCredentials.length === 0 && envelope) {
-      const envelopeCredential = activeEnvelopeCredentialId
-        ? credentials.find((credential) => credential.credentialId === activeEnvelopeCredentialId)
-        : undefined;
-
       return {
-        passkeys: envelopeCredential
-          ? [
-              {
-                id: envelopeCredential.id,
-                friendlyName: envelopeCredential.friendlyName ?? "Vault passkey",
-                signInEnabled: envelopeCredential.signInEnabled,
-                vaultUnlockEnabled: envelopeCredential.vaultUnlockEnabled,
-                prfSupported: envelopeCredential.prfSupported,
-                credentialId: envelopeCredential.credentialId,
-              },
-            ]
-          : ([] as Array<{
-              id: string;
-              friendlyName: string;
-              signInEnabled: boolean;
-              vaultUnlockEnabled: boolean;
-              prfSupported: boolean | null;
-              credentialId: string;
-            }>),
+        passkeys: [] as Array<{
+          id: string;
+          friendlyName: string;
+          signInEnabled: boolean;
+          vaultUnlockEnabled: boolean;
+          prfSupported: boolean | null;
+          credentialId: string;
+        }>,
         serverEnvelopeConfigured: true,
-        activeEnvelopeCredentialId: activeEnvelopeCredentialId ?? null,
       };
     }
 
@@ -428,7 +435,6 @@ export const passkeyService = {
         credentialId: credential.credentialId,
       })),
       serverEnvelopeConfigured: Boolean(envelope),
-      activeEnvelopeCredentialId: activeEnvelopeCredentialId ?? null,
     };
   },
 

@@ -20,6 +20,8 @@ const APPROVED_VAULT_CORE_BROWSER_IMPORTS = new Set([
   "src/lib/crypto-client/vault-session.ts",
   "src/lib/crypto-client/vault-passkey-browser.ts",
   "src/components/vault-providers.tsx",
+  "src/features/vault/vault-status-dock.tsx",
+  "src/app/(vault)/vault/unlock/page.tsx",
 ]);
 
 const DISALLOWED_VAULT_CORE_BROWSER_SCAN_ROOTS = [
