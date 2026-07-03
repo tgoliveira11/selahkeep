@@ -9,6 +9,7 @@ import { importAesKey as importLocalAesKey } from "@/lib/crypto-client/aes-gcm";
 import { stringToBytes } from "@/lib/crypto-client/encoding";
 import { aadByteCandidates as localAadByteCandidates } from "@/lib/crypto-client/aad";
 import { SELAHKEEP_VAULT_PROFILE } from "../../selahkeep-profile";
+import { cacheLegacyRawVaultInnerKeyMaterial } from "./vault-inner-key-material";
 
 type VaultKeyScope = { userId: string; resourceId: string };
 
@@ -135,6 +136,7 @@ export async function unwrapLegacyVaultKeyFromPassword(
     const keyBytes = base64UrlToBytes(
       await decryptLegacyVaultKeyField(encryptedVaultKey, derivedKey)
     );
+    cacheLegacyRawVaultInnerKeyMaterial(keyBytes);
     return importLocalAesKey(keyBytes);
   } catch {
     throw new Error("Incorrect vault password");
@@ -159,6 +161,7 @@ export async function unwrapLegacyVaultKeyFromRecoveryPhrase(
     const keyBytes = base64UrlToBytes(
       await decryptLegacyVaultKeyField(encryptedVaultKey, derivedKey)
     );
+    cacheLegacyRawVaultInnerKeyMaterial(keyBytes);
     return importLocalAesKey(keyBytes);
   } catch {
     throw new Error("Incorrect recovery phrase");
@@ -179,6 +182,7 @@ export async function unwrapLegacyVaultKeyFromPasskey(
     const keyBytes = base64UrlToBytes(
       await decryptLegacyVaultKeyField(encryptedVaultKey, prfKey)
     );
+    cacheLegacyRawVaultInnerKeyMaterial(keyBytes);
     return importLocalAesKey(keyBytes);
   } catch {
     throw new Error("Could not decrypt your vault with this passkey");
