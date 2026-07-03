@@ -1,5 +1,5 @@
 import { runInTransaction } from "@/lib/db/transaction";
-import { createHash } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -49,52 +49,62 @@ type PasskeyRegistrationOptions = {
   vaultOnly?: boolean;
 };
 
-/** Apple overwrites a passkey registered with the same RP ID + user handle. */
-export function vaultPasskeyUserHandle(userId: string): Uint8Array<ArrayBuffer> {
-  const digest = createHash("sha256")
-    .update(`selahkeep:vault-passkey:${userId}`)
-    .digest();
-  const userHandle = new Uint8Array(new ArrayBuffer(digest.byteLength));
-  userHandle.set(digest);
-  return userHandle;
+/**
+ * Random per-registration WebAuthn user handle for vault-only passkeys. Distinct
+ * handles let multiple vault passkeys (one per device) coexist without a synced
+ * provider overwriting one another, and stay separate from the account passkey handle
+ * (the userId) so adding an account passkey never replaces a vault passkey.
+ */
+export function vaultPasskeyUserHandle(): Uint8Array<ArrayBuffer> {
+  const handle = new Uint8Array(new ArrayBuffer(32));
+  handle.set(randomBytes(32));
+  return handle;
 }
 
 /**
- * Builds vault-unlock authentication options scoped to the active passkey envelope's
- * credential only. The active `passkey_authorized_device` envelope is the source of
- * truth for which credential can unlock the vault; its `publicMetadata.credentialId`
- * selects the single `allowCredentials` entry.
+ * Builds vault-unlock authentication options for every active passkey envelope.
+ *
+ * Each `passkey_authorized_device` envelope is bound to one device credential via
+ * `publicMetadata.credentialId`. PRF output is device-specific for some passkey
+ * providers (e.g. Enpass): a credential yields different PRF bytes per device, so an
+ * envelope only decrypts on the device that created it. To support cross-device
+ * unlock we register one vault passkey per device and offer them all here; the user
+ * authenticates with the passkey local to the current device, and `verifyAuthentication`
+ * decrypts the envelope bound to whichever credential signed. A single PRF `eval` salt
+ * is used (the authenticator evaluates it for the selected credential).
  */
 async function buildVaultUnlockAuthenticationOptions(userId?: string) {
   if (!userId) {
     throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
   }
 
-  const envelope = await vaultRepository.findActiveEnvelopeByMethod(
-    userId,
-    "passkey_authorized_device"
+  const envelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
+  const envelopeCredentialIds = new Set(
+    envelopes
+      .filter((envelope) => envelope.method === "passkey_authorized_device")
+      .map((envelope) => (envelope.publicMetadata as { credentialId?: string } | null)?.credentialId)
+      .filter((credentialId): credentialId is string => Boolean(credentialId))
   );
-  const envelopeCredentialId = (
-    envelope?.publicMetadata as { credentialId?: string } | null
-  )?.credentialId;
 
-  if (!envelope || !envelopeCredentialId) {
+  if (envelopeCredentialIds.size === 0) {
     throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
   }
 
   const credentials = await passkeyRepository.findByUserId(userId);
-  const activeCredential = credentials.find(
+  const activeCredentials = credentials.filter(
     (credential) =>
-      credential.credentialId === envelopeCredentialId && credential.vaultUnlockEnabled
+      credential.vaultUnlockEnabled && envelopeCredentialIds.has(credential.credentialId)
   );
 
-  if (!activeCredential) {
+  if (activeCredentials.length === 0) {
     throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
   }
 
   const options = await generateAuthenticationOptions({
     rpID,
-    allowCredentials: [toVaultUnlockAllowCredentialDescriptor(activeCredential)],
+    allowCredentials: activeCredentials.map((credential) =>
+      toVaultUnlockAllowCredentialDescriptor(credential)
+    ),
     userVerification: "required",
     extensions: passkeyPrfExtensions(userId),
   });
@@ -134,7 +144,7 @@ export const passkeyService = {
       rpID,
       userName: vaultOnly ? `${userName} · SelahKeep vault` : userName,
       userID: vaultOnly
-        ? vaultPasskeyUserHandle(userId)
+        ? vaultPasskeyUserHandle()
         : new TextEncoder().encode(userId),
       attestationType: "none",
       excludeCredentials,
@@ -165,7 +175,7 @@ export const passkeyService = {
     userId: string,
     response: RegistrationResponseJSON,
     encryptedVaultKey?: EncryptedPayload,
-    options?: { prfVaultEnvelope?: boolean; vaultOnly?: boolean }
+    options?: { prfVaultEnvelope?: boolean; vaultOnly?: boolean; friendlyName?: string }
   ) {
     const clientData = JSON.parse(
       Buffer.from(response.response.clientDataJSON, "base64url").toString()
@@ -223,7 +233,11 @@ export const passkeyService = {
           publicKey: Buffer.from(credential.publicKey).toString("base64url"),
           counter: String(credential.counter),
           transports: persistRegistrationTransports(credential.transports),
-          friendlyName: vaultOnly ? "Vault passkey" : null,
+          friendlyName: vaultOnly
+            ? options?.friendlyName?.trim()
+              ? `Vault passkey · ${options.friendlyName.trim().slice(0, 40)}`
+              : "Vault passkey"
+            : null,
           signInEnabled: vaultOnly ? false : true,
           vaultUnlockEnabled: Boolean(encryptedVaultKey && options?.prfVaultEnvelope),
           prfSupported: encryptedVaultKey && options?.prfVaultEnvelope ? true : null,

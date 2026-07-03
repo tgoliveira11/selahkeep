@@ -34,6 +34,7 @@ import {
   type PasskeyPrfDiagnosticReason,
 } from "@/lib/passkey/passkey-prf-diagnostics";
 import { setPasskeyLoginHint } from "@/lib/passkey/login-hint";
+import { currentDeviceLabel } from "@/lib/passkey/device-label";
 import {
   PASSKEY_ORPHAN_CREDENTIAL_NOTE,
   PASSKEY_VAULT_REGISTERED_MESSAGE,
@@ -112,6 +113,7 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         action: "verify",
         response: attestation,
         vaultOnly: true,
+        friendlyName: currentDeviceLabel(),
       });
 
       const credentialDbId = registration.credentialDbId;

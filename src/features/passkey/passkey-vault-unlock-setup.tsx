@@ -21,6 +21,7 @@ import {
 import {
   runVaultUnlockAuthenticationCeremony,
 } from "@/lib/passkey/vault-unlock-authenticate";
+import { currentDeviceLabel } from "@/lib/passkey/device-label";
 import {
   prepareAuthenticationOptions,
   prepareRegistrationOptions,
@@ -152,13 +153,16 @@ export function PasskeyVaultUnlockSetup({
 
   const managementBlocked = isPasskeyPrfManagementBlocked(environment);
   const setupAllowed = canAttemptVaultPasskeySetup(availability);
+  const hasVaultPasskey = passkeys.some((passkey) => passkey.vaultUnlockEnabled);
+  // Passkey PRF is device-specific for some providers, so vault unlock needs one passkey
+  // per device. Keep setup available even after a passkey exists, so the user can add
+  // the device they are currently on.
   const showPrimarySetup =
     setupAllowed &&
     vaultUnlocked &&
     !managementBlocked &&
     availability.state !== "browser_unsupported" &&
-    availability.state !== "prf_unsupported" &&
-    passkeys.every((passkey) => !passkey.vaultUnlockEnabled);
+    availability.state !== "prf_unsupported";
 
   async function runCeremonyWithOptions(options: PublicKeyCredentialRequestOptionsJSON) {
     const assertion = await startAuthentication({
@@ -204,6 +208,7 @@ export function PasskeyVaultUnlockSetup({
         action: "verify",
         response: attestation,
         vaultOnly: true,
+        friendlyName: currentDeviceLabel(),
       })) as { credentialDbId?: string };
 
       const credentialDbId = registration.credentialDbId;
@@ -373,8 +378,19 @@ export function PasskeyVaultUnlockSetup({
           disabled={loadingId === "register"}
           onClick={() => void handleRegisterVaultPasskey()}
         >
-          {loadingId === "register" ? "Working…" : "Set up passkey vault unlock"}
+          {loadingId === "register"
+            ? "Working…"
+            : hasVaultPasskey
+              ? "Add a passkey for this device"
+              : "Set up passkey vault unlock"}
         </Button>
+      )}
+
+      {hasVaultPasskey && showPrimarySetup && (
+        <p className="text-sm text-[var(--muted)]">
+          Passkey unlock is per device. Add a passkey on each device you want to unlock
+          with — a passkey set up on one device may not unlock the vault on another.
+        </p>
       )}
 
       {passkeys.length > 0 && (
