@@ -86,19 +86,31 @@ export function prepareAuthenticationOptions(
  * `evalByCredential`) so unlock matches enable-vault-unlock setup on iOS.
  */
 export function alignPrfExtensionsForAllowCredentials(
-  options: PublicKeyCredentialRequestOptionsJSON
+  options: PublicKeyCredentialRequestOptionsJSON,
+  forceCredentialId?: string
 ): PublicKeyCredentialRequestOptionsJSON {
   if (!options.extensions) return options;
 
   const prf = (options.extensions as { prf?: PrfExtensionInput }).prf;
-  if (!prf?.evalByCredential) return options;
+  if (!prf) return options;
 
   const credentials = options.allowCredentials;
-  if (!credentials?.length || credentials.length !== 1) return options;
+  const credentialId =
+    forceCredentialId ??
+    (credentials?.length === 1 ? credentials[0]!.id : undefined);
 
-  const credentialId = credentials[0]!.id;
+  if (!credentialId) {
+    return options;
+  }
+
+  if (prf.eval && !prf.evalByCredential) {
+    return options;
+  }
+
   const evalInput =
-    prf.evalByCredential[credentialId] ?? Object.values(prf.evalByCredential)[0];
+    prf.evalByCredential?.[credentialId] ??
+    prf.eval ??
+    (prf.evalByCredential ? Object.values(prf.evalByCredential)[0] : undefined);
   if (!evalInput) return options;
 
   return {

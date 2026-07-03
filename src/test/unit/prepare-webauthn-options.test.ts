@@ -97,4 +97,28 @@ describe("prepareWebAuthnExtensions", () => {
     expect(aligned.extensions?.prf?.eval?.first).toBe(salt);
     expect(aligned.extensions?.prf?.evalByCredential).toBeUndefined();
   });
+
+  it("aligns evalByCredential to eval when forceCredentialId is provided", () => {
+    const salt = passkeyPrfSaltBase64Url(userId);
+    const aligned = alignPrfExtensionsForAllowCredentials(
+      {
+        challenge: "abc",
+        allowCredentials: [
+          { id: "vault-a", type: "public-key", transports: ["internal"] },
+          { id: "vault-b", type: "public-key", transports: ["internal"] },
+        ],
+        extensions: {
+          prf: {
+            evalByCredential: {
+              "vault-a": { first: salt },
+              "vault-b": { first: salt },
+            },
+          },
+        },
+      },
+      "vault-b"
+    );
+    expect(aligned.extensions?.prf?.eval?.first).toBe(salt);
+    expect(aligned.extensions?.prf?.evalByCredential).toBeUndefined();
+  });
 });

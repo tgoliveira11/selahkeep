@@ -220,7 +220,6 @@ export const passkeyService = {
       if (!userId) {
         throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
       }
-      credentials = credentials.filter((credential) => credential.vaultUnlockEnabled);
 
       const envelope = await vaultRepository.findActiveEnvelopeByMethod(
         userId,
@@ -229,10 +228,14 @@ export const passkeyService = {
       const envelopeCredentialId = (
         envelope?.publicMetadata as { credentialId?: string } | null
       )?.credentialId;
+
+      // Active envelope credential is the source of truth for unlock scoping.
       if (envelopeCredentialId) {
         credentials = credentials.filter(
           (credential) => credential.credentialId === envelopeCredentialId
         );
+      } else {
+        credentials = credentials.filter((credential) => credential.vaultUnlockEnabled);
       }
 
       if (credentials.length === 0) {
@@ -337,11 +340,6 @@ export const passkeyService = {
     const purpose = authOptions?.purpose;
 
     if (purpose === "vault_unlock") {
-      if (!credential.vaultUnlockEnabled) {
-        await auditRepository.record("failed_unlock_attempt", userId, { method: "passkey" });
-        throw new ChallengeError(PASSKEY_ACCOUNT_ONLY_FOR_SIGN_IN_MESSAGE);
-      }
-
       const envelope = await vaultRepository.findActivePasskeyEnvelopeByCredentialId(
         userId,
         credential.credentialId
@@ -349,6 +347,9 @@ export const passkeyService = {
 
       if (!envelope?.encryptedVaultKey) {
         await auditRepository.record("failed_unlock_attempt", userId, { method: "passkey" });
+        if (!credential.vaultUnlockEnabled) {
+          throw new ChallengeError(PASSKEY_ACCOUNT_ONLY_FOR_SIGN_IN_MESSAGE);
+        }
         throw new ChallengeError(PASSKEY_NOT_LINKED_TO_VAULT_UNLOCK_MESSAGE);
       }
 
@@ -381,20 +382,39 @@ export const passkeyService = {
       userId,
       "passkey_authorized_device"
     );
+    const activeEnvelopeCredentialId = (
+      envelope?.publicMetadata as { credentialId?: string } | null
+    )?.credentialId;
 
     const vaultCredentials = credentials.filter((credential) => credential.vaultUnlockEnabled);
 
     if (vaultCredentials.length === 0 && envelope) {
+      const envelopeCredential = activeEnvelopeCredentialId
+        ? credentials.find((credential) => credential.credentialId === activeEnvelopeCredentialId)
+        : undefined;
+
       return {
-        passkeys: [] as Array<{
-          id: string;
-          friendlyName: string;
-          signInEnabled: boolean;
-          vaultUnlockEnabled: boolean;
-          prfSupported: boolean | null;
-          credentialId: string;
-        }>,
+        passkeys: envelopeCredential
+          ? [
+              {
+                id: envelopeCredential.id,
+                friendlyName: envelopeCredential.friendlyName ?? "Vault passkey",
+                signInEnabled: envelopeCredential.signInEnabled,
+                vaultUnlockEnabled: envelopeCredential.vaultUnlockEnabled,
+                prfSupported: envelopeCredential.prfSupported,
+                credentialId: envelopeCredential.credentialId,
+              },
+            ]
+          : ([] as Array<{
+              id: string;
+              friendlyName: string;
+              signInEnabled: boolean;
+              vaultUnlockEnabled: boolean;
+              prfSupported: boolean | null;
+              credentialId: string;
+            }>),
         serverEnvelopeConfigured: true,
+        activeEnvelopeCredentialId: activeEnvelopeCredentialId ?? null,
       };
     }
 
@@ -408,6 +428,7 @@ export const passkeyService = {
         credentialId: credential.credentialId,
       })),
       serverEnvelopeConfigured: Boolean(envelope),
+      activeEnvelopeCredentialId: activeEnvelopeCredentialId ?? null,
     };
   },
 
