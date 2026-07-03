@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Passkey vault unlock (production).** Vault unlock authentication options now scope to the single active passkey envelope credential (not every `vault_unlock_enabled` row), always request PRF `eval` for that credential, and advertise `internal` transport so hybrid hints cannot route unlock to cross-device PRF bytes that fail envelope decrypt after setup succeeded.
+
 - **Passkey vault setup (iOS).** Registration now uses two WebAuthn prompts (create + enable auth) instead of three; post-setup round-trip reuses the enable-step PRF output instead of a redundant third authentication that could fail with PRF mismatch on iPhone while the envelope was already saved.
 
 ### Added

@@ -38,6 +38,22 @@ export function toAllowCredentialDescriptor(credential: {
   return transports ? { id: credential.credentialId, transports } : { id: credential.credentialId };
 }
 
+/**
+ * Vault unlock must target the on-device platform authenticator when possible.
+ * Hybrid hints can complete WebAuthn via cross-device auth but return PRF bytes
+ * that do not unwrap the local envelope.
+ */
+export function toVaultUnlockAllowCredentialDescriptor(credential: {
+  credentialId: string;
+  transports?: unknown;
+}): { id: string; transports: AuthenticatorTransportFuture[] } {
+  const transports = storedPasskeyTransports(credential.transports);
+  if (!transports?.length || transports.includes("internal")) {
+    return { id: credential.credentialId, transports: ["internal"] };
+  }
+  return { id: credential.credentialId, transports: [...transports] };
+}
+
 export type PasskeyTransportHint =
   | "internal"
   | "hybrid"

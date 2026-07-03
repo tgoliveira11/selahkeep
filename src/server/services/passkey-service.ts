@@ -17,6 +17,7 @@ import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 import { passkeyPrfExtensions, passkeyPrfAuthExtensions } from "@/lib/passkey/prf";
 import {
   toAllowCredentialDescriptor,
+  toVaultUnlockAllowCredentialDescriptor,
   persistRegistrationTransports,
   vaultRegistrationExcludeCredentials,
 } from "@/lib/passkey/passkey-transports";
@@ -220,6 +221,20 @@ export const passkeyService = {
         throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
       }
       credentials = credentials.filter((credential) => credential.vaultUnlockEnabled);
+
+      const envelope = await vaultRepository.findActiveEnvelopeByMethod(
+        userId,
+        "passkey_authorized_device"
+      );
+      const envelopeCredentialId = (
+        envelope?.publicMetadata as { credentialId?: string } | null
+      )?.credentialId;
+      if (envelopeCredentialId) {
+        credentials = credentials.filter(
+          (credential) => credential.credentialId === envelopeCredentialId
+        );
+      }
+
       if (credentials.length === 0) {
         throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
       }
@@ -227,15 +242,18 @@ export const passkeyService = {
 
     const allowCredentials =
       userId && credentials.length > 0
-        ? credentials.map((credential) => toAllowCredentialDescriptor(credential))
+        ? purpose === "vault_unlock"
+          ? credentials.map((credential) => toVaultUnlockAllowCredentialDescriptor(credential))
+          : credentials.map((credential) => toAllowCredentialDescriptor(credential))
         : undefined;
 
     const vaultCredentialIds = credentials.map((credential) => credential.credentialId);
     const extensions =
       userId && purpose === "vault_unlock"
-        ? vaultCredentialIds.length > 1
-          ? passkeyPrfAuthExtensions(userId, vaultCredentialIds)
-          : passkeyPrfExtensions(userId)
+        ? passkeyPrfAuthExtensions(
+            userId,
+            vaultCredentialIds.length === 1 ? [vaultCredentialIds[0]!] : vaultCredentialIds
+          )
         : userId
           ? passkeyPrfExtensions(userId)
           : undefined;

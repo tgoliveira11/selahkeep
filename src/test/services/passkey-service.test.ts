@@ -324,6 +324,9 @@ describe("passkey service", () => {
         signInEnabled: false,
       },
     ]);
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue({
+      publicMetadata: { credentialId: "vault-cred", prfRequired: true },
+    });
 
     await passkeyService.getAuthenticationOptions(USER_ID, undefined, {
       purpose: "vault_unlock",
@@ -331,10 +334,49 @@ describe("passkey service", () => {
 
     expect(mocks.generateAuthenticationOptions).toHaveBeenCalledWith(
       expect.objectContaining({
-        allowCredentials: [
-          { id: "vault-cred", transports: ["internal", "hybrid"] },
-        ],
+        allowCredentials: [{ id: "vault-cred", transports: ["internal"] }],
         userVerification: "required",
+        extensions: expect.objectContaining({
+          prf: expect.objectContaining({
+            eval: expect.objectContaining({ first: expect.any(String) }),
+          }),
+        }),
+      })
+    );
+    expect(mocks.generateAuthenticationOptions.mock.calls[0]?.[0]?.extensions?.prf?.evalByCredential).toBeUndefined();
+  });
+
+  it("vault unlock options scope to the active passkey envelope credential only", async () => {
+    mocks.findByUserId.mockResolvedValue([
+      {
+        credentialId: "stale-vault",
+        transports: ["internal"],
+        vaultUnlockEnabled: true,
+        signInEnabled: false,
+      },
+      {
+        credentialId: "active-vault",
+        transports: ["internal", "hybrid"],
+        vaultUnlockEnabled: true,
+        signInEnabled: true,
+      },
+    ]);
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue({
+      publicMetadata: { credentialId: "active-vault", prfRequired: true },
+    });
+
+    await passkeyService.getAuthenticationOptions(USER_ID, undefined, {
+      purpose: "vault_unlock",
+    });
+
+    expect(mocks.generateAuthenticationOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowCredentials: [{ id: "active-vault", transports: ["internal"] }],
+        extensions: expect.objectContaining({
+          prf: expect.objectContaining({
+            eval: expect.objectContaining({ first: expect.any(String) }),
+          }),
+        }),
       })
     );
   });
@@ -368,6 +410,7 @@ describe("passkey service", () => {
         vaultUnlockEnabled: true,
       },
     ]);
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue(null);
 
     await passkeyService.getAuthenticationOptions(USER_ID, undefined, {
       purpose: "vault_unlock",
