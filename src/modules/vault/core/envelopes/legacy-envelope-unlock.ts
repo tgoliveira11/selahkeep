@@ -13,11 +13,39 @@ import { cacheLegacyRawVaultInnerKeyMaterial } from "./vault-inner-key-material"
 
 type VaultKeyScope = { userId: string; resourceId: string };
 
-type AadWithOptionalContext = EncryptedPayload["aad"] & { context?: string | null };
+export type VaultKeyAadWithOptionalContext = EncryptedPayload["aad"] & {
+  context?: string | null;
+};
+
+/** Inject profile envelope context when JSON omitted it (pre–PR #40 Zod strip on save). */
+export function normalizeVaultKeyEnvelopeAadContext(
+  payload: EncryptedPayload
+): EncryptedPayload {
+  const aad = payload.aad as VaultKeyAadWithOptionalContext;
+  if (aad.field !== "vault_key") return payload;
+  if (aad.context === undefined || aad.context === null) {
+    return {
+      ...payload,
+      aad: { ...aad, context: SELAHKEEP_VAULT_PROFILE.aadContextEnvelope },
+    };
+  }
+  return payload;
+}
+
+/**
+ * Passkey unlock routing: missing/null context is vault-core (ciphertext carries profile
+ * context); only explicit non-profile tags use the legacy multi-AAD decrypt path.
+ */
+export function shouldRoutePasskeyVaultKeyToLegacyUnlock(payload: EncryptedPayload): boolean {
+  const aad = payload.aad as VaultKeyAadWithOptionalContext;
+  if (aad.field !== "vault_key") return false;
+  if (aad.context === undefined || aad.context === null) return false;
+  return aad.context !== SELAHKEEP_VAULT_PROFILE.aadContextEnvelope;
+}
 
 /** Envelopes that must not use strict vault-core profile AAD assert (pre-profile or DB-null context). */
 export function isLegacyVaultKeyEnvelope(payload: EncryptedPayload): boolean {
-  const aad = payload.aad as AadWithOptionalContext;
+  const aad = payload.aad as VaultKeyAadWithOptionalContext;
   if (aad.field !== "vault_key") return false;
   if (aad.context === undefined || aad.context === null) return true;
   return aad.context !== SELAHKEEP_VAULT_PROFILE.aadContextEnvelope;
@@ -35,7 +63,7 @@ export function assertLegacyVaultKeyScope(scope: VaultKeyScope, payload: Encrypt
   }
 }
 
-function vaultCoreCanonicalAadString(aad: AadWithOptionalContext): string {
+function vaultCoreCanonicalAadString(aad: VaultKeyAadWithOptionalContext): string {
   return JSON.stringify({
     context: aad.context,
     field: aad.field,
@@ -45,14 +73,14 @@ function vaultCoreCanonicalAadString(aad: AadWithOptionalContext): string {
 }
 
 /** Pre-profile + profile-tagged byte candidates for stored vault_key envelopes. */
-export function legacyVaultKeyAadByteCandidates(aad: AadWithOptionalContext): Uint8Array[] {
+export function legacyVaultKeyAadByteCandidates(aad: VaultKeyAadWithOptionalContext): Uint8Array[] {
   const variants = new Set<string>();
 
   for (const bytes of localAadByteCandidates(aad)) {
     variants.add(new TextDecoder().decode(bytes));
   }
 
-  const withoutContext: AadWithOptionalContext = {
+  const withoutContext: VaultKeyAadWithOptionalContext = {
     userId: aad.userId,
     resourceId: aad.resourceId,
     field: aad.field,
@@ -61,7 +89,7 @@ export function legacyVaultKeyAadByteCandidates(aad: AadWithOptionalContext): Ui
     variants.add(new TextDecoder().decode(bytes));
   }
 
-  const withProfileContext: AadWithOptionalContext = {
+  const withProfileContext: VaultKeyAadWithOptionalContext = {
     ...withoutContext,
     context: SELAHKEEP_VAULT_PROFILE.aadContextEnvelope,
   };
@@ -88,7 +116,7 @@ async function decryptLegacyVaultKeyField(
   const ciphertext = base64UrlToBytes(payload.ciphertext);
   let lastError: unknown;
 
-  for (const aadBytes of legacyVaultKeyAadByteCandidates(payload.aad as AadWithOptionalContext)) {
+  for (const aadBytes of legacyVaultKeyAadByteCandidates(payload.aad as VaultKeyAadWithOptionalContext)) {
     try {
       const plaintextBuffer = await crypto.subtle.decrypt(
         {
