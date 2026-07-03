@@ -17,13 +17,13 @@ import { getSessionVaultKey } from "@/lib/crypto-client/vault";
 import {
   extractPasskeyPrfOutput,
   unlockVaultFromPasskeyEnvelope,
-  wrapVaultKeyForPasskey,
 } from "@/lib/crypto-client/passkey-vault";
 import { userVaultKeysEqual } from "@tgoliveira/vault-core";
 import {
   runVaultUnlockAuthenticationCeremony,
   verifyVaultUnlockAuthentication,
 } from "@/lib/passkey/vault-unlock-authenticate";
+import { enableVaultPasskeyUnlockWithAuthPrf } from "@/lib/passkey/enable-vault-passkey-unlock";
 import {
   prepareAuthenticationOptions,
   prepareRegistrationOptions,
@@ -211,19 +211,20 @@ export function PasskeyVaultUnlockSetup({
         return;
       }
 
-      const encryptedVaultKey: EncryptedPayload = await wrapVaultKeyForPasskey(
-        vaultKey,
-        prfOutput,
-        userId,
-        userId
-      );
-
-      await apiClient.post("/api/passkeys/register", {
+      const registration = (await apiClient.post("/api/passkeys/register", {
         action: "verify",
         response: attestation,
-        encryptedVaultKey,
-        prfVaultEnvelope: true,
         vaultOnly: true,
+      })) as { verified: boolean; passkeyId?: string };
+
+      if (!registration.passkeyId) {
+        throw new Error("Passkey registration succeeded but could not link vault unlock.");
+      }
+
+      await enableVaultPasskeyUnlockWithAuthPrf({
+        passkeyDbId: registration.passkeyId,
+        userId,
+        vaultKey,
       });
 
       setMessage(PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE);

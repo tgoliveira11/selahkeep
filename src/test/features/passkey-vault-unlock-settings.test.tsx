@@ -117,6 +117,30 @@ describe("PasskeyVaultUnlockSetup", () => {
     mockVaultUnlockList([]);
     mocks.probeEnvironment.mockResolvedValue(mockEnvironment());
     mocks.apiPost.mockImplementation(async (path: string, body?: Record<string, unknown>) => {
+      if (path === "/api/passkeys/register" && body?.action === "options") {
+        return {
+          challenge: "abc",
+          extensions: { prf: { eval: {} } },
+          allowCredentials: [
+            { id: "cred-1", type: "public-key", transports: ["internal"] },
+          ],
+        };
+      }
+      if (path === "/api/passkeys/register" && body?.action === "verify") {
+        return { verified: true, passkeyId: "pk-new", credentialId: "cred-new" };
+      }
+      if (path.endsWith("/enable-vault-unlock")) {
+        if (body?.action === "options") {
+          return {
+            challenge: "abc",
+            extensions: { prf: { eval: {} } },
+            allowCredentials: [{ id: "cred-new", type: "public-key", transports: ["internal"] }],
+          };
+        }
+        if (body?.action === "verify") {
+          return { verified: true };
+        }
+      }
       if (path === "/api/passkeys/authenticate" && body?.action === "options") {
         return {
           challenge: "abc",
@@ -223,10 +247,14 @@ describe("PasskeyVaultUnlockSetup", () => {
         "/api/passkeys/register",
         expect.objectContaining({
           action: "verify",
-          prfVaultEnvelope: true,
           vaultOnly: true,
         })
       );
+      expect(mocks.apiPost).toHaveBeenCalledWith(
+        "/api/account/passkeys/pk-new/enable-vault-unlock",
+        expect.objectContaining({ action: "verify", prfVaultEnvelope: true })
+      );
+      expect(mocks.startAuthentication).toHaveBeenCalled();
     });
     expect(await screen.findByText(PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE)).toBeTruthy();
   });

@@ -79,6 +79,7 @@ describe("passkey service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.findByUserId.mockResolvedValue([]);
+    mocks.createCredential.mockResolvedValue({ id: "passkey-db-1" });
     mocks.generateRegistrationOptions.mockResolvedValue({ challenge: "reg-challenge" });
     mocks.generateAuthenticationOptions.mockResolvedValue({ challenge: "auth-challenge" });
   });
@@ -199,7 +200,42 @@ describe("passkey service", () => {
         friendlyName: "Vault passkey",
       }),
       expect.anything()
+     );
+  });
+
+  it("registers vault-only passkey without envelope for auth-PRF linking", async () => {
+    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "reg-challenge" });
+    mocks.verifyRegistrationResponse.mockResolvedValue({
+      verified: true,
+      registrationInfo: {
+        credential: {
+          id: "cred-id",
+          publicKey: new Uint8Array(32),
+          counter: 0,
+          transports: ["internal"],
+        },
+        credentialDeviceType: "singleDevice",
+        credentialBackedUp: false,
+      },
+    });
+
+    const result = await passkeyService.verifyRegistration(
+      USER_ID,
+      registrationResponse("reg-challenge"),
+      undefined,
+      { vaultOnly: true }
     );
+
+    expect(result.passkeyId).toBe("passkey-db-1");
+    expect(mocks.createCredential).toHaveBeenCalledWith(
+      expect.objectContaining({
+        signInEnabled: false,
+        vaultUnlockEnabled: false,
+        friendlyName: "Vault passkey",
+      }),
+      expect.anything()
+    );
+    expect(mocks.createEnvelope).not.toHaveBeenCalled();
   });
 
   it("verifyRegistration rejects invalid challenge", async () => {
