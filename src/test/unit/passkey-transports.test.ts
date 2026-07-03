@@ -8,6 +8,7 @@ import {
   vaultRegistrationExcludeCredentials,
   preferPlatformTransportsForVaultUnlock,
   toAllowCredentialDescriptor,
+  toVaultUnlockAllowCredentialDescriptor,
 } from "@/lib/passkey/passkey-transports";
 
 describe("passkey transports", () => {
@@ -37,6 +38,21 @@ describe("passkey transports", () => {
         transports: null,
       })
     ).toEqual({ id: "vault-cred" });
+  });
+
+  it("vault unlock allowCredentials always prefer internal transport", () => {
+    expect(
+      toVaultUnlockAllowCredentialDescriptor({
+        credentialId: "vault-cred",
+        transports: ["hybrid", "internal"],
+      })
+    ).toEqual({ id: "vault-cred", transports: ["internal"] });
+    expect(
+      toVaultUnlockAllowCredentialDescriptor({
+        credentialId: "vault-cred",
+        transports: null,
+      })
+    ).toEqual({ id: "vault-cred", transports: ["internal"] });
   });
 
   it("collects transport hints as sorted unique labels", () => {

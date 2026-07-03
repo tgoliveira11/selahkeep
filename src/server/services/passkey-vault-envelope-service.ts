@@ -9,7 +9,7 @@ import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
 import { enforceRateLimit } from "@/server/policies/rate-limit";
 import { passkeyPrfAuthExtensions } from "@/lib/passkey/prf";
-import { toAllowCredentialDescriptor } from "@/lib/passkey/passkey-transports";
+import { toVaultUnlockAllowCredentialDescriptor } from "@/lib/passkey/passkey-transports";
 import {
   getWebAuthnOrigins,
   getWebAuthnRpId,
@@ -109,7 +109,7 @@ export const passkeyVaultEnvelopeService = {
 
     const options = await generateAuthenticationOptions({
       rpID,
-      allowCredentials: [toAllowCredentialDescriptor(credential)],
+      allowCredentials: [toVaultUnlockAllowCredentialDescriptor(credential)],
       userVerification: "required",
       extensions: passkeyPrfAuthExtensions(userId, [credential.credentialId]),
     });
@@ -278,7 +278,7 @@ export const passkeyVaultEnvelopeService = {
 
     const options = await generateAuthenticationOptions({
       rpID,
-      allowCredentials: [toAllowCredentialDescriptor(credential)],
+      allowCredentials: [toVaultUnlockAllowCredentialDescriptor(credential)],
       userVerification: "required",
       extensions: passkeyPrfAuthExtensions(userId, [credential.credentialId]),
     });
