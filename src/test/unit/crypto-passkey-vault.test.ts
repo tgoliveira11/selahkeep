@@ -44,6 +44,11 @@ describe("passkey vault crypto", () => {
         prf: { results: { first: new Uint8Array(8).buffer } },
       } as never)
     ).toBeNull();
+    expect(
+      extractPasskeyPrfOutput({
+        prf: { results: { first: "too-short" } },
+      } as never)
+    ).toBeNull();
   });
 
   it("wraps and unwraps vault key with PRF output", async () => {

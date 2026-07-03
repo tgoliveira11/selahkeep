@@ -98,7 +98,7 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         throw ceremonyError;
       }
 
-      const prfOutput = extractPasskeyPrfOutput(attestation.clientExtensionResults);
+      const prfOutput = extractPasskeyPrfOutput(attestation.clientExtensionResults, attestation.id);
 
       if (!prfOutput) {
         showDiagnosticOutcome(resolveCeremonyDiagnosticReason({ prfOutputPresent: false }), {

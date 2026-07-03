@@ -10,6 +10,7 @@ import {
   type EncryptedPayload as VaultCoreEncryptedPayload,
 } from "@tgoliveira/vault-core";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
+import { prfBytesForAes256Import } from "@/lib/passkey/normalize-prf-output";
 import { PASSKEY_VAULT_UNLOCK_REWRAP_REQUIRES_UNLOCK_MESSAGE } from "@/lib/passkey/messages";
 import { SELAHKEEP_VAULT_PROFILE } from "../../selahkeep-profile";
 
@@ -40,10 +41,9 @@ export function isLegacyRawVaultKeyMaterial(bytes: Uint8Array): boolean {
 }
 
 async function importPrfAsAesGcmKey(prfOutput: Uint8Array): Promise<CryptoKey> {
-  const keyBytes = prfOutput.byteLength === 32 ? prfOutput : prfOutput.slice(0, 32);
   return crypto.subtle.importKey(
     "raw",
-    toBufferSource(keyBytes),
+    toBufferSource(prfBytesForAes256Import(prfOutput)),
     { name: "AES-GCM", length: 256 },
     false,
     ["encrypt", "decrypt"]
@@ -51,10 +51,9 @@ async function importPrfAsAesGcmKey(prfOutput: Uint8Array): Promise<CryptoKey> {
 }
 
 async function importPrfAsAesKwKey(prfOutput: Uint8Array): Promise<CryptoKey> {
-  const keyBytes = prfOutput.byteLength === 32 ? prfOutput : prfOutput.slice(0, 32);
   return crypto.subtle.importKey(
     "raw",
-    toBufferSource(keyBytes),
+    toBufferSource(prfBytesForAes256Import(prfOutput)),
     { name: "AES-KW", length: 256 },
     false,
     ["wrapKey", "unwrapKey"]

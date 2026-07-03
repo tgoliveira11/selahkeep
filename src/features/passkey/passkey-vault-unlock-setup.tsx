@@ -168,7 +168,7 @@ export function PasskeyVaultUnlockSetup({
     const assertion = await startAuthentication({
       optionsJSON: prepareAuthenticationOptions(options),
     });
-    const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults);
+    const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);
     return { assertion, prfOutput };
   }
 
@@ -203,7 +203,7 @@ export function PasskeyVaultUnlockSetup({
         optionsJSON: prepareRegistrationOptions(options),
       });
 
-      const prfOutput = extractPasskeyPrfOutput(attestation.clientExtensionResults);
+      const prfOutput = extractPasskeyPrfOutput(attestation.clientExtensionResults, attestation.id);
       if (!prfOutput) {
         const reason = resolveCeremonyDiagnosticReason({ prfOutputPresent: false });
         setDiagnosticReason(reason);
@@ -267,7 +267,7 @@ export function PasskeyVaultUnlockSetup({
       }
 
       const assertion = await runVaultUnlockAuthenticationCeremony(passkey?.credentialId);
-      const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults);
+      const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);
 
       if (!prfOutput) {
         const reason = resolveCeremonyDiagnosticReason({ prfOutputPresent: false });

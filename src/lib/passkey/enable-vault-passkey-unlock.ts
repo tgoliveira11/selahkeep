@@ -28,7 +28,7 @@ export async function enableVaultPasskeyUnlockWithAuthPrf(args: {
     optionsJSON: prepareAuthenticationOptions(preferPlatformTransportsForVaultUnlock(options)),
   });
 
-  const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults);
+  const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);
   if (!prfOutput) {
     throw new Error(
       getPasskeyPrfDiagnosticMessage(resolveCeremonyDiagnosticReason({ prfOutputPresent: false }))

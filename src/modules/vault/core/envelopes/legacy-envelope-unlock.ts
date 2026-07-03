@@ -9,6 +9,7 @@ import { importAesKey as importLocalAesKey } from "@/lib/crypto-client/aes-gcm";
 import { stringToBytes } from "@/lib/crypto-client/encoding";
 import { aadByteCandidates as localAadByteCandidates } from "@/lib/crypto-client/aad";
 import { SELAHKEEP_VAULT_PROFILE } from "../../selahkeep-profile";
+import { prfBytesForAes256Import } from "@/lib/passkey/normalize-prf-output";
 import { cacheLegacyRawVaultInnerKeyMaterial } from "./vault-inner-key-material";
 
 type VaultKeyScope = { userId: string; resourceId: string };
@@ -111,10 +112,9 @@ async function decryptLegacyVaultKeyField(
 }
 
 async function importPrfAsAesKey(prfOutput: Uint8Array): Promise<CryptoKey> {
-  const keyBytes = prfOutput.byteLength === 32 ? prfOutput : prfOutput.slice(0, 32);
   return crypto.subtle.importKey(
     "raw",
-    toBufferSource(keyBytes),
+    toBufferSource(prfBytesForAes256Import(prfOutput)),
     { name: "AES-GCM", length: 256 },
     false,
     ["encrypt", "decrypt"]
