@@ -157,12 +157,10 @@ export const passkeyService = {
     }
 
     const vaultOnly = Boolean(options?.vaultOnly);
-    if (vaultOnly && !wantsVaultEnvelope) {
-      throw new ChallengeError("Vault-only passkeys require a PRF vault envelope.");
-    }
 
+    let passkeyId: string | undefined;
     await runInTransaction(async (tx) => {
-      await passkeyRepository.createCredential(
+      const created = await passkeyRepository.createCredential(
         {
           userId,
           credentialId: credential.id,
@@ -176,6 +174,7 @@ export const passkeyService = {
         },
         tx
       );
+      passkeyId = created.id;
 
       if (encryptedVaultKey && options?.prfVaultEnvelope) {
         await vaultRepository.createEnvelope(
@@ -195,6 +194,7 @@ export const passkeyService = {
     return {
       verified: true,
       credentialId: credential.id,
+      passkeyId,
       deviceType: credentialDeviceType,
       backedUp: credentialBackedUp,
     };
