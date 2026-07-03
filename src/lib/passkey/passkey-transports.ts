@@ -142,12 +142,9 @@ export function preferPlatformTransportsForVaultUnlock<
 
   return {
     ...options,
-    allowCredentials: options.allowCredentials.map((credential) => {
-      const transports = credential.transports;
-      if (!transports?.includes("internal")) {
-        return credential;
-      }
-      return { ...credential, transports: ["internal"] };
-    }),
+    allowCredentials: options.allowCredentials.map((credential) => ({
+      ...credential,
+      transports: ["internal"],
+    })),
   };
 }

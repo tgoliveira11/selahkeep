@@ -8,7 +8,7 @@ import { passkeyRepository } from "@/server/repositories/passkey-repository";
 import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
 import { enforceRateLimit } from "@/server/policies/rate-limit";
-import { passkeyPrfExtensions } from "@/lib/passkey/prf";
+import { passkeyPrfAuthExtensions } from "@/lib/passkey/prf";
 import { toAllowCredentialDescriptor } from "@/lib/passkey/passkey-transports";
 import {
   getWebAuthnOrigins,
@@ -111,7 +111,7 @@ export const passkeyVaultEnvelopeService = {
       rpID,
       allowCredentials: [toAllowCredentialDescriptor(credential)],
       userVerification: "required",
-      extensions: passkeyPrfExtensions(userId),
+      extensions: passkeyPrfAuthExtensions(userId, [credential.credentialId]),
     });
 
     await passkeyRepository.storeChallenge({
@@ -280,7 +280,7 @@ export const passkeyVaultEnvelopeService = {
       rpID,
       allowCredentials: [toAllowCredentialDescriptor(credential)],
       userVerification: "required",
-      extensions: passkeyPrfExtensions(userId),
+      extensions: passkeyPrfAuthExtensions(userId, [credential.credentialId]),
     });
 
     await passkeyRepository.storeChallenge({

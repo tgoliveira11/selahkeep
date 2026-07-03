@@ -66,10 +66,14 @@ vi.mock("@tgoliveira/vault-core", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/passkey/prepare-webauthn-options", () => ({
-  prepareAuthenticationOptions: (options: unknown) => options,
-  prepareRegistrationOptions: (options: unknown) => options,
-}));
+vi.mock("@/lib/passkey/prepare-webauthn-options", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/passkey/prepare-webauthn-options")>();
+  return {
+    ...actual,
+    prepareAuthenticationOptions: (options: unknown) => options,
+    prepareRegistrationOptions: (options: unknown) => options,
+  };
+});
 
 vi.mock("@/lib/passkey/passkey-prf-diagnostics", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/passkey/passkey-prf-diagnostics")>();

@@ -39,6 +39,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Passkey vault unlock PRF parity on iOS.** Vault unlock setup (`enable-vault-unlock`) always used PRF `eval`, but unlock could receive server `evalByCredential` when multiple vault passkeys were listed (including stale rows) or when prefetched options were scoped to one credential without realigning extensions — Safari can return different PRF bytes for `eval` vs `evalByCredential`. Unlock, setup, test, and disable now share `prepareVaultUnlockAuthenticationOptions` (align `eval`, force `internal` transport on iPhone/iPad, dedicated salt `ArrayBuffer`s). PRF result parsing prefers the asserted credential over `results.first`. Clearer decrypt-failure copy (no “signed you in”).
+
 - **Passkey vault setup after new vault creation (Mac).** Converting the session UVK to non-extractable now caches in-memory inner key material so passkey envelope creation works immediately after vault setup without a password re-unlock.
 
 - **Recovery passkey setup ceremony.** `/vault/recovery` passkey registration now links vault unlock with an authentication PRF envelope (same as settings), runs a post-enable decrypt self-test, and maps Web Crypto failures to actionable copy instead of raw `OperationError` text.

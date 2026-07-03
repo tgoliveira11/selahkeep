@@ -60,7 +60,7 @@ export const PASSKEY_UNLOCK_DECRYPT_FAILED_MESSAGE =
 
 /** Shown when WebAuthn succeeds but PRF bytes do not match the stored vault envelope. */
 export const PASSKEY_UNLOCK_PRF_MISMATCH_MESSAGE =
-  "This passkey signed you in, but it could not derive the vault key on this device. Account passkey sign-in and vault passkey unlock are separate: the passkey linked to your vault must return PRF output from the same provider and device where you enabled vault unlock (for example Enpass on this iPhone). Unlock with your vault password or recovery phrase, or re-link vault unlock from /vault/settings while your vault is open on this browser.";
+  "This passkey completed vault unlock authentication, but it could not derive the vault key on this device. Vault passkey unlock requires PRF output from the same provider and device where you enabled it (for example your iPhone passkey). Unlock with your vault password or recovery phrase, or re-link vault unlock from /vault/settings while your vault is open on this browser.";
 
 /** Shown when the OS is too old for mobile WebAuthn PRF (iOS/iPadOS before 18). */
 export const PASSKEY_UNLOCK_IOS_PRF_TOO_OLD_MESSAGE =
