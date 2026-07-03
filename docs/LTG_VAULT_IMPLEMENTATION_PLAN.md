@@ -578,7 +578,7 @@ Complete passkey vault unlock for MVP: associate passkey with vault and create a
 
 ### 10. Documentation required
 
-- Update `docs/PASSKEY_LOGIN_VAULT_UNLOCK.md` for SelahKeep
+- Update `docs/archive/PASSKEY_LOGIN_VAULT_UNLOCK.md` for SelahKeep
 - Update `docs/ADR-002_*` passkey sections
 - Resolve `AUTH_RESET` TODO items
 
@@ -1375,9 +1375,9 @@ Phase 0 ──► Phase 1 (crypto + vault setup)
 | [`docs/TDR_LTG_Vault_MVP.md`](./TDR_LTG_Vault_MVP.md) | Product/architecture source of truth |
 | [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./AUTH_RESET_TO_SECURE_AUTH.md) | Phase 0 auth boundary |
 | [`docs/ADR-005_*`](./ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md) | Active vault crypto |
-| [`docs/ADR-006_*`](./ADR-006_LTG_Vault_Passkey_PRF_Unlock.md) | Active passkey PRF unlock |
+| [`docs/ADR-006_*`](./archive/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md) | Active passkey PRF unlock |
 | [`docs/ADR-005_*`](./ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md) | Active vault crypto ADR |
-| [`docs/ADR-006_*`](./ADR-006_LTG_Vault_Passkey_PRF_Unlock.md) | Active passkey PRF ADR |
+| [`docs/ADR-006_*`](./archive/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md) | Active passkey PRF ADR |
 | [`docs/README.md`](./README.md) | Documentation index |
 | `AGENTS.md` | Agent workflow + test thresholds |
 

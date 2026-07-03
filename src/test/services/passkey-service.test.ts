@@ -79,7 +79,8 @@ describe("passkey service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.findByUserId.mockResolvedValue([]);
-    mocks.createCredential.mockResolvedValue({ id: "passkey-db-1" });
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue(null);
+    mocks.createCredential.mockResolvedValue({ id: "cred-db-id" });
     mocks.generateRegistrationOptions.mockResolvedValue({ challenge: "reg-challenge" });
     mocks.generateAuthenticationOptions.mockResolvedValue({ challenge: "auth-challenge" });
   });
@@ -200,42 +201,7 @@ describe("passkey service", () => {
         friendlyName: "Vault passkey",
       }),
       expect.anything()
-     );
-  });
-
-  it("registers vault-only passkey without envelope for auth-PRF linking", async () => {
-    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "reg-challenge" });
-    mocks.verifyRegistrationResponse.mockResolvedValue({
-      verified: true,
-      registrationInfo: {
-        credential: {
-          id: "cred-id",
-          publicKey: new Uint8Array(32),
-          counter: 0,
-          transports: ["internal"],
-        },
-        credentialDeviceType: "singleDevice",
-        credentialBackedUp: false,
-      },
-    });
-
-    const result = await passkeyService.verifyRegistration(
-      USER_ID,
-      registrationResponse("reg-challenge"),
-      undefined,
-      { vaultOnly: true }
     );
-
-    expect(result.passkeyId).toBe("passkey-db-1");
-    expect(mocks.createCredential).toHaveBeenCalledWith(
-      expect.objectContaining({
-        signInEnabled: false,
-        vaultUnlockEnabled: false,
-        friendlyName: "Vault passkey",
-      }),
-      expect.anything()
-    );
-    expect(mocks.createEnvelope).not.toHaveBeenCalled();
   });
 
   it("verifyRegistration rejects invalid challenge", async () => {
@@ -309,7 +275,12 @@ describe("passkey service", () => {
     );
   });
 
-  it("vault unlock options include only vaultUnlockEnabled credentials with transports", async () => {
+  it("vault unlock options scope to the active envelope credential with internal transport", async () => {
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue({
+      id: "env-1",
+      method: "passkey_authorized_device",
+      publicMetadata: { credentialId: "vault-cred", prfRequired: true },
+    });
     mocks.findByUserId.mockResolvedValue([
       {
         credentialId: "account-cred",
@@ -324,58 +295,18 @@ describe("passkey service", () => {
         signInEnabled: false,
       },
     ]);
-    mocks.findActiveEnvelopeByMethod.mockResolvedValue({
-      publicMetadata: { credentialId: "vault-cred", prfRequired: true },
-    });
 
     await passkeyService.getAuthenticationOptions(USER_ID, undefined, {
       purpose: "vault_unlock",
     });
 
+    // Scoped to the single active-envelope credential; hybrid dropped, internal pinned.
     expect(mocks.generateAuthenticationOptions).toHaveBeenCalledWith(
       expect.objectContaining({
         allowCredentials: [{ id: "vault-cred", transports: ["internal"] }],
         userVerification: "required",
         extensions: expect.objectContaining({
-          prf: expect.objectContaining({
-            eval: expect.objectContaining({ first: expect.any(String) }),
-          }),
-        }),
-      })
-    );
-    expect(mocks.generateAuthenticationOptions.mock.calls[0]?.[0]?.extensions?.prf?.evalByCredential).toBeUndefined();
-  });
-
-  it("vault unlock options scope to the active passkey envelope credential only", async () => {
-    mocks.findByUserId.mockResolvedValue([
-      {
-        credentialId: "stale-vault",
-        transports: ["internal"],
-        vaultUnlockEnabled: true,
-        signInEnabled: false,
-      },
-      {
-        credentialId: "active-vault",
-        transports: ["internal", "hybrid"],
-        vaultUnlockEnabled: true,
-        signInEnabled: true,
-      },
-    ]);
-    mocks.findActiveEnvelopeByMethod.mockResolvedValue({
-      publicMetadata: { credentialId: "active-vault", prfRequired: true },
-    });
-
-    await passkeyService.getAuthenticationOptions(USER_ID, undefined, {
-      purpose: "vault_unlock",
-    });
-
-    expect(mocks.generateAuthenticationOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        allowCredentials: [{ id: "active-vault", transports: ["internal"] }],
-        extensions: expect.objectContaining({
-          prf: expect.objectContaining({
-            eval: expect.objectContaining({ first: expect.any(String) }),
-          }),
+          prf: expect.objectContaining({ eval: expect.any(Object) }),
         }),
       })
     );
@@ -397,7 +328,14 @@ describe("passkey service", () => {
     expect(mocks.generateAuthenticationOptions).not.toHaveBeenCalled();
   });
 
-  it("vault unlock options use evalByCredential when multiple vault credentials exist", async () => {
+  it("vault unlock always requests PRF eval scoped to the active envelope credential (never evalByCredential)", async () => {
+    // Even with multiple vault-enabled credentials, unlock scopes to the one bound
+    // to the active envelope and uses PRF `eval` — the vault-core canonical contract.
+    mocks.findActiveEnvelopeByMethod.mockResolvedValue({
+      id: "env-1",
+      method: "passkey_authorized_device",
+      publicMetadata: { credentialId: "vault-a", prfRequired: true },
+    });
     mocks.findByUserId.mockResolvedValue([
       {
         credentialId: "vault-a",
@@ -410,100 +348,17 @@ describe("passkey service", () => {
         vaultUnlockEnabled: true,
       },
     ]);
-    mocks.findActiveEnvelopeByMethod.mockResolvedValue(null);
 
     await passkeyService.getAuthenticationOptions(USER_ID, undefined, {
       purpose: "vault_unlock",
     });
 
-    expect(mocks.generateAuthenticationOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        allowCredentials: [
-          { id: "vault-a", transports: ["internal"] },
-          { id: "vault-b", transports: ["internal"] },
-        ],
-        extensions: expect.objectContaining({
-          prf: expect.objectContaining({
-            evalByCredential: expect.any(Object),
-          }),
-        }),
-      })
-    );
-  });
-
-  it("vault unlock options scope to envelope credential when vault_unlock_enabled is stale", async () => {
-    mocks.findByUserId.mockResolvedValue([
-      {
-        credentialId: "envelope-cred",
-        transports: ["internal", "hybrid"],
-        vaultUnlockEnabled: false,
-        signInEnabled: true,
-      },
-      {
-        credentialId: "other-vault",
-        transports: ["internal"],
-        vaultUnlockEnabled: true,
-        signInEnabled: false,
-      },
+    const call = mocks.generateAuthenticationOptions.mock.calls[0][0];
+    expect(call.allowCredentials).toEqual([
+      { id: "vault-a", transports: ["internal"] },
     ]);
-    mocks.findActiveEnvelopeByMethod.mockResolvedValue({
-      publicMetadata: { credentialId: "envelope-cred", prfRequired: true },
-    });
-
-    await passkeyService.getAuthenticationOptions(USER_ID, undefined, {
-      purpose: "vault_unlock",
-    });
-
-    expect(mocks.generateAuthenticationOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        allowCredentials: [{ id: "envelope-cred", transports: ["internal"] }],
-        extensions: expect.objectContaining({
-          prf: expect.objectContaining({
-            eval: expect.objectContaining({ first: expect.any(String) }),
-          }),
-        }),
-      })
-    );
-  });
-
-  it("vault unlock verify accepts active envelope when vault_unlock_enabled flag is stale", async () => {
-    mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
-    mocks.findByCredentialId.mockResolvedValue({
-      userId: USER_ID,
-      credentialId: "envelope-cred",
-      publicKey: Buffer.from(new Uint8Array(32)).toString("base64url"),
-      counter: "0",
-      transports: ["internal"],
-      vaultUnlockEnabled: false,
-      signInEnabled: true,
-    });
-    mocks.verifyAuthenticationResponse.mockResolvedValue({
-      verified: true,
-      authenticationInfo: { newCounter: 1 },
-    });
-    mocks.findActivePasskeyEnvelopeByCredentialId.mockResolvedValue({
-      encryptedVaultKey: encryptedPayload("vault_key", USER_ID),
-      publicMetadata: { prfRequired: true },
-    });
-
-    const clientDataJSON = Buffer.from(
-      JSON.stringify({ type: "webauthn.get", challenge: "auth-challenge", origin: "http://localhost:3001" })
-    ).toString("base64url");
-
-    const result = await passkeyService.verifyAuthentication(
-      USER_ID,
-      {
-        id: "envelope-cred",
-        rawId: "envelope-cred",
-        type: "public-key",
-        response: { clientDataJSON, authenticatorData: "aa", signature: "sig" },
-        clientExtensionResults: {},
-      },
-      { purpose: "vault_unlock" }
-    );
-
-    expect(result.verified).toBe(true);
-    expect(result.encryptedVaultKey).toBeTruthy();
+    expect(call.extensions.prf.eval).toBeDefined();
+    expect(call.extensions.prf.evalByCredential).toBeUndefined();
   });
 
   it("verifyAuthentication returns vault envelope", async () => {
@@ -540,7 +395,7 @@ describe("passkey service", () => {
     expect(result.encryptedVaultKey).toBeTruthy();
   });
 
-  it("vault unlock verify rejects account-only credential without envelope", async () => {
+  it("vault unlock verify rejects account-only credential", async () => {
     mocks.consumeValidChallenge.mockResolvedValue({ id: "ch-1", challenge: "auth-challenge" });
     mocks.findByCredentialId.mockResolvedValue({
       userId: USER_ID,
@@ -555,7 +410,6 @@ describe("passkey service", () => {
       verified: true,
       authenticationInfo: { newCounter: 1 },
     });
-    mocks.findActivePasskeyEnvelopeByCredentialId.mockResolvedValue(null);
 
     const clientDataJSON = Buffer.from(
       JSON.stringify({ type: "webauthn.get", challenge: "auth-challenge", origin: "http://localhost:3001" })

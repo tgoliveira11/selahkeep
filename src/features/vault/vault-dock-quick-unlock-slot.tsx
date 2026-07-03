@@ -6,7 +6,6 @@ import { VaultDockQuickUnlock } from "@tgoliveira/vault-core/react";
 import type { VaultServerStatusSnapshot } from "@tgoliveira/vault-core/react";
 import { Alert } from "@/components/ui/alert";
 import { getVaultUnlockRateLimiter } from "@/lib/vault/vault-rate-limit";
-import type { VaultPasskeyUnlockPrefetch } from "@/features/passkey/use-vault-passkey-unlock-prefetch";
 
 type VaultUnlockRateLimiter = ReturnType<typeof getVaultUnlockRateLimiter>;
 
@@ -17,12 +16,9 @@ interface VaultDockQuickUnlockSlotProps {
   passkeyReady: boolean;
   unlockRateLimiter: VaultUnlockRateLimiter;
   rateLimitScopeKey: string;
-  refreshPasskeyOptions: () => Promise<VaultPasskeyUnlockPrefetch | null>;
+  refreshPasskeyOptions: () => Promise<PublicKeyCredentialRequestOptionsJSON | null>;
   onUnlockPassword: (password: string) => Promise<void>;
-  onUnlockPasskey: (
-    options: PublicKeyCredentialRequestOptionsJSON | null,
-    credentialId?: string
-  ) => Promise<void>;
+  onUnlockPasskey: (options: PublicKeyCredentialRequestOptionsJSON | null) => Promise<void>;
   onPasskeyUnlockFailed: (error: unknown) => void;
   onPasskeyUnlockCancelled: (error: unknown) => void;
   bindAutoStartPasskey: (handler: (() => void) | null) => void;
@@ -47,23 +43,23 @@ export function VaultDockQuickUnlockSlot({
   bindAutoStartPasskey,
 }: VaultDockQuickUnlockSlotProps) {
   const [passkeyOptionsReady, setPasskeyOptionsReady] = useState(false);
-  const latestPrefetchRef = useRef<VaultPasskeyUnlockPrefetch | null>(null);
+  const latestOptionsRef = useRef<PublicKeyCredentialRequestOptionsJSON | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setPasskeyOptionsReady(false);
-    latestPrefetchRef.current = null;
+    latestOptionsRef.current = null;
 
-    void refreshPasskeyOptions().then((prefetch) => {
+    void refreshPasskeyOptions().then((options) => {
       if (cancelled) return;
-      latestPrefetchRef.current = prefetch;
-      setPasskeyOptionsReady(prefetch?.options != null);
+      latestOptionsRef.current = options;
+      setPasskeyOptionsReady(options != null);
     });
 
     return () => {
       cancelled = true;
       setPasskeyOptionsReady(false);
-      latestPrefetchRef.current = null;
+      latestOptionsRef.current = null;
     };
   }, [refreshPasskeyOptions]);
 
@@ -80,10 +76,7 @@ export function VaultDockQuickUnlockSlot({
       onPasskeyUnlockFailed={onPasskeyUnlockFailed}
       onPasskeyUnlockCancelled={onPasskeyUnlockCancelled}
       onUnlockPassword={onUnlockPassword}
-      onUnlockPasskey={() => {
-        const latest = latestPrefetchRef.current;
-        return onUnlockPasskey(latest?.options ?? null, latest?.credentialId);
-      }}
+      onUnlockPasskey={() => onUnlockPasskey(latestOptionsRef.current)}
       renderError={(message) => (
         <Alert variant="danger" title="Unlock failed">
           {message}

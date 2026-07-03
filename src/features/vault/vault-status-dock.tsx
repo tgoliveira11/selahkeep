@@ -8,7 +8,7 @@ import {
   VaultStatusDock as CoreVaultStatusDock,
   createVaultFullUnlockPageMatcher,
 } from "@tgoliveira/vault-core/react";
-import { isPrfExtensionSupported } from "@/lib/passkey/prf-support";
+import { isPrfExtensionSupported } from "@tgoliveira/vault-core/browser";
 import { useVault } from "@/features/vault/use-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { VaultDockQuickUnlockSlot } from "@/features/vault/vault-dock-quick-unlock-slot";
@@ -48,13 +48,12 @@ export function VaultStatusDock() {
   const runDockPasskeyUnlock = useCallback(
     async (
       collapse: () => void,
-      options: PublicKeyCredentialRequestOptionsJSON | null,
-      credentialId?: string
+      options: PublicKeyCredentialRequestOptionsJSON | null
     ) => {
       if (!passkeyAvailability.showPasskey || passkeyUnlockInFlightRef.current) return;
       passkeyUnlockInFlightRef.current = true;
       try {
-        await unlockFromPasskey(options ?? undefined, credentialId);
+        await unlockFromPasskey(options ?? undefined);
         collapse();
       } finally {
         passkeyUnlockInFlightRef.current = false;
@@ -123,9 +122,7 @@ export function VaultStatusDock() {
             await unlockFromVaultPassword(password);
             collapse();
           }}
-          onUnlockPasskey={(options, credentialId) =>
-            runDockPasskeyUnlock(collapse, options, credentialId)
-          }
+          onUnlockPasskey={(options) => runDockPasskeyUnlock(collapse, options)}
         />
       )}
     />

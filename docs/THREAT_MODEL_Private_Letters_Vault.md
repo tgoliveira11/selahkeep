@@ -8,7 +8,7 @@
 |-------|-------|
 | **Status** | Draft — P1 beta gate |
 | **Scope** | SelahKeep MVP (web) — encrypted notes in a private vault |
-| **Related docs** | [TDR](./TDR_LTG_Vault_MVP.md), [ADR-005](./ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md), [ADR-006](./ADR-006_LTG_Vault_Passkey_PRF_Unlock.md), [SECURITY.md](../SECURITY.md) |
+| **Related docs** | [TDR](./TDR_LTG_Vault_MVP.md), [ADR-005](./ADR-005_LTG_Vault_Cryptography_Argon2id_Recovery_Phrase_Note_Keys.md), [ADR-006](./archive/ADR-006_LTG_Vault_Passkey_PRF_Unlock.md), [SECURITY.md](../SECURITY.md) |
 | **Audience** | Engineering, security review, product, legal/privacy |
 
 ## Security Architecture Summary

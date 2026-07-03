@@ -8,15 +8,11 @@ import {
   unlockVaultFromPasskeyEnvelope,
 } from "@/lib/crypto-client/passkey-vault";
 import { generateUserVaultKey } from "@/lib/crypto-client/vault";
-import { clearVaultInnerKeyMaterial } from "@/modules/vault/core/envelopes/vault-inner-key-material";
-import { resetVaultSessionStoreForTests } from "@/lib/crypto-client/vault-session";
 import { USER_ID } from "@/test/helpers/fixtures";
 
 describe("passkey vault crypto", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    clearVaultInnerKeyMaterial();
-    resetVaultSessionStoreForTests();
   });
 
   it("detects passkey support when WebAuthn is available", () => {
@@ -42,11 +38,6 @@ describe("passkey vault crypto", () => {
     expect(
       extractPasskeyPrfOutput({
         prf: { results: { first: new Uint8Array(8).buffer } },
-      } as never)
-    ).toBeNull();
-    expect(
-      extractPasskeyPrfOutput({
-        prf: { results: { first: "too-short" } },
       } as never)
     ).toBeNull();
   });

@@ -58,27 +58,8 @@ export const PASSKEY_UNLOCK_PRF_UNAVAILABLE_MESSAGE =
 export const PASSKEY_UNLOCK_DECRYPT_FAILED_MESSAGE =
   "We could not unlock your vault with this passkey. Use your vault password or recovery phrase.";
 
-/** Shown when WebAuthn succeeds but PRF bytes do not match the stored vault envelope. */
-export const PASSKEY_UNLOCK_PRF_MISMATCH_MESSAGE =
-  "This passkey completed vault unlock authentication, but it could not derive the vault key on this device. Vault passkey unlock requires PRF output from the same provider and device where you enabled it (for example your iPhone passkey). Unlock with your vault password or recovery phrase, or re-link vault unlock from /vault/settings while your vault is open on this browser.";
-
-/** iPhone/iPad decrypt failure — suggests iCloud Keychain over third-party passkey apps. */
-export const PASSKEY_UNLOCK_PRF_MISMATCH_APPLE_HINT_MESSAGE =
-  "This passkey authenticated, but it could not unlock your vault on this iPhone or iPad. Vault unlock needs stable PRF output from the same passkey provider where you set it up. If you use Enpass or another password manager for account sign-in, try setting up vault unlock with iCloud Keychain (Face ID / Touch ID) instead. You can also unlock with your vault password or recovery phrase, then re-link passkey vault unlock from /vault/settings.";
-
-/** Shown when the OS is too old for mobile WebAuthn PRF (iOS/iPadOS before 18). */
-export const PASSKEY_UNLOCK_IOS_PRF_TOO_OLD_MESSAGE =
-  "Vault passkey unlock is not available on this iPhone or iPad version. It requires iOS or iPadOS 18 or later. Use your vault password or recovery phrase, or unlock from a desktop browser where vault passkey unlock is configured.";
-
 export const PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE =
-  "Passkey test succeeded. This browser returned PRF output and decrypted your vault key.";
-
-export const PASSKEY_VAULT_UNLOCK_TEST_MISMATCH_MESSAGE =
-  "Passkey authentication succeeded, but the derived vault key did not match your open vault session. Re-link vault passkey unlock from this browser while your vault is open.";
-
-/** Shown when passkey envelope wrap needs re-unlock to cache inner key material. */
-export const PASSKEY_VAULT_UNLOCK_REWRAP_REQUIRES_UNLOCK_MESSAGE =
-  "Lock your vault, unlock it again with your vault password or recovery phrase on this device, then set up passkey vault unlock.";
+  "Passkey test succeeded. This browser returned PRF output for your vault unlock passkey.";
 
 export const PASSKEY_VAULT_UNLOCK_ACCOUNT_LOGIN_NOTE =
   "Use a compatible passkey to unlock your vault after you sign in. This is separate from account passkey sign-in and requires WebAuthn PRF support from your browser and passkey provider.";

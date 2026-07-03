@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  passkeyPrfAuthExtensions,
   passkeyPrfExtensions,
   passkeyPrfSaltBase64Url,
   passkeyPrfSaltBytes,
@@ -28,8 +27,11 @@ describe("passkey PRF salt", () => {
     expect(extensions).toHaveProperty("prf");
   });
 
-  it("uses evalByCredential when multiple passkeys are allowed", () => {
-    const extensions = passkeyPrfAuthExtensions(userId, ["cred-a", "cred-b"]);
-    expect(extensions).toHaveProperty("prf.evalByCredential");
+  it("always uses prf.eval (single credential, never evalByCredential)", () => {
+    const extensions = passkeyPrfExtensions(userId) as {
+      prf?: { eval?: { first?: string }; evalByCredential?: unknown };
+    };
+    expect(extensions.prf?.eval?.first).toBe(passkeyPrfSaltBase64Url(userId));
+    expect(extensions.prf?.evalByCredential).toBeUndefined();
   });
 });

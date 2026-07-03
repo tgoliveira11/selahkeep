@@ -2,21 +2,26 @@
 
 import { useState } from "react";
 import {
+  startAuthentication,
   startRegistration,
   type PublicKeyCredentialCreationOptionsJSON,
+  type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SuccessState } from "@/components/ui/success-state";
 import { getSessionVaultKey } from "@/lib/crypto-client/vault";
-import { extractPasskeyPrfOutput } from "@/lib/crypto-client/passkey-vault";
-import { enableVaultPasskeyUnlockWithAuthPrf } from "@/lib/passkey/enable-vault-passkey-unlock";
-import { toPasskeyCeremonyErrorMessage } from "@/lib/passkey/map-passkey-crypto-error";
-import { verifyPasskeyVaultUnlockRoundTrip } from "@/lib/passkey/verify-passkey-vault-round-trip";
+import {
+  extractPasskeyPrfOutput,
+  wrapVaultKeyForPasskey,
+} from "@/lib/crypto-client/passkey-vault";
 import { apiClient } from "@/lib/api-client/client";
 import { passkeysApi } from "@/lib/api-client/passkeys";
-import { prepareRegistrationOptions } from "@/lib/passkey/prepare-webauthn-options";
+import {
+  prepareAuthenticationOptions,
+  prepareRegistrationOptions,
+} from "@/lib/passkey/prepare-webauthn-options";
 import { toPasskeyRegistrationErrorMessage } from "@/lib/passkey/webauthn-config";
 import {
   getPasskeyPrfDiagnosticHeadline,
@@ -79,6 +84,7 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         return;
       }
 
+      // Step 1: register the vault-only credential WITHOUT an envelope.
       const options = (await apiClient.post("/api/passkeys/register", {
         action: "options",
         vaultOnly: true,
@@ -98,7 +104,44 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         throw ceremonyError;
       }
 
-      const prfOutput = extractPasskeyPrfOutput(attestation.clientExtensionResults, attestation.id);
+      const registration = await apiClient.post<{
+        verified: boolean;
+        credentialId?: string;
+        credentialDbId?: string;
+      }>("/api/passkeys/register", {
+        action: "verify",
+        response: attestation,
+        vaultOnly: true,
+      });
+
+      const credentialDbId = registration.credentialDbId;
+      if (!credentialDbId) {
+        throw new Error("Passkey registration failed");
+      }
+
+      // Step 2: create the envelope from an AUTHENTICATION-ceremony PRF (`get`),
+      // matching the unlock ceremony. Registration (`create`) PRF is unreliable on
+      // iOS (create vs get can differ), so it is never used to wrap the vault key.
+      const enablePath = `/api/account/passkeys/${credentialDbId}/enable-vault-unlock`;
+      const enableOptions = (await apiClient.post(enablePath, {
+        action: "options",
+      })) as PublicKeyCredentialRequestOptionsJSON;
+
+      let assertion;
+      try {
+        assertion = await startAuthentication({
+          optionsJSON: prepareAuthenticationOptions(enableOptions),
+        });
+      } catch (ceremonyError) {
+        if (isCeremonyCancellation(ceremonyError)) {
+          setOutcome("cancelled");
+          setError(getPasskeyPrfDiagnosticMessage("ceremony_cancelled"));
+          return;
+        }
+        throw ceremonyError;
+      }
+
+      const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults);
 
       if (!prfOutput) {
         showDiagnosticOutcome(resolveCeremonyDiagnosticReason({ prfOutputPresent: false }), {
@@ -107,33 +150,22 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         return;
       }
 
-      const registration = await apiClient.post<{
-        verified: boolean;
-        credentialId?: string;
-        passkeyId?: string;
-      }>("/api/passkeys/register", {
-        action: "verify",
-        response: attestation,
-        vaultOnly: true,
-      });
-
-      if (!registration.passkeyId) {
-        throw new Error("Passkey registration succeeded but could not link vault unlock.");
-      }
-
-      const enableResult = await enableVaultPasskeyUnlockWithAuthPrf({
-        passkeyDbId: registration.passkeyId,
-        userId,
+      const encryptedVaultKey = await wrapVaultKeyForPasskey(
         vaultKey,
-      });
-
-      await verifyPasskeyVaultUnlockRoundTrip({
+        prfOutput,
         userId,
-        sessionVaultKey: vaultKey,
-        knownUnlock: enableResult,
+        userId
+      );
+
+      const result = await apiClient.post<{ success?: boolean }>(enablePath, {
+        action: "verify",
+        response: assertion,
+        encryptedVaultKey,
+        prfVaultEnvelope: true,
+        prfSupported: true,
       });
 
-      if (registration.verified) {
+      if (result.success) {
         setPasskeyLoginHint({
           userId,
           credentialId: registration.credentialId,
@@ -154,12 +186,7 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
       }
       setOutcome("failed");
       const registrationMessage = toPasskeyRegistrationErrorMessage(e);
-      setError(
-        toPasskeyCeremonyErrorMessage(
-          e,
-          registrationMessage ?? (e instanceof Error ? e.message : "Passkey registration failed")
-        )
-      );
+      setError(registrationMessage ?? (e instanceof Error ? e.message : "Passkey registration failed"));
     } finally {
       setLoading(false);
     }

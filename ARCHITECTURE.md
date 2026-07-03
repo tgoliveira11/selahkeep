@@ -70,7 +70,7 @@ See also [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) and [`docs/openapi.y
 
 - Passkey registration without PRF does **not** create `passkey_authorized_device` envelopes and does **not** revoke existing passkey envelopes
 - **Account passkeys and vault passkeys are independent** — vault-only setup uses `POST /api/passkeys/register` with `vaultOnly: true` (`signInEnabled: false`, `authenticatorAttachment: "platform"`); account passkey sign-in never unlocks the vault
-- Vault unlock authenticate: `POST /api/passkeys/authenticate` with `purpose: "vault_unlock"` — server `allowCredentials` lists only `vaultUnlockEnabled` credentials and replays stored `transports`; client helper `src/lib/passkey/vault-unlock-authenticate.ts` preserves transport hints when filtering (see `docs/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md`, `docs/PASSKEY_VAULT_LIFECYCLE.md`)
+- Vault unlock authenticate: `POST /api/passkeys/authenticate` with `purpose: "vault_unlock"` — server `allowCredentials` lists only `vaultUnlockEnabled` credentials and replays stored `transports`; client helper `src/lib/passkey/vault-unlock-authenticate.ts` preserves transport hints when filtering (see `docs/archive/PASSKEY_TOUCH_ID_QR_PROMPT_FIX.md`, `docs/archive/PASSKEY_VAULT_LIFECYCLE.md`)
 - Passkey-based vault unlock requires PRF support. If PRF is unavailable, the app must not create a passkey vault envelope and must not present that passkey as a recovery method.
 - WebAuthn challenge validation uses atomic `consumeValidChallenge()` only (`findValidChallenge` removed)
 - WebAuthn challenge indexes: `idx_webauthn_challenges_lookup`, `idx_webauthn_challenges_expires_at`
@@ -187,7 +187,7 @@ Account passkey sign-in is owned by `@tgoliveira/secure-auth` (`LoginPage` and p
 
 Account passkey options and verification are pure package delegates. Passkey vault unlock is a separate signed-in action from `/vault/unlock` or the vault dock using `POST /api/passkeys/authenticate` with `purpose: "vault_unlock"`; no package client alias, login PRF enrichment, or login-token vault metadata routes are used. Per-passkey enable/status/revoke remain product-owned: `enable-vault-unlock`, `GET/DELETE .../vault-unlock`.
 
-See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md) and [`docs/PASSKEY_LOGIN_VAULT_UNLOCK.md`](./docs/PASSKEY_LOGIN_VAULT_UNLOCK.md).
+See [`docs/AUTH_RESET_TO_SECURE_AUTH.md`](./docs/AUTH_RESET_TO_SECURE_AUTH.md) and [`docs/archive/PASSKEY_LOGIN_VAULT_UNLOCK.md`](./docs/archive/PASSKEY_LOGIN_VAULT_UNLOCK.md).
 
 ## Account two-factor authentication
 

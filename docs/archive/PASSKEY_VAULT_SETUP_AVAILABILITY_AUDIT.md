@@ -1,3 +1,7 @@
+> **⚠️ ARCHIVED — obsolete (2026-07-03).** Superseded by `@tgoliveira/vault-core` as the single source of truth for vault and passkey PRF unlock behavior. See the package's `README.md`, `docs/IMPLEMENTATION_GUIDE.md`, and `PASSKEY_PRF_ENVELOPES.md`. Kept for historical context only — do not use for current implementation guidance.
+
+---
+
 # SelahKeep — Passkey vault setup availability audit
 
 **Date:** 2026-06-16  

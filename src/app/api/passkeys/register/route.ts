@@ -44,9 +44,10 @@ export async function POST(request: Request) {
       user.id,
       parsed.data.response as Parameters<typeof passkeyService.verifyRegistration>[1],
       parsed.data.encryptedVaultKey,
-      parsed.data.prfVaultEnvelope
-        ? { prfVaultEnvelope: true, vaultOnly: parsed.data.vaultOnly }
-        : undefined
+      {
+        prfVaultEnvelope: parsed.data.prfVaultEnvelope,
+        vaultOnly: parsed.data.vaultOnly,
+      }
     );
     return NextResponse.json(result);
   } catch (error) {

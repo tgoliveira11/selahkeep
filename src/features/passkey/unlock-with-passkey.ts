@@ -3,23 +3,16 @@ import {
   getPasskeyPrfDiagnosticMessage,
   resolveCeremonyDiagnosticReason,
 } from "@/lib/passkey/passkey-prf-diagnostics";
-import { mapPasskeyCryptoError } from "@/lib/passkey/map-passkey-crypto-error";
 import {
   PASSKEY_NOT_LINKED_TO_VAULT_UNLOCK_MESSAGE,
   PASSKEY_NOT_AVAILABLE_FOR_VAULT_UNLOCK_MESSAGE,
-  PASSKEY_UNLOCK_IOS_PRF_TOO_OLD_MESSAGE,
-  PASSKEY_UNLOCK_PRF_MISMATCH_MESSAGE,
-  PASSKEY_UNLOCK_PRF_MISMATCH_APPLE_HINT_MESSAGE,
   PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE,
 } from "@/lib/passkey/messages";
 import {
   extractPasskeyPrfOutput,
   PasskeyPrfRequiredError,
-  PasskeyUnlockError,
   unlockVaultFromPasskeyEnvelope,
 } from "@/lib/crypto-client/passkey-vault";
-import { isAppleMobileBelowPrfMinimum, isAppleMobileUserAgent } from "@/lib/passkey/prf-support";
-import { resolveActiveVaultUnlockCredentialId } from "@/lib/passkey/vault-unlock-credential";
 import { logPasskeyVaultEvent } from "@/features/passkey/passkey-vault-audit";
 import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import {
@@ -39,17 +32,11 @@ export async function unlockVaultWithPasskey(
   credentialId?: string,
   prefetchedOptions?: PublicKeyCredentialRequestOptionsJSON | null
 ): Promise<CryptoKey> {
-  const effectiveCredentialId =
-    credentialId ?? (await resolveActiveVaultUnlockCredentialId());
-
   let assertion;
   try {
     assertion = prefetchedOptions
-      ? await runVaultUnlockAuthenticationCeremonyWithOptions(
-          prefetchedOptions,
-          effectiveCredentialId
-        )
-      : await runVaultUnlockAuthenticationCeremony(effectiveCredentialId);
+      ? await runVaultUnlockAuthenticationCeremonyWithOptions(prefetchedOptions, credentialId)
+      : await runVaultUnlockAuthenticationCeremony(credentialId);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (message.includes(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE)) {
@@ -61,7 +48,7 @@ export async function unlockVaultWithPasskey(
     throw error;
   }
 
-  const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);
+  const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults);
 
   let result: PasskeyAuthResult;
   try {
@@ -84,25 +71,12 @@ export async function unlockVaultWithPasskey(
     throw new Error(PASSKEY_NOT_LINKED_TO_VAULT_UNLOCK_MESSAGE);
   }
 
-  const prfRequired = result.prfRequired ?? true;
-  if (prfRequired && !prfOutput) {
-    logPasskeyVaultEvent("passkey_vault_unlock_failed", {
-      method: "passkey",
-      errorCode: "prf_required",
-    });
-    throw new Error(
-      getPasskeyPrfDiagnosticMessage(
-        resolveCeremonyDiagnosticReason({ prfOutputPresent: false })
-      )
-    );
-  }
-
   try {
     const vaultKey = await unlockVaultFromPasskeyEnvelope(
       userId,
       result.encryptedVaultKey,
       prfOutput,
-      { prfRequired }
+      { prfRequired: result.prfRequired ?? true }
     );
     logPasskeyVaultEvent("passkey_vault_unlock_succeeded", { method: "passkey" });
     return vaultKey;
@@ -121,19 +95,8 @@ export async function unlockVaultWithPasskey(
         )
       );
     }
-    if (error instanceof PasskeyUnlockError) {
-      throw new Error(mapPasskeyCryptoError(error) ?? resolvePasskeyVaultDecryptFailureMessage());
-    }
-    throw new Error(mapPasskeyCryptoError(error) ?? resolvePasskeyVaultDecryptFailureMessage());
+    throw new Error(
+      "Could not decrypt your vault with this passkey. Use your vault password or recovery phrase, or set up your passkey again from a PRF-capable browser."
+    );
   }
-}
-
-function resolvePasskeyVaultDecryptFailureMessage(): string {
-  if (isAppleMobileBelowPrfMinimum()) {
-    return PASSKEY_UNLOCK_IOS_PRF_TOO_OLD_MESSAGE;
-  }
-  if (isAppleMobileUserAgent()) {
-    return PASSKEY_UNLOCK_PRF_MISMATCH_APPLE_HINT_MESSAGE;
-  }
-  return PASSKEY_UNLOCK_PRF_MISMATCH_MESSAGE;
 }

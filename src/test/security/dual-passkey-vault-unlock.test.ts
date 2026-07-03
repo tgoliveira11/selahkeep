@@ -7,11 +7,15 @@ function readSource(relativePath: string): string {
 }
 
 describe("dual passkey vault unlock credential filtering", () => {
-  it("server filters vault unlock options to vaultUnlockEnabled credentials", () => {
+  it("server scopes vault unlock options to the active envelope credential (canonical contract)", () => {
     const source = readSource("src/server/services/passkey-service.ts");
     expect(source).toContain('purpose === "vault_unlock"');
     expect(source).toContain("credential.vaultUnlockEnabled");
-    expect(source).toContain("passkeyPrfAuthExtensions");
+    // Single-credential eval scoped to the active envelope — never evalByCredential.
+    expect(source).toContain("buildVaultUnlockAuthenticationOptions");
+    expect(source).toContain("findActiveEnvelopeByMethod");
+    expect(source).toContain("toVaultUnlockAllowCredentialDescriptor");
+    expect(source).not.toContain("passkeyPrfAuthExtensions");
     expect(source).toContain("PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE");
     expect(source).toContain("PASSKEY_ACCOUNT_ONLY_FOR_SIGN_IN_MESSAGE");
   });
@@ -28,11 +32,8 @@ describe("dual passkey vault unlock credential filtering", () => {
   it("settings test and unlock share vault unlock authenticate helper", () => {
     const setup = readSource("src/features/passkey/passkey-vault-unlock-setup.tsx");
     const unlock = readSource("src/features/passkey/unlock-with-passkey.ts");
-    const roundTrip = readSource("src/lib/passkey/verify-passkey-vault-round-trip.ts");
-    expect(setup).toContain("verifyPasskeyVaultUnlockRoundTrip");
+    expect(setup).toContain("runVaultUnlockAuthenticationCeremony");
     expect(unlock).toContain("runVaultUnlockAuthenticationCeremony");
-    expect(roundTrip).toContain("runVaultUnlockAuthenticationCeremony");
-    expect(roundTrip).toContain("verifyVaultUnlockAuthentication");
   });
 
   it("vault unlock does not send PRF output to server", () => {
@@ -51,8 +52,6 @@ describe("dual passkey vault unlock credential filtering", () => {
   it("filterAuthenticationOptionsForCredential preserves transports", () => {
     const helper = readSource("src/lib/passkey/vault-unlock-authenticate.ts");
     expect(helper).toContain("matchingCredential");
-    expect(helper).toContain("alignPrfExtensionsForAllowCredentials");
-    expect(helper).toContain("prepareVaultUnlockAuthenticationOptions");
     expect(helper).not.toContain("type: \"public-key\"");
     expect(helper).toContain("PASSKEY_NOT_AVAILABLE_FOR_VAULT_UNLOCK_MESSAGE");
   });
