@@ -16,10 +16,13 @@ import { vaultApi } from "@/lib/api-client/vault";
 import { getSessionVaultKey } from "@/lib/crypto-client/vault";
 import {
   extractPasskeyPrfOutput,
+  unlockVaultFromPasskeyEnvelope,
   wrapVaultKeyForPasskey,
 } from "@/lib/crypto-client/passkey-vault";
+import { userVaultKeysEqual } from "@tgoliveira/vault-core";
 import {
   runVaultUnlockAuthenticationCeremony,
+  verifyVaultUnlockAuthentication,
 } from "@/lib/passkey/vault-unlock-authenticate";
 import {
   prepareAuthenticationOptions,
@@ -42,6 +45,7 @@ import {
   PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE,
   PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE,
   PASSKEY_VAULT_UNLOCK_ENABLED_REFRESH_WARNING,
+  PASSKEY_VAULT_UNLOCK_TEST_MISMATCH_MESSAGE,
   PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE,
 } from "@/lib/passkey/messages";
 import {
@@ -268,6 +272,33 @@ export function PasskeyVaultUnlockSetup({
         const reason = resolveCeremonyDiagnosticReason({ prfOutputPresent: false });
         setDiagnosticReason(reason);
         setError(getPasskeyPrfDiagnosticMessage(reason));
+        return;
+      }
+
+      const sessionKey = getSessionVaultKey();
+      if (!sessionKey) {
+        throw new Error("Unlock your vault before testing passkey vault unlock.");
+      }
+
+      const result = (await verifyVaultUnlockAuthentication(assertion)) as {
+        verified: boolean;
+        encryptedVaultKey: EncryptedPayload | null;
+        prfRequired?: boolean;
+      };
+
+      if (!result.verified || !result.encryptedVaultKey) {
+        throw new Error("This passkey is not linked to vault unlock.");
+      }
+
+      const derivedKey = await unlockVaultFromPasskeyEnvelope(
+        userId,
+        result.encryptedVaultKey,
+        prfOutput,
+        { prfRequired: result.prfRequired ?? true, applySession: false }
+      );
+
+      if (!(await userVaultKeysEqual(sessionKey, derivedKey))) {
+        setError(PASSKEY_VAULT_UNLOCK_TEST_MISMATCH_MESSAGE);
         return;
       }
 

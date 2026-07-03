@@ -39,6 +39,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Vault passkey unlock vs account passkey (mobile / Enpass).** Account passkey sign-in and vault passkey unlock are separate WebAuthn ceremonies; sign-in does not require PRF. Vault unlock now scopes to the single configured vault credential, refreshes WebAuthn options on tap, prefers `internal` transport on iPhone/iPad (avoids hybrid PRF mismatch), and the settings **Test** runs verify + decrypt — not PRF presence alone. Clearer errors when PRF is missing or does not match the stored envelope. Hide passkey unlock on iOS/iPadOS versions before 18 where WebAuthn PRF is unavailable.
+
 - **Note editor checklists.** Kanban note→board sync no longer rewrites the note body while typing (fixes cursor jumping to the end). Checklist rows keep the checkbox and text on the same line in visual and preview modes. Bracket tags such as `[IN PROGRESS]` are no longer escaped as `\[IN PROGRESS\]` when saving from the visual editor.
 
 ## [0.3.3] - 2026-07-02
