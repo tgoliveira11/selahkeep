@@ -7,6 +7,7 @@ import {
   resolveCeremonyDiagnosticReason,
 } from "@/lib/passkey/passkey-prf-diagnostics";
 import { preferPlatformTransportsForVaultUnlock } from "@/lib/passkey/passkey-transports";
+import { toPasskeyCeremonyErrorMessage } from "@/lib/passkey/map-passkey-crypto-error";
 import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
 
 /**
@@ -19,34 +20,40 @@ export async function enableVaultPasskeyUnlockWithAuthPrf(args: {
   userId: string;
   vaultKey: CryptoKey;
 }): Promise<void> {
-  const options = (await apiClient.post(
-    `/api/account/passkeys/${args.passkeyDbId}/enable-vault-unlock`,
-    { action: "options" }
-  )) as PublicKeyCredentialRequestOptionsJSON;
+  try {
+    const options = (await apiClient.post(
+      `/api/account/passkeys/${args.passkeyDbId}/enable-vault-unlock`,
+      { action: "options" }
+    )) as PublicKeyCredentialRequestOptionsJSON;
 
-  const assertion = await startAuthentication({
-    optionsJSON: prepareAuthenticationOptions(preferPlatformTransportsForVaultUnlock(options)),
-  });
+    const assertion = await startAuthentication({
+      optionsJSON: prepareAuthenticationOptions(preferPlatformTransportsForVaultUnlock(options)),
+    });
 
-  const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);
-  if (!prfOutput) {
+    const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);
+    if (!prfOutput) {
+      throw new Error(
+        getPasskeyPrfDiagnosticMessage(resolveCeremonyDiagnosticReason({ prfOutputPresent: false }))
+      );
+    }
+
+    const encryptedVaultKey: EncryptedPayload = await wrapVaultKeyForPasskey(
+      args.vaultKey,
+      prfOutput,
+      args.userId,
+      args.userId
+    );
+
+    await apiClient.post(`/api/account/passkeys/${args.passkeyDbId}/enable-vault-unlock`, {
+      action: "verify",
+      response: assertion,
+      encryptedVaultKey,
+      prfVaultEnvelope: true,
+      prfSupported: true,
+    });
+  } catch (error) {
     throw new Error(
-      getPasskeyPrfDiagnosticMessage(resolveCeremonyDiagnosticReason({ prfOutputPresent: false }))
+      toPasskeyCeremonyErrorMessage(error, "Could not enable passkey vault unlock.")
     );
   }
-
-  const encryptedVaultKey: EncryptedPayload = await wrapVaultKeyForPasskey(
-    args.vaultKey,
-    prfOutput,
-    args.userId,
-    args.userId
-  );
-
-  await apiClient.post(`/api/account/passkeys/${args.passkeyDbId}/enable-vault-unlock`, {
-    action: "verify",
-    response: assertion,
-    encryptedVaultKey,
-    prfVaultEnvelope: true,
-    prfSupported: true,
-  });
 }

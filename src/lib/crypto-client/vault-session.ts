@@ -28,7 +28,10 @@ import {
 } from "@tgoliveira/vault-core/browser";
 import { getVaultAutoLockMinutesFromConfig } from "@/lib/env/vault-from-env";
 import { VAULT_INACTIVITY_MS as LEGACY_VAULT_INACTIVITY_MS } from "@/lib/vault/vault-auto-lock-config";
-import { clearVaultInnerKeyMaterial } from "@/modules/vault/core/envelopes/vault-inner-key-material";
+import {
+  cacheLegacyRawVaultInnerKeyMaterial,
+  clearVaultInnerKeyMaterial,
+} from "@/modules/vault/core/envelopes/vault-inner-key-material";
 
 export { LEGACY_VAULT_INACTIVITY_MS as VAULT_INACTIVITY_MS };
 
@@ -161,6 +164,9 @@ async function ensureNonExtractableSessionKey(key: CryptoKey): Promise<CryptoKey
     return key;
   } catch {
     const raw = await exportUserVaultKey(key);
+    // Fresh setup keeps a non-extractable session UVK; cache raw inner material so
+    // passkey envelope creation can re-wrap without a password unlock on this device.
+    cacheLegacyRawVaultInnerKeyMaterial(raw);
     return importUserVaultKey(raw, { extractable: false });
   }
 }

@@ -16,14 +16,10 @@ import { vaultApi } from "@/lib/api-client/vault";
 import { getSessionVaultKey } from "@/lib/crypto-client/vault";
 import {
   extractPasskeyPrfOutput,
-  unlockVaultFromPasskeyEnvelope,
 } from "@/lib/crypto-client/passkey-vault";
-import { userVaultKeysEqual } from "@tgoliveira/vault-core";
-import {
-  runVaultUnlockAuthenticationCeremony,
-  verifyVaultUnlockAuthentication,
-} from "@/lib/passkey/vault-unlock-authenticate";
 import { enableVaultPasskeyUnlockWithAuthPrf } from "@/lib/passkey/enable-vault-passkey-unlock";
+import { toPasskeyCeremonyErrorMessage } from "@/lib/passkey/map-passkey-crypto-error";
+import { verifyPasskeyVaultUnlockRoundTrip } from "@/lib/passkey/verify-passkey-vault-round-trip";
 import {
   prepareAuthenticationOptions,
   prepareRegistrationOptions,
@@ -45,7 +41,6 @@ import {
   PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE,
   PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE,
   PASSKEY_VAULT_UNLOCK_ENABLED_REFRESH_WARNING,
-  PASSKEY_VAULT_UNLOCK_TEST_MISMATCH_MESSAGE,
   PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE,
 } from "@/lib/passkey/messages";
 import {
@@ -227,6 +222,12 @@ export function PasskeyVaultUnlockSetup({
         vaultKey,
       });
 
+      await verifyPasskeyVaultUnlockRoundTrip({
+        userId,
+        sessionVaultKey: vaultKey,
+        credentialId: attestation.id,
+      });
+
       setMessage(PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE);
       try {
         await loadPasskeys();
@@ -242,7 +243,12 @@ export function PasskeyVaultUnlockSetup({
         return;
       }
       const registrationMessage = toPasskeyRegistrationErrorMessage(e);
-      setError(registrationMessage ?? (e instanceof Error ? e.message : "Could not set up passkey vault unlock."));
+      setError(
+        toPasskeyCeremonyErrorMessage(
+          e,
+          registrationMessage ?? (e instanceof Error ? e.message : "Could not set up passkey vault unlock.")
+        )
+      );
     } finally {
       setLoadingId(null);
     }
@@ -266,42 +272,16 @@ export function PasskeyVaultUnlockSetup({
         return;
       }
 
-      const assertion = await runVaultUnlockAuthenticationCeremony(passkey?.credentialId);
-      const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);
-
-      if (!prfOutput) {
-        const reason = resolveCeremonyDiagnosticReason({ prfOutputPresent: false });
-        setDiagnosticReason(reason);
-        setError(getPasskeyPrfDiagnosticMessage(reason));
-        return;
-      }
-
       const sessionKey = getSessionVaultKey();
       if (!sessionKey) {
         throw new Error("Unlock your vault before testing passkey vault unlock.");
       }
 
-      const result = (await verifyVaultUnlockAuthentication(assertion)) as {
-        verified: boolean;
-        encryptedVaultKey: EncryptedPayload | null;
-        prfRequired?: boolean;
-      };
-
-      if (!result.verified || !result.encryptedVaultKey) {
-        throw new Error("This passkey is not linked to vault unlock.");
-      }
-
-      const derivedKey = await unlockVaultFromPasskeyEnvelope(
+      await verifyPasskeyVaultUnlockRoundTrip({
         userId,
-        result.encryptedVaultKey,
-        prfOutput,
-        { prfRequired: result.prfRequired ?? true, applySession: false }
-      );
-
-      if (!(await userVaultKeysEqual(sessionKey, derivedKey))) {
-        setError(PASSKEY_VAULT_UNLOCK_TEST_MISMATCH_MESSAGE);
-        return;
-      }
+        sessionVaultKey: sessionKey,
+        credentialId: passkey?.credentialId,
+      });
 
       setMessage(PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE);
       setDiagnosticReason("supported");
@@ -311,7 +291,9 @@ export function PasskeyVaultUnlockSetup({
         setError(getPasskeyPrfDiagnosticMessage("ceremony_cancelled"));
         return;
       }
-      setError(e instanceof Error ? e.message : "Passkey test failed.");
+      setError(
+        toPasskeyCeremonyErrorMessage(e, e instanceof Error ? e.message : "Passkey test failed.")
+      );
     } finally {
       setLoadingId(null);
     }

@@ -28,8 +28,11 @@ describe("dual passkey vault unlock credential filtering", () => {
   it("settings test and unlock share vault unlock authenticate helper", () => {
     const setup = readSource("src/features/passkey/passkey-vault-unlock-setup.tsx");
     const unlock = readSource("src/features/passkey/unlock-with-passkey.ts");
-    expect(setup).toContain("runVaultUnlockAuthenticationCeremony");
+    const roundTrip = readSource("src/lib/passkey/verify-passkey-vault-round-trip.ts");
+    expect(setup).toContain("verifyPasskeyVaultUnlockRoundTrip");
     expect(unlock).toContain("runVaultUnlockAuthenticationCeremony");
+    expect(roundTrip).toContain("runVaultUnlockAuthenticationCeremony");
+    expect(roundTrip).toContain("verifyVaultUnlockAuthentication");
   });
 
   it("vault unlock does not send PRF output to server", () => {

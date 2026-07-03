@@ -13,7 +13,8 @@ const mocks = vi.hoisted(() => ({
   apiPost: vi.fn(),
   startRegistration: vi.fn(),
   extractPasskeyPrfOutput: vi.fn(),
-  wrapVaultKeyForPasskey: vi.fn(),
+  enableVaultPasskeyUnlockWithAuthPrf: vi.fn(),
+  verifyPasskeyVaultUnlockRoundTrip: vi.fn(),
   removeAll: vi.fn(),
 }));
 
@@ -51,7 +52,14 @@ vi.mock("@simplewebauthn/browser", () => ({
 
 vi.mock("@/lib/crypto-client/passkey-vault", () => ({
   extractPasskeyPrfOutput: mocks.extractPasskeyPrfOutput,
-  wrapVaultKeyForPasskey: mocks.wrapVaultKeyForPasskey,
+}));
+
+vi.mock("@/lib/passkey/enable-vault-passkey-unlock", () => ({
+  enableVaultPasskeyUnlockWithAuthPrf: mocks.enableVaultPasskeyUnlockWithAuthPrf,
+}));
+
+vi.mock("@/lib/passkey/verify-passkey-vault-round-trip", () => ({
+  verifyPasskeyVaultUnlockRoundTrip: mocks.verifyPasskeyVaultUnlockRoundTrip,
 }));
 
 vi.mock("@/lib/passkey/prepare-webauthn-options", () => ({
@@ -78,13 +86,14 @@ describe("PasskeySetup", () => {
     mocks.probeEnvironment.mockResolvedValue(mockEnvironment());
     mocks.apiPost
       .mockResolvedValueOnce({ challenge: "reg-challenge" })
-      .mockResolvedValueOnce({ verified: true, credentialId: "cred-id" });
+      .mockResolvedValueOnce({ verified: true, credentialId: "cred-id", passkeyId: "pk-id" });
     mocks.startRegistration.mockResolvedValue({
       id: "cred-id",
       clientExtensionResults: { prf: { results: { first: new ArrayBuffer(32) } } },
     });
     mocks.extractPasskeyPrfOutput.mockReturnValue(new Uint8Array(32));
-    mocks.wrapVaultKeyForPasskey.mockResolvedValue({ version: "enc-v1" });
+    mocks.enableVaultPasskeyUnlockWithAuthPrf.mockResolvedValue(undefined);
+    mocks.verifyPasskeyVaultUnlockRoundTrip.mockResolvedValue(undefined);
     window.confirm = vi.fn(() => true);
   });
 
@@ -102,10 +111,14 @@ describe("PasskeySetup", () => {
       expect(mocks.apiPost).toHaveBeenCalledWith("/api/passkeys/register", {
         action: "verify",
         response: expect.any(Object),
-        encryptedVaultKey: { version: "enc-v1" },
-        prfVaultEnvelope: true,
         vaultOnly: true,
       });
+      expect(mocks.enableVaultPasskeyUnlockWithAuthPrf).toHaveBeenCalledWith({
+        passkeyDbId: "pk-id",
+        userId: USER_ID,
+        vaultKey: expect.any(Object),
+      });
+      expect(mocks.verifyPasskeyVaultUnlockRoundTrip).toHaveBeenCalled();
     });
     expect(await screen.findByText(PASSKEY_VAULT_REGISTERED_MESSAGE)).toBeTruthy();
     expect(onStatusChange).toHaveBeenCalled();
@@ -141,7 +154,7 @@ describe("PasskeySetup", () => {
     await waitFor(() => {
       expect(mocks.startRegistration).toHaveBeenCalled();
     });
-    expect(mocks.wrapVaultKeyForPasskey).not.toHaveBeenCalled();
+    expect(mocks.enableVaultPasskeyUnlockWithAuthPrf).not.toHaveBeenCalled();
     expect(mocks.apiPost).toHaveBeenCalledTimes(1);
     expect(
       await screen.findByText(/Authentication completed, but your passkey provider did not return PRF output/i)
@@ -174,6 +187,6 @@ describe("PasskeySetup", () => {
 
     expect(await screen.findByText(/WebAuthn not available/i)).toBeTruthy();
     expect(mocks.startRegistration).not.toHaveBeenCalled();
-    expect(mocks.wrapVaultKeyForPasskey).not.toHaveBeenCalled();
+    expect(mocks.enableVaultPasskeyUnlockWithAuthPrf).not.toHaveBeenCalled();
   });
 });
