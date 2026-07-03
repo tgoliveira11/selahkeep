@@ -92,7 +92,10 @@ describe("PasskeySetup", () => {
       clientExtensionResults: { prf: { results: { first: new ArrayBuffer(32) } } },
     });
     mocks.extractPasskeyPrfOutput.mockReturnValue(new Uint8Array(32));
-    mocks.enableVaultPasskeyUnlockWithAuthPrf.mockResolvedValue(undefined);
+    mocks.enableVaultPasskeyUnlockWithAuthPrf.mockResolvedValue({
+      prfOutput: new Uint8Array(32),
+      encryptedVaultKey: { version: "enc-v1" },
+    });
     mocks.verifyPasskeyVaultUnlockRoundTrip.mockResolvedValue(undefined);
     window.confirm = vi.fn(() => true);
   });
@@ -118,7 +121,14 @@ describe("PasskeySetup", () => {
         userId: USER_ID,
         vaultKey: expect.any(Object),
       });
-      expect(mocks.verifyPasskeyVaultUnlockRoundTrip).toHaveBeenCalled();
+      expect(mocks.verifyPasskeyVaultUnlockRoundTrip).toHaveBeenCalledWith({
+        userId: USER_ID,
+        sessionVaultKey: expect.any(Object),
+        knownUnlock: expect.objectContaining({
+          prfOutput: expect.any(Uint8Array),
+          encryptedVaultKey: expect.objectContaining({ version: "enc-v1" }),
+        }),
+      });
     });
     expect(await screen.findByText(PASSKEY_VAULT_REGISTERED_MESSAGE)).toBeTruthy();
     expect(onStatusChange).toHaveBeenCalled();

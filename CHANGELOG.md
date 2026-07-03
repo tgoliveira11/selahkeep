@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- **Passkey vault setup (iOS).** Registration now uses two WebAuthn prompts (create + enable auth) instead of three; post-setup round-trip reuses the enable-step PRF output instead of a redundant third authentication that could fail with PRF mismatch on iPhone while the envelope was already saved.
+
 ### Added
 
 - **Kanban note ↔ board sync.** Checklist and bullet items become cards; per-item descriptions, due dates (`[yyyy-MM-dd]`), priorities (`[LOW]`/`[HIGH]`/etc.), and column tags (`[IN PROGRESS]`) sync both ways. Card hover preview (2s delay), column-change history on cards, wider columns, and toolbar tooltips on the board view.

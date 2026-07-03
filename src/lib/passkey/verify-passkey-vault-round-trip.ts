@@ -22,32 +22,52 @@ export async function verifyPasskeyVaultUnlockRoundTrip(args: {
   userId: string;
   sessionVaultKey: CryptoKey;
   credentialId?: string;
-}): Promise<void> {
-  const assertion = await runVaultUnlockAuthenticationCeremony(args.credentialId);
-  const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);
-  if (!prfOutput) {
-    throw new Error(
-      getPasskeyPrfDiagnosticMessage(
-        resolveCeremonyDiagnosticReason({ prfOutputPresent: false })
-      )
-    );
-  }
-
-  const result = (await verifyVaultUnlockAuthentication(assertion)) as {
-    verified: boolean;
-    encryptedVaultKey: EncryptedPayload | null;
+  /** Reuse enable-step PRF + envelope during setup to avoid a redundant auth ceremony. */
+  knownUnlock?: {
+    prfOutput: Uint8Array;
+    encryptedVaultKey: EncryptedPayload;
     prfRequired?: boolean;
   };
+}): Promise<void> {
+  let prfOutput: Uint8Array;
+  let encryptedVaultKey: EncryptedPayload;
+  let prfRequired = true;
 
-  if (!result.verified || !result.encryptedVaultKey) {
-    throw new Error("This passkey is not linked to vault unlock.");
+  if (args.knownUnlock) {
+    prfOutput = args.knownUnlock.prfOutput;
+    encryptedVaultKey = args.knownUnlock.encryptedVaultKey;
+    prfRequired = args.knownUnlock.prfRequired ?? true;
+  } else {
+    const assertion = await runVaultUnlockAuthenticationCeremony(args.credentialId);
+    const extractedPrf = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);
+    if (!extractedPrf) {
+      throw new Error(
+        getPasskeyPrfDiagnosticMessage(
+          resolveCeremonyDiagnosticReason({ prfOutputPresent: false })
+        )
+      );
+    }
+    prfOutput = extractedPrf;
+
+    const result = (await verifyVaultUnlockAuthentication(assertion)) as {
+      verified: boolean;
+      encryptedVaultKey: EncryptedPayload | null;
+      prfRequired?: boolean;
+    };
+
+    if (!result.verified || !result.encryptedVaultKey) {
+      throw new Error("This passkey is not linked to vault unlock.");
+    }
+
+    encryptedVaultKey = result.encryptedVaultKey;
+    prfRequired = result.prfRequired ?? true;
   }
 
   const derivedKey = await unlockVaultFromPasskeyEnvelope(
     args.userId,
-    result.encryptedVaultKey,
+    encryptedVaultKey,
     prfOutput,
-    { prfRequired: result.prfRequired ?? true, applySession: false }
+    { prfRequired, applySession: false }
   );
 
   if (!(await userVaultKeysEqual(args.sessionVaultKey, derivedKey))) {
