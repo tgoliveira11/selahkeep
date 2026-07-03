@@ -13,6 +13,7 @@ import { useVault } from "@/features/vault/use-vault";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { VaultDockQuickUnlockSlot } from "@/features/vault/vault-dock-quick-unlock-slot";
 import { useVaultPasskeyUnlockPrefetch } from "@/features/passkey/use-vault-passkey-unlock-prefetch";
+import type { VaultPasskeyUnlockPrefetch } from "@/features/passkey/use-vault-passkey-unlock-prefetch";
 import { useVaultDockPasskeyAvailable } from "@/features/vault/use-vault-dock-passkey-available";
 import { hasUnlockedVaultSession } from "@/lib/crypto-client/vault";
 import { buildVaultUnlockHref } from "@/lib/notes/safe-return-to";
@@ -20,7 +21,6 @@ import { getVaultUnlockRateLimiter } from "@/lib/vault/vault-rate-limit";
 import { toVaultServerStatusSnapshot } from "@/lib/vault/vault-server-snapshot";
 import { isVaultFullUnlockPage } from "@/features/vault/vault-status-dock-routes";
 import { lockVaultSessionManually, touchVaultSession } from "@/lib/crypto-client/vault-session";
-import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 
 const UNLOCK_PATH = "/vault/unlock";
 const DOCK_COLLAPSED_KEY = "selahkeep:vault-status-dock:collapsed";
@@ -48,12 +48,12 @@ export function VaultStatusDock() {
   const runDockPasskeyUnlock = useCallback(
     async (
       collapse: () => void,
-      options: PublicKeyCredentialRequestOptionsJSON | null
+      prefetch: VaultPasskeyUnlockPrefetch | null
     ) => {
       if (!passkeyAvailability.showPasskey || passkeyUnlockInFlightRef.current) return;
       passkeyUnlockInFlightRef.current = true;
       try {
-        await unlockFromPasskey(options ?? undefined);
+        await unlockFromPasskey(prefetch?.options, prefetch?.credentialId);
         collapse();
       } finally {
         passkeyUnlockInFlightRef.current = false;
@@ -122,7 +122,7 @@ export function VaultStatusDock() {
             await unlockFromVaultPassword(password);
             collapse();
           }}
-          onUnlockPasskey={(options) => runDockPasskeyUnlock(collapse, options)}
+          onUnlockPasskey={(prefetch) => runDockPasskeyUnlock(collapse, prefetch)}
         />
       )}
     />

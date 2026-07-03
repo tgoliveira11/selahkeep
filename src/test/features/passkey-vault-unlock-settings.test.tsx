@@ -53,6 +53,7 @@ vi.mock("@/lib/crypto-client/passkey-vault", () => ({
 vi.mock("@/lib/passkey/prepare-webauthn-options", () => ({
   prepareAuthenticationOptions: (options: unknown) => options,
   prepareRegistrationOptions: (options: unknown) => options,
+  alignPrfExtensionsForAllowCredentials: (options: unknown) => options,
 }));
 
 vi.mock("@/lib/passkey/passkey-prf-diagnostics", async (importOriginal) => {

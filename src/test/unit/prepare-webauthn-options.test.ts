@@ -3,6 +3,7 @@ import {
   prepareAuthenticationOptions,
   prepareRegistrationOptions,
   prepareWebAuthnExtensions,
+  alignPrfExtensionsForAllowCredentials,
 } from "@/lib/passkey/prepare-webauthn-options";
 import { passkeyPrfSaltBase64Url } from "@/lib/passkey/prf";
 import { bytesToBase64Url } from "@/lib/crypto-client/encoding";
@@ -54,12 +55,15 @@ describe("prepareWebAuthnExtensions", () => {
     expect(converted).toBeInstanceOf(ArrayBuffer);
   });
 
-  it("preserves ArrayBuffer values", () => {
+  it("copies ArrayBuffer values into dedicated buffers", () => {
     const buffer = new Uint8Array(32).fill(8).buffer;
     const prepared = prepareWebAuthnExtensions({
       prf: { eval: { first: buffer } },
     });
-    expect(prepared?.prf?.eval?.first).toBe(buffer);
+    expect(prepared?.prf?.eval?.first).not.toBe(buffer);
+    expect(new Uint8Array(prepared?.prf?.eval?.first as ArrayBuffer)).toEqual(
+      new Uint8Array(buffer)
+    );
   });
 
   it("leaves options without extensions unchanged", () => {
@@ -74,5 +78,47 @@ describe("prepareWebAuthnExtensions", () => {
       extensions: { prf: { eval: { first: salt } } },
     });
     expect(prepared.extensions?.prf?.eval?.first).toBeInstanceOf(ArrayBuffer);
+  });
+
+  it("aligns evalByCredential to eval when allowCredentials is scoped to one passkey", () => {
+    const salt = passkeyPrfSaltBase64Url(userId);
+    const aligned = alignPrfExtensionsForAllowCredentials({
+      challenge: "abc",
+      allowCredentials: [{ id: "vault-cred", type: "public-key", transports: ["internal"] }],
+      extensions: {
+        prf: {
+          evalByCredential: {
+            "vault-cred": { first: salt },
+            "other-cred": { first: salt },
+          },
+        },
+      },
+    });
+    expect(aligned.extensions?.prf?.eval?.first).toBe(salt);
+    expect(aligned.extensions?.prf?.evalByCredential).toBeUndefined();
+  });
+
+  it("aligns evalByCredential to eval when forceCredentialId is provided", () => {
+    const salt = passkeyPrfSaltBase64Url(userId);
+    const aligned = alignPrfExtensionsForAllowCredentials(
+      {
+        challenge: "abc",
+        allowCredentials: [
+          { id: "vault-a", type: "public-key", transports: ["internal"] },
+          { id: "vault-b", type: "public-key", transports: ["internal"] },
+        ],
+        extensions: {
+          prf: {
+            evalByCredential: {
+              "vault-a": { first: salt },
+              "vault-b": { first: salt },
+            },
+          },
+        },
+      },
+      "vault-b"
+    );
+    expect(aligned.extensions?.prf?.eval?.first).toBe(salt);
+    expect(aligned.extensions?.prf?.evalByCredential).toBeUndefined();
   });
 });

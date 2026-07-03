@@ -6,7 +6,9 @@ import {
   collectPasskeyTransportHints,
   inferAuthenticatorAttachmentFromTransports,
   vaultRegistrationExcludeCredentials,
+  preferPlatformTransportsForVaultUnlock,
   toAllowCredentialDescriptor,
+  toVaultUnlockAllowCredentialDescriptor,
 } from "@/lib/passkey/passkey-transports";
 
 describe("passkey transports", () => {
@@ -36,6 +38,21 @@ describe("passkey transports", () => {
         transports: null,
       })
     ).toEqual({ id: "vault-cred" });
+  });
+
+  it("vault unlock allowCredentials always prefer internal transport", () => {
+    expect(
+      toVaultUnlockAllowCredentialDescriptor({
+        credentialId: "vault-cred",
+        transports: ["hybrid", "internal"],
+      })
+    ).toEqual({ id: "vault-cred", transports: ["internal"] });
+    expect(
+      toVaultUnlockAllowCredentialDescriptor({
+        credentialId: "vault-cred",
+        transports: null,
+      })
+    ).toEqual({ id: "vault-cred", transports: ["internal"] });
   });
 
   it("collects transport hints as sorted unique labels", () => {
@@ -102,4 +119,52 @@ describe("passkey transports", () => {
     expect(storedPasskeyTransports([])).toBeUndefined();
   });
 
+  it("prefers internal transport on Apple mobile when hybrid is also stored", () => {
+    const iphoneUa =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15";
+    const options = {
+      challenge: "abc",
+      allowCredentials: [{ id: "vault-cred", type: "public-key", transports: ["hybrid", "internal"] }],
+    };
+    expect(preferPlatformTransportsForVaultUnlock(options, iphoneUa).allowCredentials).toEqual([
+      { id: "vault-cred", type: "public-key", transports: ["internal"] },
+    ]);
+  });
+
+  it("forces internal transport on Apple mobile when only hybrid is stored", () => {
+    const iphoneUa =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15";
+    const options = {
+      challenge: "abc",
+      allowCredentials: [{ id: "vault-cred", type: "public-key", transports: ["hybrid"] }],
+    };
+    expect(preferPlatformTransportsForVaultUnlock(options, iphoneUa).allowCredentials).toEqual([
+      { id: "vault-cred", type: "public-key", transports: ["internal"] },
+    ]);
+  });
+
+  it("forces internal transport on Apple mobile when transports are missing", () => {
+    const iphoneUa =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15";
+    const options = {
+      challenge: "abc",
+      allowCredentials: [{ id: "vault-cred", type: "public-key" }],
+    };
+    expect(preferPlatformTransportsForVaultUnlock(options, iphoneUa).allowCredentials).toEqual([
+      { id: "vault-cred", type: "public-key", transports: ["internal"] },
+    ]);
+  });
+
+  it("leaves transports unchanged on desktop", () => {
+    const options = {
+      challenge: "abc",
+      allowCredentials: [{ id: "vault-cred", type: "public-key", transports: ["hybrid", "internal"] }],
+    };
+    expect(
+      preferPlatformTransportsForVaultUnlock(
+        options,
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
+      ).allowCredentials
+    ).toEqual(options.allowCredentials);
+  });
 });

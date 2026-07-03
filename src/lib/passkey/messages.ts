@@ -58,6 +58,18 @@ export const PASSKEY_UNLOCK_PRF_UNAVAILABLE_MESSAGE =
 export const PASSKEY_UNLOCK_DECRYPT_FAILED_MESSAGE =
   "We could not unlock your vault with this passkey. Use your vault password or recovery phrase.";
 
+/** Shown when WebAuthn succeeds but PRF bytes do not match the stored vault envelope. */
+export const PASSKEY_UNLOCK_PRF_MISMATCH_MESSAGE =
+  "This passkey completed vault unlock authentication, but it could not derive the vault key on this device. Vault passkey unlock requires PRF output from the same provider and device where you enabled it. Unlock with your vault password or recovery phrase, or add a passkey for this device from /vault/settings while your vault is open.";
+
+/** iPhone/iPad decrypt failure — per-device PRF and iCloud Keychain guidance. */
+export const PASSKEY_UNLOCK_PRF_MISMATCH_APPLE_HINT_MESSAGE =
+  "This passkey authenticated, but it could not unlock your vault on this iPhone or iPad. Vault passkey unlock is per device: set it up on the same phone or tablet where you want to unlock (Settings → passkey vault unlock → Add a passkey for this device). If you use Enpass or another password manager for account sign-in, try iCloud Keychain (Face ID / Touch ID) instead. You can also unlock with your vault password or recovery phrase.";
+
+/** Shown when the OS is too old for mobile WebAuthn PRF (iOS/iPadOS before 18). */
+export const PASSKEY_UNLOCK_IOS_PRF_TOO_OLD_MESSAGE =
+  "Vault passkey unlock is not available on this iPhone or iPad version. It requires iOS or iPadOS 18 or later. Use your vault password or recovery phrase, or unlock from a desktop browser where vault passkey unlock is configured.";
+
 export const PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE =
   "Passkey test succeeded. This browser returned PRF output for your vault unlock passkey.";
 

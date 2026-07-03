@@ -3,7 +3,11 @@ import {
   type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
 import { apiClient } from "@/lib/api-client/client";
-import { prepareAuthenticationOptions } from "@/lib/passkey/prepare-webauthn-options";
+import {
+  alignPrfExtensionsForAllowCredentials,
+  prepareAuthenticationOptions,
+} from "@/lib/passkey/prepare-webauthn-options";
+import { preferPlatformTransportsForVaultUnlock } from "@/lib/passkey/passkey-transports";
 import { PASSKEY_NOT_AVAILABLE_FOR_VAULT_UNLOCK_MESSAGE } from "@/lib/passkey/messages";
 import { logVaultUnlockAuthDiagnostic } from "@/lib/passkey/vault-unlock-auth-diagnostics";
 
@@ -16,10 +20,33 @@ export function filterAuthenticationOptionsForCredential(
   options: PublicKeyCredentialRequestOptionsJSON,
   credentialId?: string
 ): PublicKeyCredentialRequestOptionsJSON {
-  if (!credentialId) {
-    return options;
-  }
+  const envelopeCredentialId =
+    credentialId ??
+    (options.allowCredentials?.length === 1 ? options.allowCredentials?.[0]?.id : undefined);
+  const scoped = envelopeCredentialId
+    ? filterToCredential(options, envelopeCredentialId)
+    : options;
+  const platformScoped = preferPlatformTransportsForVaultUnlock(scoped);
+  return alignPrfExtensionsForAllowCredentials(platformScoped, envelopeCredentialId);
+}
 
+/** Shared client prep for vault unlock auth ceremonies (setup, test, unlock). */
+export function prepareVaultUnlockAuthenticationOptions(
+  options: PublicKeyCredentialRequestOptionsJSON,
+  credentialId?: string
+): PublicKeyCredentialRequestOptionsJSON {
+  const effectiveCredentialId =
+    credentialId ??
+    (options.allowCredentials?.length === 1 ? options.allowCredentials?.[0]?.id : undefined);
+  return prepareAuthenticationOptions(
+    filterAuthenticationOptionsForCredential(options, effectiveCredentialId)
+  );
+}
+
+function filterToCredential(
+  options: PublicKeyCredentialRequestOptionsJSON,
+  credentialId: string
+): PublicKeyCredentialRequestOptionsJSON {
   const matchingCredential = options.allowCredentials?.find(
     (credential) => credential.id === credentialId
   );
@@ -51,9 +78,8 @@ export async function runVaultUnlockAuthenticationCeremonyWithOptions(
   options: PublicKeyCredentialRequestOptionsJSON,
   credentialId?: string
 ): Promise<Awaited<ReturnType<typeof startAuthentication>>> {
-  const filtered = filterAuthenticationOptionsForCredential(options, credentialId);
   return startAuthentication({
-    optionsJSON: prepareAuthenticationOptions(filtered),
+    optionsJSON: prepareVaultUnlockAuthenticationOptions(options, credentialId),
   });
 }
 
