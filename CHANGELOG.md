@@ -41,6 +41,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Passkey vault unlock re-registration.** Vault passkey setup now re-wraps the UVK from cached inner envelope material after password/recovery/passkey unlock, so non-extractable session keys (vault-core 1.0+) can create a new PRF envelope without exporting the UVK. Clearer error when setup runs without a fresh unlock on this device.
 
+- **Passkey vault PRF import on iOS.** PRF extension output is now normalized to exactly 32 bytes before `importKey` (handles `ArrayBuffer`, `ArrayBufferView`, base64url, and `evalByCredential` result shapes). Fixes settings **Test** failing with “AES key data must be 128 or 256 bits” when Safari returned PRF bytes in a non–`ArrayBuffer` shape or when `byteLength` was missing on the value.
+
 - **Passkey vault envelope on iOS.** Vault passkey setup now creates the PRF envelope from an **authentication** ceremony (same path as Test/unlock), not registration PRF — mobile authenticators can return different PRF bytes on create vs get, which caused “could not decrypt your vault with this passkey” immediately after setup.
 
 - **Vault passkey unlock vs account passkey (mobile / Enpass).** Account passkey sign-in and vault passkey unlock are separate WebAuthn ceremonies; sign-in does not require PRF. Vault unlock now scopes to the single configured vault credential, refreshes WebAuthn options on tap, prefers `internal` transport on iPhone/iPad (avoids hybrid PRF mismatch), and the settings **Test** runs verify + decrypt — not PRF presence alone. Clearer errors when PRF is missing or does not match the stored envelope. Hide passkey unlock on iOS/iPadOS versions before 18 where WebAuthn PRF is unavailable.

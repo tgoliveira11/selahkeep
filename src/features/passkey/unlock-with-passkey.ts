@@ -59,7 +59,7 @@ export async function unlockVaultWithPasskey(
     throw error;
   }
 
-  const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults);
+  const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults, assertion.id);
 
   let result: PasskeyAuthResult;
   try {
