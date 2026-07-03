@@ -206,4 +206,34 @@ Revised context
 
     expect(reparsed.cards.map((card) => card.title)).toEqual(["Buy milk", "Call mom"]);
   });
+
+  it("protects a checklist/bullet inside a card description from being read back as a sibling card", () => {
+    const body = "- [ ] Card A\n- [ ] Card B";
+    const board = noteBoard(body);
+    const cardA = board.cards.find((card) => card.title === "Card A")!;
+    const withDescription = {
+      ...board,
+      cards: board.cards.map((card) =>
+        card.id === cardA.id
+          ? { ...card, description: "- [ ] sub item\n- another point" }
+          : card
+      ),
+    };
+
+    const result = syncNoteBodyFromBoard(withDescription, body);
+
+    // The description's list syntax must be indented in the note body so it
+    // isn't re-classified as a top-level item on the next parse.
+    expect(result.body).toContain("  - [ ] sub item");
+    expect(result.body).toContain("  - another point");
+
+    const reparsed = createKanbanBoardFromNote(NOTE_ID, "My note", result.body, {
+      now: "2026-06-30T00:00:00.000Z",
+      createId: idFactory(),
+    });
+
+    // Exactly the two original cards — no phantom "sub item"/"another point" cards.
+    expect(reparsed.cards.map((card) => card.title)).toEqual(["Card A", "Card B"]);
+    expect(reparsed.cards[0].description).toBe("- [ ] sub item\n- another point");
+  });
 });

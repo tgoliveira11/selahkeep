@@ -39,8 +39,13 @@ export interface SyncNoteFromBoardResult {
   changed: boolean;
 }
 
-const CHECKLIST_RE = /^(\s*[-*+]\s+)\[([ xX])\]\s*(.*)$/;
-const BULLET_RE = /^(\s*[-*+]\s+)(?!\[[ xX]\]\s*)(.+)$/i;
+// Kept in sync with kanban-from-note.ts's item regexes: no leading
+// whitespace, so a card's own indented description lines aren't mistaken
+// for the card's own top-level item line.
+const CHECKLIST_RE = /^([-*+]\s+)\[([ xX])\]\s*(.*)$/;
+const BULLET_RE = /^([-*+]\s+)(?!\[[ xX]\]\s*)(.+)$/i;
+/** A bare (unindented) line that would collide with CHECKLIST_RE/BULLET_RE if left in a description. */
+const UNPROTECTED_ITEM_LOOKALIKE_RE = /^[-*+]\s+/;
 
 function appendStatusHistory(
   card: KanbanCardPlaintext,
@@ -287,7 +292,13 @@ export function buildNoteLinesForCard(
     card.tagNames
   );
   if (!description) return [itemLine];
-  return [itemLine, ...description.split("\n"), ""];
+  // A description can itself contain checklist/bullet syntax (e.g. sub-tasks).
+  // Indent those specific lines so the note<->board sync doesn't mistake them
+  // for a sibling top-level card on the next parse — see CHECKLIST_RE/BULLET_RE.
+  const protectedDescriptionLines = description
+    .split("\n")
+    .map((line) => (UNPROTECTED_ITEM_LOOKALIKE_RE.test(line) ? `  ${line}` : line));
+  return [itemLine, ...protectedDescriptionLines, ""];
 }
 
 /**
