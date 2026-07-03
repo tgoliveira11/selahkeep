@@ -85,11 +85,32 @@ function mockVaultUnlockList(
     vaultUnlockEnabled: boolean;
     prfSupported: boolean | null;
     credentialId: string;
-  }> = []
+  }> = [],
+  options?: { passkeyUnlockAvailableOnThisDevice?: boolean }
 ) {
+  const hasVaultPasskey = passkeys.some((p) => p.vaultUnlockEnabled);
   mocks.apiGet.mockImplementation(async (path: string) => {
     if (path === "/api/passkeys/vault-unlock") {
-      return { passkeys, serverEnvelopeConfigured: passkeys.some((p) => p.vaultUnlockEnabled) };
+      return {
+        passkeys,
+        serverEnvelopeConfigured: hasVaultPasskey,
+        passkeyUnlockAvailableOnThisDevice:
+          options?.passkeyUnlockAvailableOnThisDevice ?? hasVaultPasskey,
+        deviceBindings: hasVaultPasskey
+          ? [
+              {
+                id: "binding-1",
+                credentialId: passkeys[0]?.credentialId ?? "cred-1",
+                deviceLabel: "This Mac",
+                isCurrentDevice: options?.passkeyUnlockAvailableOnThisDevice ?? hasVaultPasskey,
+              },
+            ]
+          : [],
+        currentDeviceCredentialId:
+          options?.passkeyUnlockAvailableOnThisDevice ?? hasVaultPasskey
+            ? passkeys[0]?.credentialId
+            : undefined,
+      };
     }
     throw new Error(`Unexpected GET ${path}`);
   });
@@ -102,7 +123,9 @@ describe("PasskeyVaultUnlockSetup", () => {
     mocks.vaultStatus.mockResolvedValue({
       hasPasskey: false,
       vaultConfigured: true,
+      setupComplete: true,
       availableUnlockMethods: { password: true, recoveryPhrase: true, passkey: false },
+      passkeyUnlockAvailableOnThisDevice: false,
     });
     mockVaultUnlockList([]);
     mocks.probeEnvironment.mockResolvedValue(mockEnvironment());

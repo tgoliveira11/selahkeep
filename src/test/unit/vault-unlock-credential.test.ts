@@ -2,43 +2,32 @@ import { describe, it, expect } from "vitest";
 import { resolveActiveVaultUnlockCredentialIdFromList } from "@/lib/passkey/vault-unlock-credential";
 
 describe("resolveActiveVaultUnlockCredentialIdFromList", () => {
-  it("prefers activeEnvelopeCredentialId over passkey list heuristics", () => {
+  it("prefers currentDeviceCredentialId from server device binding", () => {
     expect(
       resolveActiveVaultUnlockCredentialIdFromList({
-        activeEnvelopeCredentialId: "envelope-cred",
         passkeys: [
-          { credentialId: "stale-a", vaultUnlockEnabled: true },
-          { credentialId: "stale-b", vaultUnlockEnabled: true },
+          { credentialId: "vault-a", vaultUnlockEnabled: true },
+          { credentialId: "vault-b", vaultUnlockEnabled: true },
         ],
+        currentDeviceCredentialId: "vault-b",
       })
-    ).toBe("envelope-cred");
+    ).toBe("vault-b");
   });
 
-  it("falls back to a single vault-unlock-enabled passkey", () => {
+  it("falls back to single enabled passkey when no binding", () => {
+    expect(
+      resolveActiveVaultUnlockCredentialIdFromList({
+        passkeys: [{ credentialId: "vault-a", vaultUnlockEnabled: true }],
+      })
+    ).toBe("vault-a");
+  });
+
+  it("returns undefined when multiple passkeys and no binding", () => {
     expect(
       resolveActiveVaultUnlockCredentialIdFromList({
         passkeys: [
-          { credentialId: "account", vaultUnlockEnabled: false },
-          { credentialId: "vault-only", vaultUnlockEnabled: true },
-        ],
-      })
-    ).toBe("vault-only");
-  });
-
-  it("uses the only listed passkey when envelope id is absent", () => {
-    expect(
-      resolveActiveVaultUnlockCredentialIdFromList({
-        passkeys: [{ credentialId: "only-one", vaultUnlockEnabled: false }],
-      })
-    ).toBe("only-one");
-  });
-
-  it("returns undefined when multiple passkeys and no envelope id", () => {
-    expect(
-      resolveActiveVaultUnlockCredentialIdFromList({
-        passkeys: [
-          { credentialId: "a", vaultUnlockEnabled: true },
-          { credentialId: "b", vaultUnlockEnabled: true },
+          { credentialId: "vault-a", vaultUnlockEnabled: true },
+          { credentialId: "vault-b", vaultUnlockEnabled: true },
         ],
       })
     ).toBeUndefined();

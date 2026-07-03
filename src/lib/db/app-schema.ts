@@ -32,6 +32,27 @@ export const passkeyCredentials = pgTable("passkey_credentials", {
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
 });
 
+/** HttpOnly cookie `selahkeep_vault_device` stores `id`; links browser to one vault passkey credential. */
+export const vaultPasskeyDeviceBindings = pgTable(
+  "vault_passkey_device_bindings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    passkeyCredentialId: uuid("passkey_credential_id")
+      .notNull()
+      .references(() => passkeyCredentials.id, { onDelete: "cascade" }),
+    deviceLabel: text("device_label"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("idx_vault_passkey_device_bindings_credential").on(table.passkeyCredentialId),
+    index("idx_vault_passkey_device_bindings_user_id").on(table.userId),
+  ]
+);
+
 export const userVaults = pgTable("user_vaults", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
@@ -261,3 +282,4 @@ export type NoteAttachment = typeof noteAttachments.$inferSelect;
 export type NoteKanbanBoard = typeof noteKanbanBoards.$inferSelect;
 export type NoteKanbanVersion = typeof noteKanbanVersions.$inferSelect;
 export type VaultEnvelope = typeof vaultEnvelopes.$inferSelect;
+export type VaultPasskeyDeviceBinding = typeof vaultPasskeyDeviceBindings.$inferSelect;

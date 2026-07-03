@@ -5,6 +5,10 @@ import { encryptedPayloadSchema } from "@/lib/validation/encrypted-payload";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
 import { getClientIp } from "@/lib/request-ip";
 import { z } from "zod";
+import {
+  applyVaultDeviceBindingCookie,
+  readVaultDeviceBindingIdFromCookies,
+} from "@/lib/passkey/vault-device-binding-cookie";
 
 const verifySchema = z.object({
   action: z.enum(["options", "verify"]),
@@ -41,6 +45,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing registration response" }, { status: 400 });
     }
 
+    const existingDeviceBindingId = await readVaultDeviceBindingIdFromCookies();
+
     const result = await passkeyService.verifyRegistration(
       user.id,
       parsed.data.response as Parameters<typeof passkeyService.verifyRegistration>[1],
@@ -49,9 +55,15 @@ export async function POST(request: Request) {
         prfVaultEnvelope: parsed.data.prfVaultEnvelope,
         vaultOnly: parsed.data.vaultOnly,
         friendlyName: parsed.data.friendlyName,
+        existingDeviceBindingId,
       }
     );
-    return NextResponse.json(result);
+
+    const response = NextResponse.json(result);
+    if (result.deviceBindingId) {
+      applyVaultDeviceBindingCookie(response, result.deviceBindingId);
+    }
+    return response;
   } catch (error) {
     return apiError(error, "POST /api/passkeys/register");
   }

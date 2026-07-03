@@ -19,6 +19,7 @@ export {
 
 export {
   passkeyCredentials,
+  vaultPasskeyDeviceBindings,
   userVaults,
   vaultEnvelopes,
   notes,
@@ -36,6 +37,7 @@ export {
   type NoteKanbanBoard,
   type NoteKanbanVersion,
   type VaultEnvelope,
+  type VaultPasskeyDeviceBinding,
 } from "./app-schema";
 
 import { users } from "@tgoliveira/secure-auth/drizzle/schema";

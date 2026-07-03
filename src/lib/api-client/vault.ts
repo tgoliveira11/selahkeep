@@ -29,6 +29,7 @@ export interface VaultStatus {
   hasRecoveryPhrase?: boolean;
   hasVaultPassword?: boolean;
   hasPasskey?: boolean;
+  passkeyUnlockAvailableOnThisDevice?: boolean;
   ltgSetupComplete?: boolean;
   recoveryPhrase?: RecoveryPhraseStatus;
   availableUnlockMethods?: VaultUnlockMethods;

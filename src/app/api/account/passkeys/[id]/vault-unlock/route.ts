@@ -6,6 +6,10 @@ import { passkeyVaultEnvelopeService } from "@/server/services/passkey-vault-env
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
 import { getClientIp } from "@/lib/request-ip";
 import { rejectPasskeyVaultForbiddenFields } from "@/server/policies/passkey-vault-plaintext-rejection";
+import {
+  clearVaultDeviceBindingCookie,
+  readVaultDeviceBindingIdFromCookies,
+} from "@/lib/passkey/vault-device-binding-cookie";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -22,6 +26,15 @@ const deleteBodySchema = z.object({
   response: z.unknown(),
   prfVaultEnvelope: z.literal(true),
 });
+
+async function respondAfterDisable(result: { success: boolean; removedBindingId?: string | null }) {
+  const response = NextResponse.json(result);
+  const cookieBindingId = await readVaultDeviceBindingIdFromCookies();
+  if (result.removedBindingId && cookieBindingId === result.removedBindingId) {
+    clearVaultDeviceBindingCookie(response);
+  }
+  return response;
+}
 
 export async function GET(_request: Request, context: RouteContext) {
   try {
@@ -64,7 +77,7 @@ export async function POST(request: Request, context: RouteContext) {
       id,
       parsed.data.response as AuthenticationResponseJSON
     );
-    return NextResponse.json(result);
+    return respondAfterDisable(result);
   } catch (error) {
     return apiError(error, "POST /api/account/passkeys/:id/vault-unlock");
   }
@@ -95,7 +108,7 @@ export async function DELETE(request: Request, context: RouteContext) {
       id,
       parsed.data.response as AuthenticationResponseJSON
     );
-    return NextResponse.json(result);
+    return respondAfterDisable(result);
   } catch (error) {
     return apiError(error, "DELETE /api/account/passkeys/:id/vault-unlock");
   }

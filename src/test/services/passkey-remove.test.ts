@@ -30,6 +30,18 @@ vi.mock("@/server/repositories/audit-repository", () => ({
   auditRepository: { record: mocks.record },
 }));
 
+vi.mock("@/server/repositories/vault-passkey-device-binding-repository", () => ({
+  vaultPasskeyDeviceBindingRepository: {
+    deleteAllByUserId: vi.fn(),
+  },
+}));
+
+vi.mock("@/server/repositories/vault-passkey-device-binding-repository", () => ({
+  vaultPasskeyDeviceBindingRepository: {
+    deleteAllByUserId: vi.fn(async () => undefined),
+  },
+}));
+
 describe("passkey removal", () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -7,6 +7,7 @@ import { encryptedPayload, USER_ID } from "@/test/helpers/fixtures";
 const mocks = vi.hoisted(() => ({
   requireFullyAuthenticatedUser: vi.fn(),
   getStatus: vi.fn(),
+  readVaultDeviceBindingIdFromCookies: vi.fn(),
   init: vi.fn(),
   unlockWithRecoveryCode: vi.fn(),
 }));
@@ -35,16 +36,28 @@ vi.mock("@/server/services/vault-service", () => ({
   },
 }));
 
+vi.mock("@/lib/passkey/vault-device-binding-cookie", () => ({
+  readVaultDeviceBindingIdFromCookies: mocks.readVaultDeviceBindingIdFromCookies,
+}));
+
 describe("vault API routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
+    mocks.readVaultDeviceBindingIdFromCookies.mockResolvedValue("binding-1");
   });
 
-  it("GET /vault/status returns vault status", async () => {
-    mocks.getStatus.mockResolvedValue({ initialized: true, recoveryState: "Basic" });
+  it("GET /vault/status returns vault status with device binding context", async () => {
+    mocks.getStatus.mockResolvedValue({
+      initialized: true,
+      passkeyUnlockAvailableOnThisDevice: true,
+    });
     const res = await statusGet();
     expect(res.status).toBe(200);
+    expect(mocks.getStatus).toHaveBeenCalledWith(USER_ID, "binding-1");
+    await expect(res.json()).resolves.toMatchObject({
+      passkeyUnlockAvailableOnThisDevice: true,
+    });
   });
 
   it("POST /vault/init is deprecated", async () => {

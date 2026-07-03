@@ -15,6 +15,12 @@ vi.mock("@/lib/auth/session", () => ({
   requireFullyAuthenticatedUser: mocks.requireFullyAuthenticatedUser,
 }));
 
+vi.mock("@/lib/passkey/vault-device-binding-cookie", () => ({
+  readVaultDeviceBindingIdFromCookies: vi.fn().mockResolvedValue(undefined),
+  applyVaultDeviceBindingCookie: vi.fn(),
+  clearVaultDeviceBindingCookie: vi.fn(),
+}));
+
 vi.mock("@/server/services/passkey-service", () => ({
   passkeyService: {
     getRegistrationOptions: mocks.getRegistrationOptions,
@@ -104,7 +110,7 @@ describe("passkey API routes", () => {
     expect(mocks.getAuthenticationOptions).toHaveBeenCalledWith(
       USER_ID,
       expect.anything(),
-      { purpose: "vault_unlock" }
+      { purpose: "vault_unlock", deviceBindingId: undefined }
     );
   });
 
@@ -127,7 +133,7 @@ describe("passkey API routes", () => {
     expect(mocks.verifyAuthentication).toHaveBeenCalledWith(
       USER_ID,
       { id: "vault-cred" },
-      { purpose: "vault_unlock" }
+      { purpose: "vault_unlock", deviceBindingId: undefined }
     );
   });
 

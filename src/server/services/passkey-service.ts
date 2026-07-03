@@ -11,8 +11,13 @@ import type {
   AuthenticationResponseJSON,
 } from "@simplewebauthn/server";
 import { passkeyRepository } from "@/server/repositories/passkey-repository";
+import { vaultPasskeyDeviceBindingRepository } from "@/server/repositories/vault-passkey-device-binding-repository";
 import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
+import {
+  resolvePasskeyUnlockAvailableOnThisDevice,
+  touchVaultPasskeyDeviceBindingLastUsed,
+} from "@/server/services/vault-passkey-device-binding-service";
 import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 import { passkeyPrfExtensions } from "@/lib/passkey/prf";
 import {
@@ -43,6 +48,7 @@ export type PasskeyAuthenticatePurpose = "vault_unlock";
 
 type PasskeyAuthenticationOptions = {
   purpose?: PasskeyAuthenticatePurpose;
+  deviceBindingId?: string;
 };
 
 type PasskeyRegistrationOptions = {
@@ -62,18 +68,16 @@ export function vaultPasskeyUserHandle(): Uint8Array<ArrayBuffer> {
 }
 
 /**
- * Builds vault-unlock authentication options for every active passkey envelope.
+ * Builds vault-unlock authentication options for passkey envelope credentials.
  *
- * Each `passkey_authorized_device` envelope is bound to one device credential via
- * `publicMetadata.credentialId`. PRF output is device-specific for some passkey
- * providers (e.g. Enpass): a credential yields different PRF bytes per device, so an
- * envelope only decrypts on the device that created it. To support cross-device
- * unlock we register one vault passkey per device and offer them all here; the user
- * authenticates with the passkey local to the current device, and `verifyAuthentication`
- * decrypts the envelope bound to whichever credential signed. A single PRF `eval` salt
- * is used (the authenticator evaluates it for the selected credential).
+ * When `deviceBindingId` is present (HttpOnly cookie), scopes `allowCredentials` to the
+ * single credential bound to this browser so multi-device accounts skip the passkey picker.
+ * Without a binding, offers every active vault passkey (legacy / first unlock on a browser).
  */
-async function buildVaultUnlockAuthenticationOptions(userId?: string) {
+async function buildVaultUnlockAuthenticationOptions(
+  userId?: string,
+  deviceBindingId?: string
+) {
   if (!userId) {
     throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
   }
@@ -91,10 +95,25 @@ async function buildVaultUnlockAuthenticationOptions(userId?: string) {
   }
 
   const credentials = await passkeyRepository.findByUserId(userId);
-  const activeCredentials = credentials.filter(
+  let activeCredentials = credentials.filter(
     (credential) =>
       credential.vaultUnlockEnabled && envelopeCredentialIds.has(credential.credentialId)
   );
+
+  if (deviceBindingId) {
+    const binding = await vaultPasskeyDeviceBindingRepository.findByIdForUser(
+      deviceBindingId,
+      userId
+    );
+    if (binding) {
+      const boundCredential = activeCredentials.find(
+        (credential) => credential.id === binding.passkeyCredentialId
+      );
+      if (boundCredential) {
+        activeCredentials = [boundCredential];
+      }
+    }
+  }
 
   if (activeCredentials.length === 0) {
     throw new ChallengeError(PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE);
@@ -175,7 +194,12 @@ export const passkeyService = {
     userId: string,
     response: RegistrationResponseJSON,
     encryptedVaultKey?: EncryptedPayload,
-    options?: { prfVaultEnvelope?: boolean; vaultOnly?: boolean; friendlyName?: string }
+    options?: {
+      prfVaultEnvelope?: boolean;
+      vaultOnly?: boolean;
+      friendlyName?: string;
+      existingDeviceBindingId?: string;
+    }
   ) {
     const clientData = JSON.parse(
       Buffer.from(response.response.clientDataJSON, "base64url").toString()
@@ -225,6 +249,7 @@ export const passkeyService = {
     const vaultOnly = Boolean(options?.vaultOnly);
 
     let createdCredentialDbId = "";
+    let deviceBindingId: string | undefined;
     await runInTransaction(async (tx) => {
       const createdCredential = await passkeyRepository.createCredential(
         {
@@ -256,6 +281,17 @@ export const passkeyService = {
           },
           tx
         );
+
+        const binding = await vaultPasskeyDeviceBindingRepository.bindPasskeyToDevice(
+          userId,
+          createdCredential.id,
+          {
+            deviceLabel: options?.friendlyName ?? createdCredential.friendlyName,
+            existingBindingId: options?.existingDeviceBindingId,
+          },
+          tx
+        );
+        deviceBindingId = binding.bindingId;
       }
 
       await auditRepository.record("passkey_added", userId, undefined, tx);
@@ -267,6 +303,7 @@ export const passkeyService = {
       credentialDbId: createdCredentialDbId,
       deviceType: credentialDeviceType,
       backedUp: credentialBackedUp,
+      deviceBindingId,
     };
   },
 
@@ -289,7 +326,7 @@ export const passkeyService = {
     // (never evalByCredential), and pin `internal` transport. This keeps the PRF
     // output identical to setup/enable and avoids iOS hybrid routing.
     if (purpose === "vault_unlock") {
-      return buildVaultUnlockAuthenticationOptions(userId);
+      return buildVaultUnlockAuthenticationOptions(userId, authOptions?.deviceBindingId);
     }
 
     const credentials = userId ? await passkeyRepository.findByUserId(userId) : [];
@@ -393,6 +430,10 @@ export const passkeyService = {
         throw new ChallengeError(PASSKEY_NOT_LINKED_TO_VAULT_UNLOCK_MESSAGE);
       }
 
+      if (authOptions?.deviceBindingId) {
+        await touchVaultPasskeyDeviceBindingLastUsed(userId, authOptions.deviceBindingId);
+      }
+
       return {
         verified: true,
         encryptedVaultKey: envelope.encryptedVaultKey,
@@ -416,14 +457,24 @@ export const passkeyService = {
     };
   },
 
-  async listVaultUnlockCredentials(userId: string) {
+  async listVaultUnlockCredentials(userId: string, deviceBindingId?: string) {
     const credentials = await passkeyRepository.findByUserId(userId);
     const envelope = await vaultRepository.findActiveEnvelopeByMethod(
       userId,
       "passkey_authorized_device"
     );
+    const deviceBindings = await vaultPasskeyDeviceBindingRepository.listByUserId(userId);
 
     const vaultCredentials = credentials.filter((credential) => credential.vaultUnlockEnabled);
+
+    const currentBinding = deviceBindingId
+      ? deviceBindings.find((binding) => binding.id === deviceBindingId)
+      : undefined;
+    const currentDeviceCredentialId = currentBinding?.credentialId;
+    const passkeyUnlockAvailableOnThisDevice = await resolvePasskeyUnlockAvailableOnThisDevice(
+      userId,
+      deviceBindingId
+    );
 
     if (vaultCredentials.length === 0 && envelope) {
       return {
@@ -435,6 +486,16 @@ export const passkeyService = {
           prfSupported: boolean | null;
           credentialId: string;
         }>,
+        deviceBindings: deviceBindings.map((binding) => ({
+          id: binding.id,
+          credentialId: binding.credentialId,
+          deviceLabel: binding.deviceLabel ?? binding.friendlyName ?? "Vault passkey",
+          createdAt: binding.createdAt.toISOString(),
+          lastUsedAt: binding.lastUsedAt?.toISOString() ?? null,
+          isCurrentDevice: binding.id === deviceBindingId,
+        })),
+        currentDeviceCredentialId,
+        passkeyUnlockAvailableOnThisDevice,
         serverEnvelopeConfigured: true,
       };
     }
@@ -448,6 +509,16 @@ export const passkeyService = {
         prfSupported: credential.prfSupported,
         credentialId: credential.credentialId,
       })),
+      deviceBindings: deviceBindings.map((binding) => ({
+        id: binding.id,
+        credentialId: binding.credentialId,
+        deviceLabel: binding.deviceLabel ?? binding.friendlyName ?? "Vault passkey",
+        createdAt: binding.createdAt.toISOString(),
+        lastUsedAt: binding.lastUsedAt?.toISOString() ?? null,
+        isCurrentDevice: binding.id === deviceBindingId,
+      })),
+      currentDeviceCredentialId,
+      passkeyUnlockAvailableOnThisDevice,
       serverEnvelopeConfigured: Boolean(envelope),
     };
   },
@@ -465,6 +536,8 @@ export const passkeyService = {
 
     await runInTransaction(async (tx) => {
       await passkeyRepository.revokeAllByUserId(userId, tx);
+
+      await vaultPasskeyDeviceBindingRepository.deleteAllByUserId(userId, tx);
 
       const envelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
       for (const item of envelopes) {
