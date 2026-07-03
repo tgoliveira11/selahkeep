@@ -39,6 +39,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Passkey vault unlock re-registration.** Vault passkey setup now re-wraps the UVK from cached inner envelope material after password/recovery/passkey unlock, so non-extractable session keys (vault-core 1.0+) can create a new PRF envelope without exporting the UVK. Clearer error when setup runs without a fresh unlock on this device.
+
 - **Vault passkey unlock vs account passkey (mobile / Enpass).** Account passkey sign-in and vault passkey unlock are separate WebAuthn ceremonies; sign-in does not require PRF. Vault unlock now scopes to the single configured vault credential, refreshes WebAuthn options on tap, prefers `internal` transport on iPhone/iPad (avoids hybrid PRF mismatch), and the settings **Test** runs verify + decrypt — not PRF presence alone. Clearer errors when PRF is missing or does not match the stored envelope. Hide passkey unlock on iOS/iPadOS versions before 18 where WebAuthn PRF is unavailable.
 
 - **Note editor checklists.** Kanban note→board sync no longer rewrites the note body while typing (fixes cursor jumping to the end). Checklist rows keep the checkbox and text on the same line in visual and preview modes. Bracket tags such as `[IN PROGRESS]` are no longer escaped as `\[IN PROGRESS\]` when saving from the visual editor.

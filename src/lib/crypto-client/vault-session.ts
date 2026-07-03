@@ -28,6 +28,7 @@ import {
 } from "@tgoliveira/vault-core/browser";
 import { getVaultAutoLockMinutesFromConfig } from "@/lib/env/vault-from-env";
 import { VAULT_INACTIVITY_MS as LEGACY_VAULT_INACTIVITY_MS } from "@/lib/vault/vault-auto-lock-config";
+import { clearVaultInnerKeyMaterial } from "@/modules/vault/core/envelopes/vault-inner-key-material";
 
 export { LEGACY_VAULT_INACTIVITY_MS as VAULT_INACTIVITY_MS };
 
@@ -274,6 +275,7 @@ export function lockVaultSession(reason: VaultLockReason = "manual"): void {
 
     clearPreLockTimer();
     clearVaultAutoLockTimer();
+    clearVaultInnerKeyMaterial();
     notifyActivityChange();
     clearNoteBodyCache();
     unlockedAt = 0;
@@ -321,6 +323,7 @@ export function resetVaultSessionStoreForTests(): void {
   sessionSnapshotListeners.clear();
   activityListeners.clear();
   clearPreLockTimer();
+  clearVaultInnerKeyMaterial();
   lockVault();
   coreResetVaultSessionLockState();
   configureSelahkeepVaultSession();
