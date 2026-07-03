@@ -40,6 +40,7 @@ import {
 } from "@/lib/passkey/passkey-prf-diagnostics";
 import { toPasskeyRegistrationErrorMessage } from "@/lib/passkey/webauthn-config";
 import {
+  PASSKEY_VAULT_UNLOCK_CONFIGURED_ON_ANOTHER_DEVICE_MESSAGE,
   PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE,
   PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE,
   PASSKEY_VAULT_UNLOCK_ENABLED_REFRESH_WARNING,
@@ -66,20 +67,27 @@ type VaultUnlockPasskey = {
   credentialId: string;
 };
 
-interface PasskeyVaultUnlockSetupProps {
-  userId: string;
-  vaultUnlocked: boolean;
-  vaultConfigured?: boolean;
-}
+type VaultDeviceBinding = {
+  id: string;
+  credentialId: string;
+  deviceLabel: string;
+  isCurrentDevice: boolean;
+};
 
 async function fetchVaultPasskeyData(): Promise<{
   passkeys: VaultUnlockPasskey[];
+  deviceBindings: VaultDeviceBinding[];
+  currentDeviceCredentialId?: string;
+  passkeyUnlockAvailableOnThisDevice: boolean;
   serverPasskeyEnvelope: boolean;
   vaultConfigured: boolean;
 }> {
   const [vaultUnlock, vaultStatus] = await Promise.all([
     apiClient.get<{
       passkeys: VaultUnlockPasskey[];
+      deviceBindings?: VaultDeviceBinding[];
+      currentDeviceCredentialId?: string | null;
+      passkeyUnlockAvailableOnThisDevice?: boolean;
       serverEnvelopeConfigured: boolean;
     }>("/api/passkeys/vault-unlock"),
     vaultApi.status().catch(() => null),
@@ -90,11 +98,25 @@ async function fetchVaultPasskeyData(): Promise<{
     vaultStatus?.availableUnlockMethods?.passkey === true ||
     vaultStatus?.hasPasskey === true;
 
+  const passkeyUnlockAvailableOnThisDevice =
+    vaultUnlock.passkeyUnlockAvailableOnThisDevice ??
+    vaultStatus?.passkeyUnlockAvailableOnThisDevice ??
+    false;
+
   return {
     passkeys: vaultUnlock.passkeys,
+    deviceBindings: vaultUnlock.deviceBindings ?? [],
+    currentDeviceCredentialId: vaultUnlock.currentDeviceCredentialId ?? undefined,
+    passkeyUnlockAvailableOnThisDevice,
     serverPasskeyEnvelope,
     vaultConfigured: vaultStatus?.setupComplete === true || vaultStatus?.hasVault === true,
   };
+}
+
+interface PasskeyVaultUnlockSetupProps {
+  userId: string;
+  vaultUnlocked: boolean;
+  vaultConfigured?: boolean;
 }
 
 export function PasskeyVaultUnlockSetup({
@@ -103,6 +125,10 @@ export function PasskeyVaultUnlockSetup({
   vaultConfigured = true,
 }: PasskeyVaultUnlockSetupProps) {
   const [passkeys, setPasskeys] = useState<VaultUnlockPasskey[]>([]);
+  const [deviceBindings, setDeviceBindings] = useState<VaultDeviceBinding[]>([]);
+  const [currentDeviceCredentialId, setCurrentDeviceCredentialId] = useState<string | undefined>();
+  const [passkeyUnlockAvailableOnThisDevice, setPasskeyUnlockAvailableOnThisDevice] =
+    useState(false);
   const [serverPasskeyEnvelope, setServerPasskeyEnvelope] = useState(false);
   const [environment, setEnvironment] = useState<PasskeyPrfEnvironmentSnapshot | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -113,6 +139,9 @@ export function PasskeyVaultUnlockSetup({
   const loadPasskeys = useCallback(async () => {
     const data = await fetchVaultPasskeyData();
     setPasskeys(data.passkeys);
+    setDeviceBindings(data.deviceBindings);
+    setCurrentDeviceCredentialId(data.currentDeviceCredentialId);
+    setPasskeyUnlockAvailableOnThisDevice(data.passkeyUnlockAvailableOnThisDevice);
     setServerPasskeyEnvelope(data.serverPasskeyEnvelope);
   }, []);
 
@@ -122,6 +151,9 @@ export function PasskeyVaultUnlockSetup({
       .then(([data, env]) => {
         if (!cancelled) {
           setPasskeys(data.passkeys);
+          setDeviceBindings(data.deviceBindings);
+          setCurrentDeviceCredentialId(data.currentDeviceCredentialId);
+          setPasskeyUnlockAvailableOnThisDevice(data.passkeyUnlockAvailableOnThisDevice);
           setServerPasskeyEnvelope(data.serverPasskeyEnvelope);
           setEnvironment(env);
         }
@@ -154,6 +186,8 @@ export function PasskeyVaultUnlockSetup({
   const managementBlocked = isPasskeyPrfManagementBlocked(environment);
   const setupAllowed = canAttemptVaultPasskeySetup(availability);
   const hasVaultPasskey = passkeys.some((passkey) => passkey.vaultUnlockEnabled);
+  const passkeyConfiguredOnAnotherDevice =
+    serverPasskeyEnvelope && !passkeyUnlockAvailableOnThisDevice;
   // Passkey PRF is device-specific for some providers, so vault unlock needs one passkey
   // per device. Keep setup available even after a passkey exists, so the user can add
   // the device they are currently on.
@@ -245,6 +279,7 @@ export function PasskeyVaultUnlockSetup({
         encryptedVaultKey,
         prfVaultEnvelope: true,
         prfSupported: true,
+        deviceLabel: currentDeviceLabel(),
       });
 
       setMessage(PASSKEY_VAULT_UNLOCK_ENABLED_MESSAGE);
@@ -286,7 +321,9 @@ export function PasskeyVaultUnlockSetup({
         return;
       }
 
-      const assertion = await runVaultUnlockAuthenticationCeremony(passkey?.credentialId);
+      const assertion = await runVaultUnlockAuthenticationCeremony(
+        passkey?.credentialId ?? currentDeviceCredentialId
+      );
       const prfOutput = extractPasskeyPrfOutput(assertion.clientExtensionResults);
 
       if (!prfOutput) {
@@ -365,9 +402,15 @@ export function PasskeyVaultUnlockSetup({
     <div className="space-y-4">
       <p className="text-sm leading-relaxed text-[var(--muted)]">{VAULT_PASSKEY_INDEPENDENCE_NOTE}</p>
 
-      {availabilityCopy && (
+      {availabilityCopy && !passkeyConfiguredOnAnotherDevice && (
         <Alert variant={alertVariant} title={availabilityCopy.headline}>
           {availabilityCopy.explanation}
+        </Alert>
+      )}
+
+      {passkeyConfiguredOnAnotherDevice && (
+        <Alert variant="info" title="Passkey vault unlock on another device">
+          {PASSKEY_VAULT_UNLOCK_CONFIGURED_ON_ANOTHER_DEVICE_MESSAGE}
         </Alert>
       )}
 
@@ -380,13 +423,13 @@ export function PasskeyVaultUnlockSetup({
         >
           {loadingId === "register"
             ? "Working…"
-            : hasVaultPasskey
+            : hasVaultPasskey || passkeyConfiguredOnAnotherDevice
               ? "Add a passkey for this device"
               : "Set up passkey vault unlock"}
         </Button>
       )}
 
-      {hasVaultPasskey && showPrimarySetup && (
+      {(hasVaultPasskey || passkeyConfiguredOnAnotherDevice) && showPrimarySetup && (
         <p className="text-sm text-[var(--muted)]">
           Passkey unlock is per device. Add a passkey on each device you want to unlock
           with — a passkey set up on one device may not unlock the vault on another.
@@ -417,7 +460,12 @@ export function PasskeyVaultUnlockSetup({
                       ? "Also used for account passkey sign-in."
                       : "Vault unlock passkey only — not used for account sign-in."}
                   </p>
-                  <Badge variant="success">Vault unlock: configured</Badge>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="success">Vault unlock: configured</Badge>
+                    {passkey.credentialId === currentDeviceCredentialId ? (
+                      <Badge variant="info">This device</Badge>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {readOnlyConfigured ? null : (
@@ -445,7 +493,21 @@ export function PasskeyVaultUnlockSetup({
         </ul>
       )}
 
-      {passkeys.length === 0 && serverPasskeyEnvelope && (
+      {deviceBindings.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-[var(--foreground)]">Bound devices</p>
+          <ul className="space-y-2 text-sm text-[var(--muted)]">
+            {deviceBindings.map((binding) => (
+              <li key={binding.id}>
+                {binding.deviceLabel}
+                {binding.isCurrentDevice ? " · this browser" : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {passkeys.length === 0 && serverPasskeyEnvelope && !passkeyConfiguredOnAnotherDevice && (
         <p className="text-sm text-[var(--muted)]">
           A passkey vault unlock envelope exists on your account. Use a PRF-compatible browser where
           it was configured, or unlock with your vault password or recovery phrase.

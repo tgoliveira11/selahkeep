@@ -40,6 +40,9 @@ export const PASSKEY_VAULT_UNLOCK_DISABLED_MESSAGE =
 export const PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE =
   "Passkey vault unlock is not configured yet.";
 
+export const PASSKEY_VAULT_UNLOCK_CONFIGURED_ON_ANOTHER_DEVICE_MESSAGE =
+  "Passkey vault unlock is set up on another device. Add a passkey for this device in vault settings.";
+
 export const PASSKEY_ACCOUNT_ONLY_FOR_SIGN_IN_MESSAGE =
   "This passkey is for account sign-in, not vault unlock.";
 

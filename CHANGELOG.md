@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Passkey vault device binding.** On “Add passkey for this device”, the server creates a `vault_passkey_device_bindings` row and sets HttpOnly cookie `selahkeep_vault_device` (UUID only). Vault unlock authentication options scope `allowCredentials` to the bound credential for this browser, avoiding the passkey picker when Mac and iPhone are both enrolled. Disable removes the binding and clears the cookie. Settings list bound devices. `GET /api/vault/status` and `GET /api/passkeys/vault-unlock` expose `passkeyUnlockAvailableOnThisDevice`; the vault dock, unlock page, and settings only offer passkey unlock when this browser is bound.
+
 ### Fixed
 
 - **Passkey vault unlock on iOS (PR #42/#43 regression).** Restored iOS PRF ceremony parity removed during the per-device passkey merge: Safari credential-scoped PRF extraction, client-side `eval` alignment, platform `internal` transport pinning, envelope credential prefetch, and per-device decrypt-failure copy. A passkey envelope wrapped on Mac still requires adding a passkey on each unlock device.

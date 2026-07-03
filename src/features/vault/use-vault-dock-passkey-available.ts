@@ -10,7 +10,7 @@ export type VaultDockPasskeyAvailability = {
 };
 
 /** Whether passkey PRF quick unlock may appear in the Vault Status Dock. */
-export function useVaultDockPasskeyAvailable(
+export function resolveVaultDockPasskeyAvailability(
   vaultStatus: VaultStatus | null
 ): VaultDockPasskeyAvailability {
   const hasEnvelope =
@@ -24,5 +24,16 @@ export function useVaultDockPasskeyAvailable(
     return { hasEnvelope: true, showPasskey: false, prfExplicitlyUnsupported: true };
   }
 
+  const availableOnThisDevice = vaultStatus?.passkeyUnlockAvailableOnThisDevice === true;
+  if (!availableOnThisDevice) {
+    return { hasEnvelope: true, showPasskey: false, prfExplicitlyUnsupported: false };
+  }
+
   return { hasEnvelope: true, showPasskey: true, prfExplicitlyUnsupported: false };
+}
+
+export function useVaultDockPasskeyAvailable(
+  vaultStatus: VaultStatus | null
+): VaultDockPasskeyAvailability {
+  return resolveVaultDockPasskeyAvailability(vaultStatus);
 }

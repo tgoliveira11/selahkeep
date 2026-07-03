@@ -141,6 +141,13 @@
       "when": 1781330000000,
       "tag": "0019_kanban_card_attachments",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1781340000000,
+      "tag": "0020_vault_passkey_device_bindings",
+      "breakpoints": true
     }
   ]
 }

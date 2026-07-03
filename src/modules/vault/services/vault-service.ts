@@ -9,6 +9,7 @@ import {
 } from "@/server/policies/aad-validation";
 import { enforceRateLimit, RateLimitError } from "@/server/policies/rate-limit";
 import { deriveSetupPhase } from "@/lib/vault/vault-status";
+import { resolvePasskeyUnlockAvailableOnThisDevice } from "@/server/services/vault-passkey-device-binding-service";
 
 export const vaultService = {
   async setup(userId: string, input: VaultSetupInput) {
@@ -82,7 +83,7 @@ export const vaultService = {
     });
   },
 
-  async getStatus(userId: string) {
+  async getStatus(userId: string, deviceBindingId?: string) {
     const vault = await vaultRepository.findVaultByUserId(userId);
     if (!vault) {
       return {
@@ -159,6 +160,11 @@ export const vaultService = {
       }
     }
 
+    const passkeyUnlockAvailableOnThisDevice =
+      setupComplete && methods.has("passkey_authorized_device")
+        ? await resolvePasskeyUnlockAvailableOnThisDevice(userId, deviceBindingId)
+        : false;
+
     return {
       initialized: true,
       hasVault: true,
@@ -175,6 +181,7 @@ export const vaultService = {
       hasPasskey: methods.has("passkey_authorized_device"),
       ltgSetupComplete,
       recoveryPhrase: recoveryPhraseMeta,
+      passkeyUnlockAvailableOnThisDevice,
       availableUnlockMethods: setupComplete
         ? {
             password: methods.has("password"),

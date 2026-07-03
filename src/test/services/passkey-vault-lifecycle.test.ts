@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   revokeEnvelope: vi.fn(),
   record: vi.fn(),
   verifyAuthenticationResponse: vi.fn(),
+  bindPasskeyToDevice: vi.fn(),
+  deleteByPasskeyCredentialId: vi.fn(),
 }));
 
 vi.mock("@simplewebauthn/server", () => ({
@@ -38,6 +40,13 @@ vi.mock("@/server/repositories/vault-repository", () => ({
 
 vi.mock("@/server/repositories/audit-repository", () => ({
   auditRepository: { record: mocks.record },
+}));
+
+vi.mock("@/server/repositories/vault-passkey-device-binding-repository", () => ({
+  vaultPasskeyDeviceBindingRepository: {
+    bindPasskeyToDevice: mocks.bindPasskeyToDevice,
+    deleteByPasskeyCredentialId: mocks.deleteByPasskeyCredentialId,
+  },
 }));
 
 function authResponse(challenge: string, credentialId: string) {
@@ -80,6 +89,7 @@ describe("passkey vault lifecycle", () => {
       signInEnabled: false,
       vaultUnlockEnabled: true,
     });
+    mocks.deleteByPasskeyCredentialId.mockResolvedValue("binding-1");
 
     await passkeyVaultEnvelopeService.disableVaultUnlockWithProof(
       "user-1",

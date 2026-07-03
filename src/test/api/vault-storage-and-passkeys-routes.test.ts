@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   requireFullyAuthenticatedUser: vi.fn(),
   getStorageUsage: vi.fn(),
   listVaultUnlockCredentials: vi.fn(),
+  readVaultDeviceBindingIdFromCookies: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
@@ -24,6 +25,10 @@ vi.mock("@/server/services/passkey-service", () => ({
   passkeyService: {
     listVaultUnlockCredentials: mocks.listVaultUnlockCredentials,
   },
+}));
+
+vi.mock("@/lib/passkey/vault-device-binding-cookie", () => ({
+  readVaultDeviceBindingIdFromCookies: mocks.readVaultDeviceBindingIdFromCookies,
 }));
 
 describe("vault storage usage route", () => {
@@ -46,14 +51,22 @@ describe("passkeys vault-unlock list route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireFullyAuthenticatedUser.mockResolvedValue({ id: USER_ID, email: "user@example.com" });
-    mocks.listVaultUnlockCredentials.mockResolvedValue({ credentials: [] });
+    mocks.readVaultDeviceBindingIdFromCookies.mockResolvedValue("binding-1");
+    mocks.listVaultUnlockCredentials.mockResolvedValue({
+      passkeys: [],
+      deviceBindings: [],
+      currentDeviceCredentialId: null,
+      serverEnvelopeConfigured: true,
+    });
   });
 
-  it("GET lists vault-unlock passkeys", async () => {
+  it("GET lists vault-unlock passkeys with device binding context", async () => {
     const { GET } = await import("@/app/api/passkeys/vault-unlock/route");
     const res = await GET();
     expect(res.status).toBe(200);
-    await expect(res.json()).resolves.toEqual({ credentials: [] });
-    expect(mocks.listVaultUnlockCredentials).toHaveBeenCalledWith(USER_ID);
+    await expect(res.json()).resolves.toMatchObject({
+      serverEnvelopeConfigured: true,
+    });
+    expect(mocks.listVaultUnlockCredentials).toHaveBeenCalledWith(USER_ID, "binding-1");
   });
 });

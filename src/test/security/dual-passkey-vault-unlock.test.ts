@@ -7,13 +7,13 @@ function readSource(relativePath: string): string {
 }
 
 describe("dual passkey vault unlock credential filtering", () => {
-  it("server scopes vault unlock options to the active envelope credential (canonical contract)", () => {
+  it("server scopes vault unlock options via device binding when cookie present", () => {
     const source = readSource("src/server/services/passkey-service.ts");
     expect(source).toContain('purpose === "vault_unlock"');
     expect(source).toContain("credential.vaultUnlockEnabled");
-    // Single-credential eval scoped to the active envelope — never evalByCredential.
     expect(source).toContain("buildVaultUnlockAuthenticationOptions");
-    expect(source).toContain("findActiveEnvelopeByMethod");
+    expect(source).toContain("deviceBindingId");
+    expect(source).toContain("vaultPasskeyDeviceBindingRepository");
     expect(source).toContain("toVaultUnlockAllowCredentialDescriptor");
     expect(source).not.toContain("passkeyPrfAuthExtensions");
     expect(source).toContain("PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE");
@@ -75,6 +75,13 @@ describe("dual passkey vault unlock credential filtering", () => {
   it("dual-purpose disable keeps sign-in credential", () => {
     const source = readSource("src/server/services/passkey-vault-envelope-service.ts");
     expect(source).toMatch(/credential\.signInEnabled[\s\S]*updateCredentialFlags/);
+  });
+
+  it("device binding cookie is HttpOnly and stores binding id only", () => {
+    const cookie = readSource("src/lib/passkey/vault-device-binding-cookie.ts");
+    expect(cookie).toContain('VAULT_DEVICE_BINDING_COOKIE = "selahkeep_vault_device"');
+    expect(cookie).toContain("httpOnly: true");
+    expect(cookie).not.toMatch(/localStorage/);
   });
 
   it("passkey unlock does not depend on vault status envelope fetch", () => {

@@ -5,6 +5,7 @@ import {
 } from "@simplewebauthn/server";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { passkeyRepository } from "@/server/repositories/passkey-repository";
+import { vaultPasskeyDeviceBindingRepository } from "@/server/repositories/vault-passkey-device-binding-repository";
 import { vaultRepository } from "@/server/repositories/vault-repository";
 import { auditRepository } from "@/server/repositories/audit-repository";
 import { enforceRateLimit } from "@/server/policies/rate-limit";
@@ -129,7 +130,12 @@ export const passkeyVaultEnvelopeService = {
     credentialDbId: string,
     response: AuthenticationResponseJSON,
     encryptedVaultKey: EncryptedPayload,
-    options?: { prfVaultEnvelope?: boolean; prfSupported?: boolean | null }
+    options?: {
+      prfVaultEnvelope?: boolean;
+      prfSupported?: boolean | null;
+      deviceLabel?: string | null;
+      existingDeviceBindingId?: string;
+    }
   ) {
     if (!options?.prfVaultEnvelope) {
       throw new ChallengeError(
@@ -190,6 +196,8 @@ export const passkeyVaultEnvelopeService = {
 
     assertPrfInAuthenticationResponse(response);
 
+    let deviceBindingId: string | undefined;
+
     await runInTransaction(async (tx) => {
       await passkeyRepository.updateCounter(
         credential.credentialId,
@@ -228,6 +236,17 @@ export const passkeyVaultEnvelopeService = {
         tx
       );
 
+      const binding = await vaultPasskeyDeviceBindingRepository.bindPasskeyToDevice(
+        userId,
+        credential.id,
+        {
+          deviceLabel: options?.deviceLabel ?? credential.friendlyName,
+          existingBindingId: options?.existingDeviceBindingId,
+        },
+        tx
+      );
+      deviceBindingId = binding.bindingId;
+
       await auditRepository.record(
         "passkey_vault_unlock_enabled",
         userId,
@@ -236,7 +255,7 @@ export const passkeyVaultEnvelopeService = {
       );
     });
 
-    return { success: true };
+    return { success: true, deviceBindingId };
   },
 
   async getVaultUnlockStatus(userId: string, credentialDbId: string) {
@@ -304,6 +323,8 @@ export const passkeyVaultEnvelopeService = {
       throw new ChallengeError("Passkey vault unlock is not enabled for this passkey.");
     }
 
+    let removedBindingId: string | null = null;
+
     await runInTransaction(async (tx) => {
       const envelopes = await vaultRepository.findActiveEnvelopesByUserId(userId);
       for (const envelope of envelopes) {
@@ -315,6 +336,12 @@ export const passkeyVaultEnvelopeService = {
           await vaultRepository.revokeEnvelope(envelope.id, userId, tx);
         }
       }
+
+      removedBindingId = await vaultPasskeyDeviceBindingRepository.deleteByPasskeyCredentialId(
+        credential.id,
+        userId,
+        tx
+      );
 
       if (!credential.signInEnabled) {
         await passkeyRepository.revoke(credential.id, userId, tx);
@@ -336,6 +363,6 @@ export const passkeyVaultEnvelopeService = {
       );
     });
 
-    return { success: true };
+    return { success: true, removedBindingId };
   },
 };

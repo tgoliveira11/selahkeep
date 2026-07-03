@@ -1,4 +1,6 @@
 > **⚠️ ARCHIVED — obsolete (2026-07-03).** Superseded by `@tgoliveira/vault-core` as the single source of truth for vault and passkey PRF unlock behavior. See the package's `README.md`, `docs/IMPLEMENTATION_GUIDE.md`, and `PASSKEY_PRF_ENVELOPES.md`. Kept for historical context only — do not use for current implementation guidance.
+>
+> **2026-07-03 addendum (still accurate in repo):** Server-side device binding via HttpOnly cookie `selahkeep_vault_device` + table `vault_passkey_device_bindings` scopes vault unlock WebAuthn options to one credential per browser. Cookie stores binding UUID only — no vault keys.
 
 ---
 

@@ -19,6 +19,11 @@ vi.mock("@/server/services/passkey-vault-envelope-service", () => ({
   },
 }));
 
+vi.mock("@/lib/passkey/vault-device-binding-cookie", () => ({
+  readVaultDeviceBindingIdFromCookies: vi.fn(async () => undefined),
+  clearVaultDeviceBindingCookie: vi.fn((response: Response) => response),
+}));
+
 describe("passkey vault unlock status route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -30,7 +35,7 @@ describe("passkey vault unlock status route", () => {
       credentialId: "cred-1",
     });
     mocks.getManageVaultUnlockAuthOptions.mockResolvedValue({ challenge: "abc" });
-    mocks.disableVaultUnlockWithProof.mockResolvedValue({ success: true });
+    mocks.disableVaultUnlockWithProof.mockResolvedValue({ success: true, removedBindingId: null });
   });
 
   it("GET returns vault unlock status for passkey", async () => {

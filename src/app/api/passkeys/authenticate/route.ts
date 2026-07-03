@@ -3,6 +3,7 @@ import { requireFullyAuthenticatedUser } from "@/lib/auth/session";
 import { passkeyService } from "@/server/services/passkey-service";
 import { apiError, parseJsonBody } from "@/lib/api-helpers";
 import { getClientIp } from "@/lib/request-ip";
+import { readVaultDeviceBindingIdFromCookies } from "@/lib/passkey/vault-device-binding-cookie";
 import { z } from "zod";
 
 const authSchema = z.object({
@@ -22,9 +23,10 @@ export async function POST(request: Request) {
     }
 
     const ip = getClientIp(request);
+    const deviceBindingId = await readVaultDeviceBindingIdFromCookies();
 
     const purpose = parsed.data.purpose;
-    const authOptions = purpose ? { purpose } : undefined;
+    const authOptions = purpose ? { purpose, deviceBindingId } : undefined;
 
     if (parsed.data.action === "options") {
       const options = await passkeyService.getAuthenticationOptions(user.id, ip, authOptions);

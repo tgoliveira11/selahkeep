@@ -21,6 +21,10 @@ vi.mock("@/server/services/vault-service", () => ({
   },
 }));
 
+vi.mock("@/lib/passkey/vault-device-binding-cookie", () => ({
+  readVaultDeviceBindingIdFromCookies: vi.fn(async () => undefined),
+}));
+
 describe("API route error branches", () => {
   it("vault status and recovery-code routes return success", async () => {
     expect((await vaultStatusGet()).status).toBe(200);

@@ -24,6 +24,11 @@ const mocks = vi.hoisted(() => ({
   verifyRegistrationResponse: vi.fn(),
   generateAuthenticationOptions: vi.fn(),
   verifyAuthenticationResponse: vi.fn(),
+  findByIdForUser: vi.fn(),
+  findDeviceBindingByIdForUser: vi.fn(),
+  listDeviceBindingsByUserId: vi.fn(),
+  bindPasskeyToDevice: vi.fn(),
+  deleteDeviceBindingsByUserId: vi.fn(),
 }));
 
 vi.mock("@simplewebauthn/server", () => ({
@@ -55,6 +60,15 @@ vi.mock("@/server/repositories/vault-repository", () => ({
   },
 }));
 
+vi.mock("@/server/repositories/vault-passkey-device-binding-repository", () => ({
+  vaultPasskeyDeviceBindingRepository: {
+    findByIdForUser: mocks.findDeviceBindingByIdForUser,
+    listByUserId: mocks.listDeviceBindingsByUserId,
+    bindPasskeyToDevice: mocks.bindPasskeyToDevice,
+    deleteAllByUserId: mocks.deleteDeviceBindingsByUserId,
+  },
+}));
+
 vi.mock("@/server/repositories/audit-repository", () => ({
   auditRepository: { record: mocks.record },
 }));
@@ -81,6 +95,9 @@ describe("passkey service", () => {
     mocks.findByUserId.mockResolvedValue([]);
     mocks.findActiveEnvelopeByMethod.mockResolvedValue(null);
     mocks.findActiveEnvelopesByUserId.mockResolvedValue([]);
+    mocks.listDeviceBindingsByUserId.mockResolvedValue([]);
+    mocks.findDeviceBindingByIdForUser.mockResolvedValue(null);
+    mocks.bindPasskeyToDevice.mockResolvedValue({ bindingId: "binding-1" });
     mocks.createCredential.mockResolvedValue({ id: "cred-db-id" });
     mocks.generateRegistrationOptions.mockResolvedValue({ challenge: "reg-challenge" });
     mocks.generateAuthenticationOptions.mockResolvedValue({ challenge: "auth-challenge" });
@@ -339,7 +356,51 @@ describe("passkey service", () => {
     expect(mocks.generateAuthenticationOptions).not.toHaveBeenCalled();
   });
 
-  it("vault unlock offers every per-device passkey credential with a single PRF eval", async () => {
+  it("vault unlock options scope to device binding cookie when present", async () => {
+    mocks.findActiveEnvelopesByUserId.mockResolvedValue([
+      {
+        id: "env-a",
+        method: "passkey_authorized_device",
+        publicMetadata: { credentialId: "vault-a", prfRequired: true },
+      },
+      {
+        id: "env-b",
+        method: "passkey_authorized_device",
+        publicMetadata: { credentialId: "vault-b", prfRequired: true },
+      },
+    ]);
+    mocks.findByUserId.mockResolvedValue([
+      {
+        id: "db-a",
+        credentialId: "vault-a",
+        transports: ["internal"],
+        vaultUnlockEnabled: true,
+      },
+      {
+        id: "db-b",
+        credentialId: "vault-b",
+        transports: ["internal"],
+        vaultUnlockEnabled: true,
+      },
+    ]);
+    mocks.findDeviceBindingByIdForUser.mockResolvedValue({
+      id: "binding-1",
+      passkeyCredentialId: "db-b",
+    });
+
+    await passkeyService.getAuthenticationOptions(USER_ID, undefined, {
+      purpose: "vault_unlock",
+      deviceBindingId: "binding-1",
+    });
+
+    expect(mocks.generateAuthenticationOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowCredentials: [{ id: "vault-b", transports: ["internal"] }],
+      })
+    );
+  });
+
+  it("vault unlock offers every per-device passkey when no device binding", async () => {
     // Multi-device: one envelope per device. Unlock offers ALL of them so the user can
     // authenticate with the passkey local to the current device. A single `eval` salt is
     // used (the authenticator evaluates it for whichever credential the user picks).
