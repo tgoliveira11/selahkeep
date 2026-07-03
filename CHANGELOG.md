@@ -39,6 +39,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Passkey vault setup after new vault creation (Mac).** Converting the session UVK to non-extractable now caches in-memory inner key material so passkey envelope creation works immediately after vault setup without a password re-unlock.
+
+- **Recovery passkey setup ceremony.** `/vault/recovery` passkey registration now links vault unlock with an authentication PRF envelope (same as settings), runs a post-enable decrypt self-test, and maps Web Crypto failures to actionable copy instead of raw `OperationError` text.
+
 - **Passkey vault unlock re-registration.** Vault passkey setup now re-wraps the UVK from cached inner envelope material after password/recovery/passkey unlock, so non-extractable session keys (vault-core 1.0+) can create a new PRF envelope without exporting the UVK. Clearer error when setup runs without a fresh unlock on this device.
 
 - **Passkey vault PRF import on iOS.** PRF extension output is now normalized to exactly 32 bytes before `importKey` (handles `ArrayBuffer`, `ArrayBufferView`, base64url, and `evalByCredential` result shapes). Fixes settings **Test** failing with “AES key data must be 128 or 256 bits” when Safari returned PRF bytes in a non–`ArrayBuffer` shape or when `byteLength` was missing on the value.

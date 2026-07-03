@@ -3,6 +3,7 @@ import {
   getPasskeyPrfDiagnosticMessage,
   resolveCeremonyDiagnosticReason,
 } from "@/lib/passkey/passkey-prf-diagnostics";
+import { mapPasskeyCryptoError } from "@/lib/passkey/map-passkey-crypto-error";
 import {
   PASSKEY_NOT_LINKED_TO_VAULT_UNLOCK_MESSAGE,
   PASSKEY_NOT_AVAILABLE_FOR_VAULT_UNLOCK_MESSAGE,
@@ -120,9 +121,9 @@ export async function unlockVaultWithPasskey(
       );
     }
     if (error instanceof PasskeyUnlockError) {
-      throw new Error(resolvePasskeyVaultDecryptFailureMessage());
+      throw new Error(mapPasskeyCryptoError(error) ?? resolvePasskeyVaultDecryptFailureMessage());
     }
-    throw new Error(resolvePasskeyVaultDecryptFailureMessage());
+    throw new Error(mapPasskeyCryptoError(error) ?? resolvePasskeyVaultDecryptFailureMessage());
   }
 }
 

@@ -10,10 +10,10 @@ import { Alert } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SuccessState } from "@/components/ui/success-state";
 import { getSessionVaultKey } from "@/lib/crypto-client/vault";
-import {
-  extractPasskeyPrfOutput,
-  wrapVaultKeyForPasskey,
-} from "@/lib/crypto-client/passkey-vault";
+import { extractPasskeyPrfOutput } from "@/lib/crypto-client/passkey-vault";
+import { enableVaultPasskeyUnlockWithAuthPrf } from "@/lib/passkey/enable-vault-passkey-unlock";
+import { toPasskeyCeremonyErrorMessage } from "@/lib/passkey/map-passkey-crypto-error";
+import { verifyPasskeyVaultUnlockRoundTrip } from "@/lib/passkey/verify-passkey-vault-round-trip";
 import { apiClient } from "@/lib/api-client/client";
 import { passkeysApi } from "@/lib/api-client/passkeys";
 import { prepareRegistrationOptions } from "@/lib/passkey/prepare-webauthn-options";
@@ -107,28 +107,36 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         return;
       }
 
-      const encryptedVaultKey = await wrapVaultKeyForPasskey(
-        vaultKey,
-        prfOutput,
+      const registration = await apiClient.post<{
+        verified: boolean;
+        credentialId?: string;
+        passkeyId?: string;
+      }>("/api/passkeys/register", {
+        action: "verify",
+        response: attestation,
+        vaultOnly: true,
+      });
+
+      if (!registration.passkeyId) {
+        throw new Error("Passkey registration succeeded but could not link vault unlock.");
+      }
+
+      await enableVaultPasskeyUnlockWithAuthPrf({
+        passkeyDbId: registration.passkeyId,
         userId,
-        userId
-      );
+        vaultKey,
+      });
 
-      const result = await apiClient.post<{ verified: boolean; credentialId?: string }>(
-        "/api/passkeys/register",
-        {
-          action: "verify",
-          response: attestation,
-          encryptedVaultKey,
-          prfVaultEnvelope: true,
-          vaultOnly: true,
-        }
-      );
+      await verifyPasskeyVaultUnlockRoundTrip({
+        userId,
+        sessionVaultKey: vaultKey,
+        credentialId: registration.credentialId,
+      });
 
-      if (result.verified) {
+      if (registration.verified) {
         setPasskeyLoginHint({
           userId,
-          credentialId: result.credentialId,
+          credentialId: registration.credentialId,
         });
         setOutcome("vault-registered");
         setMessage(PASSKEY_VAULT_REGISTERED_MESSAGE);
@@ -146,7 +154,12 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
       }
       setOutcome("failed");
       const registrationMessage = toPasskeyRegistrationErrorMessage(e);
-      setError(registrationMessage ?? (e instanceof Error ? e.message : "Passkey registration failed"));
+      setError(
+        toPasskeyCeremonyErrorMessage(
+          e,
+          registrationMessage ?? (e instanceof Error ? e.message : "Passkey registration failed")
+        )
+      );
     } finally {
       setLoading(false);
     }

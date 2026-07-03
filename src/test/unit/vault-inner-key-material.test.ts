@@ -13,7 +13,7 @@ import {
   wrapVaultKeyForPasskey,
   unwrapVaultKeyFromPasskey,
 } from "@/lib/crypto-client/passkey-vault";
-import { setUnlockedVaultSession, resetVaultSessionStoreForTests } from "@/lib/crypto-client/vault-session";
+import { setUnlockedVaultSession, resetVaultSessionStoreForTests, getSessionVaultKey } from "@/lib/crypto-client/vault-session";
 import {
   clearVaultInnerKeyMaterial,
   getCachedVaultInnerKeyMaterial,
@@ -64,6 +64,27 @@ describe("vault inner key material for passkey re-wrap", () => {
     const prfOutput = crypto.getRandomValues(new Uint8Array(32));
     const passkeyEnvelope = await wrapVaultKeyForPasskey(
       sessionKey,
+      prfOutput,
+      USER_ID,
+      USER_ID
+    );
+    const restored = await unwrapVaultKeyFromPasskey(passkeyEnvelope, prfOutput, {
+      applySession: false,
+    });
+    expect(await userVaultKeysEqual(restored, vaultKey)).toBe(true);
+  });
+
+  it("wraps passkey envelope after fresh vault setup without password re-unlock", async () => {
+    const vaultKey = await createUserVaultKey();
+    await setUnlockedVaultSession({ userVaultKey: vaultKey, method: "password" });
+
+    const sessionKey = getSessionVaultKey();
+    expect(sessionKey).toBeTruthy();
+    expect(getCachedVaultInnerKeyMaterial()).not.toBeNull();
+
+    const prfOutput = crypto.getRandomValues(new Uint8Array(32));
+    const passkeyEnvelope = await wrapVaultKeyForPasskey(
+      sessionKey!,
       prfOutput,
       USER_ID,
       USER_ID

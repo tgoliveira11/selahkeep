@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   extractPasskeyPrfOutput: vi.fn(),
   wrapVaultKeyForPasskey: vi.fn(),
   unlockVaultFromPasskeyEnvelope: vi.fn(),
+  verifyPasskeyVaultUnlockRoundTrip: vi.fn(),
   userVaultKeysEqual: vi.fn(),
   probeEnvironment: vi.fn(),
 }));
@@ -51,6 +52,10 @@ vi.mock("@/lib/crypto-client/passkey-vault", () => ({
   extractPasskeyPrfOutput: mocks.extractPasskeyPrfOutput,
   wrapVaultKeyForPasskey: mocks.wrapVaultKeyForPasskey,
   unlockVaultFromPasskeyEnvelope: mocks.unlockVaultFromPasskeyEnvelope,
+}));
+
+vi.mock("@/lib/passkey/verify-passkey-vault-round-trip", () => ({
+  verifyPasskeyVaultUnlockRoundTrip: mocks.verifyPasskeyVaultUnlockRoundTrip,
 }));
 
 vi.mock("@tgoliveira/vault-core", async (importOriginal) => {
@@ -170,6 +175,7 @@ describe("PasskeyVaultUnlockSetup", () => {
     mocks.extractPasskeyPrfOutput.mockReturnValue(new Uint8Array(32));
     mocks.wrapVaultKeyForPasskey.mockResolvedValue({ version: "enc-v1" });
     mocks.unlockVaultFromPasskeyEnvelope.mockResolvedValue({} as CryptoKey);
+    mocks.verifyPasskeyVaultUnlockRoundTrip.mockResolvedValue(undefined);
     mocks.userVaultKeysEqual.mockResolvedValue(true);
   });
 
@@ -373,9 +379,10 @@ describe("PasskeyVaultUnlockSetup", () => {
     fireEvent.click(await screen.findByRole("button", { name: /^test$/i }));
 
     await waitFor(() => {
-      expect(mocks.apiPost).toHaveBeenCalledWith("/api/passkeys/authenticate", {
-        action: "options",
-        purpose: "vault_unlock",
+      expect(mocks.verifyPasskeyVaultUnlockRoundTrip).toHaveBeenCalledWith({
+        userId: USER_ID,
+        sessionVaultKey: expect.any(Object),
+        credentialId: "cred-1",
       });
     });
     expect(await screen.findByText(PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE)).toBeTruthy();
