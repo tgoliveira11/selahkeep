@@ -22,7 +22,7 @@ vi.mock("@/features/passkey/use-vault-passkey-unlock-prefetch", () => ({
   })),
 }));
 
-vi.mock("@/features/vault/use-vault-dock-passkey-available", () => ({
+vi.mock("@/features/vault/vault-dock-passkey-availability", () => ({
   useVaultDockPasskeyAvailable: vi.fn(() => ({
     hasEnvelope: false,
     showPasskey: false,

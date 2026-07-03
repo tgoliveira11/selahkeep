@@ -14,7 +14,7 @@ import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
 import { VaultDockQuickUnlockSlot } from "@/features/vault/vault-dock-quick-unlock-slot";
 import { useVaultPasskeyUnlockPrefetch } from "@/features/passkey/use-vault-passkey-unlock-prefetch";
 import type { VaultPasskeyUnlockPrefetch } from "@/features/passkey/use-vault-passkey-unlock-prefetch";
-import { useVaultDockPasskeyAvailable } from "@/features/vault/use-vault-dock-passkey-available";
+import { useVaultDockPasskeyAvailable } from "@/features/vault/vault-dock-passkey-availability";
 import { hasUnlockedVaultSession } from "@/lib/crypto-client/vault";
 import { buildVaultUnlockHref } from "@/lib/notes/safe-return-to";
 import { getVaultUnlockRateLimiter } from "@/lib/vault/vault-rate-limit";

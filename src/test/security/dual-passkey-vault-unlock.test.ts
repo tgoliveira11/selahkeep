@@ -14,7 +14,7 @@ describe("dual passkey vault unlock credential filtering", () => {
     expect(source).toContain("buildVaultUnlockAuthenticationOptions");
     expect(source).toContain("deviceBindingId");
     expect(source).toContain("vaultPasskeyDeviceBindingRepository");
-    expect(source).toContain("toVaultUnlockAllowCredentialDescriptor");
+    expect(source).toContain("scopeAuthenticationOptionsToDevice");
     expect(source).not.toContain("passkeyPrfAuthExtensions");
     expect(source).toContain("PASSKEY_VAULT_UNLOCK_NOT_CONFIGURED_MESSAGE");
     expect(source).toContain("PASSKEY_ACCOUNT_ONLY_FOR_SIGN_IN_MESSAGE");

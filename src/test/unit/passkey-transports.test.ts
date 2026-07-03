@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { preferPlatformTransportsForVaultUnlock } from "@tgoliveira/vault-core/browser";
 import {
   persistRegistrationTransports,
   storedPasskeyTransports,
@@ -6,9 +7,7 @@ import {
   collectPasskeyTransportHints,
   inferAuthenticatorAttachmentFromTransports,
   vaultRegistrationExcludeCredentials,
-  preferPlatformTransportsForVaultUnlock,
   toAllowCredentialDescriptor,
-  toVaultUnlockAllowCredentialDescriptor,
 } from "@/lib/passkey/passkey-transports";
 
 describe("passkey transports", () => {
@@ -38,21 +37,6 @@ describe("passkey transports", () => {
         transports: null,
       })
     ).toEqual({ id: "vault-cred" });
-  });
-
-  it("vault unlock allowCredentials always prefer internal transport", () => {
-    expect(
-      toVaultUnlockAllowCredentialDescriptor({
-        credentialId: "vault-cred",
-        transports: ["hybrid", "internal"],
-      })
-    ).toEqual({ id: "vault-cred", transports: ["internal"] });
-    expect(
-      toVaultUnlockAllowCredentialDescriptor({
-        credentialId: "vault-cred",
-        transports: null,
-      })
-    ).toEqual({ id: "vault-cred", transports: ["internal"] });
   });
 
   it("collects transport hints as sorted unique labels", () => {
@@ -118,7 +102,9 @@ describe("passkey transports", () => {
     expect(storedPasskeyTransports(undefined)).toBeUndefined();
     expect(storedPasskeyTransports([])).toBeUndefined();
   });
+});
 
+describe("preferPlatformTransportsForVaultUnlock (vault-core)", () => {
   it("prefers internal transport on Apple mobile when hybrid is also stored", () => {
     const iphoneUa =
       "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15";

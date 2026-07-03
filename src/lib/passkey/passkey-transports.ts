@@ -38,18 +38,6 @@ export function toAllowCredentialDescriptor(credential: {
   return transports ? { id: credential.credentialId, transports } : { id: credential.credentialId };
 }
 
-/**
- * Descriptor for vault unlock: scope to the single active envelope credential and
- * advertise only `internal` transport. Vault passkeys are registered platform-only,
- * so pinning `internal` keeps iOS/Safari on the local authenticator instead of
- * routing to hybrid/cross-device (QR), which can return divergent PRF bytes.
- */
-export function toVaultUnlockAllowCredentialDescriptor(credential: {
-  credentialId: string;
-}): { id: string; transports: AuthenticatorTransportFuture[] } {
-  return { id: credential.credentialId, transports: ["internal"] };
-}
-
 export type PasskeyTransportHint =
   | "internal"
   | "hybrid"
@@ -133,30 +121,4 @@ export function vaultRegistrationExcludeCredentials(
   return credentials
     .filter((credential) => credential.vaultUnlockEnabled)
     .map((credential) => toAllowCredentialDescriptor(credential));
-}
-
-function isAppleMobileUserAgent(userAgent: string): boolean {
-  return /iPhone|iPod|iPad/.test(userAgent);
-}
-
-/**
- * On iPhone/iPad, prefer the on-device platform authenticator for vault unlock.
- * Hybrid transport can complete WebAuthn via cross-device auth but return PRF bytes
- * that do not unwrap the local envelope (auth still verifies server-side).
- */
-export function preferPlatformTransportsForVaultUnlock<
-  T extends { allowCredentials?: Array<{ transports?: AuthenticatorTransportFuture[]; id: string; type?: string }> },
->(options: T, userAgent?: string): T {
-  const ua = userAgent ?? (typeof navigator !== "undefined" ? navigator.userAgent : "");
-  if (!isAppleMobileUserAgent(ua) || !options.allowCredentials?.length) {
-    return options;
-  }
-
-  return {
-    ...options,
-    allowCredentials: options.allowCredentials.map((credential) => ({
-      ...credential,
-      transports: ["internal"],
-    })),
-  };
 }

@@ -2,12 +2,9 @@ import {
   startAuthentication,
   type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
+import { prepareVaultUnlockAuthenticationOptions as prepareVaultUnlockAuthenticationOptionsCore } from "@tgoliveira/vault-core/browser";
 import { apiClient } from "@/lib/api-client/client";
-import {
-  alignPrfExtensionsForAllowCredentials,
-  prepareAuthenticationOptions,
-} from "@/lib/passkey/prepare-webauthn-options";
-import { preferPlatformTransportsForVaultUnlock } from "@/lib/passkey/passkey-transports";
+import { prepareAuthenticationOptions } from "@/lib/passkey/prepare-webauthn-options";
 import { PASSKEY_NOT_AVAILABLE_FOR_VAULT_UNLOCK_MESSAGE } from "@/lib/passkey/messages";
 import { logVaultUnlockAuthDiagnostic } from "@/lib/passkey/vault-unlock-auth-diagnostics";
 
@@ -23,11 +20,23 @@ export function filterAuthenticationOptionsForCredential(
   const envelopeCredentialId =
     credentialId ??
     (options.allowCredentials?.length === 1 ? options.allowCredentials?.[0]?.id : undefined);
-  const scoped = envelopeCredentialId
-    ? filterToCredential(options, envelopeCredentialId)
-    : options;
-  const platformScoped = preferPlatformTransportsForVaultUnlock(scoped);
-  return alignPrfExtensionsForAllowCredentials(platformScoped, envelopeCredentialId);
+
+  if (envelopeCredentialId) {
+    const matchingCredential = options.allowCredentials?.find(
+      (credential) => credential.id === envelopeCredentialId
+    );
+    if (!matchingCredential) {
+      throw new Error(PASSKEY_NOT_AVAILABLE_FOR_VAULT_UNLOCK_MESSAGE);
+    }
+  }
+
+  return prepareVaultUnlockAuthenticationOptionsCore(
+    options as unknown as Parameters<typeof prepareVaultUnlockAuthenticationOptionsCore>[0],
+    {
+      credentialId: envelopeCredentialId,
+      filterSingleCredential: Boolean(envelopeCredentialId),
+    }
+  ) as unknown as PublicKeyCredentialRequestOptionsJSON;
 }
 
 /** Shared client prep for vault unlock auth ceremonies (setup, test, unlock). */
@@ -41,24 +50,6 @@ export function prepareVaultUnlockAuthenticationOptions(
   return prepareAuthenticationOptions(
     filterAuthenticationOptionsForCredential(options, effectiveCredentialId)
   );
-}
-
-function filterToCredential(
-  options: PublicKeyCredentialRequestOptionsJSON,
-  credentialId: string
-): PublicKeyCredentialRequestOptionsJSON {
-  const matchingCredential = options.allowCredentials?.find(
-    (credential) => credential.id === credentialId
-  );
-
-  if (!matchingCredential) {
-    throw new Error(PASSKEY_NOT_AVAILABLE_FOR_VAULT_UNLOCK_MESSAGE);
-  }
-
-  return {
-    ...options,
-    allowCredentials: [matchingCredential],
-  };
 }
 
 export async function requestVaultUnlockAuthenticationOptions(

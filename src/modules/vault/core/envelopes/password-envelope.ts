@@ -1,22 +1,17 @@
 import {
   createPasswordEnvelope,
-  deriveVaultPasswordKeyPairFromMetadata,
   unlockWithPasswordEnvelope,
   type Argon2idKdfMetadata as VaultCoreArgon2idKdfMetadata,
   type EncryptedPayload as VaultCoreEncryptedPayload,
   type KdfMetadata as VaultCoreKdfMetadata,
 } from "@tgoliveira/vault-core";
+import { cacheVaultInnerKeyMaterialAfterPasswordUnlock } from "@tgoliveira/vault-core/browser";
 import type { EncryptedPayload, KdfMetadata } from "@/lib/validation/encrypted-payload";
 import {
   setUnlockedVaultSession,
   type VaultUnlockMethod,
 } from "@/lib/crypto-client/vault-session";
 import { SELAHKEEP_VAULT_PROFILE } from "../../selahkeep-profile";
-import {
-  isLegacyVaultKeyEnvelope,
-  unwrapLegacyVaultKeyFromPassword,
-} from "./legacy-envelope-unlock";
-import { cacheVaultInnerKeyMaterialFromEnvelope } from "./vault-inner-key-material";
 
 type WrapOptions = {
   userId: string;
@@ -60,35 +55,19 @@ export async function unwrapVaultKeyFromPassword(
   }
 ): Promise<CryptoKey> {
   const scope = envelopeScope(options?.userId ?? encryptedVaultKey.aad.userId, options?.resourceId);
-  const vaultKey = isLegacyVaultKeyEnvelope(encryptedVaultKey)
-    ? await unwrapLegacyVaultKeyFromPassword(
-        vaultPassword,
-        encryptedVaultKey,
-        kdfMetadata,
-        scope
-      )
-    : await unlockWithPasswordEnvelope(
-        vaultPassword,
-        {
-          encryptedVaultKey: asVaultCorePayload(encryptedVaultKey),
-          kdfMetadata: kdfMetadata as VaultCoreKdfMetadata,
-        },
-        scope,
-        SELAHKEEP_VAULT_PROFILE
-      );
+  const envelope = {
+    encryptedVaultKey: asVaultCorePayload(encryptedVaultKey),
+    kdfMetadata: kdfMetadata as VaultCoreKdfMetadata,
+  };
+  const vaultKey = await unlockWithPasswordEnvelope(
+    vaultPassword,
+    envelope,
+    scope,
+    SELAHKEEP_VAULT_PROFILE
+  );
 
-  // Cache inner key material so passkey enrollment can re-wrap the (non-extractable)
-  // session UVK without the vault password. Legacy raw envelopes cache at unlock instead.
-  if (!isLegacyVaultKeyEnvelope(encryptedVaultKey) && kdfMetadata.kdf === "argon2id") {
-    const derivedKeys = await deriveVaultPasswordKeyPairFromMetadata(
-      vaultPassword,
-      kdfMetadata as VaultCoreKdfMetadata & { kdf: "argon2id" }
-    );
-    await cacheVaultInnerKeyMaterialFromEnvelope(
-      encryptedVaultKey,
-      derivedKeys.encryptionKey,
-      derivedKeys.wrappingKey
-    );
+  if (kdfMetadata.kdf === "argon2id") {
+    await cacheVaultInnerKeyMaterialAfterPasswordUnlock(vaultKey, envelope, vaultPassword);
   }
 
   if (options?.applySession ?? true) {

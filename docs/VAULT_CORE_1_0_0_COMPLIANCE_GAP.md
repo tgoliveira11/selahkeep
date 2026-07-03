@@ -1,8 +1,25 @@
 # SelahKeep — vault-core 1.0.0 compliance gap analysis
 
-**Date:** 2026-07-01  
-**Dependency:** `@tgoliveira/vault-core@^1.0.0` (was `^0.2.0`)  
+**Date:** 2026-07-01 (updated 2026-07-03 for `@tgoliveira/vault-core@^1.1.0`)  
+**Dependency:** `@tgoliveira/vault-core@^1.1.0` (was `^1.0.1` / `^1.0.0` / `^0.2.0`)  
 **Goal:** Use every screen and default integration surface shipped by vault-core; re-evaluate and reimplement all SelahKeep customizations on top of the current integration contract.
+
+### 1.1.0 passkey PRF gap adoption (2026-07-03) — **resolved**
+
+SelahKeep section 7 adoption (`docs/VAULT_CORE_AGENT_IMPLEMENTATION_PROMPT.md`) is complete for passkey PRF duplication:
+
+| Removed (SelahKeep) | Replaced by (`@tgoliveira/vault-core`) |
+| --- | --- |
+| `vault-inner-key-material.ts` | `createPasskeyPrfEnvelopeWithSessionCache`, `cacheVaultInnerKeyMaterialAfter*Unlock`, `clearVaultInnerKeyMaterialCache` (`/browser`) |
+| `normalize-prf-output.ts` | `extractPasskeyPrfOutput` (root + `/browser`) |
+| `prepare-webauthn-options.ts` (logic) | `prepareWebAuthnPrfExtensions`, `alignPrfExtensionsForCredential`, `prepareVaultUnlockAuthenticationOptions` (`/browser`) |
+| `passkey-transports.ts` (vault unlock pinning) | `preferPlatformTransportsForVaultUnlock` (`/browser`) |
+| `use-vault-dock-passkey-available.ts` | `resolveVaultDockPasskeyAvailability` (`/react`) via `vault-dock-passkey-availability.ts` adapter |
+| `legacy-envelope-unlock.ts` | `isLegacyVaultKeyEnvelope`, `unlockVaultKeyEnvelopeWithAadRouting`, `normalizeEnvelopeAadContext` (root; `legacyVaultKeyUnlock: true` on `SELAHKEEP_VAULT_PROFILE`) |
+| `prf-support.ts` (iOS gate) | `isPrfExtensionSupported`, `parseAppleMobileOsMajorVersion` (`/browser`); app keeps `detectPasskeyPrfSupport` for pre-ceremony UX |
+| `map-passkey-crypto-error.ts` (logic) | `classifyPasskeyCryptoError` (root) + Stillness copy in app wrapper |
+
+**Still app-owned:** device binding (cookie + Drizzle), `SELAHKEEP_VAULT_PROFILE`, WebAuthn `purpose: "vault_unlock"`, Stillness messages, vault session adapter (`vault-session.ts`).
 
 **Authoritative vault-core docs read for this analysis:**
 
@@ -133,7 +150,7 @@ vault-core 1.0.0 exports complete UI for dock, unlock, protected pages, and pass
 | `vault-status-dock-copy.ts`, `-icons.tsx`, `-preference.ts`, `-events.ts`, `-routes.ts` | vault-core `copy.js`, `icons`, preference helpers |
 | `use-vault-auto-lock-countdown.ts` | `useVaultAutoLockCountdown`, `useVaultAutoLockFraction` |
 | `use-vault-dock-dismiss.ts` | Built into dock behavior |
-| `use-vault-dock-passkey-available.ts` | `resolveVaultDockPasskeyAvailability` |
+| `use-vault-dock-passkey-available.ts` | `resolveVaultDockPasskeyAvailability` — **done** (`vault-dock-passkey-availability.ts` adapter) |
 | `components/layout/nav.tsx` inline `<VaultStatusDock />` | Wire vault-core dock with `serverStatus`, `prfSupported`, `pathname`, `LinkComponent={Link}`, `onNavigateToUnlock`, `renderQuickUnlock` |
 
 **Re-evaluate:** Stillness visual language vs `vc-status-dock-*` classes — override via CSS variables / `className`, not fork the component.
@@ -367,7 +384,7 @@ src/features/vault/vault-locked-state.tsx
 src/features/vault/vault-auto-lock-notice.tsx
 src/features/vault/use-vault-auto-lock-countdown.ts
 src/features/vault/use-vault-dock-dismiss.ts
-src/features/vault/use-vault-dock-passkey-available.ts
+src/features/vault/use-vault-dock-passkey-available.ts   → deleted (see vault-dock-passkey-availability.ts)
 src/features/vault/use-vault-session-unlocked.ts
 src/features/vault/use-vault-activity.ts
 src/lib/crypto-client/vault-session.ts          → replaced by vault-core/browser (+ thin adapter)

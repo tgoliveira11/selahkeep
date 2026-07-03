@@ -1,4 +1,5 @@
 import { userVaultKeysEqual } from "@tgoliveira/vault-core";
+import { clearVaultInnerKeyMaterialCache } from "@tgoliveira/vault-core/browser";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   extractPasskeyPrfOutput,
@@ -13,6 +14,7 @@ import { USER_ID } from "@/test/helpers/fixtures";
 describe("passkey vault crypto", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearVaultInnerKeyMaterialCache();
   });
 
   it("detects passkey support when WebAuthn is available", () => {

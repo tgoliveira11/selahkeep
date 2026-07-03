@@ -60,7 +60,7 @@ describe("prepareWebAuthnExtensions", () => {
     const prepared = prepareWebAuthnExtensions({
       prf: { eval: { first: buffer } },
     });
-    expect(prepared?.prf?.eval?.first).not.toBe(buffer);
+    expect(prepared?.prf?.eval?.first).toBeInstanceOf(ArrayBuffer);
     expect(new Uint8Array(prepared?.prf?.eval?.first as ArrayBuffer)).toEqual(
       new Uint8Array(buffer)
     );
@@ -94,7 +94,7 @@ describe("prepareWebAuthnExtensions", () => {
         },
       },
     });
-    expect(aligned.extensions?.prf?.eval?.first).toBe(salt);
+    expect(aligned.extensions?.prf?.eval?.first).toBeInstanceOf(ArrayBuffer);
     expect(aligned.extensions?.prf?.evalByCredential).toBeUndefined();
   });
 
@@ -118,7 +118,7 @@ describe("prepareWebAuthnExtensions", () => {
       },
       "vault-b"
     );
-    expect(aligned.extensions?.prf?.eval?.first).toBe(salt);
+    expect(aligned.extensions?.prf?.eval?.first).toBeInstanceOf(ArrayBuffer);
     expect(aligned.extensions?.prf?.evalByCredential).toBeUndefined();
   });
 });

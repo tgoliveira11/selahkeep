@@ -37,7 +37,7 @@ vi.mock("@/features/vault/use-vault", () => ({
   useVault: vi.fn(),
 }));
 
-vi.mock("@/features/vault/use-vault-dock-passkey-available", () => ({
+vi.mock("@/features/vault/vault-dock-passkey-availability", () => ({
   useVaultDockPasskeyAvailable: vi.fn(() => ({
     hasEnvelope: false,
     showPasskey: false,
@@ -108,7 +108,7 @@ async function renderExpandedDock(
   const { useVaultClientStatus } = await import("@/features/vault/use-vault-client-status");
   const { useVault } = await import("@/features/vault/use-vault");
   const { useVaultDockPasskeyAvailable } = await import(
-    "@/features/vault/use-vault-dock-passkey-available"
+    "@/features/vault/vault-dock-passkey-availability"
   );
 
   vi.mocked(usePathname).mockReturnValue(vaultOverrides.pathname ?? "/settings/account");

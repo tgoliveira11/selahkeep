@@ -25,7 +25,7 @@ describe("Phase 5 security regression", () => {
 
     it("clears note body cache when vault locks", async () => {
       setCachedNoteBody("note-1", "secret body");
-      unlockVaultSession(await generateUserVaultKey());
+      await unlockVaultSession(await generateUserVaultKey(), "password");
       lockVaultSession();
       expect(isVaultUnlocked()).toBe(false);
       const { getCachedNoteBody } = await import("@/features/notes/eager-decrypt-notes");
@@ -35,7 +35,7 @@ describe("Phase 5 security regression", () => {
     it("fires configureVaultAutoLock callback after inactivity", async () => {
       const onAutoLock = vi.fn();
       configureVaultAutoLock(onAutoLock);
-      unlockVaultSession(await generateUserVaultKey());
+      await unlockVaultSession(await generateUserVaultKey(), "password");
       vi.advanceTimersByTime(VAULT_INACTIVITY_MS + 1);
       await vi.runAllTimersAsync();
       expect(onAutoLock).toHaveBeenCalledTimes(1);

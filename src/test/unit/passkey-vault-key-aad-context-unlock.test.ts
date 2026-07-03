@@ -1,37 +1,33 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   createUserVaultKey,
+  exportUserVaultKey,
+  importUserVaultKey,
+  isLegacyVaultKeyEnvelope,
+  normalizeEnvelopeAadContext,
   userVaultKeysEqual,
 } from "@tgoliveira/vault-core";
-import {
-  clearVaultInnerKeyMaterial,
-  createPasskeyEncryptedVaultKey,
-} from "@/modules/vault/core/envelopes/vault-inner-key-material";
-import {
-  normalizeVaultKeyEnvelopeAadContext,
-  shouldRoutePasskeyVaultKeyToLegacyUnlock,
-} from "@/modules/vault/core/envelopes/legacy-envelope-unlock";
-import { unlockVaultFromPasskeyEnvelope } from "@/lib/crypto-client/passkey-vault";
+import { clearVaultInnerKeyMaterialCache } from "@tgoliveira/vault-core/browser";
+import { unlockVaultFromPasskeyEnvelope, wrapVaultKeyForPasskey } from "@/lib/crypto-client/passkey-vault";
 import { encryptedPayloadSchema } from "@/lib/validation/encrypted-payload";
 import { SELAHKEEP_VAULT_PROFILE } from "@/modules/vault/selahkeep-profile";
 
 const USER_ID = "550e8400-e29b-41d4-a716-446655440000";
-const scope = { userId: USER_ID, resourceId: USER_ID };
 
 describe("passkey vault-key AAD context unlock routing", () => {
-  beforeEach(() => clearVaultInnerKeyMaterial());
+  beforeEach(() => clearVaultInnerKeyMaterialCache());
 
-  it("routes missing stored context to vault-core after normalization (not legacy raw path)", async () => {
+  it("unlocks envelopes with missing stored context after vault-core normalization", async () => {
     const uvk = await createUserVaultKey();
     const prf = crypto.getRandomValues(new Uint8Array(32));
-    const envelope = await createPasskeyEncryptedVaultKey(uvk, prf, scope);
+    const envelope = await wrapVaultKeyForPasskey(uvk, prf, USER_ID, USER_ID);
 
     const stripped = structuredClone(envelope);
     delete (stripped.aad as { context?: string }).context;
     const parsed = encryptedPayloadSchema.parse(stripped);
 
-    expect(shouldRoutePasskeyVaultKeyToLegacyUnlock(parsed)).toBe(false);
-    expect(normalizeVaultKeyEnvelopeAadContext(parsed).aad.context).toBe(
+    expect(isLegacyVaultKeyEnvelope(parsed, SELAHKEEP_VAULT_PROFILE)).toBe(true);
+    expect(normalizeEnvelopeAadContext(parsed, SELAHKEEP_VAULT_PROFILE).aad.context).toBe(
       SELAHKEEP_VAULT_PROFILE.aadContextEnvelope
     );
 
@@ -41,10 +37,10 @@ describe("passkey vault-key AAD context unlock routing", () => {
     expect(await userVaultKeysEqual(restored, uvk)).toBe(true);
   });
 
-  it("routes null stored context to vault-core after normalization", async () => {
+  it("unlocks envelopes with null stored context", async () => {
     const uvk = await createUserVaultKey();
     const prf = crypto.getRandomValues(new Uint8Array(32));
-    const envelope = await createPasskeyEncryptedVaultKey(uvk, prf, scope);
+    const envelope = await wrapVaultKeyForPasskey(uvk, prf, USER_ID, USER_ID);
 
     const withNullContext = {
       ...envelope,
@@ -52,15 +48,13 @@ describe("passkey vault-key AAD context unlock routing", () => {
     };
     const parsed = encryptedPayloadSchema.parse(withNullContext);
 
-    expect(shouldRoutePasskeyVaultKeyToLegacyUnlock(parsed)).toBe(false);
-
     const restored = await unlockVaultFromPasskeyEnvelope(USER_ID, parsed, prf, {
       applySession: false,
     });
     expect(await userVaultKeysEqual(restored, uvk)).toBe(true);
   });
 
-  it("routes explicit non-profile context tags to legacy passkey decrypt", () => {
+  it("marks explicit non-profile context tags as legacy", () => {
     const payload = {
       version: "enc-v1" as const,
       alg: "AES-GCM" as const,
@@ -73,6 +67,6 @@ describe("passkey vault-key AAD context unlock routing", () => {
         context: SELAHKEEP_VAULT_PROFILE.aadContextVault,
       },
     };
-    expect(shouldRoutePasskeyVaultKeyToLegacyUnlock(payload)).toBe(true);
+    expect(isLegacyVaultKeyEnvelope(payload, SELAHKEEP_VAULT_PROFILE)).toBe(true);
   });
 });

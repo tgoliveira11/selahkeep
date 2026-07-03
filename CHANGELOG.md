@@ -29,6 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **`@tgoliveira/vault-core@^1.1.0`.** Adopted vault-core passkey PRF APIs (inner-key session cache, robust PRF extraction, WebAuthn ceremony helpers, device-binding contracts, legacy AAD routing, iOS PRF gate, crypto error classification). Removed duplicated SelahKeep modules: `vault-inner-key-material`, `legacy-envelope-unlock`, `normalize-prf-output`, and `use-vault-dock-passkey-available` (replaced by vault-core/browser and vault-core/react adapters).
+
 - **`@tgoliveira/secure-auth@0.5.1`.** Dependency pin update.
 
 - **Kanban board saves.** Rapid card moves coalesce into a serial save queue so optimistic UI is not overwritten by stale in-flight saves.
