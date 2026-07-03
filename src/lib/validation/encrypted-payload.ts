@@ -6,6 +6,10 @@ export const ENCRYPTION_ALG = "AES-GCM";
 const aadSchema = z.object({
   userId: z.string().uuid(),
   resourceId: z.string().uuid(),
+  // vault-core stamps the profile AAD context (e.g. "selahkeep:vault-envelope:v1").
+  // It MUST be preserved: stripping it makes vault_key envelopes look "legacy" and
+  // routes unlock to the raw-material path, which cannot unwrap AES-KW inner blobs.
+  context: z.string().nullable().optional(),
   field: z.enum([
     "title",
     "body",
