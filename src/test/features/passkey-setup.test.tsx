@@ -59,6 +59,7 @@ vi.mock("@/lib/crypto-client/passkey-vault", () => ({
 vi.mock("@/lib/passkey/prepare-webauthn-options", () => ({
   prepareRegistrationOptions: (options: unknown) => options,
   prepareAuthenticationOptions: (options: unknown) => options,
+  alignPrfExtensionsForAllowCredentials: (options: unknown) => options,
 }));
 
 function mockEnvironment(overrides: Record<string, unknown> = {}) {

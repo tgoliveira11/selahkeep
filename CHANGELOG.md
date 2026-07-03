@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- **Passkey vault unlock on iOS (PR #42/#43 regression).** Restored iOS PRF ceremony parity removed during the per-device passkey merge: Safari credential-scoped PRF extraction, client-side `eval` alignment, platform `internal` transport pinning, envelope credential prefetch, and per-device decrypt-failure copy. A passkey envelope wrapped on Mac still requires adding a passkey on each unlock device.
+
 ### Added
 
 - **Kanban note ↔ board sync.** Checklist and bullet items become cards; per-item descriptions, due dates (`[yyyy-MM-dd]`), priorities (`[LOW]`/`[HIGH]`/etc.), and column tags (`[IN PROGRESS]`) sync both ways. Card hover preview (2s delay), column-change history on cards, wider columns, and toolbar tooltips on the board view.

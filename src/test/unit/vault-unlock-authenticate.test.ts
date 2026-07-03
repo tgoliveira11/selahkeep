@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   filterAuthenticationOptionsForCredential,
+  prepareVaultUnlockAuthenticationOptions,
   requestVaultUnlockAuthenticationOptions,
   runVaultUnlockAuthenticationCeremony,
   runVaultUnlockAuthenticationCeremonyWithOptions,
   verifyVaultUnlockAuthentication,
   VAULT_UNLOCK_AUTHENTICATE_PURPOSE,
 } from "@/lib/passkey/vault-unlock-authenticate";
+import { passkeyPrfSaltBase64Url } from "@/lib/passkey/prf";
 import { PASSKEY_NOT_AVAILABLE_FOR_VAULT_UNLOCK_MESSAGE } from "@/lib/passkey/messages";
 
 const mocks = vi.hoisted(() => ({
@@ -61,6 +63,53 @@ describe("vault unlock authenticate client", () => {
     expect(filtered.allowCredentials).toEqual([
       { id: "vault-b", type: "public-key", transports: ["internal"] },
     ]);
+  });
+
+  it("aligns PRF evalByCredential to eval when scoped to one vault credential", () => {
+    const userId = "550e8400-e29b-41d4-a716-446655440000";
+    const salt = passkeyPrfSaltBase64Url(userId);
+    const filtered = filterAuthenticationOptionsForCredential(
+      {
+        challenge: "abc",
+        allowCredentials: [
+          { id: "vault-a", type: "public-key", transports: ["internal"] },
+          { id: "vault-b", type: "public-key", transports: ["internal"] },
+        ],
+        extensions: {
+          prf: {
+            evalByCredential: {
+              "vault-a": { first: salt },
+              "vault-b": { first: salt },
+            },
+          },
+        },
+      },
+      "vault-b"
+    );
+    expect(filtered.extensions?.prf?.eval?.first).toBe(salt);
+    expect(filtered.extensions?.prf?.evalByCredential).toBeUndefined();
+  });
+
+  it("prepareVaultUnlockAuthenticationOptions converts aligned PRF salts to ArrayBuffer", () => {
+    const userId = "550e8400-e29b-41d4-a716-446655440000";
+    const salt = passkeyPrfSaltBase64Url(userId);
+    const prepared = prepareVaultUnlockAuthenticationOptions(
+      {
+        challenge: "abc",
+        allowCredentials: [{ id: "vault-cred", type: "public-key", transports: ["internal"] }],
+        extensions: {
+          prf: {
+            evalByCredential: {
+              "vault-cred": { first: salt },
+              "other-cred": { first: salt },
+            },
+          },
+        },
+      },
+      "vault-cred"
+    );
+    expect(prepared.extensions?.prf?.eval?.first).toBeInstanceOf(ArrayBuffer);
+    expect(prepared.extensions?.prf?.evalByCredential).toBeUndefined();
   });
 
   it("fails closed when filtered credential is not in allowCredentials", () => {
