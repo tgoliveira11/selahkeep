@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { noteAttachmentsApi, type AttachmentOwnerRef } from "@/lib/api-client/note-attachments";
 import {
   decryptAttachment,
@@ -45,6 +45,16 @@ export function useNoteAttachments({
   onAttachmentsChange,
   filterIds,
 }: UseNoteAttachmentsOptions) {
+  // Callers often pass an inline object literal for `owner`, which is a new
+  // reference every render — depend on its primitive fields instead so this
+  // hook's callbacks/effects don't re-run (and re-fetch) on every render.
+  const ownerKind = owner?.kind ?? null;
+  const ownerId = owner?.id ?? null;
+  const stableOwner = useMemo<AttachmentOwnerRef | null>(
+    () => (ownerKind && ownerId ? { kind: ownerKind, id: ownerId } : null),
+    [ownerKind, ownerId]
+  );
+
   const [allItems, setAllItems] = useState<AttachmentListItem[]>([]);
   const items = filterIds
     ? allItems.filter((item) => item.uploading || filterIds.includes(item.id))
@@ -54,14 +64,14 @@ export function useNoteAttachments({
   const pendingRef = useRef<Map<string, File>>(new Map());
 
   const reload = useCallback(async () => {
-    if (!owner || !enabled || !wrappedKey) {
+    if (!stableOwner || !enabled || !wrappedKey) {
       setAllItems([]);
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const { attachments } = await noteAttachmentsApi.list(owner);
+      const { attachments } = await noteAttachmentsApi.list(stableOwner);
       const decrypted = await Promise.all(
         attachments.map(async (record) => {
           const payload: EncryptedAttachmentPayload = {
@@ -82,7 +92,7 @@ export function useNoteAttachments({
     } finally {
       setLoading(false);
     }
-  }, [owner, enabled, wrappedKey]);
+  }, [stableOwner, enabled, wrappedKey]);
 
   useEffect(() => {
     void reload();
@@ -90,7 +100,7 @@ export function useNoteAttachments({
 
   const uploadFile = useCallback(
     async (file: File): Promise<string> => {
-      if (!owner || !userId || !wrappedKey) {
+      if (!stableOwner || !userId || !wrappedKey) {
         throw new Error("Save before adding attachments");
       }
 
@@ -125,7 +135,7 @@ export function useNoteAttachments({
             item.id === tempId ? { ...item, uploadProgress: 80 } : item
           )
         );
-        await noteAttachmentsApi.create(owner, encrypted);
+        await noteAttachmentsApi.create(stableOwner, encrypted);
         pendingRef.current.delete(tempId);
         onAttachmentsChange?.();
         await reload();
@@ -137,25 +147,25 @@ export function useNoteAttachments({
         throw new Error(message);
       }
     },
-    [allItems.length, owner, onAttachmentsChange, reload, userId, wrappedKey]
+    [allItems.length, stableOwner, onAttachmentsChange, reload, userId, wrappedKey]
   );
 
   const removeAttachment = useCallback(
     async (attachmentId: string) => {
-      if (!owner) return;
-      await noteAttachmentsApi.delete(owner, attachmentId);
+      if (!stableOwner) return;
+      await noteAttachmentsApi.delete(stableOwner, attachmentId);
       onAttachmentsChange?.();
       await reload();
     },
-    [owner, onAttachmentsChange, reload]
+    [stableOwner, onAttachmentsChange, reload]
   );
 
   const getDecryptedAttachment = useCallback(
     async (attachmentId: string) => {
-      if (!owner || !wrappedKey) {
+      if (!stableOwner || !wrappedKey) {
         throw new Error("Vault must be unlocked to preview attachments");
       }
-      const record = await noteAttachmentsApi.get(owner, attachmentId);
+      const record = await noteAttachmentsApi.get(stableOwner, attachmentId);
       const payload: EncryptedAttachmentPayload = {
         id: record.id,
         encryptedMetadata: record.encryptedMetadata,
@@ -165,7 +175,7 @@ export function useNoteAttachments({
       };
       return decryptAttachment(payload, wrappedKey);
     },
-    [owner, wrappedKey]
+    [stableOwner, wrappedKey]
   );
 
   const downloadAttachment = useCallback(
@@ -196,6 +206,6 @@ export function useNoteAttachments({
     getDecryptedAttachment,
     getPendingFile,
     reload,
-    canUpload: Boolean(owner && userId && wrappedKey),
+    canUpload: Boolean(stableOwner && userId && wrappedKey),
   };
 }

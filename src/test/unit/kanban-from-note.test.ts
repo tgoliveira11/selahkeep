@@ -121,6 +121,27 @@ Context for B
     expect(board.cards[0].description).toBeUndefined();
   });
 
+  it("does not treat an indented list-like description line as a new card", () => {
+    const body = "- [ ] Card A\n  - [ ] sub item\n- [ ] Card B";
+    const board = createKanbanBoardFromNote(NOTE_ID, "Work", body, {
+      now: "2026-06-30T00:00:00.000Z",
+      createId: idFactory(),
+    });
+
+    expect(board.cards.map((card) => card.title)).toEqual(["Card A", "Card B"]);
+    expect(board.cards[0].description).toBe("- [ ] sub item");
+  });
+
+  it("still treats an unindented list-like line as a sibling card (regression guard)", () => {
+    const body = "- [ ] Card A\n- [ ] sub item\n- [ ] Card B";
+    const board = createKanbanBoardFromNote(NOTE_ID, "Work", body, {
+      now: "2026-06-30T00:00:00.000Z",
+      createId: idFactory(),
+    });
+
+    expect(board.cards.map((card) => card.title)).toEqual(["Card A", "sub item", "Card B"]);
+  });
+
   it("places cards with [IN PROGRESS] tags in the matching column", () => {
     const body = "- [ ] [IN PROGRESS] Active task";
     const board = createKanbanBoardFromNote(NOTE_ID, "Work", body, {

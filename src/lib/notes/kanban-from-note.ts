@@ -47,8 +47,14 @@ export interface KanbanChecklistGroup {
   items: RecognizedActivity[];
 }
 
-const CHECKLIST_RE = /^(\s*[-*+]\s+)\[([ xX])\]\s*(.*)$/;
-const BULLET_RE = /^(\s*[-*+]\s+)(?!\[[ xX]\]\s*)(.+)$/i;
+// No leading whitespace: a top-level card item starts at column 0. This lets
+// a card's own description safely contain checklist/bullet syntax (indented
+// two spaces by buildNoteLinesForCard) without it being picked up here as a
+// sibling card on the next note<->board sync pass.
+const CHECKLIST_RE = /^([-*+]\s+)\[([ xX])\]\s*(.*)$/;
+const BULLET_RE = /^([-*+]\s+)(?!\[[ xX]\]\s*)(.+)$/i;
+/** Matches a description line that was indented to protect it from CHECKLIST_RE/BULLET_RE. */
+const INDENTED_ITEM_LOOKALIKE_RE = /^ {2}([-*+]\s+.*)$/;
 
 export function normalizeKanbanSourceText(text: string): string {
   return text
@@ -111,8 +117,14 @@ function isItemLine(line: string, includePlainListItems: boolean): RawItemLine |
   return null;
 }
 
+/** Reverses the two-space indent buildNoteLinesForCard adds to protect list-like description lines. */
+function undentItemLookalike(line: string): string {
+  return line.match(INDENTED_ITEM_LOOKALIKE_RE)?.[1] ?? line;
+}
+
 function joinDescriptionLines(lines: string[]): string | undefined {
   const text = lines
+    .map(undentItemLookalike)
     .join("\n")
     .replace(/^\n+/, "")
     .replace(/\n+$/, "")
