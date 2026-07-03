@@ -28,6 +28,10 @@ import {
 } from "@tgoliveira/vault-core/browser";
 import { getVaultAutoLockMinutesFromConfig } from "@/lib/env/vault-from-env";
 import { VAULT_INACTIVITY_MS as LEGACY_VAULT_INACTIVITY_MS } from "@/lib/vault/vault-auto-lock-config";
+import {
+  cacheLegacyRawVaultInnerKeyMaterial,
+  clearVaultInnerKeyMaterial,
+} from "@/modules/vault/core/envelopes/vault-inner-key-material";
 
 export { LEGACY_VAULT_INACTIVITY_MS as VAULT_INACTIVITY_MS };
 
@@ -159,7 +163,11 @@ async function ensureNonExtractableSessionKey(key: CryptoKey): Promise<CryptoKey
     await assertUserVaultKeyNonExtractable(key);
     return key;
   } catch {
+    // Fresh setup / import provides an extractable UVK. Cache the raw inner material
+    // (in memory only) before converting to a non-extractable session key, so passkey
+    // enrollment can re-wrap it without the vault password.
     const raw = await exportUserVaultKey(key);
+    cacheLegacyRawVaultInnerKeyMaterial(raw);
     return importUserVaultKey(raw, { extractable: false });
   }
 }
@@ -276,6 +284,7 @@ export function lockVaultSession(reason: VaultLockReason = "manual"): void {
     clearVaultAutoLockTimer();
     notifyActivityChange();
     clearNoteBodyCache();
+    clearVaultInnerKeyMaterial();
     unlockedAt = 0;
     unlockMethod = undefined;
     coreLockVaultSession();
@@ -321,6 +330,7 @@ export function resetVaultSessionStoreForTests(): void {
   sessionSnapshotListeners.clear();
   activityListeners.clear();
   clearPreLockTimer();
+  clearVaultInnerKeyMaterial();
   lockVault();
   coreResetVaultSessionLockState();
   configureSelahkeepVaultSession();

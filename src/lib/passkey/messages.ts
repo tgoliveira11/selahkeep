@@ -64,6 +64,10 @@ export const PASSKEY_VAULT_UNLOCK_TEST_SUCCEEDED_MESSAGE =
 export const PASSKEY_VAULT_UNLOCK_ACCOUNT_LOGIN_NOTE =
   "Use a compatible passkey to unlock your vault after you sign in. This is separate from account passkey sign-in and requires WebAuthn PRF support from your browser and passkey provider.";
 
+/** Shown when passkey envelope wrap needs re-unlock to cache inner key material. */
+export const PASSKEY_VAULT_UNLOCK_REWRAP_REQUIRES_UNLOCK_MESSAGE =
+  "Lock your vault, unlock it again with your vault password or recovery phrase on this device, then set up passkey vault unlock.";
+
 export const PASSKEY_VAULT_UNLOCK_READONLY_HEADLINE =
   "Passkey vault unlock is enabled, but cannot be managed in this browser.";
 

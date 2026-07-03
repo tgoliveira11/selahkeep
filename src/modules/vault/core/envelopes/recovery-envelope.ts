@@ -1,5 +1,6 @@
 import {
   createRecoveryEnvelope,
+  deriveRecoveryPhraseKeyFromMetadata,
   unlockWithRecoveryEnvelope,
   type Argon2idKdfMetadata as VaultCoreArgon2idKdfMetadata,
   type EncryptedPayload as VaultCoreEncryptedPayload,
@@ -15,6 +16,7 @@ import {
   isLegacyVaultKeyEnvelope,
   unwrapLegacyVaultKeyFromRecoveryPhrase,
 } from "./legacy-envelope-unlock";
+import { cacheVaultInnerKeyMaterialFromEnvelope } from "./vault-inner-key-material";
 
 type WrapOptions = {
   userId: string;
@@ -79,6 +81,20 @@ export async function unwrapVaultKeyFromRecoveryPhrase(
         SELAHKEEP_VAULT_PROFILE,
         { expectedWordCount: options?.expectedWordCount ?? null }
       );
+
+  // Cache inner key material so passkey enrollment can re-wrap the (non-extractable)
+  // session UVK without the recovery phrase. Legacy raw envelopes cache at unlock instead.
+  if (!isLegacyVaultKeyEnvelope(encryptedVaultKey) && kdfMetadata.kdf === "argon2id") {
+    const derivedKeys = await deriveRecoveryPhraseKeyFromMetadata(
+      recoveryPhrase,
+      kdfMetadata as VaultCoreKdfMetadata & { kdf: "argon2id" }
+    );
+    await cacheVaultInnerKeyMaterialFromEnvelope(
+      encryptedVaultKey,
+      derivedKeys.encryptionKey,
+      derivedKeys.wrappingKey
+    );
+  }
 
   if (options?.applySession ?? true) {
     await setUnlockedVaultSession({
