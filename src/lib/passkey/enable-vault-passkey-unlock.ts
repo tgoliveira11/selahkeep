@@ -14,11 +14,16 @@ import type { EncryptedPayload } from "@/lib/validation/encrypted-payload";
  * Registration PRF output can differ from assertion PRF on some mobile authenticators;
  * envelopes must always be created from assertion PRF.
  */
+export type VaultPasskeyEnableUnlockResult = {
+  prfOutput: Uint8Array;
+  encryptedVaultKey: EncryptedPayload;
+};
+
 export async function enableVaultPasskeyUnlockWithAuthPrf(args: {
   passkeyDbId: string;
   userId: string;
   vaultKey: CryptoKey;
-}): Promise<void> {
+}): Promise<VaultPasskeyEnableUnlockResult> {
   try {
     const options = (await apiClient.post(
       `/api/account/passkeys/${args.passkeyDbId}/enable-vault-unlock`,
@@ -53,6 +58,8 @@ export async function enableVaultPasskeyUnlockWithAuthPrf(args: {
       prfVaultEnvelope: true,
       prfSupported: true,
     });
+
+    return { prfOutput, encryptedVaultKey };
   } catch (error) {
     throw new Error(
       toPasskeyCeremonyErrorMessage(error, "Could not enable passkey vault unlock.")

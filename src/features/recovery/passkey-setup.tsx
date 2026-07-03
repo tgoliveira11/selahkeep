@@ -121,7 +121,7 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
         throw new Error("Passkey registration succeeded but could not link vault unlock.");
       }
 
-      await enableVaultPasskeyUnlockWithAuthPrf({
+      const enableResult = await enableVaultPasskeyUnlockWithAuthPrf({
         passkeyDbId: registration.passkeyId,
         userId,
         vaultKey,
@@ -130,7 +130,7 @@ export function PasskeySetup({ userId, hasPasskey, onStatusChange }: PasskeySetu
       await verifyPasskeyVaultUnlockRoundTrip({
         userId,
         sessionVaultKey: vaultKey,
-        credentialId: registration.credentialId,
+        knownUnlock: enableResult,
       });
 
       if (registration.verified) {
