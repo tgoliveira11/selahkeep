@@ -39,6 +39,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Passkey vault unlock AAD context.** Passkey unlock now normalizes missing or null `aad.context` on stored envelopes before vault-core decrypt, instead of misrouting those envelopes to the legacy raw-key path (which cannot unwrap AES-KW inner blobs) or failing vault-core `assertVaultKeyAad` with a context mismatch when context was stripped from JSON before PR #40.
+
 - **Note editor checklists.** Kanban note→board sync no longer rewrites the note body while typing (fixes cursor jumping to the end). Checklist rows keep the checkbox and text on the same line in visual and preview modes. Bracket tags such as `[IN PROGRESS]` are no longer escaped as `\[IN PROGRESS\]` when saving from the visual editor.
 
 ## [0.3.3] - 2026-07-02
