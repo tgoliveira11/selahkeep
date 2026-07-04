@@ -37,6 +37,12 @@ interface UseNoteAttachmentsOptions {
   filterIds?: string[] | null;
 }
 
+/** Stable identity for note/board wrapped keys — avoids reload loops when callers pass new object refs. */
+function wrappedKeyFingerprint(key: EncryptedPayload | null): string | null {
+  if (!key) return null;
+  return `${key.version}:${key.iv}:${key.ciphertext}`;
+}
+
 export function useNoteAttachments({
   owner,
   userId,
@@ -54,6 +60,12 @@ export function useNoteAttachments({
     () => (ownerKind && ownerId ? { kind: ownerKind, id: ownerId } : null),
     [ownerKind, ownerId]
   );
+  const wrappedKeyId = wrappedKeyFingerprint(wrappedKey);
+  const stableWrappedKey = useMemo(
+    () => wrappedKey,
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fingerprint is the stable identity
+    [wrappedKeyId]
+  );
 
   const [allItems, setAllItems] = useState<AttachmentListItem[]>([]);
   const items = filterIds
@@ -62,37 +74,65 @@ export function useNoteAttachments({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pendingRef = useRef<Map<string, File>>(new Map());
+  const listInFlightRef = useRef<Promise<void> | null>(null);
+  const lastFailedLoadRef = useRef<{ key: string; at: number } | null>(null);
 
   const reload = useCallback(async () => {
-    if (!stableOwner || !enabled || !wrappedKey) {
+    const key = stableWrappedKey;
+    if (!stableOwner || !enabled || !key || !wrappedKeyId) {
       setAllItems([]);
       return;
     }
-    setLoading(true);
-    setError(null);
-    try {
-      const { attachments } = await noteAttachmentsApi.list(stableOwner);
-      const decrypted = await Promise.all(
-        attachments.map(async (record) => {
-          const payload: EncryptedAttachmentPayload = {
-            id: record.id,
-            encryptedMetadata: record.encryptedMetadata,
-            encryptedBlob: record.encryptedBlob,
-            blobEncryptionVersion: record.blobEncryptionVersion as EncryptedAttachmentPayload["blobEncryptionVersion"],
-            ciphertextBytes: record.ciphertextBytes,
-          };
-          const { metadata } = await decryptAttachment(payload, wrappedKey);
-          return { id: record.id, metadata };
-        })
-      );
-      setAllItems(decrypted);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load attachments");
-      setAllItems([]);
-    } finally {
-      setLoading(false);
+
+    const loadKey = `${stableOwner.kind}:${stableOwner.id}:${wrappedKeyId}`;
+    const recentFailure = lastFailedLoadRef.current;
+    if (recentFailure?.key === loadKey && Date.now() - recentFailure.at < 5_000) {
+      return;
     }
-  }, [stableOwner, enabled, wrappedKey]);
+
+    if (listInFlightRef.current) {
+      return listInFlightRef.current;
+    }
+
+    const request = (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { attachments } = await noteAttachmentsApi.list(stableOwner);
+        const decrypted = await Promise.all(
+          attachments.map(async (record) => {
+            const payload: EncryptedAttachmentPayload = {
+              id: record.id,
+              encryptedMetadata: record.encryptedMetadata,
+              encryptedBlob: record.encryptedBlob,
+              blobEncryptionVersion:
+                record.blobEncryptionVersion as EncryptedAttachmentPayload["blobEncryptionVersion"],
+              ciphertextBytes: record.ciphertextBytes,
+            };
+            const { metadata } = await decryptAttachment(payload, key);
+            return { id: record.id, metadata };
+          })
+        );
+        lastFailedLoadRef.current = null;
+        setAllItems(decrypted);
+      } catch (e) {
+        lastFailedLoadRef.current = { key: loadKey, at: Date.now() };
+        setError(e instanceof Error ? e.message : "Failed to load attachments");
+        setAllItems([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    listInFlightRef.current = request;
+    try {
+      await request;
+    } finally {
+      if (listInFlightRef.current === request) {
+        listInFlightRef.current = null;
+      }
+    }
+  }, [stableOwner, enabled, wrappedKeyId, stableWrappedKey]);
 
   useEffect(() => {
     void reload();
@@ -100,7 +140,8 @@ export function useNoteAttachments({
 
   const uploadFile = useCallback(
     async (file: File): Promise<string> => {
-      if (!stableOwner || !userId || !wrappedKey) {
+      const key = stableWrappedKey;
+      if (!stableOwner || !userId || !key) {
         throw new Error("Save before adding attachments");
       }
 
@@ -129,7 +170,7 @@ export function useNoteAttachments({
       ]);
 
       try {
-        const encrypted = await encryptAttachment(userId, tempId, file, wrappedKey);
+        const encrypted = await encryptAttachment(userId, tempId, file, key);
         setAllItems((current) =>
           current.map((item) =>
             item.id === tempId ? { ...item, uploadProgress: 80 } : item
@@ -138,6 +179,7 @@ export function useNoteAttachments({
         await noteAttachmentsApi.create(stableOwner, encrypted);
         pendingRef.current.delete(tempId);
         onAttachmentsChange?.();
+        lastFailedLoadRef.current = null;
         await reload();
         return tempId;
       } catch (e) {
@@ -147,7 +189,7 @@ export function useNoteAttachments({
         throw new Error(message);
       }
     },
-    [allItems.length, stableOwner, onAttachmentsChange, reload, userId, wrappedKey]
+    [allItems.length, stableOwner, onAttachmentsChange, reload, userId, stableWrappedKey]
   );
 
   const removeAttachment = useCallback(
@@ -155,6 +197,7 @@ export function useNoteAttachments({
       if (!stableOwner) return;
       await noteAttachmentsApi.delete(stableOwner, attachmentId);
       onAttachmentsChange?.();
+      lastFailedLoadRef.current = null;
       await reload();
     },
     [stableOwner, onAttachmentsChange, reload]
@@ -162,7 +205,8 @@ export function useNoteAttachments({
 
   const getDecryptedAttachment = useCallback(
     async (attachmentId: string) => {
-      if (!stableOwner || !wrappedKey) {
+      const key = stableWrappedKey;
+      if (!stableOwner || !key) {
         throw new Error("Vault must be unlocked to preview attachments");
       }
       const record = await noteAttachmentsApi.get(stableOwner, attachmentId);
@@ -170,12 +214,13 @@ export function useNoteAttachments({
         id: record.id,
         encryptedMetadata: record.encryptedMetadata,
         encryptedBlob: record.encryptedBlob,
-        blobEncryptionVersion: record.blobEncryptionVersion as EncryptedAttachmentPayload["blobEncryptionVersion"],
+        blobEncryptionVersion:
+          record.blobEncryptionVersion as EncryptedAttachmentPayload["blobEncryptionVersion"],
         ciphertextBytes: record.ciphertextBytes,
       };
-      return decryptAttachment(payload, wrappedKey);
+      return decryptAttachment(payload, key);
     },
-    [stableOwner, wrappedKey]
+    [stableOwner, stableWrappedKey]
   );
 
   const downloadAttachment = useCallback(
@@ -206,6 +251,6 @@ export function useNoteAttachments({
     getDecryptedAttachment,
     getPendingFile,
     reload,
-    canUpload: Boolean(stableOwner && userId && wrappedKey),
+    canUpload: Boolean(stableOwner && userId && stableWrappedKey),
   };
 }

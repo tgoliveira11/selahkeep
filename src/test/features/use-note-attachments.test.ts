@@ -45,4 +45,28 @@ describe("useNoteAttachments", () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(mocks.list).toHaveBeenCalledTimes(1);
   });
+
+  it("does not re-fetch when wrappedKey is a new object reference with the same ciphertext", async () => {
+    mocks.list.mockResolvedValue({ attachments: [] });
+    const wrappedKey = encryptedPayload("note_key", NOTE_ID);
+
+    const { rerender } = renderHook(
+      ({ keyRef }: { keyRef: typeof wrappedKey }) =>
+        useNoteAttachments({
+          owner: { kind: "note", id: NOTE_ID },
+          userId: "user-1",
+          wrappedKey: keyRef,
+          enabled: true,
+        }),
+      { initialProps: { keyRef: wrappedKey } }
+    );
+
+    await waitFor(() => expect(mocks.list.mock.calls.length).toBeGreaterThan(0));
+    const callsBeforeRerender = mocks.list.mock.calls.length;
+
+    rerender({ keyRef: { ...wrappedKey } });
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(mocks.list.mock.calls.length).toBe(callsBeforeRerender);
+  });
 });

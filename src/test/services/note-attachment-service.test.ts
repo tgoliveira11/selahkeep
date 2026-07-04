@@ -71,8 +71,43 @@ describe("note attachment service", () => {
   });
 
   it("list degrades to [] when note_attachments table is missing", async () => {
-    mocks.findByOwner.mockRejectedValue({ code: "42P01" });
+    mocks.findByOwner.mockRejectedValue(
+      Object.assign(new Error('relation "note_attachments" does not exist'), { code: "42P01" })
+    );
     await expect(noteAttachmentService.list(NOTE_OWNER, USER_ID)).resolves.toEqual([]);
+  });
+
+  it("list degrades to [] for drizzle-wrapped missing-table errors", async () => {
+    mocks.findByOwner.mockRejectedValue(
+      Object.assign(new Error("Failed query: select from note_attachments"), {
+        cause: Object.assign(new Error('relation "note_attachments" does not exist'), {
+          code: "42P01",
+        }),
+      })
+    );
+    await expect(noteAttachmentService.list(NOTE_OWNER, USER_ID)).resolves.toEqual([]);
+  });
+
+  it("list degrades to [] when note_attachments schema is behind (missing board_id)", async () => {
+    mocks.findByOwner.mockRejectedValue(
+      Object.assign(
+        new Error('column "board_id" of relation "note_attachments" does not exist'),
+        { code: "42703" }
+      )
+    );
+    await expect(noteAttachmentService.list(NOTE_OWNER, USER_ID)).resolves.toEqual([]);
+  });
+
+  it("create maps schema drift to AttachmentsUnavailableError", async () => {
+    mocks.countByOwner.mockRejectedValue(
+      Object.assign(
+        new Error('column "board_id" of relation "note_attachments" does not exist'),
+        { code: "42703" }
+      )
+    );
+    await expect(
+      noteAttachmentService.create(NOTE_OWNER, USER_ID, createAttachmentInput())
+    ).rejects.toBeInstanceOf(AttachmentsUnavailableError);
   });
 
   it("create maps missing table to AttachmentsUnavailableError", async () => {
@@ -85,7 +120,9 @@ describe("note attachment service", () => {
   });
 
   it("getStorageUsage marks partial when attachments table is missing", async () => {
-    mocks.sumCiphertextBytesByVaultId.mockRejectedValue({ code: "42P01" });
+    mocks.sumCiphertextBytesByVaultId.mockRejectedValue(
+      Object.assign(new Error('relation "note_attachments" does not exist'), { code: "42P01" })
+    );
     const usage = await noteAttachmentService.getStorageUsage(USER_ID);
     expect(usage.partial).toBe(true);
     expect(usage.attachmentsCiphertextBytes).toBe(0);
@@ -138,7 +175,9 @@ describe("note attachment service", () => {
       noteAttachmentService.getById(NOTE_OWNER, ATTACHMENT_ID, USER_ID)
     ).resolves.toEqual({ id: ATTACHMENT_ID });
 
-    mocks.findByIdForOwner.mockRejectedValue({ code: "42P01" });
+    mocks.findByIdForOwner.mockRejectedValue(
+      Object.assign(new Error('relation "note_attachments" does not exist'), { code: "42P01" })
+    );
     await expect(
       noteAttachmentService.getById(NOTE_OWNER, ATTACHMENT_ID, USER_ID)
     ).rejects.toBeInstanceOf(NotFoundError);
@@ -150,7 +189,9 @@ describe("note attachment service", () => {
       noteAttachmentService.delete(NOTE_OWNER, ATTACHMENT_ID, USER_ID)
     ).resolves.toEqual({ success: true });
 
-    mocks.delete.mockRejectedValue({ code: "42P01" });
+    mocks.delete.mockRejectedValue(
+      Object.assign(new Error('relation "note_attachments" does not exist'), { code: "42P01" })
+    );
     await expect(
       noteAttachmentService.delete(NOTE_OWNER, ATTACHMENT_ID, USER_ID)
     ).rejects.toBeInstanceOf(AttachmentsUnavailableError);
