@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   collectPostgresErrorMessages,
   isMissingRelationError,
+  isSchemaDriftOnRelation,
 } from "@/lib/db/missing-relation-error";
 
 describe("missing-relation-error", () => {
@@ -34,5 +35,14 @@ describe("missing-relation-error", () => {
   it("ignores undefined-relation errors for other tables", () => {
     const error = Object.assign(new Error('relation "notes" does not exist'), { code: "42P01" });
     expect(isMissingRelationError(error, "note_kanban_boards")).toBe(false);
+  });
+
+  it("detects schema drift on a relation (missing column)", () => {
+    const error = Object.assign(
+      new Error('column "board_id" of relation "note_attachments" does not exist'),
+      { code: "42703" }
+    );
+    expect(isSchemaDriftOnRelation(error, "note_attachments")).toBe(true);
+    expect(isMissingRelationError(error, "note_attachments")).toBe(false);
   });
 });

@@ -19,3 +19,11 @@ export function isMissingRelationError(error: unknown, relationName: string): bo
   if (/column "[^"]+" of relation/i.test(message)) return false;
   return new RegExp(`relation "${relationName}" does not exist`, "i").test(message);
 }
+
+/** True when Postgres reports a missing column on a known relation (partial migration / deploy drift). */
+export function isSchemaDriftOnRelation(error: unknown, relationName: string): boolean {
+  const message = collectPostgresErrorMessages(error);
+  if (!message) return false;
+  if (!/column "[^"]+" of relation/i.test(message)) return false;
+  return new RegExp(`relation "${relationName}"`, "i").test(message);
+}

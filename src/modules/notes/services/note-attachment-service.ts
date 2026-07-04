@@ -17,6 +17,10 @@ import {
 import { assertAttachmentCreateAad, AadValidationError } from "@/modules/security/policies/aad-validation";
 import { sumEncryptedPayloadCiphertextBytes } from "@/modules/security/encrypted-payload-size";
 import { NotFoundError } from "@/modules/notes/services/note-service";
+import {
+  isMissingRelationError,
+  isSchemaDriftOnRelation,
+} from "@/lib/db/missing-relation-error";
 import { safeLogger } from "@/lib/logger";
 
 export type { AttachmentOwner };
@@ -31,16 +35,23 @@ export class AttachmentsUnavailableError extends Error {
   }
 }
 
-/** Detects missing `note_attachments` (PostgreSQL `42P01`) before migration `0013`. */
-function isMissingAttachmentsTable(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  const e = error as { code?: string; message?: string; cause?: { code?: string } };
-  if (e.code === "42P01" || e.cause?.code === "42P01") return true;
-  return typeof e.message === "string" && /note_attachments.*does not exist/i.test(e.message);
+const NOTE_ATTACHMENTS_RELATION = "note_attachments";
+
+/** Missing table (0013) or column drift (0019 board_id) during deploy — degrade, don't 500. */
+function isAttachmentsUnavailable(error: unknown): boolean {
+  return (
+    isMissingRelationError(error, NOTE_ATTACHMENTS_RELATION) ||
+    isSchemaDriftOnRelation(error, NOTE_ATTACHMENTS_RELATION)
+  );
 }
 
-function warnMissingAttachmentsTable(endpoint: string): void {
-  safeLogger.warn("note_attachments table missing — run migration 0013", { endpoint });
+function warnAttachmentsUnavailable(endpoint: string, error: unknown): void {
+  safeLogger.warn("note_attachments unavailable — run migrations 0013–0019", {
+    endpoint,
+    reason: isSchemaDriftOnRelation(error, NOTE_ATTACHMENTS_RELATION)
+      ? "schema_drift"
+      : "missing_table",
+  });
 }
 
 function validateAttachmentPayloadSize(payload: unknown): void {
@@ -74,8 +85,8 @@ async function withAttachmentsTable<T>(
   try {
     return await operation();
   } catch (error) {
-    if (isMissingAttachmentsTable(error)) {
-      warnMissingAttachmentsTable(endpoint);
+    if (isAttachmentsUnavailable(error)) {
+      warnAttachmentsUnavailable(endpoint, error);
       return onMissing();
     }
     throw error;
@@ -139,8 +150,8 @@ export const noteAttachmentService = {
         ciphertextBytes: serverCiphertextBytes,
       });
     } catch (error) {
-      if (isMissingAttachmentsTable(error)) {
-        warnMissingAttachmentsTable("POST /api/notes/:id/attachments");
+      if (isAttachmentsUnavailable(error)) {
+        warnAttachmentsUnavailable("POST /api/notes/:id/attachments", error);
         throw new AttachmentsUnavailableError("Note attachments are not available yet");
       }
       throw error;
@@ -154,8 +165,8 @@ export const noteAttachmentService = {
     try {
       attachment = await noteAttachmentRepository.findByIdForOwner(attachmentId, owner, vault.id);
     } catch (error) {
-      if (isMissingAttachmentsTable(error)) {
-        warnMissingAttachmentsTable("GET /api/notes/:id/attachments/:attachmentId");
+      if (isAttachmentsUnavailable(error)) {
+        warnAttachmentsUnavailable("GET /api/notes/:id/attachments/:attachmentId", error);
         throw new NotFoundError("Attachment not found");
       }
       throw error;
@@ -171,8 +182,8 @@ export const noteAttachmentService = {
     try {
       deleted = await noteAttachmentRepository.delete(attachmentId, owner, vault.id);
     } catch (error) {
-      if (isMissingAttachmentsTable(error)) {
-        warnMissingAttachmentsTable("DELETE /api/notes/:id/attachments/:attachmentId");
+      if (isAttachmentsUnavailable(error)) {
+        warnAttachmentsUnavailable("DELETE /api/notes/:id/attachments/:attachmentId", error);
         throw new AttachmentsUnavailableError("Note attachments are not available yet");
       }
       throw error;
@@ -191,8 +202,8 @@ export const noteAttachmentService = {
     try {
       attachmentsBytes = await noteAttachmentRepository.sumCiphertextBytesByVaultId(vault.id);
     } catch (error) {
-      if (isMissingAttachmentsTable(error)) {
-        warnMissingAttachmentsTable("GET /api/vault/storage-usage");
+      if (isAttachmentsUnavailable(error)) {
+        warnAttachmentsUnavailable("GET /api/vault/storage-usage", error);
         partial = true;
       } else {
         throw error;
