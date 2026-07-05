@@ -17,6 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Passkey vault device binding.** On “Add passkey for this device”, the server creates a `vault_passkey_device_bindings` row and sets HttpOnly cookie `selahkeep_vault_device` (UUID only). Vault unlock authentication options scope `allowCredentials` to the bound credential for this browser, avoiding the passkey picker when Mac and iPhone are both enrolled. Disable removes the binding and clears the cookie. Settings list bound devices. `GET /api/vault/status` and `GET /api/passkeys/vault-unlock` expose `passkeyUnlockAvailableOnThisDevice`; the vault dock, unlock page, and settings only offer passkey unlock when this browser is bound.
 
+### Changed
+
+- **vault-core 1.1.2 lock hygiene.** Bump to `@tgoliveira/vault-core@^1.1.2`. Register `clearNoteBodyCache` via `registerVaultLockCleanup`; wrap vault-protected routes in `VaultSensitiveRegion` (overlay gate unchanged). Hooks holding decrypted note/search/attachment/version/transcription state clear via `useOnVaultLocked`; kanban card dialog and version diff use nested `VaultSensitiveRegion`; kanban board clears editing/search on lock. Removed redundant `clearNoteBodyCache` from `useRequireVault` subscribe (central cleanup handles it). Feature tests assert post-lock DOM hygiene with `assertNoVaultPlaintextInDocument`.
+
 ### Fixed
 
 - **Note attachments deploy spikes.** `GET /api/notes/:id/attachments` no longer returns 500 when Drizzle wraps Postgres errors (`Failed query: …`) or when migration `0019` (`board_id`) lags a code deploy — list degrades to `[]` and mutations map to 503. The client hook dedupes in-flight list requests, backs off for 5s after a failed load, and keys reload on wrapped-key ciphertext instead of object identity to avoid retry storms during note detail re-renders.

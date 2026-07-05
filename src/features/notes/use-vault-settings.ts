@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useOnVaultLocked } from "@tgoliveira/vault-core/react";
 import { vaultApi } from "@/lib/api-client/vault";
 import {
   decryptVaultSettings,
@@ -55,6 +56,8 @@ export function useVaultSettings(userId: string | null, vaultUnlocked: boolean) 
   }, [canLoad, reloadToken]);
 
   useEffect(() => subscribeVaultSession(() => setSettings(null)), []);
+
+  useOnVaultLocked(() => setSettings(null));
 
   const reload = useCallback(() => setReloadToken((t) => t + 1), []);
 

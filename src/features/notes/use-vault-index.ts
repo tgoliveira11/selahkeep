@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useOnVaultLocked } from "@tgoliveira/vault-core/react";
 import { vaultApi } from "@/lib/api-client/vault";
 import {
   createEmptyVaultIndex,
@@ -54,6 +55,8 @@ export function useVaultIndex(userId: string | null, vaultUnlocked: boolean) {
   }, [canLoad, reloadToken]);
 
   useEffect(() => subscribeVaultSession(() => setIndex(null)), []);
+
+  useOnVaultLocked(() => setIndex(null));
 
   const reload = useCallback(() => setReloadToken((t) => t + 1), []);
 

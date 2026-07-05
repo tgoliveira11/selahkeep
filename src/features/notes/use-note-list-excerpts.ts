@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useOnVaultLocked } from "@tgoliveira/vault-core/react";
 import { notesApi } from "@/lib/api-client/notes";
 import { decryptNote } from "@/lib/crypto-client/notes";
 import { getCachedNoteBody, setCachedNoteBody } from "@/features/notes/eager-decrypt-notes";
@@ -87,12 +88,11 @@ export function useNoteListExcerpts(
     };
   }, [enabled, vaultUnlocked, entryKey, index]);
 
-  useEffect(() => {
-    if (!vaultUnlocked) {
-      setExcerpts(new Map());
-      setPreviews(new Map());
-    }
-  }, [vaultUnlocked]);
+  useOnVaultLocked(() => {
+    setExcerpts(new Map());
+    setPreviews(new Map());
+    setLoading(false);
+  });
 
   return { excerpts, previews, loading };
 }

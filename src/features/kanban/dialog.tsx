@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { VaultSensitiveRegion } from "@tgoliveira/vault-core/react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { MarkdownEditor } from "@/features/notes/markdown-editor";
@@ -117,105 +118,107 @@ export function KanbanCardDialog({
           </span>
         </div>
 
-        <div className="mt-4 space-y-4">
-          <FormField id="kanban-card-title" label="Title">
-            <input
-              id="kanban-card-title"
-              className="w-full rounded-md border border-[var(--border)] bg-transparent px-3 py-2"
-              value={draft.title}
-              maxLength={160}
-              onChange={(event) => update({ title: event.target.value })}
-            />
-          </FormField>
-
-          <FormField id="kanban-card-description" label="Description">
-            <div className="kanban-card-description-editor">
-              <MarkdownEditor
-                id="kanban-card-description"
-                value={draft.description ?? ""}
-                onChange={(description) => update({ description: description || undefined })}
-                placeholder="Add context for this card…"
-                maxLength={4000}
-              />
-            </div>
-          </FormField>
-
-          <FormField id="kanban-card-tags" label="Tags">
-            <KanbanCardTagNamesInput
-              id="kanban-card-tags"
-              tagNames={draft.tagNames ?? []}
-              onTagNamesChange={(tagNames) => update({ tagNames })}
-              suggestions={tagSuggestions}
-            />
-          </FormField>
-
-          <NoteAttachmentsField
-            owner={{ kind: "board", id: boardId }}
-            userId={userId}
-            wrappedKey={wrappedKey}
-            enabled={attachmentsEnabled}
-            testId="kanban-card-attachments-field"
-            filterIds={draft.attachmentIds ?? []}
-            onUploaded={(attachmentId) =>
-              update({ attachmentIds: [...(draft.attachmentIds ?? []), attachmentId] })
-            }
-            onRemoved={(attachmentId) =>
-              update({
-                attachmentIds: (draft.attachmentIds ?? []).filter((id) => id !== attachmentId),
-              })
-            }
-          />
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <FormField id="kanban-card-due" label="Due date">
+        <VaultSensitiveRegion>
+          <div className="mt-4 space-y-4">
+            <FormField id="kanban-card-title" label="Title">
               <input
-                id="kanban-card-due"
-                type="date"
+                id="kanban-card-title"
                 className="w-full rounded-md border border-[var(--border)] bg-transparent px-3 py-2"
-                value={draft.dueDate ?? ""}
-                onChange={(event) => update({ dueDate: event.target.value || null })}
+                value={draft.title}
+                maxLength={160}
+                onChange={(event) => update({ title: event.target.value })}
               />
             </FormField>
-            <FormField id="kanban-card-priority" label="Priority">
-              <select
-                id="kanban-card-priority"
-                className="w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-2"
-                value={draft.priority ?? ""}
-                onChange={(event) =>
-                  update({ priority: (event.target.value || null) as KanbanPriority | null })
-                }
-              >
-                <option value="">No priority</option>
-                {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-          </div>
 
-          {labels.length > 0 && (
-            <fieldset>
-              <legend className="mb-2 text-sm font-medium">Labels</legend>
-              <div className="flex flex-wrap gap-2">
-                {labels.map((label) => (
-                  <label
-                    key={label.id}
-                    className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={draft.labelIds?.includes(label.id) ?? false}
-                      onChange={() => toggleLabel(label.id)}
-                    />
-                    {label.name}
-                  </label>
-                ))}
+            <FormField id="kanban-card-description" label="Description">
+              <div className="kanban-card-description-editor">
+                <MarkdownEditor
+                  id="kanban-card-description"
+                  value={draft.description ?? ""}
+                  onChange={(description) => update({ description: description || undefined })}
+                  placeholder="Add context for this card…"
+                  maxLength={4000}
+                />
               </div>
-            </fieldset>
-          )}
-        </div>
+            </FormField>
+
+            <FormField id="kanban-card-tags" label="Tags">
+              <KanbanCardTagNamesInput
+                id="kanban-card-tags"
+                tagNames={draft.tagNames ?? []}
+                onTagNamesChange={(tagNames) => update({ tagNames })}
+                suggestions={tagSuggestions}
+              />
+            </FormField>
+
+            <NoteAttachmentsField
+              owner={{ kind: "board", id: boardId }}
+              userId={userId}
+              wrappedKey={wrappedKey}
+              enabled={attachmentsEnabled}
+              testId="kanban-card-attachments-field"
+              filterIds={draft.attachmentIds ?? []}
+              onUploaded={(attachmentId) =>
+                update({ attachmentIds: [...(draft.attachmentIds ?? []), attachmentId] })
+              }
+              onRemoved={(attachmentId) =>
+                update({
+                  attachmentIds: (draft.attachmentIds ?? []).filter((id) => id !== attachmentId),
+                })
+              }
+            />
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField id="kanban-card-due" label="Due date">
+                <input
+                  id="kanban-card-due"
+                  type="date"
+                  className="w-full rounded-md border border-[var(--border)] bg-transparent px-3 py-2"
+                  value={draft.dueDate ?? ""}
+                  onChange={(event) => update({ dueDate: event.target.value || null })}
+                />
+              </FormField>
+              <FormField id="kanban-card-priority" label="Priority">
+                <select
+                  id="kanban-card-priority"
+                  className="w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-2"
+                  value={draft.priority ?? ""}
+                  onChange={(event) =>
+                    update({ priority: (event.target.value || null) as KanbanPriority | null })
+                  }
+                >
+                  <option value="">No priority</option>
+                  {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+            </div>
+
+            {labels.length > 0 && (
+              <fieldset>
+                <legend className="mb-2 text-sm font-medium">Labels</legend>
+                <div className="flex flex-wrap gap-2">
+                  {labels.map((label) => (
+                    <label
+                      key={label.id}
+                      className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={draft.labelIds?.includes(label.id) ?? false}
+                        onChange={() => toggleLabel(label.id)}
+                      />
+                      {label.name}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+          </div>
+        </VaultSensitiveRegion>
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
           {onDelete && (

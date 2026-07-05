@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
+import { useOnVaultLocked } from "@tgoliveira/vault-core/react";
 import {
   concatFloat32,
   resampleLinear,
@@ -347,7 +347,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionResult {
     };
   }, [teardownCapture]);
 
-  useEffect(() => subscribeVaultSession(() => reset()), [reset]);
+  useOnVaultLocked(reset);
 
   return {
     supported,

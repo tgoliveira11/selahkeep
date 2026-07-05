@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
+import { useOnVaultLocked } from "@tgoliveira/vault-core/react";
 import { decodeAudioFileToPcm } from "@/lib/voice/audio-decode";
 import { getVoiceModelHost } from "@/lib/voice/voice-config";
 import type { TranscribeRequest } from "./transcription.worker";
@@ -161,7 +161,7 @@ export function useAudioFileTranscription(): UseAudioFileTranscriptionResult {
     setPhase("");
   }, []);
 
-  useEffect(() => subscribeVaultSession(() => reset()), [reset]);
+  useOnVaultLocked(reset);
 
   return {
     supported,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useOnVaultLocked } from "@tgoliveira/vault-core/react";
 import { noteAttachmentsApi, type AttachmentOwnerRef } from "@/lib/api-client/note-attachments";
 import {
   decryptAttachment,
@@ -137,6 +138,14 @@ export function useNoteAttachments({
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  useOnVaultLocked(() => {
+    setAllItems([]);
+    setError(null);
+    pendingRef.current.clear();
+    listInFlightRef.current = null;
+    lastFailedLoadRef.current = null;
+  });
 
   const uploadFile = useCallback(
     async (file: File): Promise<string> => {

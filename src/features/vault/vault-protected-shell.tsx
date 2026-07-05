@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import {
   VaultLockOverlayExclude,
   VaultProtectedGate,
+  VaultSensitiveRegion,
   requestVaultDockExpand,
 } from "@tgoliveira/vault-core/react";
 import { useVaultClientStatus } from "@/features/vault/use-vault-client-status";
@@ -27,7 +28,7 @@ export function VaultProtectedShell({ children }: { children: React.ReactNode })
       overlayBackground="color-mix(in srgb, var(--background) 92%, transparent)"
       loadingFallback={null}
     >
-      {children}
+      <VaultSensitiveRegion>{children}</VaultSensitiveRegion>
     </VaultProtectedGate>
   );
 }

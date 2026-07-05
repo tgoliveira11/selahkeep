@@ -1,22 +1,21 @@
+/** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import { useEffect } from "react";
 import { NoteSearchProvider, useNoteSearchContext } from "@/features/notes/note-search-context";
-import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
 
-vi.mock("@/lib/crypto-client/vault-session", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/crypto-client/vault-session")>();
+const vaultLockMocks = vi.hoisted(() => ({
+  triggerLock: null as (() => void) | null,
+}));
+
+vi.mock("@tgoliveira/vault-core/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tgoliveira/vault-core/react")>();
   return {
     ...actual,
-    subscribeVaultSession: vi.fn(() => () => {}),
-    subscribeVaultActivityTimer: vi.fn(() => () => {}),
-    getVaultAutoLockRemainingMs: vi.fn(() => 14 * 60 * 1000 + 32 * 1000),
-    lockVaultSession: vi.fn(),
-    lockVaultSessionManually: vi.fn(),
-    registerVaultBeforeAutoLock: vi.fn(() => () => {}),
-    isVaultManuallyLocked: vi.fn(() => false),
-    wasVaultLockedByInactivity: vi.fn(() => false),
-    registerVaultUnloadGuard: vi.fn(() => () => {}),
+    useOnVaultLocked: (handler: () => void) => {
+      vaultLockMocks.triggerLock = handler;
+      return actual.useOnVaultLocked(handler);
+    },
   };
 });
 
@@ -31,15 +30,10 @@ function Probe() {
 describe("note search context", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vaultLockMocks.triggerLock = null;
   });
 
-  it("clears query when vault session notifies lock", async () => {
-    let listener: (() => void) | null = null;
-    vi.mocked(subscribeVaultSession).mockImplementation((fn) => {
-      listener = fn;
-      return () => {};
-    });
-
+  it("clears query when the vault locks", async () => {
     render(
       <NoteSearchProvider>
         <Probe />
@@ -47,7 +41,7 @@ describe("note search context", () => {
     );
 
     await waitFor(() => expect(screen.getByTestId("search-query").textContent).toBe("peace"));
-    act(() => listener?.());
+    act(() => vaultLockMocks.triggerLock?.());
     await waitFor(() => expect(screen.getByTestId("search-query").textContent).toBe(""));
   });
 });

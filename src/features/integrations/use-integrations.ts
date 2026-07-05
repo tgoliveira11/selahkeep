@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useOnVaultLocked } from "@tgoliveira/vault-core/react";
 import {
   integrationsApi,
   type CreateIntegrationResponse,
@@ -39,6 +40,12 @@ export function useIntegrations(enabled: boolean) {
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  useOnVaultLocked(() => {
+    setIntegrations([]);
+    setError(null);
+    setLoading(false);
+  });
 
   const createIntegration = useCallback(async (name: string) => {
     const created = await integrationsApi.create(name);

@@ -1,6 +1,26 @@
+/** @vitest-environment happy-dom */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import {
+  assertNoVaultPlaintextInDocument,
+  SENTINEL_PRIVATE_NOTE,
+} from "@tgoliveira/vault-core/testing";
 import { AttachmentPreview } from "@/components/notes/attachment-preview";
+
+const vaultLockMocks = vi.hoisted(() => ({
+  triggerLock: null as (() => void) | null,
+}));
+
+vi.mock("@tgoliveira/vault-core/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tgoliveira/vault-core/react")>();
+  return {
+    ...actual,
+    useOnVaultLocked: (handler: () => void) => {
+      vaultLockMocks.triggerLock = handler;
+      return actual.useOnVaultLocked(handler);
+    },
+  };
+});
 
 describe("AttachmentPreview", () => {
   const createObjectURL = vi.fn(() => "blob:preview-test");
@@ -69,5 +89,29 @@ describe("AttachmentPreview", () => {
     );
 
     expect(screen.queryByTestId("attachment-preview")).not.toBeInTheDocument();
+  });
+
+  it("clears decrypted text preview from the DOM when the vault locks", async () => {
+    const bytes = new TextEncoder().encode(SENTINEL_PRIVATE_NOTE);
+    render(
+      <AttachmentPreview
+        metadata={{ filename: "note.txt", mimeType: "text/plain", sizeBytes: bytes.length }}
+        loadDecrypted={async () => ({
+          metadata: { filename: "note.txt", mimeType: "text/plain", sizeBytes: bytes.length },
+          bytes,
+        })}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(SENTINEL_PRIVATE_NOTE)).toBeInTheDocument();
+    });
+
+    vaultLockMocks.triggerLock?.();
+
+    await waitFor(() => {
+      expect(() => assertNoVaultPlaintextInDocument(document.body)).not.toThrow();
+    });
+    expect(screen.queryByText(SENTINEL_PRIVATE_NOTE)).not.toBeInTheDocument();
   });
 });
