@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useOnVaultLocked } from "@tgoliveira/vault-core/react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { KanbanColumn } from "@/features/kanban/column";
@@ -65,6 +66,11 @@ export function KanbanBoard({
     setDraft(board);
     previousComplete.current = getKanbanProgress(board).complete;
   }, [board]);
+
+  useOnVaultLocked(() => {
+    setEditingCard(null);
+    setCardSearch("");
+  });
 
   const progress = useMemo(() => getKanbanProgress(draft), [draft]);
   const orderedColumns = useMemo(() => normalizeColumns(draft.columns), [draft.columns]);

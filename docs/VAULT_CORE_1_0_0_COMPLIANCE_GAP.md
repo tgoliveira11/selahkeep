@@ -21,6 +21,17 @@ SelahKeep section 7 adoption (`docs/VAULT_CORE_AGENT_IMPLEMENTATION_PROMPT.md`) 
 
 **Still app-owned:** device binding (cookie + Drizzle), `SELAHKEEP_VAULT_PROFILE`, WebAuthn `purpose: "vault_unlock"`, Stillness messages, vault session adapter (`vault-session.ts`).
 
+### 1.1.2 lock hygiene (2026-07-05) — **resolved**
+
+Adopted vault-core 1.1.2 lock cleanup APIs across note, kanban, voice, and integration hooks:
+
+| Pattern | Usage in SelahKeep |
+| --- | --- |
+| `registerVaultLockCleanup` (`/browser`) | `register-selahkeep-vault-lock-cleanup.ts` — module-level `clearNoteBodyCache` |
+| `useOnVaultLocked` (`/react`) | Search bodies/excerpts, versions, attachments, vault index/settings, integrations, voice transcription, note search query, kanban board edit state |
+| `VaultSensitiveRegion` (`/react`) | `VaultProtectedShell` (page shell), kanban card dialog, note version diff |
+| `assertNoVaultPlaintextInDocument` (`/testing`) | Feature/security tests for post-lock DOM hygiene |
+
 **Authoritative vault-core docs read for this analysis:**
 
 | Document | Path in package |

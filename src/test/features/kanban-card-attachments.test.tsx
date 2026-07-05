@@ -1,8 +1,19 @@
+/** @vitest-environment happy-dom */
+import type { ReactNode } from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { KanbanCardDialog } from "@/features/kanban/dialog";
 import type { KanbanCardPlaintext } from "@/lib/notes/kanban-types";
 import { BOARD_ID, USER_ID, encryptedPayload } from "@/test/helpers/fixtures";
+
+vi.mock("@tgoliveira/vault-core/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tgoliveira/vault-core/react")>();
+  return {
+    ...actual,
+    VaultSensitiveRegion: ({ children }: { children: ReactNode }) => children,
+    useVaultUnlocked: () => true,
+  };
+});
 
 const mocks = vi.hoisted(() => ({
   useNoteAttachments: vi.fn(),

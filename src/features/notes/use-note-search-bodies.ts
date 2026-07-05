@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useOnVaultLocked } from "@tgoliveira/vault-core/react";
 import { notesApi } from "@/lib/api-client/notes";
 import { decryptNote } from "@/lib/crypto-client/notes";
 import {
@@ -81,12 +82,10 @@ export function useNoteSearchBodies(
     };
   }, [needsBodies, entryKey, searchQuery, index]);
 
-  useEffect(() => {
-    if (!vaultUnlocked) {
-      setBodies(undefined);
-      setLoading(false);
-    }
-  }, [vaultUnlocked]);
+  useOnVaultLocked(() => {
+    setBodies(undefined);
+    setLoading(false);
+  });
 
   return { bodies: needsBodies ? bodies : undefined, loading };
 }

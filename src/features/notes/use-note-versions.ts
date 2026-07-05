@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useOnVaultLocked } from "@tgoliveira/vault-core/react";
 import { noteVersionsApi, type NoteVersionResponse } from "@/lib/api-client/note-versions";
 import {
   decryptNoteVersion,
@@ -62,6 +63,12 @@ export function useNoteVersions(noteId: string | null, enabled: boolean) {
     }
     void reload();
   }, [enabled, reload]);
+
+  useOnVaultLocked(() => {
+    setVersions([]);
+    setError(null);
+    setLoading(false);
+  });
 
   const loadVersionContent = useCallback(
     async (summary: NoteVersionSummary): Promise<DecryptedNoteVersion> => {

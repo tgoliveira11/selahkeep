@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useOnVaultLocked } from "@tgoliveira/vault-core/react";
 import type { AttachmentMetadataPlaintext } from "@/lib/crypto-client/note-attachments";
 import {
   attachmentPreviewKind,
@@ -49,6 +50,18 @@ export function AttachmentPreview({
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
   const blobUrlRef = useRef<string | null>(null);
+
+  const clearPreview = useCallback(() => {
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+    setBlobUrl(null);
+    setTextPreview(null);
+    setStatus("idle");
+  }, []);
+
+  useOnVaultLocked(clearPreview);
 
   // Revoke blob URLs only on real unmount (not Strict Mode effect re-runs).
   useEffect(() => {

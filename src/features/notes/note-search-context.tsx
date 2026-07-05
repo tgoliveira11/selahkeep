@@ -4,12 +4,11 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
-import { subscribeVaultSession } from "@/lib/crypto-client/vault-session";
+import { useOnVaultLocked } from "@tgoliveira/vault-core/react";
 
 interface NoteSearchContextValue {
   query: string;
@@ -23,13 +22,9 @@ const NoteSearchContext = createContext<NoteSearchContextValue | null>(null);
 export function NoteSearchProvider({ children }: { children: ReactNode }) {
   const [query, setQueryState] = useState("");
 
-  useEffect(
-    () =>
-      subscribeVaultSession(() => {
-        setQueryState("");
-      }),
-    []
-  );
+  useOnVaultLocked(() => {
+    setQueryState("");
+  });
 
   const setQuery = useCallback((next: string) => {
     setQueryState(next);

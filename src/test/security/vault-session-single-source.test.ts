@@ -19,6 +19,7 @@ import {
 const APPROVED_VAULT_CORE_BROWSER_IMPORTS = new Set([
   "src/lib/crypto-client/vault-session.ts",
   "src/lib/crypto-client/vault-passkey-browser.ts",
+  "src/lib/vault/register-selahkeep-vault-lock-cleanup.ts",
   "src/components/vault-providers.tsx",
   "src/features/vault/vault-status-dock.tsx",
   "src/app/(vault)/vault/unlock/page.tsx",

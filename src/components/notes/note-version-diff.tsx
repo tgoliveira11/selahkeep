@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { VaultSensitiveRegion } from "@tgoliveira/vault-core/react";
 import { diffLines, diffStats, isUnchanged } from "@/lib/notes/text-diff";
 
 interface NoteVersionDiffProps {
@@ -51,45 +52,47 @@ export function NoteVersionDiff({
         </span>
       </div>
 
-      {isUnchanged(lines) ? (
-        <p className="text-sm text-[var(--muted)]" data-testid="diff-no-changes">
-          No content differences between these versions.
-        </p>
-      ) : (
-        <pre
-          className="overflow-x-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-0 text-sm leading-relaxed"
-          data-testid="diff-body"
-        >
-          <code className="block">
-            {lines.map((line, i) => (
-              <span
-                key={i}
-                data-diff-type={line.type}
-                className={
-                  line.type === "added"
-                    ? "block border-l-[3px] border-[var(--add-fg)] bg-[var(--add-bg)] px-3"
-                    : line.type === "removed"
-                      ? "block border-l-[3px] border-[var(--del-fg)] bg-[var(--del-bg)] px-3"
-                      : "block border-l-[3px] border-transparent px-3"
-                }
-              >
+      <VaultSensitiveRegion>
+        {isUnchanged(lines) ? (
+          <p className="text-sm text-[var(--muted)]" data-testid="diff-no-changes">
+            No content differences between these versions.
+          </p>
+        ) : (
+          <pre
+            className="overflow-x-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-0 text-sm leading-relaxed"
+            data-testid="diff-body"
+          >
+            <code className="block">
+              {lines.map((line, i) => (
                 <span
+                  key={i}
+                  data-diff-type={line.type}
                   className={
                     line.type === "added"
-                      ? "mr-2 inline-block w-4 select-none font-bold text-[var(--add-fg)]"
+                      ? "block border-l-[3px] border-[var(--add-fg)] bg-[var(--add-bg)] px-3"
                       : line.type === "removed"
-                        ? "mr-2 inline-block w-4 select-none font-bold text-[var(--del-fg)]"
-                        : "mr-2 inline-block w-4 select-none text-[var(--muted)]"
+                        ? "block border-l-[3px] border-[var(--del-fg)] bg-[var(--del-bg)] px-3"
+                        : "block border-l-[3px] border-transparent px-3"
                   }
                 >
-                  {SYMBOL[line.type]}
+                  <span
+                    className={
+                      line.type === "added"
+                        ? "mr-2 inline-block w-4 select-none font-bold text-[var(--add-fg)]"
+                        : line.type === "removed"
+                          ? "mr-2 inline-block w-4 select-none font-bold text-[var(--del-fg)]"
+                          : "mr-2 inline-block w-4 select-none text-[var(--muted)]"
+                    }
+                  >
+                    {SYMBOL[line.type]}
+                  </span>
+                  {line.value || " "}
                 </span>
-                {line.value || " "}
-              </span>
-            ))}
-          </code>
-        </pre>
-      )}
+              ))}
+            </code>
+          </pre>
+        )}
+      </VaultSensitiveRegion>
     </div>
   );
 }
