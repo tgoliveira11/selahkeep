@@ -26,7 +26,13 @@ interface VaultDockQuickUnlockSlotProps {
 
 /**
  * Renders only while the dock quick-unlock panel is expanded. Refreshes WebAuthn
- * options on each mount (expand) before allowing vault-core passkey auto-start.
+ * options on each mount (expand), then starts the passkey ceremony once options
+ * are ready.
+ *
+ * vault-core's built-in auto-start runs on expand *before* options exist and can
+ * lose its pending slot if the dock collapses during the fetch (sessionStorage
+ * dedupe then blocks the next expand for ~10s). We disable that path and auto-
+ * start here only after prefetch succeeds.
  */
 export function VaultDockQuickUnlockSlot({
   loading,
@@ -44,9 +50,16 @@ export function VaultDockQuickUnlockSlot({
 }: VaultDockQuickUnlockSlotProps) {
   const [passkeyOptionsReady, setPasskeyOptionsReady] = useState(false);
   const latestPrefetchRef = useRef<VaultPasskeyUnlockPrefetch | null>(null);
+  const autoStartedRef = useRef(false);
+  const onUnlockPasskeyRef = useRef(onUnlockPasskey);
+
+  useEffect(() => {
+    onUnlockPasskeyRef.current = onUnlockPasskey;
+  }, [onUnlockPasskey]);
 
   useEffect(() => {
     let cancelled = false;
+    autoStartedRef.current = false;
     setPasskeyOptionsReady(false);
     latestPrefetchRef.current = null;
 
@@ -63,6 +76,20 @@ export function VaultDockQuickUnlockSlot({
     };
   }, [refreshPasskeyOptions]);
 
+  useEffect(() => {
+    if (!passkeyReady || !passkeyOptionsReady || loading) return;
+    if (autoStartedRef.current) return;
+    if (!latestPrefetchRef.current?.options) return;
+    autoStartedRef.current = true;
+    void onUnlockPasskeyRef.current(latestPrefetchRef.current);
+  }, [passkeyReady, passkeyOptionsReady, loading]);
+
+  // Keep vault-core's bind slot clear so expand-time auto-start never races us.
+  useEffect(() => {
+    bindAutoStartPasskey(null);
+    return () => bindAutoStartPasskey(null);
+  }, [bindAutoStartPasskey]);
+
   return (
     <VaultDockQuickUnlock
       loading={loading}
@@ -70,6 +97,7 @@ export function VaultDockQuickUnlockSlot({
       serverStatus={serverStatus}
       passkeyReady={passkeyReady}
       passkeyOptionsReady={passkeyOptionsReady}
+      autoStartPasskey={false}
       unlockRateLimiter={unlockRateLimiter}
       rateLimitScopeKey={rateLimitScopeKey}
       bindAutoStartPasskey={bindAutoStartPasskey}
