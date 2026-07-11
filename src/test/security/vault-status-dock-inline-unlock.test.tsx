@@ -143,8 +143,11 @@ describe("vault status dock inline unlock security", () => {
     unlockFromVaultPassword.mockResolvedValue(undefined);
     unlockFromPasskey.mockResolvedValue(undefined);
     refreshPasskeyOptions.mockResolvedValue({
-      challenge: "abc",
-      allowCredentials: [{ id: "cred-1", type: "public-key" }],
+      options: {
+        challenge: "abc",
+        allowCredentials: [{ id: "cred-1", type: "public-key" }],
+      },
+      credentialId: "cred-1",
     });
   });
 

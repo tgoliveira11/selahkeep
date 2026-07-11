@@ -12,5 +12,6 @@ export function toVaultServerStatusSnapshot(status: VaultStatus): VaultServerSta
   return {
     configured,
     hasPasskeyPrfEnvelope,
+    passkeyUnlockAvailableOnThisDevice: status.passkeyUnlockAvailableOnThisDevice,
   };
 }

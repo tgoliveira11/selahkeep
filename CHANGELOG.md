@@ -23,6 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Vault dock passkey auto-start.** Auto-start now waits until WebAuthn options are prefetched on expand, instead of relying on vault-core’s expand-time auto-start (which can consume its 10s dedupe slot before options arrive if the dock collapses mid-fetch). Also pass `passkeyUnlockAvailableOnThisDevice` through `toVaultServerStatusSnapshot` so vault-core dock availability matches device binding.
+
 - **Note attachments deploy spikes.** `GET /api/notes/:id/attachments` no longer returns 500 when Drizzle wraps Postgres errors (`Failed query: …`) or when migration `0019` (`board_id`) lags a code deploy — list degrades to `[]` and mutations map to 503. The client hook dedupes in-flight list requests, backs off for 5s after a failed load, and keys reload on wrapped-key ciphertext instead of object identity to avoid retry storms during note detail re-renders.
 
 - **Passkey vault unlock on iOS (PR #42/#43 regression).** Restored iOS PRF ceremony parity removed during the per-device passkey merge: Safari credential-scoped PRF extraction, client-side `eval` alignment, platform `internal` transport pinning, envelope credential prefetch, and per-device decrypt-failure copy. A passkey envelope wrapped on Mac still requires adding a passkey on each unlock device.
